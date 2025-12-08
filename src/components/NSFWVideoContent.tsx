@@ -17,15 +17,17 @@ import {
   createVideoPlaylist,
   getVideoDownloads,
   requestVideoDownload,
-  updateVideoProgress,
+  updateVideoProgress as updateVideoProgressFn,
   type NSFWVideoContent,
   type NSFWVideoPlaylist,
   type NSFWVideoDownload,
   type NSFWVideoProgress
 } from '@/lib/nsfwVideoContent'
 import { hasNSFWContent, isSFW } from '@/lib/featureFlags'
-import { Play, Download, Bookmark, Star, Clock, Eye, Search, Plus, Filter, Loader2, Lock, CheckCircle2 } from 'lucide-react'
+import { Play, Download, Bookmark, Star, Clock, Eye, Search, Plus, Filter, Loader2, Lock, CheckCircle2, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { VideoPlayer } from '@/components/VideoPlayer'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 export const NSFWVideoContent = () => {
   const [activeTab, setActiveTab] = useState('browse')
@@ -354,6 +356,48 @@ export const NSFWVideoContent = () => {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Video Player Modal */}
+      {selectedVideo && (
+        <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{selectedVideo.title}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <VideoPlayer
+                videoUrl={selectedVideo.video_url_hd || selectedVideo.video_url_sd || ''}
+                videoId={selectedVideo.id}
+                title={selectedVideo.title}
+                showScreenshots={true}
+                onProgress={async (progress) => {
+                  // Update video progress (percentage)
+                  if (selectedVideo) {
+                    const currentTime = (progress / 100) * (selectedVideo.video_duration_seconds || 0)
+                    await updateVideoProgressFn(selectedVideo.id, currentTime)
+                  }
+                }}
+              />
+              {selectedVideo.description && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Description</h4>
+                  <p className="text-sm text-muted-foreground">{selectedVideo.description}</p>
+                </div>
+              )}
+              {selectedVideo.key_points && selectedVideo.key_points.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Key Points</h4>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                    {selectedVideo.key_points.map((point, idx) => (
+                      <li key={idx}>{point}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

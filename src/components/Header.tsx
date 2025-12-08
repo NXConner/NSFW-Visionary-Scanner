@@ -249,6 +249,11 @@ export const Header = ({
     icon: VideoIcon,
     show: true
   }, {
+    id: "expert-content",
+    label: "Expert Content",
+    icon: Users,
+    show: true
+  }, {
     id: "community",
     label: "Community",
     icon: Users,

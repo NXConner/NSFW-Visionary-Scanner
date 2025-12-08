@@ -60,6 +60,7 @@ import { ExportImportSystem } from "@/components/ExportImportSystem";
 import { MobileWearableFeatures } from "@/components/MobileWearableFeatures";
 import { SecurityPrivacyEnhancements } from "@/components/SecurityPrivacyEnhancements";
 import { NSFWAdvancedFeatures } from "@/components/NSFWAdvancedFeatures";
+import { ExpertContentConsultations } from "@/components/ExpertContentConsultations";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { Badge } from "@/components/ui/badge";
@@ -112,6 +113,7 @@ const tabsOrder = [
   "mobile-wearable",
   "security-privacy",
   "nsfw-advanced",
+  "expert-content",
   "3dviewer",
   "emergency",
   "questionnaire",
@@ -515,6 +517,14 @@ const Index = () => {
           <section className="min-h-screen px-4 py-20">
             <div className="container mx-auto max-w-7xl">
               <NSFWAdvancedFeatures />
+            </div>
+          </section>
+        );
+      case "expert-content":
+        return (
+          <section className="min-h-screen px-4 py-20">
+            <div className="container mx-auto max-w-7xl">
+              <ExpertContentConsultations />
             </div>
           </section>
         );

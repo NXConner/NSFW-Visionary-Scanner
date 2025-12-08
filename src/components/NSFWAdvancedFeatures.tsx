@@ -31,6 +31,9 @@ import {
   type SeductiveAISession,
   type SexPosition
 } from '@/lib/nsfwAdvancedFeatures'
+import { recordVideo, uploadRecordedVideo } from '@/lib/videoProcessing'
+import { MediaUploader } from '@/components/MediaUploader'
+import { STORAGE_BUCKETS } from '@/lib/mediaUpload'
 import { Video, Camera, Heart, MessageSquare, Loader2, Play, Square, Mic, Image as ImageIcon, Send, CheckCircle2, X, Star } from 'lucide-react'
 import { toast } from 'sonner'
 import { logger } from '@/lib/logger'
@@ -49,6 +52,7 @@ export const NSFWAdvancedFeatures = () => {
   const [currentSession, setCurrentSession] = useState<MultiCameraSession | null>(null)
   const [isRecording, setIsRecording] = useState(false)
   const [cameraStreams, setCameraStreams] = useState<MediaStream[]>([])
+  const [recorders, setRecorders] = useState<MediaRecorder[]>([])
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({})
   
   // Intimate Dates
@@ -135,6 +139,8 @@ export const NSFWAdvancedFeatures = () => {
     }
   }
 
+  const [recorders, setRecorders] = useState<MediaRecorder[]>([])
+
   const handleStartRecording = async () => {
     if (!currentSession) {
       // Create new session
@@ -163,15 +169,31 @@ export const NSFWAdvancedFeatures = () => {
       const videoDevices = devices.filter(device => device.kind === 'videoinput')
       
       const streams: MediaStream[] = []
+      const newRecorders: MediaRecorder[] = []
+      
       for (let i = 0; i < Math.min(videoDevices.length, 4); i++) {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { deviceId: videoDevices[i].deviceId },
           audio: true
         })
         streams.push(stream)
+        
+        // Create MediaRecorder for each stream
+        const recorder = new MediaRecorder(stream, {
+          mimeType: 'video/webm;codecs=vp9,opus'
+        })
+        newRecorders.push(recorder)
       }
       
       setCameraStreams(streams)
+      setRecorders(newRecorders)
+      
+      // Start recording on all recorders
+      newRecorders.forEach(recorder => {
+        if (recorder.state === 'inactive') {
+          recorder.start()
+        }
+      })
       
       // Attach streams to video elements
       streams.forEach((stream, index) => {
@@ -188,15 +210,48 @@ export const NSFWAdvancedFeatures = () => {
   const handleStopRecording = async () => {
     if (!currentSession) return
 
+    // Stop all recorders and collect recordings
+    const recordings: Blob[] = []
+    for (const recorder of recorders) {
+      if (recorder.state === 'recording') {
+        const chunks: Blob[] = []
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data)
+        }
+        recorder.stop()
+        
+        // Wait for data to be available
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        if (chunks.length > 0) {
+          recordings.push(new Blob(chunks, { type: 'video/webm' }))
+        }
+      }
+    }
+
     // Stop all camera streams
     cameraStreams.forEach(stream => {
       stream.getTracks().forEach(track => track.stop())
     })
     setCameraStreams([])
+    setRecorders([])
+
+    // Upload recordings
+    if (recordings.length > 0 && currentSession) {
+      for (let i = 0; i < recordings.length; i++) {
+        const recording = {
+          id: `recording-${Date.now()}-${i}`,
+          blob: recordings[i],
+          duration: 0, // Would calculate from metadata
+          startTime: Date.now(),
+          endTime: Date.now()
+        }
+        await uploadRecordedVideo(recording, currentSession.id, `camera-${i}`)
+      }
+    }
 
     await stopRecording(currentSession.id, 0) // Duration would be calculated
     setIsRecording(false)
-    toast.success('Recording stopped!')
+    toast.success('Recording stopped and uploaded!')
   }
 
   const handleCreateProposal = async () => {
@@ -417,6 +472,26 @@ export const NSFWAdvancedFeatures = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div>
+                    <Label>Upload Media (Optional)</Label>
+                    <MediaUploader
+                      accept="image/*,video/*"
+                      multiple
+                      bucket={STORAGE_BUCKETS.USER_UPLOADS}
+                      folder="intimate-dates"
+                      variant="compact"
+                      onUploadComplete={(result) => {
+                        const results = Array.isArray(result) ? result : [result]
+                        const images = results.filter(r => r.type.startsWith('image/')).map(r => r.url)
+                        const videos = results.filter(r => r.type.startsWith('video/')).map(r => r.url)
+                        setNewProposal({
+                          ...newProposal,
+                          // Store URLs for later use in proposal
+                        })
+                        toast.success(`Uploaded ${results.length} file(s)`)
+                      }}
+                    />
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Proposal Title</Label>
