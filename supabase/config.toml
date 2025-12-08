@@ -1,0 +1,9 @@
+project_id = "thajylrvfzjmerqqkmjv"
+
+[functions.ai-health-chat]
+enabled = true
+verify_jwt = false
+
+[functions.ai-scan-analysis]
+enabled = true
+verify_jwt = false

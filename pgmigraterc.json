@@ -1,0 +1,8 @@
+{
+  "dir": "supabase/migrations",
+  "migrationFileLanguage": "cjs",
+  "migrationsTable": "pgmigrations",
+  "databaseUrl": {
+    "env": "DATABASE_URL"
+  }
+}

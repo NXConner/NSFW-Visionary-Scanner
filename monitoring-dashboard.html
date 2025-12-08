@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MorphoScan Pro - Production Monitoring Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e5e5e5;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+        }
+
+        .dashboard {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #333;
+        }
+
+        .metric-card h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-change {
+            font-size: 0.9rem;
+        }
+
+        .metric-change.positive {
+            color: #10b981;
+        }
+
+        .metric-change.negative {
+            color: #ef4444;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #333;
+        }
+
+        .chart-card h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            background: #1a1a1a;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 1rem;
+        }
+
+        .status-indicator.healthy {
+            background: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+        }
+
+        .status-indicator.warning {
+            background: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+        }
+
+        .status-indicator.error {
+            background: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+        }
+
+        .alerts-section {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid #333;
+        }
+
+        .alerts-section h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .alert-item {
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid;
+        }
+
+        .alert-item.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-left-color: #ef4444;
+        }
+
+        .alert-item.warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left-color: #f59e0b;
+        }
+
+        .alert-item.info {
+            background: rgba(59, 130, 246, 0.1);
+            border-left-color: #3b82f6;
+        }
+
+        .last-updated {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #333;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                padding: 1rem;
+            }
+
+            .header {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .metrics-grid, .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🔬 MorphoScan Pro</h1>
+        <p>Production Monitoring Dashboard</p>
+    </header>
+
+    <main class="dashboard">
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h3>Active Users</h3>
+                <div class="metric-value" id="active-users">--</div>
+                <div class="metric-change positive" id="active-users-change">+12% from yesterday</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Revenue (MRR)</h3>
+                <div class="metric-value" id="revenue">€--</div>
+                <div class="metric-change positive" id="revenue-change">+8% from last month</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Conversion Rate</h3>
+                <div class="metric-value" id="conversion-rate">-%</div>
+                <div class="metric-change positive" id="conversion-change">+2.3% from last week</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>App Performance</h3>
+                <div class="metric-value" id="performance-score">--/100</div>
+                <div class="metric-change" id="performance-change">Lighthouse Score</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Error Rate</h3>
+                <div class="metric-value" id="error-rate">-%</div>
+                <div class="metric-change negative" id="error-change">Last 24 hours</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Server Response</h3>
+                <div class="metric-value" id="response-time">--ms</div>
+                <div class="metric-change" id="response-change">Average latency</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>User Growth</h3>
+                <div class="chart-container">
+                    <canvas id="user-growth-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3>Revenue Trends</h3>
+                <div class="chart-container">
+                    <canvas id="revenue-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3>Performance Metrics</h3>
+                <div class="chart-container">
+                    <canvas id="performance-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3>Error Monitoring</h3>
+                <div class="chart-container">
+                    <canvas id="error-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-grid">
+            <div class="status-item">
+                <div class="status-indicator healthy"></div>
+                <div>
+                    <div style="font-weight: bold;">Supabase Database</div>
+                    <div style="font-size: 0.9rem; color: #666;">All systems operational</div>
+                </div>
+            </div>
+
+            <div class="status-item">
+                <div class="status-indicator healthy"></div>
+                <div>
+                    <div style="font-weight: bold;">Stripe Payments</div>
+                    <div style="font-size: 0.9rem; color: #666;">Processing normally</div>
+                </div>
+            </div>
+
+            <div class="status-item">
+                <div class="status-indicator healthy"></div>
+                <div>
+                    <div style="font-weight: bold;">AI Services</div>
+                    <div style="font-size: 0.9rem; color: #666;">Gemini API responding</div>
+                </div>
+            </div>
+
+            <div class="status-item">
+                <div class="status-indicator healthy"></div>
+                <div>
+                    <div style="font-weight: bold;">CDN & Hosting</div>
+                    <div style="font-size: 0.9rem; color: #666;">Global distribution active</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alerts-section">
+            <h3>Recent Alerts & Issues</h3>
+            <div id="alerts-container">
+                <div class="alert-item info">
+                    <div style="font-weight: bold;">System Maintenance</div>
+                    <div style="font-size: 0.9rem; margin-top: 0.25rem;">
+                        Scheduled maintenance completed successfully at 02:00 UTC
+                    </div>
+                    <div style="font-size: 0.8rem; color: #666; margin-top: 0.25rem;">
+                        2 hours ago
+                    </div>
+                </div>
+
+                <div class="alert-item warning">
+                    <div style="font-weight: bold;">High Memory Usage</div>
+                    <div style="font-size: 0.9rem; margin-top: 0.25rem;">
+                        Server memory usage peaked at 85% for 15 minutes
+                    </div>
+                    <div style="font-size: 0.8rem; color: #666; margin-top: 0.25rem;">
+                        4 hours ago
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="last-updated">
+        Last updated: <span id="last-updated">Loading...</span> |
+        Auto-refresh: <span id="auto-refresh">Enabled</span> |
+        <button onclick="refreshData()" style="background: none; border: none; color: #667eea; cursor: pointer; text-decoration: underline;">Refresh Now</button>
+    </footer>
+
+    <script>
+        // Mock data for demonstration
+        const mockData = {
+            activeUsers: 2847,
+            revenue: 15420,
+            conversionRate: 5.2,
+            performanceScore: 92,
+            errorRate: 0.8,
+            responseTime: 245,
+            userGrowth: [1200, 1350, 1580, 1720, 1890, 2100, 2350, 2600, 2847],
+            revenueData: [8500, 9200, 10100, 11200, 12800, 13900, 14700, 15420],
+            performanceData: [88, 91, 89, 93, 90, 94, 92, 91, 92],
+            errorData: [1.2, 0.9, 1.1, 0.7, 0.8, 0.6, 0.9, 0.8]
+        };
+
+        // Initialize charts
+        let userGrowthChart, revenueChart, performanceChart, errorChart;
+
+        function initCharts() {
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: '#333'
+                        },
+                        ticks: {
+                            color: '#e5e5e5'
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: '#333'
+                        },
+                        ticks: {
+                            color: '#e5e5e5'
+                        }
+                    }
+                }
+            };
+
+            // User Growth Chart
+            const userGrowthCtx = document.getElementById('user-growth-chart').getContext('2d');
+            userGrowthChart = new Chart(userGrowthCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8', 'Current'],
+                    datasets: [{
+                        data: mockData.userGrowth,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: commonOptions
+            });
+
+            // Revenue Chart
+            const revenueCtx = document.getElementById('revenue-chart').getContext('2d');
+            revenueChart = new Chart(revenueCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+                    datasets: [{
+                        data: mockData.revenueData,
+                        backgroundColor: '#10b981',
+                        borderRadius: 4
+                    }]
+                },
+                options: commonOptions
+            });
+
+            // Performance Chart
+            const performanceCtx = document.getElementById('performance-chart').getContext('2d');
+            performanceChart = new Chart(performanceCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'],
+                    datasets: [{
+                        data: mockData.performanceData,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: commonOptions
+            });
+
+            // Error Chart
+            const errorCtx = document.getElementById('error-chart').getContext('2d');
+            errorChart = new Chart(errorCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'],
+                    datasets: [{
+                        data: mockData.errorData,
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: commonOptions
+            });
+        }
+
+        function updateMetrics() {
+            document.getElementById('active-users').textContent = mockData.activeUsers.toLocaleString();
+            document.getElementById('revenue').textContent = '€' + mockData.revenue.toLocaleString();
+            document.getElementById('conversion-rate').textContent = mockData.conversionRate + '%';
+            document.getElementById('performance-score').textContent = mockData.performanceScore + '/100';
+            document.getElementById('error-rate').textContent = mockData.errorRate + '%';
+            document.getElementById('response-time').textContent = mockData.responseTime + 'ms';
+        }
+
+        function updateTimestamp() {
+            const now = luxon.DateTime.now().toFormat('yyyy-MM-dd HH:mm:ss');
+            document.getElementById('last-updated').textContent = now + ' UTC';
+        }
+
+        function refreshData() {
+            // In a real implementation, this would fetch fresh data from your APIs
+            updateTimestamp();
+            console.log('Data refreshed at', new Date().toISOString());
+        }
+
+        // Initialize everything
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            updateMetrics();
+            updateTimestamp();
+
+            // Auto-refresh every 5 minutes
+            setInterval(refreshData, 5 * 60 * 1000);
+        });
+
+        // Global refresh function for the button
+        window.refreshData = refreshData;
+    </script>
+</body>
+</html>

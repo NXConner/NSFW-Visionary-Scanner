@@ -1,0 +1,5 @@
+include ':app'
+
+// Capacitor plugins - loaded from capacitor.settings.gradle
+apply from: 'capacitor.settings.gradle'
+

@@ -1,0 +1,187 @@
+# Monitoring and Alerting Configuration
+# This file configures monitoring thresholds and alert rules
+#
+# IMPORTANT: Replace placeholder values with actual environment variables or production values:
+# - ${APP_URL} - Your production application URL
+# - ${SUPABASE_URL} - Your Supabase project URL
+# - ${SLACK_WEBHOOK_URL} - Your Slack webhook URL for alerts
+#
+# This file should be environment-specific (monitoring.dev.yml, monitoring.prod.yml)
+# or use environment variable substitution at deployment time.
+
+# Application Health Checks
+# NOTE: Replace ${APP_URL} and ${SUPABASE_URL} with actual values or use environment variable substitution
+health_checks:
+  - name: "Application Health"
+    url: "${APP_URL:-https://morphoscanpro.com}/api/health"
+    method: "GET"
+    expected_status: 200
+    timeout: 5000
+    interval: 60 # seconds
+
+  - name: "Supabase Health"
+    url: "${SUPABASE_URL:-https://your-project.supabase.co}/rest/v1/"
+    method: "GET"
+    expected_status: 200
+    timeout: 10000
+    interval: 300 # 5 minutes
+
+# Performance Thresholds
+performance_thresholds:
+  response_time:
+    warning: 1000  # ms
+    critical: 3000 # ms
+
+  error_rate:
+    warning: 1     # percentage
+    critical: 5    # percentage
+
+  availability:
+    warning: 99.5  # percentage
+    critical: 99.0 # percentage
+
+# Core Web Vitals Targets
+core_web_vitals:
+  lcp:
+    good: 2500    # ms
+    needs_improvement: 4000
+
+  fid:
+    good: 100     # ms
+    needs_improvement: 300
+
+  cls:
+    good: 0.1
+    needs_improvement: 0.25
+
+# Alert Rules
+alert_rules:
+  - name: "High Error Rate"
+    condition: "error_rate > 5"
+    severity: "critical"
+    channels: ["email", "slack"]
+    cooldown: 300 # 5 minutes
+
+  - name: "Slow Response Time"
+    condition: "avg_response_time > 3000"
+    severity: "warning"
+    channels: ["email"]
+    cooldown: 600 # 10 minutes
+
+  - name: "Service Down"
+    condition: "availability < 99.0"
+    severity: "critical"
+    channels: ["email", "sms", "slack"]
+    cooldown: 60 # 1 minute
+
+  - name: "High Memory Usage"
+    condition: "memory_usage > 85"
+    severity: "warning"
+    channels: ["email"]
+    cooldown: 1800 # 30 minutes
+
+# Notification Channels
+notification_channels:
+  email:
+    enabled: true
+    recipients: ["admin@morphoscanpro.com"]
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+
+  slack:
+    enabled: true
+    webhook_url: "${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK}"
+    channel: "#alerts"
+
+  sms:
+    enabled: false
+    provider: "twilio"
+    phone_numbers: ["+1234567890"]
+
+# Monitoring Dashboard Configuration
+dashboard:
+  refresh_interval: 60 # seconds
+  metrics_retention: 90 # days
+
+  panels:
+    - title: "Response Time"
+      type: "line_chart"
+      metric: "response_time"
+      time_range: "1h"
+
+    - title: "Error Rate"
+      type: "bar_chart"
+      metric: "error_rate"
+      time_range: "24h"
+
+    - title: "Active Users"
+      type: "counter"
+      metric: "active_users"
+
+    - title: "Revenue"
+      type: "line_chart"
+      metric: "daily_revenue"
+      time_range: "7d"
+
+# Log Aggregation Rules
+log_aggregation:
+  error_patterns:
+    - pattern: "TypeError|ReferenceError"
+      severity: "error"
+      alert: true
+
+    - pattern: "Failed to fetch|Network Error"
+      severity: "warning"
+      alert: false
+
+    - pattern: "Unauthorized|Forbidden"
+      severity: "warning"
+      alert: true
+
+  exclude_patterns:
+    - "favicon.ico"
+    - "/health"
+    - "robots.txt"
+
+# Incident Response
+incident_response:
+  escalation_levels:
+    - level: 1
+      trigger: "error_rate > 10"
+      responders: ["dev-team"]
+      timeout: 300 # escalate after 5 minutes
+
+    - level: 2
+      trigger: "error_rate > 20"
+      responders: ["dev-team", "management"]
+      timeout: 600 # escalate after 10 minutes
+
+  runbooks:
+    - name: "Database Connection Issues"
+      steps:
+        - "Check Supabase status page"
+        - "Verify connection string"
+        - "Check database logs"
+        - "Scale up database if needed"
+
+    - name: "High Error Rate"
+      steps:
+        - "Check application logs"
+        - "Identify error patterns"
+        - "Rollback recent deployment if needed"
+        - "Scale up application instances"
+
+# Backup and Recovery
+backup_config:
+  database:
+    schedule: "0 2 * * *" # Daily at 2 AM
+    retention: 30 # days
+    type: "full"
+
+  application:
+    schedule: "0 3 * * *" # Daily at 3 AM
+    retention: 7 # days
+    type: "incremental"
+
+  recovery_time_objective: 3600 # 1 hour
+  recovery_point_objective: 300  # 5 minutes

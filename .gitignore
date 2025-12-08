@@ -1,0 +1,43 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Android local configuration (contains machine-specific paths)
+android/local.properties
+
+# Android Gradle properties (contains sensitive signing configuration)
+android/gradle.properties
+
+# Keystore files (never commit to version control)
+*.keystore
+*.jks
+
+# Environment files with secrets
+.env.local
+.env.production.local
+.env.development.local
+
+# Build artifacts
+android/app/build/
+ios/App/build/

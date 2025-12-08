@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      target: runner
+    image: morphoscan-pro:latest
+    ports:
+      - "4173:4173"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    restart: unless-stopped
+    command: ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4173"]
+
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-morphoscan}
+      POSTGRES_USER: ${POSTGRES_USER:-morphoscan_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
+    driver: local
