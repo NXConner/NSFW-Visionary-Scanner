@@ -34,6 +34,7 @@ android/gradle.properties
 *.jks
 
 # Environment files with secrets
+.env
 .env.local
 .env.production.local
 .env.development.local
