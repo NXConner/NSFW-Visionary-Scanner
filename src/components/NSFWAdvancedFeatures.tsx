@@ -139,8 +139,6 @@ export const NSFWAdvancedFeatures = () => {
     }
   }
 
-  const [recorders, setRecorders] = useState<MediaRecorder[]>([])
-
   const handleStartRecording = async () => {
     if (!currentSession) {
       // Create new session

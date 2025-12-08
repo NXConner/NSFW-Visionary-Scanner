@@ -1,8 +1,26 @@
-import * as Sentry from '@sentry/react'
-import { onCLS, onFID, onFCP, onLCP, onTTFB, Metric } from 'web-vitals'
+// Optional Sentry integration (only if @sentry/react is installed)
+let Sentry: any = null
+try {
+  Sentry = require('@sentry/react')
+} catch {
+  // Sentry not installed, will use no-op functions
+}
+
+// Optional web-vitals (only if installed)
+let webVitals: any = null
+try {
+  webVitals = require('web-vitals')
+} catch {
+  // web-vitals not installed
+}
 
 // Initialize Sentry for error tracking and performance monitoring
 export const initSentry = () => {
+  if (!Sentry) {
+    console.log('Sentry not available - @sentry/react not installed')
+    return
+  }
+
   const dsn = import.meta.env.VITE_SENTRY_DSN
   const environment = import.meta.env.VITE_APP_ENV || 'development'
 
@@ -44,6 +62,9 @@ export const initSentry = () => {
 
 // Performance monitoring helper
 export const measurePerformance = async (name: string, fn: () => void | Promise<void>) => {
+  if (!Sentry) {
+    return fn()
+  }
   return Sentry.startSpan(
     {
       name,
@@ -67,11 +88,18 @@ export const measurePerformance = async (name: string, fn: () => void | Promise<
 // Error boundary wrapper for React components
 // Note: For JSX fallback components, create a separate .tsx file
 export const withErrorBoundary = (Component: React.ComponentType) => {
+  if (!Sentry) {
+    return Component
+  }
   return Sentry.withErrorBoundary(Component)
 }
 
 // Custom error reporting
 export const reportError = (error: Error, context?: Record<string, any>) => {
+  if (!Sentry) {
+    console.error('Error (Sentry not available):', error, context)
+    return
+  }
   Sentry.withScope((scope) => {
     if (context) {
       Object.keys(context).forEach(key => {
@@ -89,12 +117,34 @@ export const captureUserFeedback = (feedback: {
   message: string
   level?: 'info' | 'warning' | 'error'
 }) => {
+  if (!Sentry) {
+    console.log('User feedback (Sentry not available):', feedback)
+    return
+  }
   Sentry.captureMessage(feedback.message, feedback.level || 'info')
 }
 
 // Measure Core Web Vitals and send to Sentry
 export const measureWebVitals = () => {
-  const sendToSentry = (metric: Metric) => {
+  if (!webVitals) {
+    console.log('Web vitals not available - web-vitals package not installed')
+    return
+  }
+
+  if (!Sentry) {
+    // Still measure web vitals, just don't send to Sentry
+    const { onCLS, onFID, onFCP, onLCP, onTTFB } = webVitals
+    onCLS(console.log)
+    onFID(console.log)
+    onFCP(console.log)
+    onLCP(console.log)
+    onTTFB(console.log)
+    return
+  }
+
+  const { onCLS, onFID, onFCP, onLCP, onTTFB } = webVitals
+
+  const sendToSentry = (metric: any) => {
     Sentry.metrics.distribution(metric.name, metric.value, {
       tags: {
         id: metric.id,
