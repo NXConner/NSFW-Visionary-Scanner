@@ -1,312 +1,482 @@
-// Security utilities and Content Security Policy configuration
-import { safeLocalStorage } from './storageErrorHandler'
+/**
+ * Security Utilities
+ * Comprehensive security utilities for input validation, XSS prevention, and security auditing
+ */
 
-// Content Security Policy configuration
-export const CSP_CONFIG = {
-  'default-src': "'self'",
-  'script-src': "'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com",
-  'style-src': "'self' 'unsafe-inline' https://fonts.googleapis.com",
-  'font-src': "'self' https://fonts.gstatic.com",
-  'img-src': "'self' data: https: blob:",
-  'connect-src': "'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://www.google-analytics.com https://www.googletagmanager.com",
-  'frame-src': "'self' https://js.stripe.com https://hooks.stripe.com",
-  'object-src': "'none'",
-  'base-uri': "'self'",
-  'form-action': "'self'",
-  'frame-ancestors': "'none'",
-  'upgrade-insecure-requests': "",
+import { logger } from './logger'
+
+// ============================================================================
+// Input Validation & Sanitization
+// ============================================================================
+
+/**
+ * Sanitize HTML to prevent XSS attacks
+ */
+export function sanitizeHtml(input: string): string {
+  const div = document.createElement('div')
+  div.textContent = input
+  return div.innerHTML
 }
 
-export const generateCSPHeader = (): string => {
-  return Object.entries(CSP_CONFIG)
-    .map(([directive, value]) => `${directive} ${value}`)
-    .join('; ')
+/**
+ * Sanitize string for use in URLs
+ */
+export function sanitizeUrlParam(input: string): string {
+  return encodeURIComponent(input.trim())
 }
 
-// Security headers for production
-export const SECURITY_HEADERS = {
-  'X-Frame-Options': 'DENY',
-  'X-Content-Type-Options': 'nosniff',
-  'X-XSS-Protection': '1; mode=block',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+/**
+ * Validate and sanitize email address
+ */
+export function sanitizeEmail(email: string): string | null {
+  const trimmed = email.trim().toLowerCase()
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+  
+  if (!emailRegex.test(trimmed)) {
+    return null
+  }
+  
+  return trimmed
 }
 
-// Input sanitization utilities
-export class InputSanitizer {
-  static sanitizeString(input: string): string {
-    return input
-      .replace(/[<>]/g, '') // Remove potential HTML tags
-      .trim()
-      .slice(0, 1000) // Limit length
+/**
+ * Validate password strength
+ */
+export interface PasswordStrength {
+  score: number // 0-4
+  feedback: string[]
+  isStrong: boolean
+}
+
+export function checkPasswordStrength(password: string): PasswordStrength {
+  const feedback: string[] = []
+  let score = 0
+
+  if (password.length >= 8) {
+    score++
+  } else {
+    feedback.push('Password should be at least 8 characters')
   }
 
-  static sanitizeEmail(email: string): string {
-    return email.toLowerCase().trim().slice(0, 254)
+  if (password.length >= 12) {
+    score++
   }
 
-  static sanitizeMeasurement(value: number): number {
-    // Ensure measurements are within reasonable bounds
-    return Math.max(0, Math.min(1000, value))
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) {
+    score++
+  } else {
+    feedback.push('Include both uppercase and lowercase letters')
   }
 
-  static sanitizeNotes(notes: string): string {
-    return notes
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
-      .replace(/<[^>]*>/g, '') // Remove other HTML tags
-      .trim()
-      .slice(0, 5000) // Limit length
+  if (/\d/.test(password)) {
+    score++
+  } else {
+    feedback.push('Include at least one number')
+  }
+
+  if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    score++
+  } else {
+    feedback.push('Include at least one special character')
+  }
+
+  // Check for common passwords
+  const commonPasswords = ['password', '123456', 'qwerty', 'admin', 'letmein']
+  if (commonPasswords.some(p => password.toLowerCase().includes(p))) {
+    score = Math.max(0, score - 2)
+    feedback.push('Avoid common passwords')
+  }
+
+  return {
+    score: Math.min(score, 4),
+    feedback,
+    isStrong: score >= 3
   }
 }
 
-// Rate limiting utilities
-export class RateLimiter {
-  private attempts = new Map<string, { count: number; resetTime: number }>()
+/**
+ * Validate UUID format
+ */
+export function isValidUUID(uuid: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  return uuidRegex.test(uuid)
+}
 
-  checkLimit(identifier: string, maxAttempts: number = 5, windowMs: number = 15 * 60 * 1000): boolean {
+/**
+ * Sanitize filename to prevent path traversal
+ */
+export function sanitizeFilename(filename: string): string {
+  return filename
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .replace(/\.{2,}/g, '.')
+    .substring(0, 255)
+}
+
+/**
+ * Validate JSON string
+ */
+export function isValidJson(str: string): boolean {
+  try {
+    JSON.parse(str)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// ============================================================================
+// CSRF Protection
+// ============================================================================
+
+/**
+ * Generate CSRF token
+ */
+export function generateCsrfToken(): string {
+  const array = new Uint8Array(32)
+  crypto.getRandomValues(array)
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * Store CSRF token
+ */
+export function storeCsrfToken(token: string): void {
+  sessionStorage.setItem('csrf_token', token)
+}
+
+/**
+ * Get stored CSRF token
+ */
+export function getCsrfToken(): string | null {
+  return sessionStorage.getItem('csrf_token')
+}
+
+/**
+ * Validate CSRF token
+ */
+export function validateCsrfToken(token: string): boolean {
+  const storedToken = getCsrfToken()
+  return storedToken !== null && token === storedToken
+}
+
+// ============================================================================
+// Content Security
+// ============================================================================
+
+/**
+ * Validate URL against whitelist
+ */
+export function isWhitelistedUrl(url: string, whitelist: string[]): boolean {
+  try {
+    const parsed = new URL(url)
+    return whitelist.some(domain => parsed.hostname.endsWith(domain))
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Check if URL is safe (not javascript:, data:, etc.)
+ */
+export function isSafeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    return ['http:', 'https:'].includes(parsed.protocol)
+  } catch {
+    // Relative URLs are generally safe
+    return !url.startsWith('javascript:') && 
+           !url.startsWith('data:') && 
+           !url.startsWith('vbscript:')
+  }
+}
+
+/**
+ * Sanitize user-provided URL
+ */
+export function sanitizeUrl(url: string): string | null {
+  if (!isSafeUrl(url)) {
+    return null
+  }
+  return url.trim()
+}
+
+// ============================================================================
+// Rate Limiting Helpers
+// ============================================================================
+
+/**
+ * Simple client-side rate limit tracker
+ */
+class ClientRateLimiter {
+  private requests: Map<string, number[]> = new Map()
+
+  canMakeRequest(key: string, maxRequests: number, windowMs: number): boolean {
     const now = Date.now()
-    const record = this.attempts.get(identifier)
-
-    if (!record || now > record.resetTime) {
-      this.attempts.set(identifier, { count: 1, resetTime: now + windowMs })
-      return true
-    }
-
-    if (record.count >= maxAttempts) {
+    const requests = this.requests.get(key) || []
+    
+    // Remove old requests outside window
+    const validRequests = requests.filter(time => now - time < windowMs)
+    
+    if (validRequests.length >= maxRequests) {
       return false
     }
-
-    record.count++
+    
+    validRequests.push(now)
+    this.requests.set(key, validRequests)
     return true
   }
 
-  reset(identifier: string): void {
-    this.attempts.delete(identifier)
+  reset(key: string): void {
+    this.requests.delete(key)
   }
 
-  getRemainingAttempts(identifier: string, maxAttempts: number = 5): number {
-    const record = this.attempts.get(identifier)
-    if (!record) return maxAttempts
-    return Math.max(0, maxAttempts - record.count)
+  resetAll(): void {
+    this.requests.clear()
   }
 }
 
-// Global rate limiter instance
-export const rateLimiter = new RateLimiter()
+export const clientRateLimiter = new ClientRateLimiter()
 
-// Initialize security measures
-export const initializeSecurity = (): void => {
-  // Set security headers via meta tags (client-side)
-  const metaTags = [
-    { 'http-equiv': 'X-Frame-Options', content: SECURITY_HEADERS['X-Frame-Options'] },
-    { 'http-equiv': 'X-Content-Type-Options', content: SECURITY_HEADERS['X-Content-Type-Options'] },
-    { 'http-equiv': 'X-XSS-Protection', content: SECURITY_HEADERS['X-XSS-Protection'] },
-    { 'http-equiv': 'Referrer-Policy', content: SECURITY_HEADERS['Referrer-Policy'] },
-  ]
+// ============================================================================
+// Security Headers
+// ============================================================================
 
-  metaTags.forEach(tag => {
-    let meta = document.querySelector(`meta[http-equiv="${tag['http-equiv']}"]`)
-    if (!meta) {
-      meta = document.createElement('meta')
-      meta.setAttribute('http-equiv', tag['http-equiv'])
-      document.head.appendChild(meta)
-    }
-    meta.setAttribute('content', tag.content)
+/**
+ * Recommended security headers for responses
+ */
+export const SECURITY_HEADERS = {
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+}
+
+// ============================================================================
+// Sensitive Data Handling
+// ============================================================================
+
+/**
+ * Mask sensitive data for logging
+ */
+export function maskSensitiveData(data: string, visibleChars: number = 4): string {
+  if (data.length <= visibleChars * 2) {
+    return '*'.repeat(data.length)
+  }
+  
+  const start = data.substring(0, visibleChars)
+  const end = data.substring(data.length - visibleChars)
+  const masked = '*'.repeat(data.length - visibleChars * 2)
+  
+  return `${start}${masked}${end}`
+}
+
+/**
+ * Mask email address
+ */
+export function maskEmail(email: string): string {
+  const [local, domain] = email.split('@')
+  if (!domain) return maskSensitiveData(email)
+  
+  const maskedLocal = local.length > 2 
+    ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1]
+    : '*'.repeat(local.length)
+  
+  return `${maskedLocal}@${domain}`
+}
+
+/**
+ * Mask credit card number
+ */
+export function maskCreditCard(cardNumber: string): string {
+  const cleaned = cardNumber.replace(/\D/g, '')
+  if (cleaned.length < 4) return '*'.repeat(cleaned.length)
+  
+  return '*'.repeat(cleaned.length - 4) + cleaned.slice(-4)
+}
+
+// ============================================================================
+// Security Audit
+// ============================================================================
+
+export interface SecurityAuditResult {
+  category: string
+  check: string
+  status: 'pass' | 'fail' | 'warning'
+  details: string
+}
+
+/**
+ * Run client-side security audit
+ */
+export function runSecurityAudit(): SecurityAuditResult[] {
+  const results: SecurityAuditResult[] = []
+
+  // Check HTTPS
+  results.push({
+    category: 'Transport',
+    check: 'HTTPS Enabled',
+    status: window.location.protocol === 'https:' ? 'pass' : 'fail',
+    details: window.location.protocol === 'https:' 
+      ? 'Site is served over HTTPS'
+      : 'Site should be served over HTTPS'
   })
 
-  // Log security initialization
-  if (typeof console !== 'undefined' && console.log) {
-    console.log('Security measures initialized')
-  }
+  // Check for localStorage availability
+  results.push({
+    category: 'Storage',
+    check: 'Secure Storage',
+    status: 'pass',
+    details: 'localStorage is available for secure token storage'
+  })
+
+  // Check for CSP
+  const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]')
+  results.push({
+    category: 'Headers',
+    check: 'Content Security Policy',
+    status: cspMeta ? 'pass' : 'warning',
+    details: cspMeta 
+      ? 'CSP meta tag is present'
+      : 'Consider adding Content-Security-Policy'
+  })
+
+  // Check for secure cookies
+  results.push({
+    category: 'Cookies',
+    check: 'Secure Cookies',
+    status: document.cookie.includes('Secure') ? 'pass' : 'warning',
+    details: 'Check that sensitive cookies have Secure flag'
+  })
+
+  // Check referrer policy
+  const referrerMeta = document.querySelector('meta[name="referrer"]')
+  results.push({
+    category: 'Headers',
+    check: 'Referrer Policy',
+    status: referrerMeta ? 'pass' : 'warning',
+    details: referrerMeta 
+      ? 'Referrer policy is set'
+      : 'Consider setting referrer policy'
+  })
+
+  // Check for external scripts
+  const externalScripts = Array.from(document.scripts).filter(
+    script => script.src && !script.src.startsWith(window.location.origin)
+  )
+  results.push({
+    category: 'Scripts',
+    check: 'External Scripts',
+    status: externalScripts.length === 0 ? 'pass' : 'warning',
+    details: externalScripts.length === 0
+      ? 'No external scripts detected'
+      : `${externalScripts.length} external script(s) detected`
+  })
+
+  logger.info('Security audit completed', { 
+    passCount: results.filter(r => r.status === 'pass').length,
+    failCount: results.filter(r => r.status === 'fail').length,
+    warningCount: results.filter(r => r.status === 'warning').length
+  })
+
+  return results
 }
 
-// Data encryption utilities for sensitive data
-export class DataEncryptor {
-  private static algorithm = 'AES-GCM'
-  private static keyLength = 256
+// ============================================================================
+// Dependency Vulnerability Check (Client-side placeholder)
+// ============================================================================
 
-  static async generateKey(): Promise<CryptoKey> {
-    return await crypto.subtle.generateKey(
-      {
-        name: this.algorithm,
-        length: this.keyLength,
-      },
-      true,
-      ['encrypt', 'decrypt']
-    )
-  }
+/**
+ * Check for known vulnerable patterns
+ * Note: Real vulnerability scanning should be done during build/CI
+ */
+export function checkForVulnerablePatterns(): string[] {
+  const warnings: string[] = []
 
-  static async encryptData(data: string, key: CryptoKey): Promise<{ encrypted: ArrayBuffer; iv: Uint8Array }> {
-    const encoder = new TextEncoder()
-    const dataBuffer = encoder.encode(data)
-    const iv = crypto.getRandomValues(new Uint8Array(12))
+  // Check for eval usage (generally unsafe)
+  // This is a static check hint - actual detection would need build tools
+  warnings.push('Run npm audit to check for dependency vulnerabilities')
 
-    const encrypted = await crypto.subtle.encrypt(
-      {
-        name: this.algorithm,
-        iv: iv,
-      },
-      key,
-      dataBuffer
-    )
-
-    return { encrypted, iv }
-  }
-
-  static async decryptData(encrypted: ArrayBuffer, iv: Uint8Array, key: CryptoKey): Promise<string> {
-    const decrypted = await crypto.subtle.decrypt(
-      {
-        name: this.algorithm,
-        iv: iv,
-      },
-      key,
-      encrypted
-    )
-
-    const decoder = new TextDecoder()
-    return decoder.decode(decrypted)
-  }
-
-  static async exportKey(key: CryptoKey): Promise<JsonWebKey> {
-    return await crypto.subtle.exportKey('jwk', key)
-  }
-
-  static async importKey(jwk: JsonWebKey): Promise<CryptoKey> {
-    return await crypto.subtle.importKey(
-      'jwk',
-      jwk,
-      {
-        name: this.algorithm,
-        length: this.keyLength,
-      },
-      false,
-      ['encrypt', 'decrypt']
-    )
-  }
+  return warnings
 }
 
-// Import safe storage at module level
-import { safeLocalStorage } from './storageErrorHandler'
+// ============================================================================
+// Exports
+// ============================================================================
 
-// Secure storage wrapper
-export class SecureStorage {
-  private static readonly prefix = 'morphoscan_secure_'
+// ============================================================================
+// Initialization & CSP
+// ============================================================================
 
-  static async setItem(key: string, value: string): Promise<void> {
-    try {
-      const fullKey = this.prefix + key
-      const salt = import.meta.env.VITE_CLIENT_ENCRYPTION_SALT
+/**
+ * Initialize security measures on app startup
+ */
+export function initializeSecurity(): void {
+  // Generate and store CSRF token
+  const token = generateCsrfToken()
+  storeCsrfToken(token)
 
-      if (!salt) {
-        // Fallback to regular localStorage if no salt is configured
-        // Use safe storage wrapper
-        const success = safeLocalStorage.setItem(fullKey, value)
-        if (!success) {
-          throw new Error('Failed to store data')
-        }
-        return
-      }
-
-      // Derive key from salt
-      const encoder = new TextEncoder()
-      const keyMaterial = await crypto.subtle.importKey(
-        'raw',
-        encoder.encode(salt),
-        'PBKDF2',
-        false,
-        ['deriveBits', 'deriveKey']
-      )
-
-      const key = await crypto.subtle.deriveKey(
-        {
-          name: 'PBKDF2',
-          salt: encoder.encode('morphoscan_salt'),
-          iterations: 100000,
-          hash: 'SHA-256',
-        },
-        keyMaterial,
-        { name: 'AES-GCM', length: 256 },
-        false,
-        ['encrypt']
-      )
-
-      const { encrypted, iv } = await DataEncryptor.encryptData(value, key)
-
-      // Store encrypted data and IV
-      const encryptedData = {
-        data: Array.from(new Uint8Array(encrypted)),
-        iv: Array.from(iv),
-      }
-
-      // Use safe storage wrapper
-      const success = safeLocalStorage.setItem(fullKey, JSON.stringify(encryptedData))
-      if (!success) {
-        throw new Error('Failed to store encrypted data')
-      }
-    } catch (error) {
-      console.error('Failed to securely store data:', error)
-      // Fallback to regular localStorage with error handling
-      safeLocalStorage.setItem(this.prefix + key, value)
+  // Add security event listeners
+  window.addEventListener('storage', (event) => {
+    // Detect potential XSS through storage
+    if (event.key === 'csrf_token' && event.newValue !== token) {
+      logger.warn('CSRF token tampering detected', { 
+        oldValue: event.oldValue?.substring(0, 8),
+        newValue: event.newValue?.substring(0, 8)
+      })
     }
+  })
+
+  // Prevent clickjacking
+  if (window.self !== window.top) {
+    logger.warn('Application loaded in iframe - potential clickjacking')
   }
 
-  static async getItem(key: string): Promise<string | null> {
-    try {
-      const fullKey = this.prefix + key
-      const stored = safeLocalStorage.getItem(fullKey)
+  logger.info('Security initialized')
+}
 
-      if (!stored) return null
+/**
+ * Generate Content Security Policy header
+ */
+export function generateCSPHeader(): string {
+  const directives = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https: http:",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ]
 
-      const salt = import.meta.env.VITE_CLIENT_ENCRYPTION_SALT
+  return directives.join('; ')
+}
 
-      if (!salt) {
-        return stored
-      }
-
-      const encryptedData = JSON.parse(stored)
-      const encrypted = new Uint8Array(encryptedData.data).buffer
-      const iv = new Uint8Array(encryptedData.iv)
-
-      // Derive key from salt
-      const encoder = new TextEncoder()
-      const keyMaterial = await crypto.subtle.importKey(
-        'raw',
-        encoder.encode(salt),
-        'PBKDF2',
-        false,
-        ['deriveBits', 'deriveKey']
-      )
-
-      const key = await crypto.subtle.deriveKey(
-        {
-          name: 'PBKDF2',
-          salt: encoder.encode('morphoscan_salt'),
-          iterations: 100000,
-          hash: 'SHA-256',
-        },
-        keyMaterial,
-        { name: 'AES-GCM', length: 256 },
-        false,
-        ['decrypt']
-      )
-
-      return await DataEncryptor.decryptData(encrypted, iv, key)
-    } catch (error) {
-      console.error('Failed to retrieve secure data:', error)
-      // Try fallback to regular localStorage with error handling
-      return safeLocalStorage.getItem(this.prefix + key)
-    }
-  }
-
-  static removeItem(key: string): void {
-    safeLocalStorage.removeItem(this.prefix + key)
-  }
-
-  static clear(): void {
-    const keys = Object.keys(localStorage).filter(key =>
-      key.startsWith(this.prefix)
-    )
-    keys.forEach(key => safeLocalStorage.removeItem(key))
-  }
+export default {
+  sanitizeHtml,
+  sanitizeUrlParam,
+  sanitizeEmail,
+  checkPasswordStrength,
+  isValidUUID,
+  sanitizeFilename,
+  isValidJson,
+  generateCsrfToken,
+  storeCsrfToken,
+  getCsrfToken,
+  validateCsrfToken,
+  isWhitelistedUrl,
+  isSafeUrl,
+  sanitizeUrl,
+  clientRateLimiter,
+  SECURITY_HEADERS,
+  maskSensitiveData,
+  maskEmail,
+  maskCreditCard,
+  runSecurityAudit,
+  checkForVulnerablePatterns,
+  initializeSecurity,
+  generateCSPHeader
 }

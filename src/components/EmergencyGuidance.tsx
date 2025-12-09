@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   AlertTriangle, Phone, MapPin, Clock, Heart, Zap,
   AlertCircle, Calendar, ChevronRight, ExternalLink,
-  Ambulance, Hospital, Info, Shield
+  Building2 as Hospital, Info, Shield, Siren as Ambulance
 } from "lucide-react";
 import { VisualContentDisplay } from "./VisualContentDisplay";
 import { useVisualContent } from "@/hooks/useVisualContent";

@@ -84,13 +84,95 @@ export const hasDLCLicense = async (userId?: string): Promise<boolean> => {
 }
 
 /**
- * Verify license signature
+ * Public key for license signature verification (ECDSA P-256)
+ * In production, this should be loaded from environment or secure storage
+ */
+const LICENSE_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE8BcRhBnXZIXVGl9Y8e0Gz6qlw9Ff
+jPqZkN9sBVnbBBwXOBVHVhYrCT1MLPdCvYUfnHbqF7WHGBLxCbQLSXNvcw==
+-----END PUBLIC KEY-----`
+
+/**
+ * Convert PEM to CryptoKey for signature verification
+ */
+async function importPublicKey(pemKey: string): Promise<CryptoKey> {
+  // Remove PEM headers and decode base64
+  const pemContents = pemKey
+    .replace(/-----BEGIN PUBLIC KEY-----/, '')
+    .replace(/-----END PUBLIC KEY-----/, '')
+    .replace(/\s/g, '')
+  
+  const binaryKey = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0))
+  
+  return await crypto.subtle.importKey(
+    'spki',
+    binaryKey,
+    {
+      name: 'ECDSA',
+      namedCurve: 'P-256'
+    },
+    false,
+    ['verify']
+  )
+}
+
+/**
+ * Verify license signature using ECDSA
  */
 const verifyLicenseSignature = async (license: any): Promise<boolean> => {
-  // TODO: Implement cryptographic signature verification
-  // This should verify the license signature using a public key
-  // For now, return true if signature exists
-  return !!license.signature
+  try {
+    if (!license.signature || !license.license_key || !license.user_id) {
+      return false
+    }
+    
+    // Create the message that was signed (deterministic format)
+    const message = JSON.stringify({
+      license_key: license.license_key,
+      user_id: license.user_id,
+      purchase_date: license.purchase_date,
+      expiration_date: license.expiration_date || null,
+      content_version: license.content_version
+    })
+    
+    // Encode message to bytes
+    const encoder = new TextEncoder()
+    const data = encoder.encode(message)
+    
+    // Decode signature from base64
+    const signatureBytes = Uint8Array.from(atob(license.signature), c => c.charCodeAt(0))
+    
+    // Import public key
+    const publicKey = await importPublicKey(LICENSE_PUBLIC_KEY)
+    
+    // Verify signature
+    const isValid = await crypto.subtle.verify(
+      {
+        name: 'ECDSA',
+        hash: { name: 'SHA-256' }
+      },
+      publicKey,
+      signatureBytes,
+      data
+    )
+    
+    logger.info('License signature verification', { 
+      licenseKey: license.license_key?.substring(0, 8) + '...', 
+      isValid 
+    })
+    
+    return isValid
+  } catch (error) {
+    logger.error('License signature verification failed', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      licenseKey: license.license_key?.substring(0, 8) + '...'
+    })
+    // In production, return false on verification failure
+    // For development/testing, allow if signature exists
+    if (import.meta.env.DEV) {
+      return !!license.signature
+    }
+    return false
+  }
 }
 
 /**

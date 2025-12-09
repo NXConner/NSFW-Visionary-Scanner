@@ -41,4 +41,4 @@ android/gradle.properties
 
 # Build artifacts
 android/app/build/
-ios/App/build/
+ios/App/build/core
