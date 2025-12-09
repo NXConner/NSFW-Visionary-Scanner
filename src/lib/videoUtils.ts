@@ -36,8 +36,9 @@ export function parseDuration(duration: string): number {
 /**
  * Get video quality from URL or file
  */
-export function getVideoQuality(url: string): 'sd' | 'hd' | '4k' | 'unknown' {
+export function getVideoQuality(url: string): 'sd' | 'hd' | '2k' | '4k' | 'unknown' {
   if (url.includes('4k') || url.includes('2160')) return '4k'
+  if (url.includes('2k') || url.includes('1440')) return '2k'
   if (url.includes('hd') || url.includes('1080')) return 'hd'
   if (url.includes('sd') || url.includes('720')) return 'sd'
   return 'unknown'
@@ -54,13 +55,15 @@ export function supportsVideoCodec(codec: string): boolean {
 /**
  * Get recommended video quality based on connection
  */
-export async function getRecommendedQuality(): Promise<'sd' | 'hd' | '4k'> {
+export async function getRecommendedQuality(): Promise<'sd' | 'hd' | '2k' | '4k'> {
   if ('connection' in navigator) {
     const conn = (navigator as any).connection
     const effectiveType = conn?.effectiveType
 
     if (effectiveType === '4g' && conn?.downlink > 10) {
       return '4k'
+    } else if (effectiveType === '4g' && conn?.downlink > 5) {
+      return '2k'
     } else if (effectiveType === '4g' || effectiveType === '3g') {
       return 'hd'
     }

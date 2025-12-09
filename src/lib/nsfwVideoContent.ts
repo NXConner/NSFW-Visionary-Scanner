@@ -16,6 +16,7 @@ export interface NSFWVideoContent {
   category: 'technique' | 'tutorial' | 'expert_interview' | 'educational' | 'demonstration' | 'advanced' | 'beginner'
   video_url_sd: string | null
   video_url_hd: string | null
+  video_url_2k: string | null
   video_url_4k: string | null
   video_duration_seconds: number | null
   thumbnail_url: string | null
@@ -154,7 +155,7 @@ export interface NSFWVideoProgress {
   completion_percentage: number
   is_completed: boolean
   playback_speed: number
-  quality_preference: 'sd' | 'hd' | '4k' | 'auto'
+  quality_preference: 'sd' | 'hd' | '2k' | '4k' | 'auto'
   watched_at: string
   completed_at: string | null
   last_position_updated_at: string
@@ -207,7 +208,7 @@ export interface NSFWVideoDownload {
   id: string
   video_id: string
   user_id: string
-  quality: 'sd' | 'hd' | '4k'
+  quality: 'sd' | 'hd' | '2k' | '4k'
   file_path: string
   file_size_bytes: number | null
   download_status: 'pending' | 'downloading' | 'completed' | 'failed' | 'paused'

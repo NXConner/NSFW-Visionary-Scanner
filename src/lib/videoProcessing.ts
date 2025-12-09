@@ -9,7 +9,7 @@ import { logger } from './logger'
 import { toast } from 'sonner'
 
 export interface VideoRecordingOptions {
-  quality?: '720p' | '1080p' | '4k'
+  quality?: '720p' | '1080p' | '2k' | '4k'
   frameRate?: number
   audio?: boolean
   onProgress?: (progress: number) => void
@@ -41,7 +41,11 @@ export async function recordVideo(
     // Get video constraints based on quality
     const constraints: MediaRecorderOptions = {
       mimeType: 'video/webm;codecs=vp9,opus',
-      videoBitsPerSecond: quality === '4k' ? 25000000 : quality === '1080p' ? 8000000 : 4000000
+      videoBitsPerSecond: 
+        quality === '4k' ? 25000000 : 
+        quality === '2k' ? 15000000 : 
+        quality === '1080p' ? 8000000 : 
+        4000000
     }
 
     // Try different codecs if webm not supported

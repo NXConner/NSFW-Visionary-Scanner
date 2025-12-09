@@ -106,7 +106,7 @@ export const NSFWVideoContent = () => {
     }
   }
 
-  const handleDownload = async (video: NSFWVideoContent, quality: 'sd' | 'hd' | '4k' = 'hd') => {
+  const handleDownload = async (video: NSFWVideoContent, quality: 'sd' | 'hd' | '2k' | '4k' = 'hd') => {
     try {
       const download = await requestVideoDownload(video.id, quality)
       if (download) {
@@ -276,13 +276,24 @@ export const NSFWVideoContent = () => {
                               <Play className="w-4 h-4 mr-2" />
                               Play
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDownload(video)}
+                            <Select
+                              onValueChange={(quality) => handleDownload(video, quality as 'sd' | 'hd' | '2k' | '4k')}
                             >
-                              <Download className="w-4 h-4" />
-                            </Button>
+                              <SelectTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="sd">SD (720p)</SelectItem>
+                                <SelectItem value="hd">HD (1080p)</SelectItem>
+                                <SelectItem value="2k">2K (1440p)</SelectItem>
+                                <SelectItem value="4k">4K (2160p)</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                       </CardContent>
@@ -365,9 +376,9 @@ export const NSFWVideoContent = () => {
               <DialogTitle>{selectedVideo.title}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <VideoPlayer
-                videoUrl={selectedVideo.video_url_hd || selectedVideo.video_url_sd || ''}
-                videoId={selectedVideo.id}
+                <VideoPlayer
+                  videoUrl={selectedVideo.video_url_4k || selectedVideo.video_url_2k || selectedVideo.video_url_hd || selectedVideo.video_url_sd || ''}
+                  videoId={selectedVideo.id}
                 title={selectedVideo.title}
                 showScreenshots={true}
                 onProgress={async (progress) => {
