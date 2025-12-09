@@ -1,0 +1,75 @@
+{
+  "positions": {
+    "example": [
+      {
+        "id": "pos-001",
+        "name": "Position Name",
+        "description": "Detailed description of the position",
+        "category": "advanced",
+        "difficulty": "hard",
+        "instructions": [
+          "Step 1: Start in basic position",
+          "Step 2: Move to intermediate position",
+          "Step 3: Transition to advanced position"
+        ],
+        "tips": [
+          "Use pillows for support",
+          "Communicate with partner",
+          "Take breaks if needed"
+        ],
+        "image_url": "https://storage.supabase.co/object/public/dlc-content/pack-id/images/pos-001.jpg",
+        "video_url": "https://storage.supabase.co/object/public/dlc-content/pack-id/videos/pos-001.mp4",
+        "gif_url": "https://storage.supabase.co/object/public/dlc-content/pack-id/gifs/pos-001.gif",
+        "metadata": {
+          "duration_minutes": 5,
+          "comfort_level": "medium",
+          "flexibility_required": "high",
+          "strength_required": "medium"
+        }
+      }
+    ]
+  },
+  "videos": {
+    "example": [
+      {
+        "id": "video-001",
+        "title": "Video Title",
+        "description": "Video description",
+        "category": "tutorial",
+        "video_url_sd": "https://storage.supabase.co/object/public/dlc-content/pack-id/videos/video-001-sd.mp4",
+        "video_url_hd": "https://storage.supabase.co/object/public/dlc-content/pack-id/videos/video-001-hd.mp4",
+        "video_url_4k": "https://storage.supabase.co/object/public/dlc-content/pack-id/videos/video-001-4k.mp4",
+        "thumbnail_url": "https://storage.supabase.co/object/public/dlc-content/pack-id/thumbnails/video-001.jpg",
+        "duration_seconds": 600,
+        "tags": ["tutorial", "beginner"],
+        "metadata": {
+          "instructor": "Expert Name",
+          "language": "en",
+          "subtitles_available": true
+        }
+      }
+    ]
+  },
+  "education": {
+    "example": [
+      {
+        "id": "course-001",
+        "title": "Course Title",
+        "description": "Course description",
+        "category": "education",
+        "lessons": [
+          {
+            "id": "lesson-001",
+            "title": "Lesson Title",
+            "content": "Markdown or HTML content",
+            "video_url": "https://storage.supabase.co/object/public/dlc-content/pack-id/videos/lesson-001.mp4",
+            "duration_minutes": 15
+          }
+        ],
+        "total_duration_minutes": 120,
+        "certificate_available": true
+      }
+    ]
+  }
+}
+
