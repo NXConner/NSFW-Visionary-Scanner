@@ -62,21 +62,25 @@ export const AdvancedScannerFeatures = () => {
     setLoading(true)
     try {
       switch (activeTab) {
-        case '3d-reconstruction':
+        case '3d-reconstruction': {
           // Load sessions would go here
           break
-        case 'time-lapse':
+        }
+        case 'time-lapse': {
           const comparisonsData = await getTimeLapseComparisons()
           setComparisons(comparisonsData)
           break
-        case 'templates':
+        }
+        case 'templates': {
           const templatesData = await getMeasurementTemplates()
           setTemplates(templatesData)
           break
-        case 'exports':
+        }
+        case 'exports': {
           const exportsData = await getExported3DModels()
           setExports(exportsData)
           break
+        }
       }
     } catch (error) {
       toast.error('Failed to load data')
