@@ -4,16 +4,20 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import * as dotenv from 'dotenv'
+import dotenv from 'dotenv'
 
 dotenv.config()
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || ''
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || ''
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('Missing Supabase credentials')
-  console.error('Required: VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY')
+  console.error('Required environment variables:')
+  console.error('  - VITE_SUPABASE_URL or SUPABASE_URL')
+  console.error('  - SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_SERVICE_ROLE_KEY')
+  console.error('')
+  console.error('Please check your .env file and ensure these variables are set.')
   process.exit(1)
 }
 

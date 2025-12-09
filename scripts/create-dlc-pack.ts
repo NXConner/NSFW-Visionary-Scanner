@@ -10,15 +10,15 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import * as dotenv from 'dotenv'
+import dotenv from 'dotenv'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
 // Load environment variables
 dotenv.config({ path: '.env' })
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || ''
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || ''
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('Missing Supabase credentials in .env file')
