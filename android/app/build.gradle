@@ -50,6 +50,8 @@ android {
         }
     }
 
+    def hasReleaseSigning = project.hasProperty('RELEASE_STORE_FILE') || project.hasProperty('MORPHOSCAN_STORE_FILE')
+
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
@@ -57,7 +59,7 @@ android {
         }
 
         release {
-            signingConfig signingConfigs.release
+            signingConfig hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             buildConfigField "String", "CODEPUSH_KEY", "\"\""
@@ -72,8 +74,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
     }
 
     sourceSets {

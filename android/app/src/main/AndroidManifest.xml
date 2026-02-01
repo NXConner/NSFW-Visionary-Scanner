@@ -88,11 +88,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Meta-data for Google Play Services -->
-        <meta-data
-            android:name="com.google.android.gms.version"
-            android:value="@integer/google_play_services_version" />
-
         <!-- App Links verification -->
         <meta-data
             android:name="asset_statements"
