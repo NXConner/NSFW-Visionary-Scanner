@@ -4,7 +4,8 @@ buildscript {
         compileSdkVersion = 34
         targetSdkVersion = 34
         minSdkVersion = 22
-        kotlinVersion = '1.9.0'
+        kotlinVersion = '2.2.20'
+        kotlin_version = kotlinVersion
         newArchEnabled = false
         runtimeSchedulerAlwaysEnabled = false
     }
@@ -22,6 +23,29 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+    }
+}
+
+subprojects {
+    plugins.withId("org.jetbrains.kotlin.android") {
+        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            kotlinOptions.jvmTarget = "21"
+        }
+    }
+    plugins.withId("kotlin-android") {
+        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            kotlinOptions.jvmTarget = "21"
+        }
+    }
+    afterEvaluate { project ->
+        if (project.plugins.hasPlugin("com.android.application") || project.plugins.hasPlugin("com.android.library")) {
+            project.android {
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_21
+                    targetCompatibility JavaVersion.VERSION_21
+                }
+            }
+        }
     }
 }
 

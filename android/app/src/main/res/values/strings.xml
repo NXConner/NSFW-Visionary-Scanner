@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MorphoScan Pro</string>
+    <string name="title_activity_main">MorphoScan Pro</string>
+    <string name="asset_statements"><![CDATA[[{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"web","site":"https://morphoscanpro.com"}}]]]></string>
+</resources>
