@@ -1,448 +1,351 @@
 /**
- * Live Support Chat System
- * Handles real-time support chat with AI-powered responses and human escalation
+ * Live Support Chat System - Supabase implementation
+ *
+ * Backed by tables created in `supabase/migrations/20251207000016_live_support_chat.sql`.
+ * This module focuses on persistence + basic automation. If an AI edge function is available,
+ * we attempt to fetch an AI response; otherwise we fall back to deterministic quick-response routing.
  */
 
-import { supabase } from '@/integrations/supabase/client'
-import { logger } from './logger'
-import { toast } from 'sonner'
-
-// ==================== Support Chat Sessions ====================
+import { supabase } from "@/integrations/supabase/client";
+import { fromExtended } from "@/lib/supabaseExtensions";
 
 export interface SupportChatSession {
-  id: string
-  user_id: string
-  status: 'active' | 'waiting' | 'assigned' | 'resolved' | 'closed'
-  assigned_to: string | null
-  assigned_at: string | null
-  priority: 'low' | 'normal' | 'high' | 'urgent'
-  is_premium_user: boolean
-  ai_handled: boolean
-  escalated_to_human: boolean
-  escalated_at: string | null
-  escalation_reason: string | null
-  resolved_at: string | null
-  resolution_summary: string | null
-  satisfaction_rating: number | null
-  feedback_text: string | null
-  user_agent: string | null
-  ip_address: string | null
-  language: string
-  created_at: string
-  updated_at: string
-  last_message_at: string | null
+  id: string;
+  user_id: string;
+  status: "active" | "waiting" | "assigned" | "resolved" | "closed";
+  assigned_to: string | null;
+  assigned_at: string | null;
+  priority: "low" | "normal" | "high" | "urgent";
+  is_premium_user: boolean;
+  ai_handled: boolean;
+  escalated_to_human: boolean;
+  escalated_at: string | null;
+  escalation_reason: string | null;
+  resolved_at: string | null;
+  resolution_summary: string | null;
+  satisfaction_rating: number | null;
+  feedback_text: string | null;
+  user_agent: string | null;
+  ip_address: string | null;
+  language: string;
+  created_at: string;
+  updated_at: string;
+  last_message_at: string | null;
 }
 
 export interface SupportChatMessage {
-  id: string
-  session_id: string
-  sender_type: 'user' | 'ai' | 'staff'
-  sender_id: string | null
-  content: string
-  is_ai_generated: boolean
-  ai_model: string | null
-  ai_confidence: number | null
-  quick_actions: any[] | null
-  attachments: any[] | null
-  is_read: boolean
-  read_at: string | null
-  suggested_escalation: boolean
-  suggested_escalation_reason: string | null
-  created_at: string
+  id: string;
+  session_id: string;
+  sender_type: "user" | "ai" | "staff";
+  sender_id: string | null;
+  content: string;
+  is_ai_generated: boolean;
+  ai_model: string | null;
+  ai_confidence: number | null;
+  quick_actions: any[] | null;
+  attachments: any[] | null;
+  is_read: boolean;
+  read_at: string | null;
+  suggested_escalation: boolean;
+  suggested_escalation_reason: string | null;
+  created_at: string;
 }
 
 export interface QuickResponse {
-  id: string
-  title: string
-  content: string
-  category: 'greeting' | 'technical' | 'billing' | 'account' | 'feature' | 'general' | null
-  is_ai_enabled: boolean
-  is_staff_only: boolean
-  usage_count: number
-  success_rate: number | null
-  created_by: string | null
-  created_at: string
-  updated_at: string
+  id: string;
+  title: string;
+  content: string;
+  category: "greeting" | "technical" | "billing" | "account" | "feature" | "general" | null;
+  is_ai_enabled: boolean;
+  is_staff_only: boolean;
+  usage_count: number;
+  success_rate: number | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
-/**
- * Create a new support chat session
- */
+async function requireUserId(): Promise<string> {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw error;
+  if (!data.user) throw new Error("Not authenticated");
+  return data.user.id;
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function pickRuleBasedResponse(
+  userMessage: string,
+  quickResponses: QuickResponse[],
+): string | null {
+  const msg = userMessage.toLowerCase();
+  const keywordToCategory: Array<{ k: string; cat: NonNullable<QuickResponse["category"]> }> = [
+    { k: "billing", cat: "billing" },
+    { k: "payment", cat: "billing" },
+    { k: "subscription", cat: "billing" },
+    { k: "cancel", cat: "billing" },
+    { k: "refund", cat: "billing" },
+    { k: "login", cat: "account" },
+    { k: "sign in", cat: "account" },
+    { k: "password", cat: "account" },
+    { k: "account", cat: "account" },
+    { k: "bug", cat: "technical" },
+    { k: "crash", cat: "technical" },
+    { k: "error", cat: "technical" },
+    { k: "slow", cat: "technical" },
+    { k: "feature", cat: "feature" },
+  ];
+
+  const hit = keywordToCategory.find(x => msg.includes(x.k));
+  const cat = hit?.cat ?? "general";
+  const match = quickResponses.find(r => r.category === cat && !r.is_staff_only);
+  return match?.content ?? null;
+}
+
 export async function createSupportChatSession(
-  priority: SupportChatSession['priority'] = 'normal'
+  priority: SupportChatSession["priority"] = "normal",
 ): Promise<SupportChatSession | null> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      toast.error('Please sign in to start a chat')
-      return null
-    }
+  const userId = await requireUserId();
+  const { data, error } = await supabase
 
-    // Check if user has premium subscription
-    const { data: subscription } = await supabase
-      .from('user_subscriptions')
-      .select('tier')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .single()
-
-    const isPremium = subscription?.tier === 'premium' || subscription?.tier === 'enterprise'
-
-    const { data, error } = await supabase
-      .from('support_chat_sessions')
-      .insert({
-        user_id: user.id,
-        priority: isPremium ? 'high' : priority,
-        is_premium_user: isPremium,
-        language: navigator.language || 'en'
-      })
-      .select()
-      .single()
-
-    if (error) {
-      logger.error('Error creating chat session:', error)
-      toast.error('Failed to start chat')
-      return null
-    }
-
-    return data as SupportChatSession
-  } catch (error) {
-    logger.error('Error in createSupportChatSession:', error)
-    return null
-  }
+    .from("support_chat_sessions" as any)
+    .insert({
+      user_id: userId,
+      priority,
+      is_premium_user: false,
+      ai_handled: true,
+      escalated_to_human: false,
+      language: (typeof navigator !== "undefined" ? navigator.language : "en") || "en",
+      user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+      last_message_at: nowIso(),
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return (data ?? null) as unknown as SupportChatSession | null;
 }
 
-/**
- * Get active support chat session for current user
- */
 export async function getActiveSupportChatSession(): Promise<SupportChatSession | null> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return null
+  const userId = await requireUserId();
 
-    const { data, error } = await supabase
-      .from('support_chat_sessions')
-      .select('*')
-      .eq('user_id', user.id)
-      .in('status', ['active', 'waiting', 'assigned'])
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // No active session found
-        return null
-      }
-      logger.error('Error fetching chat session:', error)
-      return null
-    }
-
-    return data as SupportChatSession
-  } catch (error) {
-    logger.error('Error in getActiveSupportChatSession:', error)
-    return null
-  }
+  const { data, error } = await fromExtended("support_chat_sessions")
+    .select("*")
+    .eq("user_id", userId)
+    .in("status", ["active", "waiting", "assigned"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data ?? null) as unknown as SupportChatSession | null;
 }
 
-/**
- * Get all support chat sessions for current user
- */
 export async function getSupportChatSessions(): Promise<SupportChatSession[]> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return []
+  const userId = await requireUserId();
 
-    const { data, error } = await supabase
-      .from('support_chat_sessions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      logger.error('Error fetching chat sessions:', error)
-      return []
-    }
-
-    return (data || []) as SupportChatSession[]
-  } catch (error) {
-    logger.error('Error in getSupportChatSessions:', error)
-    return []
-  }
+  const { data, error } = await fromExtended("support_chat_sessions")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []) as unknown as SupportChatSession[];
 }
 
-/**
- * Get messages for a support chat session
- */
 export async function getSupportChatMessages(sessionId: string): Promise<SupportChatMessage[]> {
-  try {
-    const { data, error } = await supabase
-      .from('support_chat_messages')
-      .select('*')
-      .eq('session_id', sessionId)
-      .order('created_at', { ascending: true })
+  const { data, error } = await supabase
 
-    if (error) {
-      logger.error('Error fetching chat messages:', error)
-      return []
-    }
-
-    return (data || []) as SupportChatMessage[]
-  } catch (error) {
-    logger.error('Error in getSupportChatMessages:', error)
-    return []
-  }
+    .from("support_chat_messages" as any)
+    .select("*")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as unknown as SupportChatMessage[];
 }
 
-/**
- * Send a user message in support chat
- */
 export async function sendSupportChatMessage(
   sessionId: string,
   content: string,
-  attachments?: any[]
+  attachments?: any[],
 ): Promise<boolean> {
+  const userId = await requireUserId();
+  const trimmed = content.trim();
+  if (!trimmed) return false;
+
+  const { error: insertErr } = await supabase.from("support_chat_messages" as any).insert({
+    session_id: sessionId,
+    sender_type: "user",
+    sender_id: userId,
+    content: trimmed,
+    attachments: attachments ?? null,
+    is_ai_generated: false,
+    is_read: true,
+    read_at: nowIso(),
+  });
+  if (insertErr) throw insertErr;
+
+  // Attempt to create an AI response (best-effort).
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      toast.error('Please sign in to send a message')
-      return false
-    }
-
-    const { error } = await supabase
-      .from('support_chat_messages')
-      .insert({
+    const ai = await getAIResponse(sessionId, trimmed);
+    if (ai) {
+      await supabase.from("support_chat_messages" as any).insert({
         session_id: sessionId,
-        sender_type: 'user',
-        sender_id: user.id,
-        content,
-        attachments: attachments || null
-      })
-
-    if (error) {
-      logger.error('Error sending message:', error)
-      toast.error('Failed to send message')
-      return false
+        sender_type: "ai",
+        sender_id: null,
+        content: ai,
+        is_ai_generated: true,
+        ai_model: "assistant_rule_or_edge",
+        ai_confidence: 0.65,
+        is_read: false,
+        quick_actions: null,
+      });
     }
-
-    // Update session last_message_at
-    await supabase
-      .from('support_chat_sessions')
-      .update({ 
-        last_message_at: new Date().toISOString(),
-        status: 'active'
-      })
-      .eq('id', sessionId)
-
-    // Trigger AI response (this would be handled by a Supabase Edge Function)
-    // For now, we'll just return success
-    return true
-  } catch (error) {
-    logger.error('Error in sendSupportChatMessage:', error)
-    return false
+  } catch {
+    // ignore AI failure; user message still persisted
   }
+
+  // Update session last_message_at (may be blocked by RLS in some cases; ignore)
+  try {
+    await supabase
+
+      .from("support_chat_sessions" as any)
+      .update({ last_message_at: nowIso() })
+      .eq("id", sessionId);
+  } catch {
+    // ignore
+  }
+
+  return true;
 }
 
-/**
- * Get AI response for a user message
- * This would typically be handled by a Supabase Edge Function
- */
 export async function getAIResponse(
   sessionId: string,
-  userMessage: string
+  userMessage: string,
 ): Promise<string | null> {
+  // 1) Try an edge function if one exists (best-effort; some deployments may return JSON).
   try {
-    // Call Supabase Edge Function for AI response
-    const { data, error } = await supabase.functions.invoke('support-chat-ai', {
+    const { data, error } = await supabase.functions.invoke("ai-health-chat", {
       body: {
-        session_id: sessionId,
-        message: userMessage
-      }
+        messages: [{ role: "user", content: userMessage }],
+      },
+    });
+    if (!error && data) {
+      if (typeof data === "string") return data;
+      if (typeof data.response === "string") return data.response;
+      if (typeof data.message === "string") return data.message;
+    }
+  } catch {
+    // ignore
+  }
+
+  // 2) Rule-based fallback from quick responses (deterministic; no mock data).
+  const responses = await getQuickResponses();
+  const picked = pickRuleBasedResponse(userMessage, responses);
+  return (
+    picked ??
+    "Thanks for reaching out. Can you share what you were trying to do, what you expected, and what actually happened? If it's a bug, include steps to reproduce."
+  );
+}
+
+export async function escalateToHuman(sessionId: string, reason?: string): Promise<boolean> {
+  const userId = await requireUserId();
+  const { error } = await supabase
+
+    .from("support_chat_sessions" as any)
+    .update({
+      escalated_to_human: true,
+      escalated_at: nowIso(),
+      escalation_reason: reason ?? "User requested escalation",
+      status: "waiting",
+      ai_handled: false,
     })
-
-    if (error) {
-      logger.error('Error getting AI response:', error)
-      return null
-    }
-
-    return data.response || null
-  } catch (error) {
-    logger.error('Error in getAIResponse:', error)
-    return null
-  }
+    .eq("id", sessionId)
+    .eq("user_id", userId);
+  if (error) throw error;
+  return true;
 }
 
-/**
- * Escalate chat to human support
- */
-export async function escalateToHuman(
-  sessionId: string,
-  reason?: string
-): Promise<boolean> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      toast.error('Please sign in to escalate')
-      return false
-    }
-
-    const { error } = await supabase
-      .from('support_chat_sessions')
-      .update({
-        escalated_to_human: true,
-        escalated_at: new Date().toISOString(),
-        escalation_reason: reason || 'User requested human support',
-        status: 'waiting',
-        ai_handled: false
-      })
-      .eq('id', sessionId)
-
-    if (error) {
-      logger.error('Error escalating chat:', error)
-      toast.error('Failed to escalate chat')
-      return false
-    }
-
-    toast.success('Chat escalated to human support')
-    return true
-  } catch (error) {
-    logger.error('Error in escalateToHuman:', error)
-    return false
-  }
-}
-
-/**
- * Get quick responses (templates)
- */
 export async function getQuickResponses(
-  category?: QuickResponse['category']
+  category?: QuickResponse["category"],
 ): Promise<QuickResponse[]> {
-  try {
-    let query = supabase
-      .from('support_chat_quick_responses')
-      .select('*')
-      .eq('is_staff_only', false)
-
-    if (category) {
-      query = query.eq('category', category)
-    }
-
-    const { data, error } = await query.order('usage_count', { ascending: false })
-
-    if (error) {
-      logger.error('Error fetching quick responses:', error)
-      return []
-    }
-
-    return (data || []) as QuickResponse[]
-  } catch (error) {
-    logger.error('Error in getQuickResponses:', error)
-    return []
-  }
+  let q = supabase
+    .from("support_chat_quick_responses" as any)
+    .select("*")
+    .eq("is_staff_only", false);
+  if (category) q = q.eq("category", category);
+  const { data, error } = await q
+    .order("usage_count", { ascending: false })
+    .order("created_at", { ascending: true })
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []) as unknown as QuickResponse[];
 }
 
-/**
- * Close a support chat session
- */
 export async function closeSupportChatSession(
   sessionId: string,
-  resolutionSummary?: string
+  resolutionSummary?: string,
 ): Promise<boolean> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      toast.error('Please sign in to close chat')
-      return false
-    }
+  const userId = await requireUserId();
+  const { error } = await supabase
 
-    const { error } = await supabase
-      .from('support_chat_sessions')
-      .update({
-        status: 'closed',
-        resolved_at: new Date().toISOString(),
-        resolution_summary: resolutionSummary || null
-      })
-      .eq('id', sessionId)
-      .eq('user_id', user.id)
-
-    if (error) {
-      logger.error('Error closing chat session:', error)
-      toast.error('Failed to close chat')
-      return false
-    }
-
-    return true
-  } catch (error) {
-    logger.error('Error in closeSupportChatSession:', error)
-    return false
-  }
+    .from("support_chat_sessions" as any)
+    .update({
+      status: "closed",
+      resolved_at: nowIso(),
+      resolution_summary: resolutionSummary ?? null,
+    })
+    .eq("id", sessionId)
+    .eq("user_id", userId);
+  if (error) throw error;
+  return true;
 }
 
-/**
- * Submit feedback for a support chat session
- */
 export async function submitChatFeedback(
   sessionId: string,
   rating: number,
-  feedbackText?: string
+  feedbackText?: string,
 ): Promise<boolean> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      toast.error('Please sign in to submit feedback')
-      return false
-    }
+  const userId = await requireUserId();
+  const { error } = await supabase
 
-    const { error } = await supabase
-      .from('support_chat_sessions')
-      .update({
-        satisfaction_rating: rating,
-        feedback_text: feedbackText || null
-      })
-      .eq('id', sessionId)
-      .eq('user_id', user.id)
-
-    if (error) {
-      logger.error('Error submitting feedback:', error)
-      toast.error('Failed to submit feedback')
-      return false
-    }
-
-    toast.success('Thank you for your feedback!')
-    return true
-  } catch (error) {
-    logger.error('Error in submitChatFeedback:', error)
-    return false
-  }
+    .from("support_chat_sessions" as any)
+    .update({
+      satisfaction_rating: rating,
+      feedback_text: feedbackText ?? null,
+    })
+    .eq("id", sessionId)
+    .eq("user_id", userId);
+  if (error) throw error;
+  return true;
 }
 
-/**
- * Mark messages as read
- */
 export async function markMessagesAsRead(sessionId: string): Promise<boolean> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return false
+  const userId = await requireUserId();
+  // Mark non-user messages as read for this user's session
+  const { error } = await supabase
 
-    const { error } = await supabase
-      .from('support_chat_messages')
-      .update({
-        is_read: true,
-        read_at: new Date().toISOString()
-      })
-      .eq('session_id', sessionId)
-      .neq('sender_type', 'user')
-      .is('read_at', null)
-
-    if (error) {
-      logger.error('Error marking messages as read:', error)
-      return false
-    }
-
-    return true
-  } catch (error) {
-    logger.error('Error in markMessagesAsRead:', error)
-    return false
+    .from("support_chat_messages" as any)
+    .update({ is_read: true, read_at: nowIso() })
+    .eq("session_id", sessionId)
+    .eq("is_read", false)
+    .neq("sender_type", "user");
+  if (error) {
+    // If RLS blocks (e.g., user doesn't own session), treat as non-fatal.
+    return false;
   }
-}
 
+  // Touch session updated_at / last_active (best-effort)
+  try {
+    await supabase
+
+      .from("support_chat_sessions" as any)
+      .update({ updated_at: nowIso() })
+      .eq("id", sessionId)
+      .eq("user_id", userId);
+  } catch {
+    // ignore
+  }
+
+  return true;
+}

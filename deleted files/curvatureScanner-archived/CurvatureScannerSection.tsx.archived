@@ -1,0 +1,347 @@
+import * as React from "react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { useCamera } from "@/hooks/useCamera";
+import { CalibrationWizard } from "@/components/CalibrationWizard";
+import type { CalibrationData } from "@/components/calibrationWizard/types";
+import { CurvatureScanOverlay } from "@/components/ScannerOverlays";
+import { measureImage } from "@/scanner/measurement";
+import type { CurvatureCaptureView } from "@/components/scannerOverlays/CurvatureScanOverlay";
+import type { CurvatureScanSession } from "@/scanner/curvature/types";
+import { loadCurvatureSessions, saveCurvatureSessions } from "@/scanner/curvature/storage";
+import { Ruler, Camera, RotateCcw, Save, ArrowRight, ArrowLeft } from "lucide-react";
+
+function viewLabel(view: CurvatureCaptureView) {
+  return view === "dorsal" ? "Dorsal (top-down)" : "Lateral (side)";
+}
+
+function computeOverallConfidence(dorsal?: number, lateral?: number) {
+  const xs = [dorsal, lateral].filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  if (!xs.length) return 0;
+  return Math.round(xs.reduce((a, b) => a + b, 0) / xs.length);
+}
+
+export function CurvatureScannerSection() {
+  const { videoRef, canvasRef, isActive, error, startCamera, stopCamera, captureImageAsync } =
+    useCamera();
+
+  const [view, setView] = React.useState<CurvatureCaptureView>("dorsal");
+  const [showCalibration, setShowCalibration] = React.useState(false);
+  const [calibrationData, setCalibrationData] = React.useState<CalibrationData | null>(null);
+  const [processing, setProcessing] = React.useState(false);
+
+  const [dorsalImage, setDorsalImage] = React.useState<string | null>(null);
+  const [lateralImage, setLateralImage] = React.useState<string | null>(null);
+  const [dorsalAnnotated, setDorsalAnnotated] = React.useState<string | null>(null);
+  const [lateralAnnotated, setLateralAnnotated] = React.useState<string | null>(null);
+
+  const [dorsalAngle, setDorsalAngle] = React.useState<number>(0);
+  const [lateralAngle, setLateralAngle] = React.useState<number>(0);
+  const [lengthCm, setLengthCm] = React.useState<number>(0);
+  const [confidenceDorsal, setConfidenceDorsal] = React.useState<number>(0);
+  const [confidenceLateral, setConfidenceLateral] = React.useState<number>(0);
+
+  const totalSteps = 2;
+  const step = view === "dorsal" ? 1 : 2;
+
+  const canGoNext = view === "dorsal" ? Boolean(dorsalImage) : false;
+  const canSave = Boolean(dorsalImage) && Boolean(lateralImage);
+
+  React.useEffect(() => {
+    return () => stopCamera();
+  }, [stopCamera]);
+
+  const handleStart = async () => {
+    await startCamera();
+    toast.success("Camera active", { description: `Capture ${viewLabel(view)} photo.` });
+  };
+
+  const handleCapture = async () => {
+    setProcessing(true);
+    try {
+      const img = await captureImageAsync({ maxWidth: 1600, maxHeight: 1600, quality: 0.9 });
+      if (!img) {
+        toast.error("Failed to capture image");
+        return;
+      }
+
+      const calibration = calibrationData?.pixelsPerMm
+        ? {
+            pixelsPerMm: calibrationData.pixelsPerMm,
+            source: "reference-object" as const,
+            referenceLabel: String(calibrationData.referenceType ?? "reference"),
+          }
+        : { source: "none" as const };
+
+      // LOCAL-ONLY deterministic analysis (no AI, no uploads)
+      const det = await measureImage(
+        { imageDataUrl: img, calibration, requestedUnits: "cm" },
+        { maxDim: 1024, polyDegree: 3 },
+      );
+
+      if (view === "dorsal") {
+        setDorsalImage(img);
+        setDorsalAnnotated(det.annotatedImageDataUrl);
+        setDorsalAngle(Math.round(det.curvatureAngleDeg));
+        setConfidenceDorsal(det.confidence);
+        if (det.lengthCm) setLengthCm(Number(det.lengthCm.toFixed(1)));
+        setView("lateral");
+        toast.success("Dorsal captured", { description: "Now capture the lateral (side) view." });
+      } else {
+        setLateralImage(img);
+        setLateralAnnotated(det.annotatedImageDataUrl);
+        setLateralAngle(Math.round(det.curvatureAngleDeg));
+        setConfidenceLateral(det.confidence);
+        if (!lengthCm && det.lengthCm) setLengthCm(Number(det.lengthCm.toFixed(1)));
+        stopCamera();
+        toast.success("Lateral captured", { description: "Review and save your session." });
+      }
+    } catch {
+      toast.error("Local analysis failed", { description: "Try better lighting and reframe." });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleRetake = () => {
+    if (view === "dorsal") {
+      setDorsalImage(null);
+      setDorsalAnnotated(null);
+      setDorsalAngle(0);
+      setConfidenceDorsal(0);
+    } else {
+      setLateralImage(null);
+      setLateralAnnotated(null);
+      setLateralAngle(0);
+      setConfidenceLateral(0);
+    }
+    toast.message("Retake ready", { description: `Capture ${viewLabel(view)} again.` });
+  };
+
+  const handleReset = () => {
+    stopCamera();
+    setView("dorsal");
+    setDorsalImage(null);
+    setLateralImage(null);
+    setDorsalAnnotated(null);
+    setLateralAnnotated(null);
+    setDorsalAngle(0);
+    setLateralAngle(0);
+    setLengthCm(0);
+    setConfidenceDorsal(0);
+    setConfidenceLateral(0);
+    toast.message("Session reset");
+  };
+
+  const handleSaveSession = async () => {
+    if (!canSave) return;
+    try {
+      const sessions = await loadCurvatureSessions();
+      const overall = computeOverallConfidence(confidenceDorsal, confidenceLateral);
+      const session: CurvatureScanSession = {
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+        dorsal: {
+          view: "dorsal",
+          curvatureAngleDeg: dorsalAngle,
+          curvatureDirection: "unknown",
+          lengthCm: lengthCm || undefined,
+          confidence: confidenceDorsal,
+        },
+        lateral: {
+          view: "lateral",
+          curvatureAngleDeg: lateralAngle,
+          curvatureDirection: "unknown",
+          lengthCm: lengthCm || undefined,
+          confidence: confidenceLateral,
+        },
+        estimatedLengthCm: lengthCm || undefined,
+        overallConfidence: overall || undefined,
+      };
+      await saveCurvatureSessions([session, ...sessions]);
+      toast.success("Curvature session saved", { description: "Stored locally (encrypted)." });
+    } catch {
+      toast.error("Failed to save session");
+    }
+  };
+
+  const previewImage =
+    view === "dorsal" ? dorsalAnnotated || dorsalImage : lateralAnnotated || lateralImage;
+
+  return (
+    <section className="min-h-screen px-4 py-20 relative">
+      <canvas ref={canvasRef} className="hidden" />
+
+      <div className="container mx-auto max-w-6xl">
+        <div className="mb-6 text-center">
+          <h1 className="text-3xl font-bold gradient-text">Curvature Scan</h1>
+          <p className="text-muted-foreground mt-1">
+            Local-only dorsal + lateral capture for Peyronie’s self-assessment.
+          </p>
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <Badge variant="outline" className="bg-background/60">
+              Privacy: on-device only
+            </Badge>
+            {calibrationData?.pixelsPerMm ? (
+              <Badge variant="outline" className="bg-background/60">
+                Calibrated
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-background/60">
+                Not calibrated
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-8 grid-cols-1 lg:grid-cols-[3fr_2fr]">
+          <Card variant="glass" className="overflow-hidden">
+            <CardHeader className="border-b border-border/50">
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Camera className="w-5 h-5 text-primary" />
+                  {viewLabel(view)}
+                </span>
+                <span className="text-xs text-muted-foreground font-mono">
+                  Step {step}/{totalSteps}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="relative aspect-[4/3] bg-black/30">
+                {!previewImage ? (
+                  <div className="absolute inset-0">
+                    <video
+                      ref={videoRef}
+                      className="w-full h-full object-cover"
+                      playsInline
+                      muted
+                      autoPlay
+                    />
+                    <CurvatureScanOverlay view={view} step={step} totalSteps={totalSteps} />
+                    {!isActive && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="rounded-xl border border-border/50 bg-background/60 backdrop-blur px-4 py-3">
+                          <div className="text-sm font-medium">Camera not started</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Tap “Start Camera” to begin.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {error && (
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm">
+                          {error}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <img src={previewImage} alt={`${view} capture`} className="w-full h-full object-contain" />
+                )}
+              </div>
+
+              <div className="p-4 flex flex-wrap gap-2">
+                <Button variant="scan" onClick={handleStart} disabled={isActive || processing} className="gap-2">
+                  <Camera className="w-4 h-4" />
+                  Start Camera
+                </Button>
+                <Button
+                  variant="hero"
+                  onClick={handleCapture}
+                  disabled={!isActive || processing}
+                  className="gap-2"
+                >
+                  Capture
+                </Button>
+                <Button variant="outline" onClick={() => setShowCalibration(true)} className="gap-2">
+                  <Ruler className="w-4 h-4" />
+                  Calibrate
+                </Button>
+                <Button variant="outline" onClick={handleRetake} disabled={processing} className="gap-2">
+                  <RotateCcw className="w-4 h-4" />
+                  Retake {view === "dorsal" ? "Dorsal" : "Lateral"}
+                </Button>
+                <Button variant="ghost" onClick={handleReset} disabled={processing}>
+                  Reset
+                </Button>
+
+                {view === "lateral" && dorsalImage && !lateralImage && (
+                  <Button variant="ghost" onClick={() => setView("dorsal")} className="gap-2">
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to Dorsal
+                  </Button>
+                )}
+                {view === "dorsal" && canGoNext && (
+                  <Button variant="ghost" onClick={() => setView("lateral")} className="gap-2">
+                    Next
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-6">
+            <Card variant="glow">
+              <CardHeader className="border-b border-border/50">
+                <CardTitle className="text-lg">Results</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-4 rounded-xl bg-secondary/20 border border-border/50">
+                    <div className="text-xs text-muted-foreground">Dorsal angle</div>
+                    <div className="text-2xl font-bold">{dorsalAngle ? `${dorsalAngle}°` : "—"}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Confidence: {confidenceDorsal ? `${confidenceDorsal}%` : "—"}
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-secondary/20 border border-border/50">
+                    <div className="text-xs text-muted-foreground">Lateral angle</div>
+                    <div className="text-2xl font-bold">{lateralAngle ? `${lateralAngle}°` : "—"}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Confidence: {confidenceLateral ? `${confidenceLateral}%` : "—"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-secondary/20 border border-border/50">
+                  <div className="text-xs text-muted-foreground">Estimated length</div>
+                  <div className="text-2xl font-bold">{lengthCm ? `${lengthCm.toFixed(1)} cm` : "—"}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Best accuracy requires calibration.
+                  </div>
+                </div>
+
+                <Button
+                  variant="gradient"
+                  className="w-full gap-2"
+                  onClick={handleSaveSession}
+                  disabled={!canSave || processing}
+                >
+                  <Save className="w-4 h-4" />
+                  Save Session (Local)
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      <CalibrationWizard
+        isOpen={showCalibration}
+        onClose={() => setShowCalibration(false)}
+        onCalibrationComplete={data => {
+          setCalibrationData(data);
+          toast.success("Calibration saved", { description: "Length estimates will use real units." });
+        }}
+        videoRef={videoRef}
+      />
+    </section>
+  );
+}
+

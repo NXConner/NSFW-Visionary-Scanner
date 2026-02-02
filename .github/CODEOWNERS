@@ -1,0 +1,12 @@
+# Default owner(s)
+* @n8ter8
+
+# App code
+/src/ @n8ter8
+
+# Supabase schema + functions
+/supabase/ @n8ter8
+
+# CI/CD
+/.github/workflows/ @n8ter8
+

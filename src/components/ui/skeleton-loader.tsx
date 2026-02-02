@@ -54,10 +54,10 @@ export const ChartSkeleton = () => (
     <CardContent>
       <div className="h-48 flex items-end justify-between gap-2 mb-4 px-4">
         {[...Array(8)].map((_, i) => (
-          <Skeleton 
-            key={i} 
-            className="flex-1 rounded-t-lg" 
-            style={{ height: `${Math.random() * 60 + 30}%` }} 
+          <Skeleton
+            key={i}
+            className="flex-1 rounded-t-lg"
+            style={{ height: `${Math.random() * 60 + 30}%` }}
           />
         ))}
       </div>

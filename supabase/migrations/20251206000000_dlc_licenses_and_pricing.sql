@@ -141,16 +141,19 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggers for updated_at
+DROP TRIGGER IF EXISTS update_dlc_licenses_updated_at ON dlc_licenses;
 CREATE TRIGGER update_dlc_licenses_updated_at
   BEFORE UPDATE ON dlc_licenses
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_pricing_tiers_updated_at ON pricing_tiers;
 CREATE TRIGGER update_pricing_tiers_updated_at
   BEFORE UPDATE ON pricing_tiers
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_dlc_content_packages_updated_at ON dlc_content_packages;
 CREATE TRIGGER update_dlc_content_packages_updated_at
   BEFORE UPDATE ON dlc_content_packages
   FOR EACH ROW

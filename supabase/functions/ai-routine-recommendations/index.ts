@@ -5,14 +5,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
+serve(async req => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { scanHistory, goals, experienceLevel, preferences } = await req.json();
-    
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
@@ -63,12 +63,12 @@ SCAN HISTORY:
 ${JSON.stringify(scanHistory || [], null, 2)}
 
 USER GOALS:
-${JSON.stringify(goals || { primary: 'both', targetLength: null, targetGirth: null }, null, 2)}
+${JSON.stringify(goals || { primary: "both", targetLength: null, targetGirth: null }, null, 2)}
 
-EXPERIENCE LEVEL: ${experienceLevel || 'beginner'}
+EXPERIENCE LEVEL: ${experienceLevel || "beginner"}
 
 PREFERENCES:
-${JSON.stringify(preferences || { availableTime: 30, hasEquipment: false, focusArea: 'balanced' }, null, 2)}
+${JSON.stringify(preferences || { availableTime: 30, hasEquipment: false, focusArea: "balanced" }, null, 2)}
 
 Please analyze their progress and create a personalized routine that will help them achieve their goals safely and effectively.`;
 
@@ -82,7 +82,7 @@ Please analyze their progress and create a personalized routine that will help t
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
+          { role: "user", content: userPrompt },
         ],
         temperature: 0.7,
         max_tokens: 2000,
@@ -91,10 +91,13 @@ Please analyze their progress and create a personalized routine that will help t
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds." }), {
@@ -109,7 +112,7 @@ Please analyze their progress and create a personalized routine that will help t
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
-    
+
     // Try to parse JSON from the response
     let recommendation;
     try {

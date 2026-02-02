@@ -7,8 +7,8 @@ Write-Host ""
 
 # Step 1: Ensure dist folder exists
 if (-not (Test-Path "dist")) {
-    Write-Host "Building web app first..." -ForegroundColor Yellow
-    npm run build
+    Write-Host "Building web app first (NSFW direct)..." -ForegroundColor Yellow
+    npm run build:nsfw:direct
     if (-not (Test-Path "dist")) {
         Write-Host "Build failed - dist folder not found" -ForegroundColor Red
         exit 1

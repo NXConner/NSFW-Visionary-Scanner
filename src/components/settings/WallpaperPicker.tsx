@@ -1,52 +1,71 @@
 import { useRef, useState } from "react";
 import { wallpaperPresets, isVideoUrl, isMediaUrl } from "@/design-system";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Image, Video, X, Sparkles, Snowflake, Sun } from "lucide-react";
+import { Image, Video, X, Sparkles, Snowflake, Sun, Upload } from "lucide-react";
 
 interface WallpaperPickerProps {
   activeWallpaper: string;
   onChange: (value: string | null) => void;
+  onUploadFile?: (file: File) => void;
   blur?: number;
   opacity?: number;
   onBlurChange?: (value: number) => void;
   onOpacityChange?: (value: number) => void;
 }
 
-export const WallpaperPicker = ({ 
-  activeWallpaper, 
-  onChange, 
+export const WallpaperPicker = ({
+  activeWallpaper,
+  onChange,
+  onUploadFile,
   blur = 200,
   opacity = 0.55,
   onBlurChange,
-  onOpacityChange
+  onOpacityChange,
 }: WallpaperPickerProps) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [activeCategory, setActiveCategory] = useState<'all' | 'gradient' | 'animated' | 'seasonal'>('all');
+  const [activeCategory, setActiveCategory] = useState<
+    "all" | "gradient" | "animated" | "seasonal"
+  >("all");
+
+  const activeWallpaperForRender = activeWallpaper.split("#", 1)[0] ?? activeWallpaper;
 
   const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const validTypes = [
-      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-      'video/mp4', 'video/webm', 'video/quicktime'
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "video/mp4",
+      "video/webm",
+      "video/quicktime",
     ];
-    
+
     if (!validTypes.includes(file.type)) {
-      alert('Please upload a valid image (JPG, PNG, GIF, WebP) or video (MP4, WebM, MOV) file.');
+      alert("Please upload a valid image (JPG, PNG, GIF, WebP) or video (MP4, WebM, MOV) file.");
       return;
     }
 
-    const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    const maxSize = file.type.startsWith("video/") ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert(`File too large. Maximum size: ${file.type.startsWith('video/') ? '50MB' : '10MB'}`);
+      alert(`File too large. Maximum size: ${file.type.startsWith("video/") ? "50MB" : "10MB"}`);
       return;
     }
 
+    if (onUploadFile) {
+      onUploadFile(file);
+      // allow re-uploading same file
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    // Fallback (legacy): store as data URL
     const reader = new FileReader();
     reader.onload = e => {
       const dataUrl = e.target?.result;
@@ -60,15 +79,19 @@ export const WallpaperPicker = ({
   const isCurrentVideo = isVideoUrl(activeWallpaper);
   const isCurrentMedia = isMediaUrl(activeWallpaper);
 
-  const filteredPresets = activeCategory === 'all' 
-    ? wallpaperPresets 
-    : wallpaperPresets.filter(p => p.category === activeCategory);
+  const filteredPresets =
+    activeCategory === "all"
+      ? wallpaperPresets
+      : wallpaperPresets.filter(p => p.category === activeCategory);
 
   const getCategoryIcon = (category: string) => {
-    switch(category) {
-      case 'animated': return <Sparkles className="w-3 h-3" />;
-      case 'seasonal': return <Snowflake className="w-3 h-3" />;
-      default: return <Sun className="w-3 h-3" />;
+    switch (category) {
+      case "animated":
+        return <Sparkles className="w-3 h-3" />;
+      case "seasonal":
+        return <Snowflake className="w-3 h-3" />;
+      default:
+        return <Sun className="w-3 h-3" />;
     }
   };
 
@@ -90,7 +113,7 @@ export const WallpaperPicker = ({
             className="w-full"
           />
         </div>
-        
+
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label className="text-sm">Opacity</Label>
@@ -122,7 +145,7 @@ export const WallpaperPicker = ({
           </div>
           {isCurrentVideo ? (
             <video
-              src={activeWallpaper}
+              src={activeWallpaperForRender}
               autoPlay
               loop
               muted
@@ -131,7 +154,7 @@ export const WallpaperPicker = ({
             />
           ) : (
             <img
-              src={activeWallpaper}
+              src={activeWallpaperForRender}
               alt="Current wallpaper"
               className="w-full h-32 object-cover"
             />
@@ -139,7 +162,7 @@ export const WallpaperPicker = ({
           <div className="absolute bottom-2 left-2">
             <span className="text-xs bg-background/80 px-2 py-1 rounded-md flex items-center gap-1">
               {isCurrentVideo ? <Video className="w-3 h-3" /> : <Image className="w-3 h-3" />}
-              {isCurrentVideo ? 'Video Wallpaper' : 'Custom Image'}
+              {isCurrentVideo ? "Video Wallpaper" : "Custom Image"}
             </span>
           </div>
         </div>
@@ -147,7 +170,7 @@ export const WallpaperPicker = ({
 
       {/* Category Filter */}
       <div className="flex gap-2 flex-wrap">
-        {(['all', 'gradient', 'animated', 'seasonal'] as const).map(cat => (
+        {(["all", "gradient", "animated", "seasonal"] as const).map(cat => (
           <Button
             key={cat}
             variant={activeCategory === cat ? "default" : "outline"}
@@ -155,7 +178,7 @@ export const WallpaperPicker = ({
             onClick={() => setActiveCategory(cat)}
             className="capitalize"
           >
-            {cat !== 'all' && getCategoryIcon(cat)}
+            {cat !== "all" && getCategoryIcon(cat)}
             {cat}
           </Button>
         ))}
@@ -181,11 +204,11 @@ export const WallpaperPicker = ({
               aria-hidden
               className={cn(
                 "mb-2 h-16 w-full rounded-xl",
-                preset.animated && "animate-gradient-shift"
+                preset.animated && "animate-gradient-shift",
               )}
-              style={{ 
+              style={{
                 backgroundImage: preset.value,
-                backgroundSize: preset.animated ? '400% 400%' : 'cover'
+                backgroundSize: preset.animated ? "400% 400%" : "cover",
               }}
             />
             <div className="flex items-center gap-2">
@@ -204,23 +227,27 @@ export const WallpaperPicker = ({
 
       {/* Upload section */}
       <div className="space-y-3">
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium flex items-center gap-2">
-            <Image className="w-4 h-4" />
-            Upload Custom Wallpaper
-          </label>
-          <Input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime"
-            onChange={handleUpload}
-            className="cursor-pointer"
-          />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime"
+          onChange={handleUpload}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full border-2 border-dashed border-border/50 rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+        >
+          <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-3">
+            <Upload className="w-6 h-6 text-primary" />
+          </div>
+          <p className="font-medium text-sm mb-1">Upload Custom Wallpaper</p>
           <p className="text-xs text-muted-foreground">
-            Upload images (JPG, PNG, GIF, WebP) or videos (MP4, WebM, MOV) for live wallpapers.
+            Images (JPG, PNG, GIF, WebP) or videos (MP4, WebM, MOV)
           </p>
-        </div>
-        
+        </button>
+
         <Button variant="outline" onClick={() => onChange(null)} className="w-full">
           Use Theme Default
         </Button>

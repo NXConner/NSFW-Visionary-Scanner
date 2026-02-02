@@ -3,11 +3,11 @@
  * Displays instructions with accompanying images/videos for each step
  */
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   ChevronLeft,
   ChevronRight,
@@ -17,9 +17,9 @@ import {
   Image as ImageIcon,
   Video,
   CheckCircle2,
-} from 'lucide-react';
-import { VisualContentDisplay } from './VisualContentDisplay';
-import type { VisualContent } from '@/lib/visualContentManager';
+} from "lucide-react";
+import { VisualContentDisplay } from "./VisualContentDisplay";
+import type { VisualContent } from "@/lib/visualContentManager";
 
 interface Step {
   number: number;
@@ -90,16 +90,16 @@ export const StepByStepVisualGuide: React.FC<StepByStepVisualGuideProps> = ({
       {/* Header */}
       <div className="text-center">
         <h2 className="text-2xl font-bold mb-2">{title}</h2>
-        {description && (
-          <p className="text-muted-foreground">{description}</p>
-        )}
+        {description && <p className="text-muted-foreground">{description}</p>}
       </div>
 
       {/* Progress */}
       {showProgress && (
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span>Step {currentStep + 1} of {steps.length}</span>
+            <span>
+              Step {currentStep + 1} of {steps.length}
+            </span>
             <span>{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
@@ -150,10 +150,10 @@ export const StepByStepVisualGuide: React.FC<StepByStepVisualGuideProps> = ({
             <div className="space-y-2">
               <h4 className="font-semibold text-sm">Instructions:</h4>
               <ol className="space-y-2">
-                {currentStepData.instructions.map((instruction, index) => (
-                  <li key={index} className="flex gap-3 text-sm">
+                {currentStepData.instructions.map((instruction, idx) => (
+                  <li key={`instruction-${idx}-${instruction.slice(0, 20)}`} className="flex gap-3 text-sm">
                     <span className="bg-primary/20 text-primary rounded-full w-6 h-6 flex items-center justify-center text-xs shrink-0 font-semibold">
-                      {index + 1}
+                      {idx + 1}
                     </span>
                     <span className="flex-1 pt-1">{instruction}</span>
                   </li>
@@ -177,8 +177,8 @@ export const StepByStepVisualGuide: React.FC<StepByStepVisualGuideProps> = ({
             <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
               <h4 className="font-semibold text-sm mb-2 text-blue-400">💡 Tips:</h4>
               <ul className="space-y-1">
-                {currentStepData.tips.map((tip, index) => (
-                  <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
+                {currentStepData.tips.map((tip) => (
+                  <li key={tip} className="text-sm text-muted-foreground flex items-start gap-2">
                     <span className="text-blue-400 mt-1">•</span>
                     {tip}
                   </li>
@@ -192,18 +192,11 @@ export const StepByStepVisualGuide: React.FC<StepByStepVisualGuideProps> = ({
       {/* Navigation */}
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handlePrevious}
-            disabled={currentStep === 0}
-          >
+          <Button variant="outline" onClick={handlePrevious} disabled={currentStep === 0}>
             <ChevronLeft className="w-4 h-4 mr-2" />
             Previous
           </Button>
-          <Button
-            variant="outline"
-            onClick={handleReset}
-          >
+          <Button variant="outline" onClick={handleReset}>
             <RotateCcw className="w-4 h-4 mr-2" />
             Reset
           </Button>
@@ -211,38 +204,32 @@ export const StepByStepVisualGuide: React.FC<StepByStepVisualGuideProps> = ({
 
         <div className="flex gap-2">
           {!completedSteps.has(currentStep) && (
-            <Button
-              variant="outline"
-              onClick={handleStepComplete}
-            >
+            <Button variant="outline" onClick={handleStepComplete}>
               <CheckCircle2 className="w-4 h-4 mr-2" />
               Mark Complete
             </Button>
           )}
-          <Button
-            onClick={handleNext}
-            disabled={currentStep === steps.length - 1}
-          >
-            {currentStep === steps.length - 1 ? 'Complete' : 'Next'}
-            {currentStep < steps.length - 1 && (
-              <ChevronRight className="w-4 h-4 ml-2" />
-            )}
+          <Button onClick={handleNext} disabled={currentStep === steps.length - 1}>
+            {currentStep === steps.length - 1 ? "Complete" : "Next"}
+            {currentStep < steps.length - 1 && <ChevronRight className="w-4 h-4 ml-2" />}
           </Button>
         </div>
       </div>
 
       {/* Step Indicators */}
       <div className="flex justify-center gap-2">
-        {steps.map((_, index) => (
+        {steps.map((step, stepIndex) => (
           <button
-            key={index}
-            onClick={() => setCurrentStep(index)}
+            key={`step-${step.number}-${stepIndex}`}
+            type="button"
+            onClick={() => setCurrentStep(stepIndex)}
+            aria-label={`Go to step ${stepIndex + 1}`}
             className={`w-2 h-2 rounded-full transition-all ${
-              index === currentStep
-                ? 'w-8 bg-primary'
-                : completedSteps.has(index)
-                ? 'bg-green-500'
-                : 'bg-muted'
+              stepIndex === currentStep
+                ? "w-8 bg-primary"
+                : completedSteps.has(stepIndex)
+                  ? "bg-green-500"
+                  : "bg-muted"
             }`}
           />
         ))}
@@ -250,4 +237,3 @@ export const StepByStepVisualGuide: React.FC<StepByStepVisualGuideProps> = ({
     </div>
   );
 };
-

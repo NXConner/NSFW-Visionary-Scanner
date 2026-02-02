@@ -3,140 +3,141 @@
  * Uses AI to identify patterns in user's health data
  */
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+function nowIso() {
+  return new Date().toISOString();
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+function expiresIn(hours: number) {
+  return new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+}
+
+serve(async req => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const url = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!url || !serviceKey) {
+      return new Response(JSON.stringify({ error: "Server not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    const { user_id } = await req.json()
+    const supabaseAdmin = createClient(url, serviceKey);
+    const { user_id } = await req.json();
 
     if (!user_id) {
-      return new Response(
-        JSON.stringify({ error: 'user_id is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: "user_id is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Check cache first
-    const { data: cached } = await supabaseClient
-      .from('health_pattern_cache')
-      .select('*')
-      .eq('user_id', user_id)
-      .gt('expires_at', new Date().toISOString())
-      .order('analyzed_at', { ascending: false })
+    const { data: cached } = await supabaseAdmin
+      .from("health_pattern_cache")
+      .select("*")
+      .eq("user_id", user_id)
+      .gt("expires_at", nowIso())
+      .order("analyzed_at", { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle();
 
     if (cached) {
       return new Response(
-        JSON.stringify({ patterns: cached.pattern_data }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        JSON.stringify({ patterns: cached.pattern_data?.patterns ?? cached.pattern_data }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // Get health data
-    const [prostate, testicular, sexual, urinary, wellness] = await Promise.all([
-      supabaseClient.from('prostate_health').select('*').eq('user_id', user_id).order('entry_date', { ascending: false }).limit(90),
-      supabaseClient.from('testicular_health').select('*').eq('user_id', user_id).order('entry_date', { ascending: false }).limit(90),
-      supabaseClient.from('sexual_health_metrics').select('*').eq('user_id', user_id).order('entry_date', { ascending: false }).limit(90),
-      supabaseClient.from('urinary_health').select('*').eq('user_id', user_id).order('entry_date', { ascending: false }).limit(90),
-      supabaseClient.from('sexual_wellness_scores').select('*').eq('user_id', user_id).order('entry_date', { ascending: false }).limit(90)
-    ])
+    const [wellness, urinary] = await Promise.all([
+      supabaseAdmin
+        .from("sexual_wellness_scores")
+        .select("entry_date, overall_score, physical_score, emotional_score")
+        .eq("user_id", user_id)
+        .order("entry_date", { ascending: false })
+        .limit(30),
+      supabaseAdmin
+        .from("urinary_health")
+        .select("entry_date, urgency_level, nocturia_count, pain_on_urination, blood_in_urine")
+        .eq("user_id", user_id)
+        .order("entry_date", { ascending: false })
+        .limit(30),
+    ]);
 
-    const context = {
-      prostate_health: prostate.data || [],
-      testicular_health: testicular.data || [],
-      sexual_health: sexual.data || [],
-      urinary_health: urinary.data || [],
-      wellness_scores: wellness.data || []
+    const w = wellness.data ?? [];
+    const u = urinary.data ?? [];
+
+    // Calculate patterns locally (no AI call needed for basic patterns)
+    const avg = (arr: number[]) => (arr.length ? arr.reduce((s, n) => s + n, 0) / arr.length : 0);
+    const wScores = w.map((x: any) => Number(x.overall_score ?? 0)).filter(n => Number.isFinite(n));
+    const wAvg = avg(wScores);
+    const uUrg = avg(
+      u.map((x: any) => Number(x.urgency_level ?? 0)).filter(n => Number.isFinite(n)),
+    );
+    const uNoct = avg(
+      u.map((x: any) => Number(x.nocturia_count ?? 0)).filter(n => Number.isFinite(n)),
+    );
+    const anyBlood = u.some((x: any) => Boolean(x.blood_in_urine));
+
+    const patterns: any[] = [];
+    if (w.length >= 5) {
+      patterns.push({
+        pattern_type: "wellness_average",
+        description: `Your average wellness score over the last ${w.length} entries is ${Math.round(wAvg)}.`,
+        confidence: 0.65,
+        affected_metrics: ["sexual_wellness_scores.overall_score"],
+        timeframe: "last_30_days",
+        recommendation:
+          wAvg < 50
+            ? "Focus on recovery, sleep quality, and reduce intensity during low-score days."
+            : "Keep consistency; small improvements compound over time.",
+      });
+    }
+    if (u.length >= 5) {
+      patterns.push({
+        pattern_type: "urinary_baseline",
+        description: `Average urinary urgency is ${uUrg.toFixed(1)} and nocturia is ${uNoct.toFixed(1)} over the last ${u.length} entries.`,
+        confidence: 0.6,
+        affected_metrics: ["urinary_health.urgency_level", "urinary_health.nocturia_count"],
+        timeframe: "last_30_days",
+        recommendation: anyBlood
+          ? "Blood in urine warrants prompt medical evaluation."
+          : "Track hydration and note triggers (caffeine, late fluids) to reduce nocturia.",
+      });
     }
 
-    // Call AI to analyze patterns
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured')
-    }
+    // Cache results
+    const pattern_data = { patterns };
+    await supabaseAdmin.from("health_pattern_cache").insert({
+      user_id,
+      pattern_data,
+      analyzed_at: nowIso(),
+      expires_at: expiresIn(12),
+      created_at: nowIso(),
+    });
 
-    const systemPrompt = `You are an AI health pattern analysis assistant. Analyze the user's health data and identify meaningful patterns.
-
-Return JSON array of patterns:
-[
-  {
-    "pattern_type": "Pattern name",
-    "description": "Detailed description",
-    "confidence": 0.0-1.0,
-    "affected_metrics": ["metric1", "metric2"],
-    "timeframe": "e.g., Last 30 days",
-    "recommendation": "Actionable recommendation"
-  }
-]`
-
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Analyze patterns in this health data:\n${JSON.stringify(context, null, 2)}` }
-        ],
-        temperature: 0.5,
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error(`AI service error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    const content = data.choices?.[0]?.message?.content || '[]'
-
-    let patterns: any[]
-    try {
-      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, content]
-      patterns = JSON.parse(jsonMatch[1] || content)
-    } catch {
-      patterns = []
-    }
-
-    // Cache results (expires in 24 hours)
-    const expiresAt = new Date()
-    expiresAt.setHours(expiresAt.getHours() + 24)
-
-    await supabaseClient
-      .from('health_pattern_cache')
-      .insert({
-        user_id,
-        pattern_data: patterns,
-        expires_at: expiresAt.toISOString()
-      })
-
-    return new Response(
-      JSON.stringify({ patterns }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ patterns }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
-})
-
+});

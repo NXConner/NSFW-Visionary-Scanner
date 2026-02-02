@@ -10,6 +10,13 @@ lerna-debug.log*
 node_modules
 *.local
 
+# Vite build output (generated)
+dist/
+
+# Test runner outputs
+playwright-report/
+test-results/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -24,11 +31,20 @@ node_modules
 # Android local configuration (contains machine-specific paths)
 android/local.properties
 
-# Local Android SDK installs
+# Android Gradle properties (base config tracked; secrets local)
+android/gradle.properties.local
+android/gradle.properties.user
+
+# Local Android SDK (if installed in repo root)
 android-sdk/
 
-# Android Gradle properties (contains sensitive signing configuration)
-android/gradle.properties
+# Firebase config (do not commit; environment-specific)
+android/app/google-services.json
+ios/App/App/GoogleService-Info.plist
+
+# Service account / APNs keys (never commit)
+*firebase*service*account*.json
+*.p8
 
 # Keystore files (never commit to version control)
 *.keystore
@@ -40,4 +56,16 @@ android/gradle.properties
 .env.production.local
 .env.development.local
 
-# Build artifacts
+# Build artifacts are intentionally tracked (APK distribution, assets, etc.)
+!**/*.apk
+!**/*.aab
+
+# Gradle cache and build files are intentionally tracked
+
+# Local comparison clones (do not commit)
+external-repos/
+
+# Core dumps (never commit)
+core
+core.*
+*.core

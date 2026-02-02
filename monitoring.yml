@@ -29,25 +29,25 @@ health_checks:
 # Performance Thresholds
 performance_thresholds:
   response_time:
-    warning: 1000  # ms
+    warning: 1000 # ms
     critical: 3000 # ms
 
   error_rate:
-    warning: 1     # percentage
-    critical: 5    # percentage
+    warning: 1 # percentage
+    critical: 5 # percentage
 
   availability:
-    warning: 99.5  # percentage
+    warning: 99.5 # percentage
     critical: 99.0 # percentage
 
 # Core Web Vitals Targets
 core_web_vitals:
   lcp:
-    good: 2500    # ms
+    good: 2500 # ms
     needs_improvement: 4000
 
   fid:
-    good: 100     # ms
+    good: 100 # ms
     needs_improvement: 300
 
   cls:
@@ -184,4 +184,4 @@ backup_config:
     type: "incremental"
 
   recovery_time_objective: 3600 # 1 hour
-  recovery_point_objective: 300  # 5 minutes
+  recovery_point_objective: 300 # 5 minutes

@@ -12,58 +12,25 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import {
-  AlertTriangle, Shield, Heart, Info, CheckCircle, 
-  Stethoscope, FileWarning, BookOpen
+  AlertTriangle,
+  Shield,
+  Heart,
+  Info,
+  CheckCircle,
+  Stethoscope,
+  FileWarning,
+  BookOpen,
 } from "lucide-react";
 import { encryptData, decryptData } from "@/lib/encryption";
-
-const DISCLAIMER_KEY = 'morphoscan_disclaimer_accepted';
-const DISCLAIMER_DATE_KEY = 'morphoscan_disclaimer_date';
-
-interface DisclaimerVersion {
-  id: number;
-  title: string;
-  content: string;
-  tone: string;
-}
-
-const disclaimerVersions: DisclaimerVersion[] = [
-  {
-    id: 1,
-    title: "Professional & Empathetic",
-    tone: "professional",
-    content: `This app is designed to be your health companion—not a replacement for professional medical care.
-
-We understand that discussing penis health with a doctor can feel uncomfortable due to stigma, embarrassment, or insecurity. Many men avoid these conversations, hoping problems will resolve on their own. Unfortunately, delay often leads to worsening conditions that become harder—or impossible—to reverse.
-
-This tool empowers you with knowledge and awareness about your health, but it cannot diagnose or treat medical conditions. If you notice any concerning symptoms, please seek professional care. Early intervention can make all the difference.`
-  },
-  {
-    id: 2,
-    title: "Direct & Clear",
-    tone: "direct",
-    content: `Important: This is an educational and tracking tool, not a medical device.
-
-Information provided should never replace consultation with qualified healthcare professionals. Self-diagnosis and self-treatment can be dangerous.
-
-We encourage you to use this app to become informed about your health, track changes, and recognize when it's time to seek professional help. The data you collect here can be valuable when discussing concerns with your doctor.`
-  },
-  {
-    id: 3,
-    title: "Understanding & Supportive",
-    tone: "supportive",
-    content: `We get it—talking about penis health isn't easy.
-
-Social stigma makes many men suffer in silence, watching problems worsen when early treatment could have helped. This app gives you private, judgment-free tools to understand and monitor your health.
-
-But remember: awareness is just the first step. For diagnosis, treatment, or any medical concerns, please consult a healthcare provider. You deserve proper care, and seeking help is a sign of strength, not weakness.`
-  }
-];
-
-const TAGLINE = "We're a tool, for your tool. Don't be a fool—we're not a doctor.";
+import {
+  DISCLAIMER_DATE_KEY,
+  DISCLAIMER_KEY,
+  TAGLINE,
+  disclaimerVersions,
+} from "@/components/medicalDisclaimer/constants";
 
 interface MedicalDisclaimerProps {
-  mode?: 'modal' | 'inline' | 'condensed' | 'contextual';
+  mode?: "modal" | "inline" | "condensed" | "contextual";
   onAccept?: () => void;
   onClose?: () => void;
   showCheckbox?: boolean;
@@ -71,7 +38,7 @@ interface MedicalDisclaimerProps {
 }
 
 export const MedicalDisclaimer = ({
-  mode = 'inline',
+  mode = "inline",
   onAccept,
   onClose,
   showCheckbox = false,
@@ -93,28 +60,28 @@ export const MedicalDisclaimer = ({
       try {
         const accepted = localStorage.getItem(DISCLAIMER_KEY);
         const date = localStorage.getItem(DISCLAIMER_DATE_KEY);
-        if (accepted === 'true') {
+        if (accepted === "true") {
           setHasAccepted(true);
           setAcceptedDate(date);
-        } else if (mode === 'modal' && !forceShow) {
+        } else if (mode === "modal" && !forceShow) {
           setIsOpen(true);
         }
       } catch (error) {
-        console.error('Failed to check disclaimer acceptance:', error);
+        // Error silently handled
       }
     };
     checkAcceptance();
   }, [mode, forceShow]);
 
   useEffect(() => {
-    if (forceShow && mode === 'modal') {
+    if (forceShow && mode === "modal") {
       setIsOpen(true);
     }
   }, [forceShow, mode]);
 
   const handleAccept = () => {
     const now = new Date().toISOString();
-    localStorage.setItem(DISCLAIMER_KEY, 'true');
+    localStorage.setItem(DISCLAIMER_KEY, "true");
     localStorage.setItem(DISCLAIMER_DATE_KEY, now);
     setHasAccepted(true);
     setAcceptedDate(now);
@@ -128,27 +95,27 @@ export const MedicalDisclaimer = ({
   };
 
   // Condensed version for footer/inline brief mentions
-  if (mode === 'condensed') {
+  if (mode === "condensed") {
     return (
       <div className="flex items-start gap-2 text-xs text-muted-foreground">
         <Info className="w-3 h-3 shrink-0 mt-0.5" />
         <p>
-          <span className="font-medium">Medical Disclaimer:</span> This app is for educational purposes 
-          only and does not replace professional medical advice. {TAGLINE}
+          <span className="font-medium">Medical Disclaimer:</span> This app is for educational
+          purposes only and does not replace professional medical advice. {TAGLINE}
         </p>
       </div>
     );
   }
 
   // Contextual warning (brief reminder before health results)
-  if (mode === 'contextual') {
+  if (mode === "contextual") {
     return (
       <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 mb-4">
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
           <p className="text-xs text-warning">
-            <span className="font-medium">Reminder:</span> Results are for informational purposes only. 
-            Always consult a healthcare provider for medical advice.
+            <span className="font-medium">Reminder:</span> Results are for informational purposes
+            only. Always consult a healthcare provider for medical advice.
           </p>
         </div>
       </div>
@@ -156,7 +123,7 @@ export const MedicalDisclaimer = ({
   }
 
   // Modal version (first launch)
-  if (mode === 'modal') {
+  if (mode === "modal") {
     return (
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -167,7 +134,9 @@ export const MedicalDisclaimer = ({
               </div>
               <div>
                 <DialogTitle className="text-xl">Medical Disclaimer</DialogTitle>
-                <p className="text-xs text-muted-foreground">Please read before continuing</p>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  Please read before continuing
+                </DialogDescription>
               </div>
             </div>
           </DialogHeader>
@@ -199,7 +168,7 @@ export const MedicalDisclaimer = ({
                   "Information is for educational purposes only",
                   "Always consult a qualified healthcare provider",
                   "Early medical intervention often leads to better outcomes",
-                  "Your privacy is protected—all data stays on your device"
+                  "Your privacy is protected—all data stays on your device",
                 ].map((point, i) => (
                   <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
                     <CheckCircle className="w-3 h-3 text-success shrink-0 mt-0.5" />
@@ -215,7 +184,7 @@ export const MedicalDisclaimer = ({
                 <Checkbox
                   id="disclaimer-accept"
                   checked={isChecked}
-                  onCheckedChange={(checked) => setIsChecked(checked === true)}
+                  onCheckedChange={checked => setIsChecked(checked === true)}
                 />
                 <label
                   htmlFor="disclaimer-accept"
@@ -234,8 +203,7 @@ export const MedicalDisclaimer = ({
                 onClick={handleAccept}
                 disabled={showCheckbox && !isChecked}
               >
-                <CheckCircle className="w-4 h-4 mr-2" />
-                I Understand
+                <CheckCircle className="w-4 h-4 mr-2" />I Understand
               </Button>
             </div>
           </div>
@@ -304,24 +272,4 @@ export const MedicalDisclaimer = ({
       </CardContent>
     </Card>
   );
-};
-
-// Hook to check disclaimer status
-export const useDisclaimer = () => {
-  const [hasAccepted, setHasAccepted] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const accepted = localStorage.getItem(DISCLAIMER_KEY);
-    setHasAccepted(accepted === 'true');
-    setIsLoading(false);
-  }, []);
-
-  const resetDisclaimer = () => {
-    localStorage.removeItem(DISCLAIMER_KEY);
-    localStorage.removeItem(DISCLAIMER_DATE_KEY);
-    setHasAccepted(false);
-  };
-
-  return { hasAccepted, isLoading, resetDisclaimer };
 };

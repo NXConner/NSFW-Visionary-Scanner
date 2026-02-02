@@ -3,15 +3,21 @@
  * UI component for managing 2FA, biometric auth, sessions, devices, security alerts, and privacy controls
  */
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   get2FAStatus,
   enable2FA,
@@ -27,121 +33,139 @@ import {
   type ActiveSession,
   type SecurityAlert,
   type PrivacyControls,
-  type LoginHistory
-} from '@/lib/securityPrivacyEnhancements'
-import { Shield, Lock, Smartphone, AlertTriangle, Eye, Loader2, CheckCircle2, X, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+  type LoginHistory,
+} from "@/lib/securityPrivacyEnhancements";
+import {
+  Shield,
+  Lock,
+  Smartphone,
+  AlertTriangle,
+  Eye,
+  Loader2,
+  CheckCircle2,
+  X,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
+
+const profileVisibilityOptions = ["private", "friends", "public"] as const satisfies ReadonlyArray<
+  PrivacyControls["profile_visibility"]
+>;
 
 export const SecurityPrivacyEnhancements = () => {
-  const [activeTab, setActiveTab] = useState('security')
-  const [loading, setLoading] = useState(false)
-  const [twoFactorStatus, setTwoFactorStatus] = useState<TwoFactorAuthentication[]>([])
-  const [sessions, setSessions] = useState<ActiveSession[]>([])
-  const [alerts, setAlerts] = useState<SecurityAlert[]>([])
-  const [privacyControls, setPrivacyControls] = useState<PrivacyControls | null>(null)
-  const [loginHistory, setLoginHistory] = useState<LoginHistory[]>([])
-  const [show2FASetup, setShow2FASetup] = useState(false)
-  const [twoFactorCode, setTwoFactorCode] = useState('')
-  const [qrCode, setQrCode] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("security");
+  const [loading, setLoading] = useState(false);
+  const [twoFactorStatus, setTwoFactorStatus] = useState<TwoFactorAuthentication[]>([]);
+  const [sessions, setSessions] = useState<ActiveSession[]>([]);
+  const [alerts, setAlerts] = useState<SecurityAlert[]>([]);
+  const [privacyControls, setPrivacyControls] = useState<PrivacyControls | null>(null);
+  const [loginHistory, setLoginHistory] = useState<LoginHistory[]>([]);
+  const [show2FASetup, setShow2FASetup] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [qrCode, setQrCode] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData()
-  }, [activeTab])
-
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
       switch (activeTab) {
-        case 'security': {
+        case "security": {
           const [twoFactorData, sessionsData, alertsData] = await Promise.all([
             get2FAStatus(),
             getActiveSessions(),
-            getSecurityAlerts()
-          ])
-          setTwoFactorStatus(twoFactorData)
-          setSessions(sessionsData)
-          setAlerts(alertsData)
-          break
+            getSecurityAlerts(),
+          ]);
+          setTwoFactorStatus(twoFactorData);
+          setSessions(sessionsData);
+          setAlerts(alertsData);
+          break;
         }
-        case 'privacy': {
-          const privacy = await getPrivacyControls()
-          setPrivacyControls(privacy)
-          break
+        case "privacy": {
+          const privacy = await getPrivacyControls();
+          setPrivacyControls(privacy);
+          break;
         }
-        case 'login-history': {
-          const history = await getLoginHistory()
-          setLoginHistory(history)
-          break
+        case "login-history": {
+          const history = await getLoginHistory();
+          setLoginHistory(history);
+          break;
         }
       }
     } catch (error) {
-      toast.error('Failed to load data')
+      toast.error("Failed to load data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [activeTab]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const handleEnable2FA = async () => {
     try {
-      const result = await enable2FA('totp')
+      const result = await enable2FA("totp");
       if (result) {
-        setQrCode(result.qr_code || null)
-        setShow2FASetup(true)
+        setQrCode(result.qr_code || null);
+        setShow2FASetup(true);
       }
     } catch (error) {
-      toast.error('Failed to enable 2FA')
+      toast.error("Failed to enable 2FA");
     }
-  }
+  };
 
   const handleVerify2FA = async () => {
     if (!twoFactorCode.trim()) {
-      toast.error('Please enter verification code')
-      return
+      toast.error("Please enter verification code");
+      return;
     }
 
     try {
-      const success = await verify2FA('totp', twoFactorCode)
+      const success = await verify2FA("totp", twoFactorCode);
       if (success) {
-        setShow2FASetup(false)
-        setTwoFactorCode('')
-        setQrCode(null)
-        await loadData()
+        setShow2FASetup(false);
+        setTwoFactorCode("");
+        setQrCode(null);
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to verify 2FA')
+      toast.error("Failed to verify 2FA");
     }
-  }
+  };
 
   const handleRevokeSession = async (sessionId: string) => {
     try {
-      const success = await revokeSession(sessionId)
+      const success = await revokeSession(sessionId);
       if (success) {
-        await loadData()
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to revoke session')
+      toast.error("Failed to revoke session");
     }
-  }
+  };
 
   const handleUpdatePrivacy = async (updates: Partial<PrivacyControls>) => {
     try {
-      const success = await updatePrivacyControls(updates)
+      const success = await updatePrivacyControls(updates);
       if (success) {
-        await loadData()
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to update privacy settings')
+      toast.error("Failed to update privacy settings");
     }
-  }
+  };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'bg-red-500/20 text-red-400 border-red-500/30'
-      case 'high': return 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-      case 'medium': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-      default: return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+      case "critical":
+        return "bg-red-500/20 text-red-400 border-red-500/30";
+      case "high":
+        return "bg-orange-500/20 text-orange-400 border-orange-500/30";
+      case "medium":
+        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+      default:
+        return "bg-blue-500/20 text-blue-400 border-blue-500/30";
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -153,7 +177,7 @@ export const SecurityPrivacyEnhancements = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -186,7 +210,10 @@ export const SecurityPrivacyEnhancements = () => {
                   {twoFactorStatus.length > 0 && twoFactorStatus.some(tfa => tfa.is_enabled) ? (
                     <div className="space-y-2">
                       {twoFactorStatus.map(tfa => (
-                        <div key={tfa.id} className="flex items-center justify-between p-3 border rounded">
+                        <div
+                          key={tfa.id}
+                          className="flex items-center justify-between p-3 border rounded"
+                        >
                           <div>
                             <p className="font-medium">{tfa.method.toUpperCase()}</p>
                             <p className="text-sm text-muted-foreground">Enabled</p>
@@ -205,12 +232,14 @@ export const SecurityPrivacyEnhancements = () => {
                             <Input
                               placeholder="Enter verification code"
                               value={twoFactorCode}
-                              onChange={(e) => setTwoFactorCode(e.target.value)}
+                              onChange={e => setTwoFactorCode(e.target.value)}
                               className="max-w-xs mx-auto"
                             />
                             <div className="flex gap-2 mt-4 justify-center">
                               <Button onClick={handleVerify2FA}>Verify</Button>
-                              <Button variant="outline" onClick={() => setShow2FASetup(false)}>Cancel</Button>
+                              <Button variant="outline" onClick={() => setShow2FASetup(false)}>
+                                Cancel
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -231,15 +260,16 @@ export const SecurityPrivacyEnhancements = () => {
                 </CardHeader>
                 <CardContent>
                   {sessions.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No active sessions
-                    </div>
+                    <div className="text-center py-8 text-muted-foreground">No active sessions</div>
                   ) : (
                     <div className="space-y-2">
                       {sessions.map(session => (
-                        <div key={session.id} className="flex items-center justify-between p-3 border rounded">
+                        <div
+                          key={session.id}
+                          className="flex items-center justify-between p-3 border rounded"
+                        >
                           <div>
-                            <p className="font-medium">{session.device_name || 'Unknown Device'}</p>
+                            <p className="font-medium">{session.device_name || "Unknown Device"}</p>
                             <p className="text-sm text-muted-foreground">
                               {session.location_city && `${session.location_city}, `}
                               {session.location_country} • {session.platform}
@@ -273,9 +303,7 @@ export const SecurityPrivacyEnhancements = () => {
                 </CardHeader>
                 <CardContent>
                   {alerts.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No security alerts
-                    </div>
+                    <div className="text-center py-8 text-muted-foreground">No security alerts</div>
                   ) : (
                     <div className="space-y-2">
                       {alerts.map(alert => (
@@ -299,8 +327,8 @@ export const SecurityPrivacyEnhancements = () => {
                                 size="sm"
                                 variant="ghost"
                                 onClick={async () => {
-                                  await markAlertAsRead(alert.id)
-                                  await loadData()
+                                  await markAlertAsRead(alert.id);
+                                  await loadData();
                                 }}
                               >
                                 Mark Read
@@ -326,28 +354,39 @@ export const SecurityPrivacyEnhancements = () => {
                       <Label>Share Analytics</Label>
                       <Switch
                         checked={privacyControls.share_analytics}
-                        onCheckedChange={(checked) => handleUpdatePrivacy({ share_analytics: checked })}
+                        onCheckedChange={checked =>
+                          handleUpdatePrivacy({ share_analytics: checked })
+                        }
                       />
                     </div>
                     <div className="flex items-center justify-between">
                       <Label>Share Usage Data</Label>
                       <Switch
                         checked={privacyControls.share_usage_data}
-                        onCheckedChange={(checked) => handleUpdatePrivacy({ share_usage_data: checked })}
+                        onCheckedChange={checked =>
+                          handleUpdatePrivacy({ share_usage_data: checked })
+                        }
                       />
                     </div>
                     <div className="flex items-center justify-between">
                       <Label>Anonymize Data</Label>
                       <Switch
                         checked={privacyControls.anonymize_data}
-                        onCheckedChange={(checked) => handleUpdatePrivacy({ anonymize_data: checked })}
+                        onCheckedChange={checked =>
+                          handleUpdatePrivacy({ anonymize_data: checked })
+                        }
                       />
                     </div>
                     <div>
                       <Label>Profile Visibility</Label>
                       <Select
                         value={privacyControls.profile_visibility}
-                        onValueChange={(value) => handleUpdatePrivacy({ profile_visibility: value as any })}
+                        onValueChange={value => {
+                          const v = value as PrivacyControls["profile_visibility"];
+                          if (profileVisibilityOptions.includes(v)) {
+                            void handleUpdatePrivacy({ profile_visibility: v });
+                          }
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -370,9 +409,7 @@ export const SecurityPrivacyEnhancements = () => {
 
             <TabsContent value="login-history" className="space-y-4">
               {loginHistory.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No login history
-                </div>
+                <div className="text-center py-12 text-muted-foreground">No login history</div>
               ) : (
                 <div className="space-y-2">
                   {loginHistory.map(login => (
@@ -382,7 +419,11 @@ export const SecurityPrivacyEnhancements = () => {
                           <div>
                             <div className="flex items-center gap-2 mb-1">
                               <p className="font-medium">{login.login_method}</p>
-                              <Badge variant={login.login_status === 'success' ? 'default' : 'destructive'}>
+                              <Badge
+                                variant={
+                                  login.login_status === "success" ? "default" : "destructive"
+                                }
+                              >
                                 {login.login_status}
                               </Badge>
                               {login.is_suspicious && (
@@ -394,7 +435,8 @@ export const SecurityPrivacyEnhancements = () => {
                             </div>
                             <p className="text-sm text-muted-foreground">
                               {login.location_city && `${login.location_city}, `}
-                              {login.location_country} • {new Date(login.logged_at).toLocaleString()}
+                              {login.location_country} •{" "}
+                              {new Date(login.logged_at).toLocaleString()}
                             </p>
                           </div>
                         </div>
@@ -408,6 +450,5 @@ export const SecurityPrivacyEnhancements = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
+  );
+};

@@ -8,16 +8,17 @@ interface GestureNavigationOptions {
   enabled?: boolean;
 }
 
-export const useGestureNavigation = <T extends HTMLElement = HTMLDivElement>(
-  { onSwipeLeft, onSwipeRight, threshold = 40, enabled = true }: GestureNavigationOptions,
-): MutableRefObject<T | null> => {
+export const useGestureNavigation = <T extends HTMLElement = HTMLDivElement>({
+  onSwipeLeft,
+  onSwipeRight,
+  threshold = 40,
+  enabled = true,
+}: GestureNavigationOptions): MutableRefObject<T | null> => {
   const ref = useRef<T | null>(null);
-  const options = useMemo(() => ({ onSwipeLeft, onSwipeRight, threshold, enabled }), [
-    onSwipeLeft,
-    onSwipeRight,
-    threshold,
-    enabled,
-  ]);
+  const options = useMemo(
+    () => ({ onSwipeLeft, onSwipeRight, threshold, enabled }),
+    [onSwipeLeft, onSwipeRight, threshold, enabled],
+  );
 
   useGesture(
     {

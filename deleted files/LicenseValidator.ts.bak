@@ -1,0 +1,570 @@
+/**
+ * License Validator
+ * Handles license validation, caching, and device binding
+ */
+
+import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
+import type {
+  DLCLicense,
+  LicenseValidationResult,
+  LicenseDevice,
+  DevicePlatform,
+  LicenseValidationError,
+} from './types';
+
+// ============================================
+// Constants
+// ============================================
+
+const OFFLINE_CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+const GRACE_PERIOD_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const VALIDATION_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+const MAX_DEVICES_DEFAULT = 3;
+
+// ============================================
+// Device Fingerprinting
+// ============================================
+
+const generateDeviceFingerprint = async (): Promise<string> => {
+  const components: string[] = [];
+  
+  // Screen info
+  if (typeof window !== 'undefined') {
+    components.push(`screen:${screen.width}x${screen.height}x${screen.colorDepth}`);
+    components.push(`timezone:${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
+    components.push(`language:${navigator.language}`);
+    components.push(`platform:${navigator.platform}`);
+    components.push(`cores:${navigator.hardwareConcurrency || 'unknown'}`);
+    
+    // Canvas fingerprint
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.textBaseline = 'top';
+        ctx.font = '14px Arial';
+        ctx.fillText('DLC Auth', 2, 2);
+        components.push(`canvas:${canvas.toDataURL().slice(-50)}`);
+      }
+    } catch {
+      // Canvas fingerprinting blocked
+    }
+  }
+  
+  // Generate hash
+  const data = components.join('|');
+  const encoder = new TextEncoder();
+  const dataBuffer = encoder.encode(data);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  return hashHex;
+};
+
+// ============================================
+// License Cache
+// ============================================
+
+interface CachedLicense {
+  license: DLCLicense;
+  validationResult: LicenseValidationResult;
+  cachedAt: Date;
+  expiresAt: Date;
+  offlineValidUntil: Date;
+}
+
+class LicenseCache {
+  private cache: Map<string, CachedLicense> = new Map();
+  private storageKey = 'dlc_license_cache';
+  
+  constructor() {
+    this.loadFromStorage();
+  }
+  
+  private loadFromStorage(): void {
+    try {
+      const stored = localStorage.getItem(this.storageKey);
+      if (stored) {
+        const data = JSON.parse(stored) as Record<string, CachedLicense>;
+        Object.entries(data).forEach(([key, value]) => {
+          // Revive dates
+          value.cachedAt = new Date(value.cachedAt);
+          value.expiresAt = new Date(value.expiresAt);
+          value.offlineValidUntil = new Date(value.offlineValidUntil);
+          value.license.purchaseDate = new Date(value.license.purchaseDate);
+          value.license.createdAt = new Date(value.license.createdAt);
+          value.license.updatedAt = new Date(value.license.updatedAt);
+          
+          // Only load non-expired cache entries
+          if (new Date() < value.offlineValidUntil) {
+            this.cache.set(key, value);
+          }
+        });
+      }
+    } catch (error) {
+      logger.warn('LicenseCache: Failed to load from storage', error);
+    }
+  }
+  
+  private saveToStorage(): void {
+    try {
+      const data: Record<string, CachedLicense> = {};
+      this.cache.forEach((value, key) => {
+        data[key] = value;
+      });
+      localStorage.setItem(this.storageKey, JSON.stringify(data));
+    } catch (error) {
+      logger.warn('LicenseCache: Failed to save to storage', error);
+    }
+  }
+  
+  get(packageId: string): CachedLicense | undefined {
+    const cached = this.cache.get(packageId);
+    if (!cached) return undefined;
+    
+    // Check if cache is still valid for online use
+    if (new Date() > cached.expiresAt) {
+      // Cache expired, but might still be valid for offline
+      if (new Date() > cached.offlineValidUntil) {
+        this.cache.delete(packageId);
+        this.saveToStorage();
+        return undefined;
+      }
+    }
+    
+    return cached;
+  }
+  
+  set(packageId: string, license: DLCLicense, result: LicenseValidationResult): void {
+    const now = new Date();
+    const cached: CachedLicense = {
+      license,
+      validationResult: result,
+      cachedAt: now,
+      expiresAt: new Date(now.getTime() + VALIDATION_INTERVAL_MS),
+      offlineValidUntil: new Date(now.getTime() + OFFLINE_CACHE_DURATION_MS),
+    };
+    
+    this.cache.set(packageId, cached);
+    this.saveToStorage();
+  }
+  
+  remove(packageId: string): void {
+    this.cache.delete(packageId);
+    this.saveToStorage();
+  }
+  
+  clear(): void {
+    this.cache.clear();
+    localStorage.removeItem(this.storageKey);
+  }
+  
+  isOfflineValid(packageId: string): boolean {
+    const cached = this.cache.get(packageId);
+    if (!cached) return false;
+    return new Date() < cached.offlineValidUntil;
+  }
+}
+
+// ============================================
+// Device Manager
+// ============================================
+
+class DeviceManager {
+  private storageKey = 'dlc_devices';
+  private currentDeviceId: string;
+  private currentFingerprint: string | null = null;
+  
+  constructor() {
+    this.currentDeviceId = this.getOrCreateDeviceId();
+  }
+  
+  private getOrCreateDeviceId(): string {
+    const stored = localStorage.getItem('dlc_device_id');
+    if (stored) return stored;
+    
+    const platform = this.detectPlatform();
+    const deviceId = `${platform}-${crypto.randomUUID()}`;
+    localStorage.setItem('dlc_device_id', deviceId);
+    
+    return deviceId;
+  }
+  
+  private detectPlatform(): DevicePlatform {
+    if (typeof window === 'undefined') return 'web';
+    
+    const userAgent = navigator.userAgent.toLowerCase();
+    if (/android/i.test(userAgent)) return 'android';
+    if (/iphone|ipad|ipod/i.test(userAgent)) return 'ios';
+    
+    return 'web';
+  }
+  
+  getDeviceId(): string {
+    return this.currentDeviceId;
+  }
+  
+  getPlatform(): DevicePlatform {
+    return this.detectPlatform();
+  }
+  
+  async getFingerprint(): Promise<string> {
+    if (!this.currentFingerprint) {
+      this.currentFingerprint = await generateDeviceFingerprint();
+    }
+    return this.currentFingerprint;
+  }
+  
+  getDeviceName(): string {
+    if (typeof window === 'undefined') return 'Unknown Device';
+    
+    const platform = this.detectPlatform();
+    const userAgent = navigator.userAgent;
+    
+    if (platform === 'ios') {
+      if (/iPad/i.test(userAgent)) return 'iPad';
+      if (/iPhone/i.test(userAgent)) return 'iPhone';
+      return 'iOS Device';
+    }
+    
+    if (platform === 'android') {
+      // Try to extract device model
+      const match = userAgent.match(/Android.*?;\s*([^;)]+)/);
+      if (match) return match[1].trim();
+      return 'Android Device';
+    }
+    
+    // Web - try to get browser info
+    if (/Chrome/i.test(userAgent)) return 'Chrome Browser';
+    if (/Firefox/i.test(userAgent)) return 'Firefox Browser';
+    if (/Safari/i.test(userAgent)) return 'Safari Browser';
+    if (/Edge/i.test(userAgent)) return 'Edge Browser';
+    
+    return 'Web Browser';
+  }
+  
+  async createDeviceRecord(licenseId: string): Promise<LicenseDevice> {
+    const fingerprint = await this.getFingerprint();
+    
+    return {
+      id: crypto.randomUUID(),
+      licenseId,
+      deviceId: this.currentDeviceId,
+      deviceFingerprint: fingerprint,
+      deviceName: this.getDeviceName(),
+      devicePlatform: this.detectPlatform(),
+      isPrimary: false,
+      isActive: true,
+      registeredAt: new Date(),
+      lastUsedAt: new Date(),
+      lastValidationAt: new Date(),
+    };
+  }
+  
+  getRegisteredDevices(licenseId: string): LicenseDevice[] {
+    try {
+      const stored = localStorage.getItem(`${this.storageKey}_${licenseId}`);
+      if (stored) {
+        return JSON.parse(stored) as LicenseDevice[];
+      }
+    } catch {
+      // Ignore errors
+    }
+    return [];
+  }
+  
+  saveDevices(licenseId: string, devices: LicenseDevice[]): void {
+    localStorage.setItem(`${this.storageKey}_${licenseId}`, JSON.stringify(devices));
+  }
+  
+  isDeviceRegistered(licenseId: string): boolean {
+    const devices = this.getRegisteredDevices(licenseId);
+    return devices.some(d => d.deviceId === this.currentDeviceId && d.isActive);
+  }
+  
+  canRegisterNewDevice(licenseId: string, maxDevices: number = MAX_DEVICES_DEFAULT): boolean {
+    const devices = this.getRegisteredDevices(licenseId);
+    const activeDevices = devices.filter(d => d.isActive);
+    return activeDevices.length < maxDevices;
+  }
+  
+  async registerDevice(licenseId: string, maxDevices: number = MAX_DEVICES_DEFAULT): Promise<{ success: boolean; error?: string }> {
+    const devices = this.getRegisteredDevices(licenseId);
+    const activeDevices = devices.filter(d => d.isActive);
+    
+    // Check if device is already registered
+    const existingDevice = devices.find(d => d.deviceId === this.currentDeviceId);
+    if (existingDevice) {
+      if (existingDevice.isActive) {
+        // Update last used time
+        existingDevice.lastUsedAt = new Date();
+        existingDevice.lastValidationAt = new Date();
+        this.saveDevices(licenseId, devices);
+        return { success: true };
+      } else {
+        // Reactivate device
+        existingDevice.isActive = true;
+        existingDevice.lastUsedAt = new Date();
+        existingDevice.lastValidationAt = new Date();
+        this.saveDevices(licenseId, devices);
+        return { success: true };
+      }
+    }
+    
+    // Check device limit
+    if (activeDevices.length >= maxDevices) {
+      return { success: false, error: 'Maximum devices reached' };
+    }
+    
+    // Register new device
+    const newDevice = await this.createDeviceRecord(licenseId);
+    newDevice.isPrimary = devices.length === 0;
+    devices.push(newDevice);
+    this.saveDevices(licenseId, devices);
+    
+    return { success: true };
+  }
+  
+  deregisterDevice(licenseId: string, deviceId?: string): void {
+    const targetDeviceId = deviceId || this.currentDeviceId;
+    const devices = this.getRegisteredDevices(licenseId);
+    
+    const device = devices.find(d => d.deviceId === targetDeviceId);
+    if (device) {
+      device.isActive = false;
+      this.saveDevices(licenseId, devices);
+    }
+  }
+}
+
+// ============================================
+// License Validator Class
+// ============================================
+
+export class LicenseValidator {
+  private cache: LicenseCache;
+  private deviceManager: DeviceManager;
+  private isOnline: boolean = true;
+  
+  constructor() {
+    this.cache = new LicenseCache();
+    this.deviceManager = new DeviceManager();
+    
+    // Monitor online status
+    if (typeof window !== 'undefined') {
+      this.isOnline = navigator.onLine;
+      window.addEventListener('online', () => { this.isOnline = true; });
+      window.addEventListener('offline', () => { this.isOnline = false; });
+    }
+  }
+  
+  /**
+   * Validate a license
+   */
+  async validate(license: DLCLicense): Promise<LicenseValidationResult> {
+    const packageId = license.packageId;
+    
+    // Check cache first
+    const cached = this.cache.get(packageId);
+    if (cached && new Date() < cached.expiresAt) {
+      logger.debug('LicenseValidator: Using cached validation', { packageId });
+      return cached.validationResult;
+    }
+    
+    // If offline, use cached validation if available
+    if (!this.isOnline) {
+      return this.validateOffline(license);
+    }
+    
+    // Online validation
+    return this.validateOnline(license);
+  }
+  
+  /**
+   * Online license validation
+   */
+  private async validateOnline(license: DLCLicense): Promise<LicenseValidationResult> {
+    const packageId = license.packageId;
+    
+    try {
+      // Check if license is active
+      if (!license.isActive) {
+        return this.createResult(false, license, 'license_revoked', false);
+      }
+      
+      // Check subscription status
+      if (license.licenseType === 'subscription') {
+        const subResult = this.checkSubscription(license);
+        if (!subResult.isValid) {
+          return subResult;
+        }
+      }
+      
+      // Check device authorization
+      const deviceResult = await this.checkDevice(license);
+      if (!deviceResult.success) {
+        return this.createResult(false, license, deviceResult.error as LicenseValidationError, false);
+      }
+      
+      // Successful validation
+      const result = this.createResult(true, license, undefined, true);
+      
+      // Update cache
+      this.cache.set(packageId, license, result);
+      
+      // Update license with last validation time
+      license.lastOnlineValidation = new Date();
+      license.offlineCacheExpiresAt = new Date(Date.now() + OFFLINE_CACHE_DURATION_MS);
+      
+      return result;
+    } catch (error) {
+      logger.error('LicenseValidator: Online validation failed', error);
+      
+      // Fall back to offline validation
+      return this.validateOffline(license);
+    }
+  }
+  
+  /**
+   * Offline license validation
+   */
+  private validateOffline(license: DLCLicense): LicenseValidationResult {
+    const packageId = license.packageId;
+    
+    // Check cache
+    const cached = this.cache.get(packageId);
+    if (cached && this.cache.isOfflineValid(packageId)) {
+      logger.debug('LicenseValidator: Using offline cached validation', { packageId });
+      
+      return {
+        ...cached.validationResult,
+        offlineValidUntil: cached.offlineValidUntil,
+        checkAgainAt: cached.expiresAt,
+      };
+    }
+    
+    // Check if we have a grace period
+    if (license.gracePeriodUntil) {
+      const gracePeriod = new Date(license.gracePeriodUntil);
+      if (new Date() < gracePeriod) {
+        return this.createResult(true, license, undefined, true, gracePeriod);
+      }
+    }
+    
+    // Check offline cache expiry from license
+    if (license.offlineCacheExpiresAt) {
+      const cacheExpiry = new Date(license.offlineCacheExpiresAt);
+      if (new Date() < cacheExpiry) {
+        const result = this.createResult(true, license, undefined, true, cacheExpiry);
+        this.cache.set(packageId, license, result);
+        return result;
+      }
+    }
+    
+    // No valid offline cache
+    return this.createResult(false, license, 'network_error', false);
+  }
+  
+  /**
+   * Check subscription status
+   */
+  private checkSubscription(license: DLCLicense): LicenseValidationResult {
+    if (license.subscriptionStatus === 'cancelled') {
+      // Check if still within subscription period
+      if (license.subscriptionEnd) {
+        const endDate = new Date(license.subscriptionEnd);
+        if (new Date() > endDate) {
+          return this.createResult(false, license, 'subscription_cancelled', false);
+        }
+      }
+    }
+    
+    if (license.subscriptionStatus === 'expired') {
+      return this.createResult(false, license, 'subscription_expired', false);
+    }
+    
+    if (license.subscriptionEnd) {
+      const endDate = new Date(license.subscriptionEnd);
+      if (new Date() > endDate) {
+        // Check grace period
+        const graceEnd = new Date(endDate.getTime() + GRACE_PERIOD_DURATION_MS);
+        if (new Date() > graceEnd) {
+          return this.createResult(false, license, 'subscription_expired', false);
+        }
+        
+        // Within grace period
+        return this.createResult(true, license, undefined, true, graceEnd);
+      }
+    }
+    
+    return this.createResult(true, license, undefined, true);
+  }
+  
+  /**
+   * Check device authorization
+   */
+  private async checkDevice(license: DLCLicense): Promise<{ success: boolean; error?: string }> {
+    // Check if device is registered
+    if (this.deviceManager.isDeviceRegistered(license.id)) {
+      // Update last used time
+      await this.deviceManager.registerDevice(license.id, license.maxDevices);
+      return { success: true };
+    }
+    
+    // Try to register device
+    const result = await this.deviceManager.registerDevice(license.id, license.maxDevices);
+    
+    if (!result.success) {
+      return { success: false, error: 'max_devices_reached' };
+    }
+    
+    return { success: true };
+  }
+  
+  /**
+   * Create validation result
+   */
+  private createResult(
+    isValid: boolean,
+    license: DLCLicense,
+    error?: LicenseValidationError,
+    deviceAuthorized: boolean = false,
+    offlineValidUntil?: Date
+  ): LicenseValidationResult {
+    return {
+      isValid,
+      license,
+      error,
+      deviceAuthorized,
+      expiresAt: license.subscriptionEnd ? new Date(license.subscriptionEnd) : undefined,
+      offlineValidUntil: offlineValidUntil || (license.offlineCacheExpiresAt ? new Date(license.offlineCacheExpiresAt) : undefined),
+      checkAgainAt: new Date(Date.now() + VALIDATION_INTERVAL_MS),
+    };
+  }
+  
+  /**
+   * Get device manager
+   */
+  getDeviceManager(): DeviceManager {
+    return this.deviceManager;
+  }
+  
+  /**
+   * Clear validation cache
+   */
+  clearCache(): void {
+    this.cache.clear();
+  }
+  
+  /**
+   * Check if currently online
+   */
+  isNetworkAvailable(): boolean {
+    return this.isOnline;
+  }
+}
+
+// Export singleton instance
+export const licenseValidator = new LicenseValidator();

@@ -1,86 +1,187 @@
-/**
- * useVideoRecording Hook
- * React hook for video recording with MediaRecorder
- */
+import { useCallback, useMemo, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { uploadVideoInChunks } from "@/lib/mediaUpload/videoChunkUpload";
+import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
-import { useState, useRef, useCallback } from 'react'
-import { recordVideo, uploadRecordedVideo, type VideoRecording, type VideoRecordingOptions } from '@/lib/videoProcessing'
-import { toast } from 'sonner'
+export type RecorderQuality = "720p" | "1080p" | "2k" | "4k";
 
-export const useVideoRecording = () => {
-  const [isRecording, setIsRecording] = useState(false)
-  const [recording, setRecording] = useState<VideoRecording | null>(null)
-  const [progress, setProgress] = useState(0)
-  const [stream, setStream] = useState<MediaStream | null>(null)
-  const recorderRef = useRef<MediaRecorder | null>(null)
+type RecorderHandle = {
+  stop: () => Promise<Blob | null>;
+  stream: MediaStream;
+  mimeType: string;
+};
 
-  const startRecording = useCallback(async (
-    mediaStream: MediaStream,
-    options: VideoRecordingOptions = {}
-  ) => {
-    try {
-      if (!mediaStream) {
-        toast.error('No media stream available')
-        return false
+function pickSupportedMimeType(): string {
+  const candidates = [
+    "video/webm;codecs=vp9,opus",
+    "video/webm;codecs=vp8,opus",
+    "video/webm",
+    "video/mp4",
+  ];
+  for (const c of candidates) {
+    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported?.(c)) return c;
+  }
+  return "video/webm";
+}
+
+function createRecorder(stream: MediaStream, withAudio: boolean): RecorderHandle {
+  const tracks = stream.getVideoTracks();
+  const audioTracks = withAudio ? stream.getAudioTracks() : [];
+  const composed = new MediaStream([...tracks, ...audioTracks]);
+  const mimeType = pickSupportedMimeType();
+  const recorder = new MediaRecorder(composed, { mimeType });
+  const chunks: BlobPart[] = [];
+
+  recorder.ondataavailable = e => {
+    if (e.data && e.data.size > 0) chunks.push(e.data);
+  };
+
+  recorder.start(1000);
+
+  return {
+    stream: composed,
+    mimeType,
+    stop: async () =>
+      await new Promise(resolve => {
+        recorder.onstop = () =>
+          resolve(chunks.length ? new Blob(chunks, { type: mimeType }) : null);
+        try {
+          recorder.stop();
+        } catch {
+          resolve(chunks.length ? new Blob(chunks, { type: mimeType }) : null);
+        }
+      }),
+  };
+}
+
+export function useVideoRecording() {
+  const [isRecording, setIsRecording] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const recordersRef = useRef<RecorderHandle[]>([]);
+  const startedAtRef = useRef<number | null>(null);
+
+  const startMultiCameraRecording = useCallback((streams: MediaStream[]) => {
+    if (streams.length === 0) return false;
+    recordersRef.current = streams.map((s, idx) => createRecorder(s, idx === 0));
+    startedAtRef.current = Date.now();
+    setIsRecording(true);
+    return true;
+  }, []);
+
+  const stopMultiCameraRecording = useCallback(async (): Promise<{
+    durationSeconds: number;
+    blobs: Array<{ cameraIndex: number; blob: Blob; mimeType: string }>;
+  }> => {
+    const startedAt = startedAtRef.current ?? Date.now();
+    const stoppedAt = Date.now();
+    const durationSeconds = Math.max(0, Math.round((stoppedAt - startedAt) / 1000));
+
+    const handles = recordersRef.current;
+    recordersRef.current = [];
+    startedAtRef.current = null;
+    setIsRecording(false);
+
+    const stopped = await Promise.all(handles.map(h => h.stop().then(b => ({ h, b }))));
+    const blobs = stopped
+      .map(({ h, b }, idx) => (b ? { cameraIndex: idx, blob: b, mimeType: h.mimeType } : null))
+      .filter((x): x is { cameraIndex: number; blob: Blob; mimeType: string } => Boolean(x));
+
+    return { durationSeconds, blobs };
+  }, []);
+
+  const uploadRecordingSet = useCallback(
+    async (params: {
+      sessionId: string;
+      bucket?: string;
+      folder?: string; // appended under user namespace
+      blobs: Array<{ cameraIndex: number; blob: Blob; mimeType: string }>;
+    }): Promise<
+      Array<{
+        cameraIndex: number;
+        path: string;
+        publicUrl: string;
+        sizeBytes: number;
+        mimeType: string;
+      }>
+    > => {
+      const { data } = await supabase.auth.getUser();
+      const user = data.user;
+      if (!user) {
+        toast.error("Please sign in");
+        return [];
       }
 
-      setStream(mediaStream)
-      setIsRecording(true)
+      const bucket =
+        params.bucket ?? (import.meta as any).env?.VITE_USER_MEDIA_BUCKET ?? "user-media";
+      const folder = params.folder ?? `recordings/${params.sessionId}`;
 
-      const recordingResult = await recordVideo(mediaStream, {
-        ...options,
-        onProgress: setProgress
-      })
+      setIsUploading(true);
+      setUploadPercent(0);
+      try {
+        const results: Array<{
+          cameraIndex: number;
+          path: string;
+          publicUrl: string;
+          sizeBytes: number;
+          mimeType: string;
+        }> = [];
 
-      if (recordingResult) {
-        setRecording(recordingResult)
-        return true
+        for (let i = 0; i < params.blobs.length; i++) {
+          const item = params.blobs[i];
+          const filePath = `${user.id}/${folder}/camera-${item.cameraIndex}-${Date.now()}.webm`;
+          const up = await uploadVideoInChunks({
+            bucket,
+            filePath,
+            blob: item.blob,
+            contentType: item.mimeType || "video/webm",
+            onProgress: p => {
+              // overall progress: each camera weighted equally
+              const perCamera = 100 / Math.max(1, params.blobs.length);
+              const base = perCamera * i;
+              setUploadPercent(Math.min(100, Math.round(base + (p.percent / 100) * perCamera)));
+            },
+          });
+          if (!up.success || !up.path || !up.publicUrl) {
+            toast.error(up.error || "Upload failed");
+            return [];
+          }
+          results.push({
+            cameraIndex: item.cameraIndex,
+            path: up.path,
+            publicUrl: up.publicUrl,
+            sizeBytes: item.blob.size,
+            mimeType: item.mimeType,
+          });
+        }
+
+        setUploadPercent(100);
+        toast.success("Upload complete");
+        return results;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Upload failed";
+        logger.error("useVideoRecording: upload failed", { error: message });
+        toast.error("Upload failed");
+        return [];
+      } finally {
+        setIsUploading(false);
+        setTimeout(() => setUploadPercent(0), 500);
       }
+    },
+    [],
+  );
 
-      return false
-    } catch (error) {
-      toast.error('Failed to start recording')
-      setIsRecording(false)
-      return false
-    }
-  }, [])
-
-  const stopRecording = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop())
-      setStream(null)
-    }
-    setIsRecording(false)
-    setProgress(0)
-  }, [stream])
-
-  const uploadRecording = useCallback(async (sessionId: string, folder?: string) => {
-    if (!recording) {
-      toast.error('No recording to upload')
-      return null
-    }
-
-    const url = await uploadRecordedVideo(recording, sessionId, folder)
-    if (url) {
-      setRecording(null)
-    }
-    return url
-  }, [recording])
-
-  const reset = useCallback(() => {
-    stopRecording()
-    setRecording(null)
-    setProgress(0)
-  }, [stopRecording])
+  const canStop = useMemo(() => isRecording, [isRecording]);
 
   return {
     isRecording,
-    recording,
-    progress,
-    startRecording,
-    stopRecording,
-    uploadRecording,
-    reset
-  }
+    canStop,
+    isUploading,
+    uploadPercent,
+    startMultiCameraRecording,
+    stopMultiCameraRecording,
+    uploadRecordingSet,
+  };
 }
-

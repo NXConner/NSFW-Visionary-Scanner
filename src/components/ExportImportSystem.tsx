@@ -3,15 +3,21 @@
  * UI component for exporting data (Excel, PDF, CSV, cloud) and importing data from various sources
  */
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Progress } from '@/components/ui/progress'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import {
   createExportJob,
   getExportJobs,
@@ -21,136 +27,169 @@ import {
   connectCloudService,
   type ExportJob,
   type ImportJob,
-  type CloudServiceConnection
-} from '@/lib/exportImportSystem'
-import { supabase } from '@/integrations/supabase/client'
-import { Download, Upload, FileText, FileSpreadsheet, File, Loader2, CheckCircle2, XCircle, Cloud } from 'lucide-react'
-import { toast } from 'sonner'
+  type CloudServiceConnection,
+} from "@/lib/exportImportSystem";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Download,
+  Upload,
+  FileText,
+  FileSpreadsheet,
+  File,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Cloud,
+} from "lucide-react";
+import { toast } from "sonner";
+
+const exportTypes: ExportJob["export_type"][] = [
+  "pdf",
+  "excel",
+  "csv",
+  "json",
+  "google_sheets",
+  "onedrive",
+  "dropbox",
+  "email",
+  "hl7_fhir",
+];
+
+const importTypes: ImportJob["import_type"][] = ["csv", "excel", "json", "other_app", "bulk"];
 
 export const ExportImportSystem = () => {
-  const [activeTab, setActiveTab] = useState('export')
-  const [loading, setLoading] = useState(false)
-  const [exportJobs, setExportJobs] = useState<ExportJob[]>([])
-  const [importJobs, setImportJobs] = useState<ImportJob[]>([])
-  const [cloudConnections, setCloudConnections] = useState<CloudServiceConnection[]>([])
-  const [showExportForm, setShowExportForm] = useState(false)
-  const [showImportForm, setShowImportForm] = useState(false)
-  const [exportType, setExportType] = useState<ExportJob['export_type']>('pdf')
-  const [exportName, setExportName] = useState('')
-  const [importType, setImportType] = useState<ImportJob['import_type']>('csv')
-  const [importName, setImportName] = useState('')
-  const [importFile, setImportFile] = useState<File | null>(null)
+  const [activeTab, setActiveTab] = useState("export");
+  const [loading, setLoading] = useState(false);
+  const [exportJobs, setExportJobs] = useState<ExportJob[]>([]);
+  const [importJobs, setImportJobs] = useState<ImportJob[]>([]);
+  const [cloudConnections, setCloudConnections] = useState<CloudServiceConnection[]>([]);
+  const [showExportForm, setShowExportForm] = useState(false);
+  const [showImportForm, setShowImportForm] = useState(false);
+  const [exportType, setExportType] = useState<ExportJob["export_type"]>("pdf");
+  const [exportName, setExportName] = useState("");
+  const [importType, setImportType] = useState<ImportJob["import_type"]>("csv");
+  const [importName, setImportName] = useState("");
+  const [importFile, setImportFile] = useState<File | null>(null);
 
-  useEffect(() => {
-    loadData()
-  }, [activeTab])
-
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
-      if (activeTab === 'export') {
-        const jobs = await getExportJobs()
-        setExportJobs(jobs)
-        const connections = await getCloudServiceConnections()
-        setCloudConnections(connections)
+      if (activeTab === "export") {
+        const jobs = await getExportJobs();
+        setExportJobs(jobs);
+        const connections = await getCloudServiceConnections();
+        setCloudConnections(connections);
       } else {
-        const jobs = await getImportJobs()
-        setImportJobs(jobs)
+        const jobs = await getImportJobs();
+        setImportJobs(jobs);
       }
     } catch (error) {
-      toast.error('Failed to load data')
+      toast.error("Failed to load data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [activeTab]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const handleExport = async () => {
     if (!exportName.trim()) {
-      toast.error('Please enter an export name')
-      return
+      toast.error("Please enter an export name");
+      return;
     }
 
     try {
       const job = await createExportJob(
         exportType,
         exportName,
-        { date_range: 'all', include_metadata: true },
-        ['scans', 'diary', 'analytics']
-      )
+        { date_range: "all", include_metadata: true },
+        ["scans", "diary", "analytics"],
+      );
       if (job) {
-        setExportName('')
-        setShowExportForm(false)
-        await loadData()
+        setExportName("");
+        setShowExportForm(false);
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to create export job')
+      toast.error("Failed to create export job");
     }
-  }
+  };
 
   const handleImport = async () => {
     if (!importName.trim() || !importFile) {
-      toast.error('Please fill in all fields and select a file')
-      return
+      toast.error("Please fill in all fields and select a file");
+      return;
     }
 
     try {
-      // Upload file first
-      const fileExt = importFile.name.split('.').pop()
-      const fileName = `${Date.now()}.${fileExt}`
-      const filePath = `imports/${fileName}`
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('user-uploads')
-        .upload(filePath, importFile)
-
-      if (uploadError) {
-        toast.error('Failed to upload file')
-        return
+      // Get current user for secure file path
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Please log in to import files");
+        return;
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('user-uploads')
-        .getPublicUrl(filePath)
+      // Upload file with user-specific path for RLS security
+      const fileExt = importFile.name.split(".").pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/imports/${fileName}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("user-uploads")
+        .upload(filePath, importFile);
+
+      if (uploadError) {
+        toast.error("Failed to upload file");
+        return;
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("user-uploads").getPublicUrl(filePath);
 
       const job = await createImportJob(importType, importName, publicUrl, {
         file_format: fileExt,
-        auto_map: true
-      })
+        auto_map: true,
+      });
       if (job) {
-        setImportName('')
-        setImportFile(null)
-        setShowImportForm(false)
-        await loadData()
+        setImportName("");
+        setImportFile(null);
+        setShowImportForm(false);
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to create import job')
+      toast.error("Failed to create import job");
     }
-  }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
-        return <CheckCircle2 className="w-4 h-4 text-green-500" />
-      case 'failed':
-        return <XCircle className="w-4 h-4 text-red-500" />
-      case 'processing':
-        return <Loader2 className="w-4 h-4 animate-spin" />
+      case "completed":
+        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+      case "failed":
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      case "processing":
+        return <Loader2 className="w-4 h-4 animate-spin" />;
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   const getExportIcon = (type: string) => {
     switch (type) {
-      case 'excel':
-      case 'csv':
-        return <FileSpreadsheet className="w-4 h-4" />
-      case 'pdf':
-        return <FileText className="w-4 h-4" />
+      case "excel":
+      case "csv":
+        return <FileSpreadsheet className="w-4 h-4" />;
+      case "pdf":
+        return <FileText className="w-4 h-4" />;
       default:
-        return <File className="w-4 h-4" />
+        return <File className="w-4 h-4" />;
     }
-  }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -187,13 +226,19 @@ export const ExportImportSystem = () => {
                       <Label>Export Name</Label>
                       <Input
                         value={exportName}
-                        onChange={(e) => setExportName(e.target.value)}
+                        onChange={e => setExportName(e.target.value)}
                         placeholder="My Export"
                       />
                     </div>
                     <div>
                       <Label>Export Format</Label>
-                      <Select value={exportType} onValueChange={(value) => setExportType(value as any)}>
+                      <Select
+                        value={exportType}
+                        onValueChange={value => {
+                          const v = value as ExportJob["export_type"];
+                          if (exportTypes.includes(v)) setExportType(v);
+                        }}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -210,8 +255,12 @@ export const ExportImportSystem = () => {
                       </Select>
                     </div>
                     <div className="flex gap-2">
-                      <Button onClick={handleExport} className="flex-1">Create Export</Button>
-                      <Button variant="outline" onClick={() => setShowExportForm(false)}>Cancel</Button>
+                      <Button onClick={handleExport} className="flex-1">
+                        Create Export
+                      </Button>
+                      <Button variant="outline" onClick={() => setShowExportForm(false)}>
+                        Cancel
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -235,7 +284,7 @@ export const ExportImportSystem = () => {
                                 <Badge variant="secondary">{job.export_type}</Badge>
                                 {getStatusIcon(job.export_status)}
                               </div>
-                              {job.export_status === 'processing' && (
+                              {job.export_status === "processing" && (
                                 <Progress value={job.progress_percentage} className="w-full mb-2" />
                               )}
                               {job.file_url && (
@@ -273,13 +322,19 @@ export const ExportImportSystem = () => {
                       <Label>Import Name</Label>
                       <Input
                         value={importName}
-                        onChange={(e) => setImportName(e.target.value)}
+                        onChange={e => setImportName(e.target.value)}
                         placeholder="My Import"
                       />
                     </div>
                     <div>
                       <Label>Import Format</Label>
-                      <Select value={importType} onValueChange={(value) => setImportType(value as any)}>
+                      <Select
+                        value={importType}
+                        onValueChange={value => {
+                          const v = value as ImportJob["import_type"];
+                          if (importTypes.includes(v)) setImportType(v);
+                        }}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -296,12 +351,16 @@ export const ExportImportSystem = () => {
                       <Input
                         type="file"
                         accept=".csv,.xlsx,.xls,.json"
-                        onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                        onChange={e => setImportFile(e.target.files?.[0] || null)}
                       />
                     </div>
                     <div className="flex gap-2">
-                      <Button onClick={handleImport} className="flex-1">Start Import</Button>
-                      <Button variant="outline" onClick={() => setShowImportForm(false)}>Cancel</Button>
+                      <Button onClick={handleImport} className="flex-1">
+                        Start Import
+                      </Button>
+                      <Button variant="outline" onClick={() => setShowImportForm(false)}>
+                        Cancel
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -323,10 +382,10 @@ export const ExportImportSystem = () => {
                               <Badge variant="secondary">{job.import_type}</Badge>
                               {getStatusIcon(job.import_status)}
                             </div>
-                            {job.import_status === 'processing' && (
+                            {job.import_status === "processing" && (
                               <Progress value={job.progress_percentage} className="w-full mb-2" />
                             )}
-                            {job.import_status === 'completed' && (
+                            {job.import_status === "completed" && (
                               <p className="text-sm text-muted-foreground">
                                 {job.records_imported} of {job.records_total} records imported
                               </p>
@@ -343,6 +402,5 @@ export const ExportImportSystem = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
+  );
+};

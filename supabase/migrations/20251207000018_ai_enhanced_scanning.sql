@@ -4,7 +4,7 @@
 -- AI Scan Analysis Results
 CREATE TABLE IF NOT EXISTS ai_scan_analysis (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  scan_id UUID REFERENCES scans(id) ON DELETE CASCADE,
+  scan_id UUID,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   
   -- Analysis type
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS ai_scan_analysis (
   anomaly_confidence DECIMAL(3, 2),
   
   -- Comparison to previous scans
-  previous_scan_id UUID REFERENCES scans(id) ON DELETE SET NULL,
+  previous_scan_id UUID,
   comparison_results JSONB, -- {length_change: decimal, circumference_change: decimal, etc.}
   trend_direction TEXT CHECK (trend_direction IN ('improving', 'stable', 'declining', 'fluctuating')),
   
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS real_time_scan_feedback (
 -- Automatic Measurement Suggestions (ML-based)
 CREATE TABLE IF NOT EXISTS measurement_suggestions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  scan_id UUID REFERENCES scans(id) ON DELETE CASCADE,
+  scan_id UUID,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   
   suggestion_type TEXT NOT NULL CHECK (suggestion_type IN ('angle_adjustment', 'distance_adjustment', 'lighting_improvement', 'focus_improvement', 'position_correction')),
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS measurement_suggestions (
 -- Quality Assessment History
 CREATE TABLE IF NOT EXISTS quality_assessment_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  scan_id UUID REFERENCES scans(id) ON DELETE CASCADE,
+  scan_id UUID,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   
   overall_score DECIMAL(3, 2) NOT NULL,
@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS quality_assessment_history (
 -- Anomaly Detection Log
 CREATE TABLE IF NOT EXISTS anomaly_detection_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  scan_id UUID REFERENCES scans(id) ON DELETE CASCADE,
+  scan_id UUID,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   
   anomaly_type TEXT NOT NULL CHECK (anomaly_type IN ('measurement_outlier', 'shape_anomaly', 'color_anomaly', 'texture_anomaly', 'size_anomaly', 'position_anomaly')),
@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS anomaly_detection_log (
   
   -- Comparison context
   compared_to_previous BOOLEAN DEFAULT false,
-  previous_scan_id UUID REFERENCES scans(id) ON DELETE SET NULL,
+  previous_scan_id UUID,
   deviation_amount DECIMAL(10, 2), -- How much it deviates
   
   -- Recommendations

@@ -74,10 +74,10 @@ setup_environment() {
 }
 
 build_web_app() {
-    log_info "Building web application..."
+    log_info "Building web application (NSFW direct)..."
 
-    # Build the web app
-    npm run build
+    # Build the web app with NSFW content included
+    npm run build:nsfw:direct
 
     if [ ! -d "dist" ]; then
         log_error "Web app build failed - dist directory not found"

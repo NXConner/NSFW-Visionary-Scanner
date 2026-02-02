@@ -1,0 +1,678 @@
+/**
+ * Security & Privacy Enhancements - Local Implementation
+ * Two-factor authentication, session management, security alerts, and privacy controls
+ */
+
+import { supabase } from '@/integrations/supabase/client'
+import { toast } from 'sonner'
+import { logger } from './logger'
+
+export interface TwoFactorAuthentication {
+  id: string
+  user_id: string
+  method: 'totp' | 'sms' | 'email' | 'backup_codes'
+  totp_secret_encrypted: string | null
+  totp_backup_codes_encrypted: string[] | null
+  phone_number_encrypted: string | null
+  email_address: string | null
+  is_enabled: boolean
+  is_verified: boolean
+  verified_at: string | null
+  recovery_codes_encrypted: string[] | null
+  recovery_codes_used: string[] | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ActiveSession {
+  id: string
+  user_id: string
+  session_token_hash: string
+  device_name: string | null
+  device_type: string | null
+  platform: string | null
+  browser: string | null
+  ip_address: string | null
+  location: string | null
+  location_city: string | null
+  location_country: string | null
+  is_current: boolean
+  is_current_session: boolean
+  is_trusted: boolean
+  last_activity_at: string
+  expires_at: string
+  created_at: string
+}
+
+export interface SecurityAlert {
+  id: string
+  user_id: string
+  alert_type: 'login_attempt' | 'password_change' | 'device_added' | 'suspicious_activity' | 'data_export' | 'permission_change' | 'other'
+  alert_severity: 'low' | 'medium' | 'high' | 'critical'
+  alert_title: string
+  alert_message: string
+  details: any | null
+  is_read: boolean
+  is_resolved: boolean
+  resolved_at: string | null
+  created_at: string
+}
+
+export interface PrivacyControls {
+  id: string
+  user_id: string
+  share_analytics: boolean
+  share_usage_data: boolean
+  share_location_data: boolean
+  anonymize_data: boolean
+  data_retention_days: number
+  auto_delete_old_data: boolean
+  require_2fa_for_export: boolean
+  allow_research_use: boolean
+  marketing_emails: boolean
+  promotional_notifications: boolean
+  partner_sharing: boolean
+  profile_visibility: 'private' | 'friends' | 'public'
+  created_at: string
+  updated_at: string
+}
+
+export interface LoginHistory {
+  id: string
+  user_id: string
+  login_method: 'password' | 'biometric' | '2fa' | 'oauth' | 'magic_link'
+  login_status: 'success' | 'failed' | 'blocked'
+  ip_address: string | null
+  device_info: string | null
+  location: string | null
+  location_city: string | null
+  location_country: string | null
+  is_successful: boolean
+  is_suspicious: boolean
+  failure_reason: string | null
+  logged_at: string
+  created_at: string
+}
+
+export interface TwoFactorSetupResult {
+  qr_code?: string
+  secret?: string
+  backup_codes?: string[]
+  recovery_codes?: string[]
+}
+
+// Local storage keys
+const STORAGE_KEYS = {
+  TWO_FA: 'security_2fa',
+  SESSIONS: 'security_sessions',
+  ALERTS: 'security_alerts',
+  PRIVACY: 'security_privacy',
+  LOGIN_HISTORY: 'security_login_history',
+}
+
+// Helper functions for local storage
+function getLocalData<T>(key: string, defaultValue: T): T {
+  try {
+    const stored = localStorage.getItem(key)
+    return stored ? JSON.parse(stored) : defaultValue
+  } catch {
+    return defaultValue
+  }
+}
+
+function setLocalData<T>(key: string, data: T): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(data))
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+// Generate TOTP secret (simplified for local use)
+function generateTOTPSecret(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+  let secret = ''
+  for (let i = 0; i < 32; i++) {
+    secret += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return secret
+}
+
+// Generate backup codes
+function generateBackupCodes(count: number): string[] {
+  const codes: string[] = []
+  for (let i = 0; i < count; i++) {
+    const code = Math.random().toString(36).substring(2, 10).toUpperCase()
+    codes.push(code)
+  }
+  return codes
+}
+
+// Simplified encryption (in production, use proper encryption)
+function encryptData(data: string): string {
+  return btoa(data)
+}
+
+function decryptData(encrypted: string): string {
+  try {
+    return atob(encrypted)
+  } catch {
+    return ''
+  }
+}
+
+// Verify TOTP (simplified - in production, use proper TOTP verification)
+function verifyTOTP(code: string, _secret: string): boolean {
+  // Simplified verification - accept any 6-digit code for local testing
+  return /^\d{6}$/.test(code)
+}
+
+// Generate TOTP secret and QR code for 2FA setup
+export async function enable2FA(method: TwoFactorAuthentication['method']): Promise<TwoFactorSetupResult | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    const secret = generateTOTPSecret()
+    const backupCodes = generateBackupCodes(8)
+    const recoveryCodes = generateBackupCodes(4)
+
+    const twoFAData: TwoFactorAuthentication = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      method,
+      totp_secret_encrypted: method === 'totp' ? encryptData(secret) : null,
+      totp_backup_codes_encrypted: backupCodes.map(c => encryptData(c)),
+      phone_number_encrypted: null,
+      email_address: method === 'email' ? user?.email || null : null,
+      is_enabled: false,
+      is_verified: false,
+      verified_at: null,
+      recovery_codes_encrypted: recoveryCodes.map(c => encryptData(c)),
+      recovery_codes_used: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+
+    const existing = getLocalData<TwoFactorAuthentication[]>(STORAGE_KEYS.TWO_FA, [])
+    const filtered = existing.filter(t => !(t.user_id === userId && t.method === method))
+    filtered.push(twoFAData)
+    setLocalData(STORAGE_KEYS.TWO_FA, filtered)
+
+    const appName = encodeURIComponent('GrowthTracker')
+    const userEmail = encodeURIComponent(user?.email || userId)
+    const qrCodeUrl = `otpauth://totp/${appName}:${userEmail}?secret=${secret}&issuer=${appName}&algorithm=SHA1&digits=6&period=30`
+
+    await createSecurityAlert(userId, 'permission_change', 'low', '2FA Setup Started', 'Two-factor authentication setup has been initiated')
+
+    toast.success('2FA setup initiated. Please verify to complete.')
+
+    return {
+      qr_code: qrCodeUrl,
+      secret,
+      backup_codes: backupCodes,
+      recovery_codes: recoveryCodes,
+    }
+  } catch (err) {
+    logger.error('Error enabling 2FA', { error: err })
+    toast.error('Failed to set up 2FA')
+    return null
+  }
+}
+
+// Verify 2FA setup with code
+export async function verify2FASetup(code: string, method: TwoFactorAuthentication['method'] = 'totp'): Promise<boolean> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    const all2FA = getLocalData<TwoFactorAuthentication[]>(STORAGE_KEYS.TWO_FA, [])
+    const twoFA = all2FA.find(t => t.user_id === userId && t.method === method)
+
+    if (!twoFA?.totp_secret_encrypted) {
+      toast.error('2FA not set up')
+      return false
+    }
+
+    const secret = decryptData(twoFA.totp_secret_encrypted)
+    const isValid = verifyTOTP(code, secret)
+
+    if (!isValid) {
+      toast.error('Invalid verification code')
+      return false
+    }
+
+    twoFA.is_enabled = true
+    twoFA.is_verified = true
+    twoFA.verified_at = new Date().toISOString()
+    twoFA.updated_at = new Date().toISOString()
+    setLocalData(STORAGE_KEYS.TWO_FA, all2FA)
+
+    await createSecurityAlert(userId, 'permission_change', 'medium', '2FA Enabled', 'Two-factor authentication has been enabled on your account')
+
+    toast.success('2FA enabled successfully!')
+    return true
+  } catch (err) {
+    logger.error('Error verifying 2FA', { error: err })
+    toast.error('Verification failed')
+    return false
+  }
+}
+
+// Disable 2FA
+export async function disable2FA(method: TwoFactorAuthentication['method'] = 'totp'): Promise<boolean> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    const all2FA = getLocalData<TwoFactorAuthentication[]>(STORAGE_KEYS.TWO_FA, [])
+    const twoFA = all2FA.find(t => t.user_id === userId && t.method === method)
+
+    if (twoFA) {
+      twoFA.is_enabled = false
+      twoFA.updated_at = new Date().toISOString()
+      setLocalData(STORAGE_KEYS.TWO_FA, all2FA)
+    }
+
+    await createSecurityAlert(userId, 'permission_change', 'high', '2FA Disabled', 'Two-factor authentication has been disabled on your account')
+
+    toast.success('2FA disabled')
+    return true
+  } catch (err) {
+    logger.error('Error disabling 2FA', { error: err })
+    return false
+  }
+}
+
+// Verify 2FA during login
+export async function verify2FALogin(code: string, method: TwoFactorAuthentication['method'] = 'totp'): Promise<boolean> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    const all2FA = getLocalData<TwoFactorAuthentication[]>(STORAGE_KEYS.TWO_FA, [])
+    const twoFA = all2FA.find(t => t.user_id === userId && t.method === method && t.is_enabled)
+
+    if (!twoFA) {
+      return false
+    }
+
+    // Check backup codes
+    if (twoFA.totp_backup_codes_encrypted) {
+      const backupCodes = twoFA.totp_backup_codes_encrypted.map(c => decryptData(c))
+      if (backupCodes.includes(code)) {
+        twoFA.totp_backup_codes_encrypted = twoFA.totp_backup_codes_encrypted.filter(
+          c => decryptData(c) !== code
+        )
+        twoFA.recovery_codes_used = [...(twoFA.recovery_codes_used || []), code]
+        twoFA.updated_at = new Date().toISOString()
+        setLocalData(STORAGE_KEYS.TWO_FA, all2FA)
+        toast.info('Backup code used. Consider generating new codes.')
+        return true
+      }
+    }
+
+    // Verify TOTP
+    if (twoFA.totp_secret_encrypted) {
+      const secret = decryptData(twoFA.totp_secret_encrypted)
+      return verifyTOTP(code, secret)
+    }
+
+    return false
+  } catch (err) {
+    logger.error('Error verifying 2FA login', { error: err })
+    return false
+  }
+}
+
+// Alias for backward compatibility
+export async function verify2FA(method: string, code: string): Promise<boolean> {
+  return verify2FALogin(code, method as TwoFactorAuthentication['method'])
+}
+
+// Get 2FA methods for user
+export async function get2FAMethods(): Promise<TwoFactorAuthentication[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    const all2FA = getLocalData<TwoFactorAuthentication[]>(STORAGE_KEYS.TWO_FA, [])
+    return all2FA.filter(t => t.user_id === userId)
+  } catch (err) {
+    logger.error('Error getting 2FA methods', { error: err })
+    return []
+  }
+}
+
+// Alias for backward compatibility
+export async function get2FAStatus(): Promise<TwoFactorAuthentication[]> {
+  return get2FAMethods()
+}
+
+// Get active sessions
+export async function getActiveSessions(): Promise<ActiveSession[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    const sessions = getLocalData<ActiveSession[]>(STORAGE_KEYS.SESSIONS, [])
+    return sessions.filter(s => s.user_id === userId)
+  } catch (err) {
+    logger.error('Error getting active sessions', { error: err })
+    return []
+  }
+}
+
+// Revoke a specific session
+export async function revokeSession(sessionId: string): Promise<boolean> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    const sessions = getLocalData<ActiveSession[]>(STORAGE_KEYS.SESSIONS, [])
+    const filtered = sessions.filter(s => !(s.id === sessionId && s.user_id === userId))
+    setLocalData(STORAGE_KEYS.SESSIONS, filtered)
+
+    toast.success('Session revoked')
+    return true
+  } catch (err) {
+    logger.error('Error revoking session', { error: err })
+    return false
+  }
+}
+
+// Revoke all other sessions
+export async function revokeAllOtherSessions(): Promise<boolean> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    const sessions = getLocalData<ActiveSession[]>(STORAGE_KEYS.SESSIONS, [])
+    const current = sessions.filter(s => s.user_id === userId && s.is_current_session)
+    setLocalData(STORAGE_KEYS.SESSIONS, current)
+
+    await createSecurityAlert(userId, 'permission_change', 'medium', 'All Sessions Revoked', 'All other sessions have been signed out')
+
+    toast.success('All other sessions revoked')
+    return true
+  } catch (err) {
+    logger.error('Error revoking all sessions', { error: err })
+    return false
+  }
+}
+
+// Create security alert
+export async function createSecurityAlert(
+  userId: string,
+  alertType: SecurityAlert['alert_type'],
+  severity: SecurityAlert['alert_severity'],
+  title: string,
+  message: string,
+  details?: any
+): Promise<SecurityAlert | null> {
+  try {
+    const alert: SecurityAlert = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      alert_type: alertType,
+      alert_severity: severity,
+      alert_title: title,
+      alert_message: message,
+      details: details || null,
+      is_read: false,
+      is_resolved: false,
+      resolved_at: null,
+      created_at: new Date().toISOString(),
+    }
+
+    const alerts = getLocalData<SecurityAlert[]>(STORAGE_KEYS.ALERTS, [])
+    alerts.unshift(alert)
+    setLocalData(STORAGE_KEYS.ALERTS, alerts.slice(0, 100))
+
+    return alert
+  } catch (err) {
+    logger.error('Error creating security alert', { error: err })
+    return null
+  }
+}
+
+// Get security alerts
+export async function getSecurityAlerts(unreadOnly: boolean = false): Promise<SecurityAlert[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    const alerts = getLocalData<SecurityAlert[]>(STORAGE_KEYS.ALERTS, [])
+    let filtered = alerts.filter(a => a.user_id === userId)
+
+    if (unreadOnly) {
+      filtered = filtered.filter(a => !a.is_read)
+    }
+
+    return filtered.slice(0, 50)
+  } catch (err) {
+    logger.error('Error getting security alerts', { error: err })
+    return []
+  }
+}
+
+// Mark alert as read
+export async function markAlertAsRead(alertId: string): Promise<boolean> {
+  try {
+    const alerts = getLocalData<SecurityAlert[]>(STORAGE_KEYS.ALERTS, [])
+    const alert = alerts.find(a => a.id === alertId)
+
+    if (alert) {
+      alert.is_read = true
+      setLocalData(STORAGE_KEYS.ALERTS, alerts)
+    }
+
+    return true
+  } catch (err) {
+    logger.error('Error marking alert as read', { error: err })
+    return false
+  }
+}
+
+// Get default privacy controls
+function getDefaultPrivacyControls(userId: string): PrivacyControls {
+  return {
+    id: crypto.randomUUID(),
+    user_id: userId,
+    share_analytics: false,
+    share_usage_data: false,
+    share_location_data: false,
+    anonymize_data: true,
+    data_retention_days: 365,
+    auto_delete_old_data: false,
+    require_2fa_for_export: false,
+    allow_research_use: false,
+    marketing_emails: false,
+    promotional_notifications: false,
+    partner_sharing: false,
+    profile_visibility: 'private',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }
+}
+
+// Get privacy controls
+export async function getPrivacyControls(): Promise<PrivacyControls | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    const controls = getLocalData<PrivacyControls[]>(STORAGE_KEYS.PRIVACY, [])
+    const userControls = controls.find(c => c.user_id === userId)
+
+    return userControls || getDefaultPrivacyControls(userId)
+  } catch (err) {
+    logger.error('Error getting privacy controls', { error: err })
+    return null
+  }
+}
+
+// Update privacy controls
+export async function updatePrivacyControls(updates: Partial<PrivacyControls>): Promise<PrivacyControls | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    const controls = getLocalData<PrivacyControls[]>(STORAGE_KEYS.PRIVACY, [])
+    let userControls = controls.find(c => c.user_id === userId)
+
+    if (!userControls) {
+      userControls = getDefaultPrivacyControls(userId)
+      controls.push(userControls)
+    }
+
+    Object.assign(userControls, updates, { updated_at: new Date().toISOString() })
+    setLocalData(STORAGE_KEYS.PRIVACY, controls)
+
+    toast.success('Privacy settings updated')
+    return userControls
+  } catch (err) {
+    logger.error('Error updating privacy controls', { error: err })
+    toast.error('Failed to update privacy settings')
+    return null
+  }
+}
+
+// Get login history
+export async function getLoginHistory(limit: number = 20): Promise<LoginHistory[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    const history = getLocalData<LoginHistory[]>(STORAGE_KEYS.LOGIN_HISTORY, [])
+    return history.filter(h => h.user_id === userId).slice(0, limit)
+  } catch (err) {
+    logger.error('Error getting login history', { error: err })
+    return []
+  }
+}
+
+// Record login
+export async function recordLogin(
+  method: LoginHistory['login_method'],
+  status: LoginHistory['login_status'],
+  details?: Partial<LoginHistory>
+): Promise<LoginHistory | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    const entry: LoginHistory = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      login_method: method,
+      login_status: status,
+      ip_address: null,
+      device_info: navigator.userAgent,
+      location: null,
+      location_city: null,
+      location_country: null,
+      is_successful: status === 'success',
+      is_suspicious: false,
+      failure_reason: status !== 'success' ? 'Unknown' : null,
+      logged_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      ...details,
+    }
+
+    const history = getLocalData<LoginHistory[]>(STORAGE_KEYS.LOGIN_HISTORY, [])
+    history.unshift(entry)
+    setLocalData(STORAGE_KEYS.LOGIN_HISTORY, history.slice(0, 100))
+
+    return entry
+  } catch (err) {
+    logger.error('Error recording login', { error: err })
+    return null
+  }
+}
+
+// Export data
+export async function exportUserData(): Promise<any> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    const exportData = {
+      twoFA: getLocalData<TwoFactorAuthentication[]>(STORAGE_KEYS.TWO_FA, []).filter(t => t.user_id === userId),
+      sessions: getLocalData<ActiveSession[]>(STORAGE_KEYS.SESSIONS, []).filter(s => s.user_id === userId),
+      alerts: getLocalData<SecurityAlert[]>(STORAGE_KEYS.ALERTS, []).filter(a => a.user_id === userId),
+      privacy: getLocalData<PrivacyControls[]>(STORAGE_KEYS.PRIVACY, []).filter(p => p.user_id === userId),
+      loginHistory: getLocalData<LoginHistory[]>(STORAGE_KEYS.LOGIN_HISTORY, []).filter(h => h.user_id === userId),
+      exportedAt: new Date().toISOString(),
+    }
+
+    await createSecurityAlert(userId, 'data_export', 'medium', 'Data Exported', 'Your security data has been exported')
+
+    return exportData
+  } catch (err) {
+    logger.error('Error exporting user data', { error: err })
+    return null
+  }
+}
+
+// Delete all user data
+export async function deleteAllUserData(): Promise<boolean> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    // Filter out user's data from all storage
+    const twoFA = getLocalData<TwoFactorAuthentication[]>(STORAGE_KEYS.TWO_FA, []).filter(t => t.user_id !== userId)
+    const sessions = getLocalData<ActiveSession[]>(STORAGE_KEYS.SESSIONS, []).filter(s => s.user_id !== userId)
+    const alerts = getLocalData<SecurityAlert[]>(STORAGE_KEYS.ALERTS, []).filter(a => a.user_id !== userId)
+    const privacy = getLocalData<PrivacyControls[]>(STORAGE_KEYS.PRIVACY, []).filter(p => p.user_id !== userId)
+    const history = getLocalData<LoginHistory[]>(STORAGE_KEYS.LOGIN_HISTORY, []).filter(h => h.user_id !== userId)
+
+    setLocalData(STORAGE_KEYS.TWO_FA, twoFA)
+    setLocalData(STORAGE_KEYS.SESSIONS, sessions)
+    setLocalData(STORAGE_KEYS.ALERTS, alerts)
+    setLocalData(STORAGE_KEYS.PRIVACY, privacy)
+    setLocalData(STORAGE_KEYS.LOGIN_HISTORY, history)
+
+    toast.success('All security data deleted')
+    return true
+  } catch (err) {
+    logger.error('Error deleting user data', { error: err })
+    toast.error('Failed to delete data')
+    return false
+  }
+}
+
+// Check if 2FA is required
+export async function is2FARequired(): Promise<boolean> {
+  const methods = await get2FAMethods()
+  return methods.some(m => m.is_enabled)
+}
+
+// Generate new backup codes
+export async function regenerateBackupCodes(method: TwoFactorAuthentication['method'] = 'totp'): Promise<string[] | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'anonymous'
+
+    const all2FA = getLocalData<TwoFactorAuthentication[]>(STORAGE_KEYS.TWO_FA, [])
+    const twoFA = all2FA.find(t => t.user_id === userId && t.method === method)
+
+    if (!twoFA) {
+      toast.error('2FA not set up')
+      return null
+    }
+
+    const newCodes = generateBackupCodes(8)
+    twoFA.totp_backup_codes_encrypted = newCodes.map(c => encryptData(c))
+    twoFA.updated_at = new Date().toISOString()
+    setLocalData(STORAGE_KEYS.TWO_FA, all2FA)
+
+    toast.success('Backup codes regenerated')
+    return newCodes
+  } catch (err) {
+    logger.error('Error regenerating backup codes', { error: err })
+    toast.error('Failed to regenerate backup codes')
+    return null
+  }
+}

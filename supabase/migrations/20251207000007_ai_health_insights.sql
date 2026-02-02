@@ -58,7 +58,7 @@ CREATE POLICY "Users can update own insights" ON daily_health_insights
   FOR UPDATE USING (auth.uid() = user_id);
 
 CREATE POLICY "Service role can create insights" ON daily_health_insights
-  FOR INSERT USING (auth.jwt() ->> 'role' = 'service_role');
+  FOR INSERT WITH CHECK (auth.jwt() ->> 'role' = 'service_role');
 
 CREATE POLICY "Users can view own pattern cache" ON health_pattern_cache
   FOR SELECT USING (auth.uid() = user_id);

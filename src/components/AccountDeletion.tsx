@@ -1,37 +1,37 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle, 
-  AlertDialogTrigger 
-} from '@/components/ui/alert-dialog';
-import { Trash2, AlertTriangle, Shield, Loader2 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { logger } from '@/lib/logger';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Trash2, AlertTriangle, Shield, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { logger } from "@/lib/logger";
+import { useNavigate } from "react-router-dom";
 
 export const AccountDeletion = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [confirmEmail, setConfirmEmail] = useState('');
-  const [confirmText, setConfirmText] = useState('');
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [confirmText, setConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
 
-  const userEmail = user?.email || '';
-  const isConfirmed = confirmEmail === userEmail && confirmText.toLowerCase() === 'delete';
+  const userEmail = user?.email || "";
+  const isConfirmed = confirmEmail === userEmail && confirmText.toLowerCase() === "delete";
 
   const handleDeleteAccount = async () => {
     if (!user) return;
@@ -46,36 +46,36 @@ export const AccountDeletion = () => {
       // 1. Cancel active subscription if exists
       try {
         const { data: subscription } = await supabase
-          .from('user_subscriptions')
-          .select('stripe_subscription_id')
-          .eq('user_id', user.id)
+          .from("user_subscriptions")
+          .select("stripe_subscription_id")
+          .eq("user_id", user.id)
           .single();
 
         if (subscription?.stripe_subscription_id) {
           // Cancel subscription via Edge Function
-          await supabase.functions.invoke('cancel-subscription', {
+          await supabase.functions.invoke("cancel-subscription", {
             body: {
               subscriptionId: subscription.stripe_subscription_id,
               cancelAtPeriodEnd: false, // Immediate cancellation
             },
           });
-          logger.info('Subscription cancelled during account deletion', { userId: user.id });
+          logger.info("Subscription cancelled during account deletion", { userId: user.id });
         }
       } catch (error) {
-        logger.warn('No active subscription to cancel', { userId: user.id, error });
+        logger.warn("No active subscription to cancel", { userId: user.id, error });
       }
 
       // 2. Clear local storage first
       try {
         localStorage.clear();
         sessionStorage.clear();
-        logger.info('Local storage cleared', { userId: user.id });
+        logger.info("Local storage cleared", { userId: user.id });
       } catch (error) {
-        logger.warn('Failed to clear local storage', { error, userId: user.id });
+        logger.warn("Failed to clear local storage", { error, userId: user.id });
       }
 
       // 3. Delete all user data via Edge Function (handles Supabase + Stripe)
-      const { error: deleteError } = await supabase.functions.invoke('delete-user-account', {
+      const { error: deleteError } = await supabase.functions.invoke("delete-user-account", {
         body: { userId: user.id },
       });
 
@@ -83,19 +83,18 @@ export const AccountDeletion = () => {
         throw deleteError;
       }
 
-      logger.userAction('account_deleted', user.id);
+      logger.userAction("account_deleted", user.id);
 
       // 5. Sign out and redirect
       await signOut();
-      toast.success('Account deleted successfully');
-      navigate('/auth');
-
+      toast.success("Account deleted successfully");
+      navigate("/auth");
     } catch (error) {
-      logger.error('Account deletion failed', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+      logger.error("Account deletion failed", {
+        error: error instanceof Error ? error.message : "Unknown error",
         userId: user.id,
       });
-      toast.error('Failed to delete account. Please contact support.');
+      toast.error("Failed to delete account. Please contact support.");
     } finally {
       setIsDeleting(false);
       setShowDialog(false);
@@ -135,7 +134,8 @@ export const AccountDeletion = () => {
             <div className="text-sm">
               <p className="font-medium mb-1">GDPR Right to Erasure</p>
               <p className="text-muted-foreground">
-                You have the right to request deletion of your personal data. This action complies with GDPR requirements.
+                You have the right to request deletion of your personal data. This action complies
+                with GDPR requirements.
               </p>
             </div>
           </div>
@@ -153,20 +153,21 @@ export const AccountDeletion = () => {
               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
               <AlertDialogDescription className="space-y-4">
                 <p>
-                  This action cannot be undone. This will permanently delete your account
-                  and remove all your data from our servers.
+                  This action cannot be undone. This will permanently delete your account and remove
+                  all your data from our servers.
                 </p>
 
                 <div className="space-y-3 pt-2">
                   <div className="space-y-2">
                     <Label htmlFor="confirm-email">
-                      Type your email to confirm: <span className="text-muted-foreground">({userEmail})</span>
+                      Type your email to confirm:{" "}
+                      <span className="text-muted-foreground">({userEmail})</span>
                     </Label>
                     <Input
                       id="confirm-email"
                       type="email"
                       value={confirmEmail}
-                      onChange={(e) => setConfirmEmail(e.target.value)}
+                      onChange={e => setConfirmEmail(e.target.value)}
                       placeholder="Enter your email"
                       className="font-mono"
                     />
@@ -180,7 +181,7 @@ export const AccountDeletion = () => {
                       id="confirm-text"
                       type="text"
                       value={confirmText}
-                      onChange={(e) => setConfirmText(e.target.value)}
+                      onChange={e => setConfirmText(e.target.value)}
                       placeholder="Type DELETE"
                       className="font-mono uppercase"
                     />
@@ -214,4 +215,3 @@ export const AccountDeletion = () => {
     </Card>
   );
 };
-

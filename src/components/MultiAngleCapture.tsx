@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Camera, RotateCw, CheckCircle2, AlertCircle, ChevronRight, Layers } from 'lucide-react';
+import { useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Camera, RotateCw, CheckCircle2, AlertCircle, ChevronRight, Layers } from "lucide-react";
 
 interface CapturedAngle {
   id: string;
@@ -22,17 +22,17 @@ interface MultiAngleCaptureProps {
 }
 
 const REQUIRED_ANGLES = [
-  { id: 'front', label: 'Front View', description: 'Straight-on frontal capture', icon: '📷' },
-  { id: 'left', label: 'Left Side', description: 'Turn 90° counter-clockwise', icon: '⬅️' },
-  { id: 'right', label: 'Right Side', description: 'Turn 90° clockwise', icon: '➡️' },
-  { id: 'top', label: 'Top View', description: 'Camera above, looking down', icon: '⬆️' },
+  { id: "front", label: "Front View", description: "Straight-on frontal capture", icon: "📷" },
+  { id: "left", label: "Left Side", description: "Turn 90° counter-clockwise", icon: "⬅️" },
+  { id: "right", label: "Right Side", description: "Turn 90° clockwise", icon: "➡️" },
+  { id: "top", label: "Top View", description: "Camera above, looking down", icon: "⬆️" },
 ];
 
 export const MultiAngleCapture = ({
   isActive,
   onCapture,
   onComplete,
-  onCancel
+  onCancel,
 }: MultiAngleCaptureProps) => {
   const [captures, setCaptures] = useState<CapturedAngle[]>([]);
   const [currentAngleIndex, setCurrentAngleIndex] = useState(0);
@@ -41,30 +41,33 @@ export const MultiAngleCapture = ({
   const currentAngle = REQUIRED_ANGLES[currentAngleIndex];
   const progress = (captures.length / REQUIRED_ANGLES.length) * 100;
 
-  const handleCapture = useCallback((imageData: string) => {
-    setIsCapturing(true);
-    
-    // Simulate quality analysis
-    setTimeout(() => {
-      const quality = 70 + Math.random() * 30;
-      const newCapture: CapturedAngle = {
-        id: currentAngle.id,
-        angle: currentAngle.label,
-        image: imageData,
-        timestamp: new Date(),
-        quality
-      };
-      
-      setCaptures(prev => [...prev, newCapture]);
-      onCapture(imageData, currentAngle.id);
-      
-      if (currentAngleIndex < REQUIRED_ANGLES.length - 1) {
-        setCurrentAngleIndex(prev => prev + 1);
-      }
-      
-      setIsCapturing(false);
-    }, 500);
-  }, [currentAngle, currentAngleIndex, onCapture]);
+  const handleCapture = useCallback(
+    (imageData: string) => {
+      setIsCapturing(true);
+
+      // Simulate quality analysis
+      setTimeout(() => {
+        const quality = 70 + Math.random() * 30;
+        const newCapture: CapturedAngle = {
+          id: currentAngle.id,
+          angle: currentAngle.label,
+          image: imageData,
+          timestamp: new Date(),
+          quality,
+        };
+
+        setCaptures(prev => [...prev, newCapture]);
+        onCapture(imageData, currentAngle.id);
+
+        if (currentAngleIndex < REQUIRED_ANGLES.length - 1) {
+          setCurrentAngleIndex(prev => prev + 1);
+        }
+
+        setIsCapturing(false);
+      }, 500);
+    },
+    [currentAngle, currentAngleIndex, onCapture],
+  );
 
   const handleComplete = () => {
     if (captures.length >= REQUIRED_ANGLES.length) {
@@ -107,7 +110,9 @@ export const MultiAngleCapture = ({
         <div className="mb-6">
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="text-muted-foreground">Progress</span>
-            <span className="font-medium">{captures.length}/{REQUIRED_ANGLES.length} angles</span>
+            <span className="font-medium">
+              {captures.length}/{REQUIRED_ANGLES.length} angles
+            </span>
           </div>
           <Progress value={progress} className="h-2" />
         </div>
@@ -147,7 +152,7 @@ export const MultiAngleCapture = ({
           {REQUIRED_ANGLES.map((angle, index) => {
             const capture = captures.find(c => c.id === angle.id);
             const isCurrent = index === currentAngleIndex && !capture;
-            
+
             return (
               <motion.div
                 key={angle.id}
@@ -156,14 +161,19 @@ export const MultiAngleCapture = ({
                 transition={{ delay: index * 0.1 }}
                 className={`
                   relative aspect-square rounded-xl overflow-hidden border-2 transition-all
-                  ${isCurrent ? 'border-primary ring-2 ring-primary/30' : 
-                    capture ? 'border-success/50' : 'border-border/50'}
+                  ${
+                    isCurrent
+                      ? "border-primary ring-2 ring-primary/30"
+                      : capture
+                        ? "border-success/50"
+                        : "border-border/50"
+                  }
                 `}
               >
                 {capture ? (
                   <>
-                    <img 
-                      src={capture.image} 
+                    <img
+                      src={capture.image}
                       alt={angle.label}
                       className="w-full h-full object-cover"
                     />
@@ -184,13 +194,15 @@ export const MultiAngleCapture = ({
                     </button>
                   </>
                 ) : (
-                  <div className={`
+                  <div
+                    className={`
                     w-full h-full flex flex-col items-center justify-center
-                    ${isCurrent ? 'bg-primary/10' : 'bg-muted/30'}
-                  `}>
+                    ${isCurrent ? "bg-primary/10" : "bg-muted/30"}
+                  `}
+                  >
                     <span className="text-lg">{angle.icon}</span>
                     <span className="text-[10px] text-muted-foreground mt-1">
-                      {angle.label.split(' ')[0]}
+                      {angle.label.split(" ")[0]}
                     </span>
                   </div>
                 )}
@@ -218,7 +230,7 @@ export const MultiAngleCapture = ({
               </div>
             )}
           </div>
-          
+
           {/* AR overlay guides */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none">
             <defs>
@@ -227,32 +239,51 @@ export const MultiAngleCapture = ({
                 <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity="0.5" />
               </linearGradient>
             </defs>
-            
+
             {/* Corner guides */}
-            <path d="M 20 60 L 20 20 L 60 20" fill="none" stroke="url(#guideGradient)" strokeWidth="2" />
-            <path d="M 60 100% L 20 100% L 20 calc(100% - 40)" fill="none" stroke="url(#guideGradient)" strokeWidth="2" transform="translate(0, -20)" />
-            <path d="M 100% 60 L 100% 20 L calc(100% - 40) 20" fill="none" stroke="url(#guideGradient)" strokeWidth="2" transform="translate(-20, 0)" />
-            <path d="M calc(100% - 60) 100% L 100% 100% L 100% calc(100% - 40)" fill="none" stroke="url(#guideGradient)" strokeWidth="2" transform="translate(-20, -20)" />
+            <path
+              d="M 20 60 L 20 20 L 60 20"
+              fill="none"
+              stroke="url(#guideGradient)"
+              strokeWidth="2"
+            />
+            <path
+              d="M 60 100% L 20 100% L 20 calc(100% - 40)"
+              fill="none"
+              stroke="url(#guideGradient)"
+              strokeWidth="2"
+              transform="translate(0, -20)"
+            />
+            <path
+              d="M 100% 60 L 100% 20 L calc(100% - 40) 20"
+              fill="none"
+              stroke="url(#guideGradient)"
+              strokeWidth="2"
+              transform="translate(-20, 0)"
+            />
+            <path
+              d="M calc(100% - 60) 100% L 100% 100% L 100% calc(100% - 40)"
+              fill="none"
+              stroke="url(#guideGradient)"
+              strokeWidth="2"
+              transform="translate(-20, -20)"
+            />
           </svg>
         </div>
 
         {/* Actions */}
         <div className="flex gap-3">
           {captures.length >= REQUIRED_ANGLES.length ? (
-            <Button 
-              variant="hero" 
-              className="flex-1"
-              onClick={handleComplete}
-            >
+            <Button variant="hero" className="flex-1" onClick={handleComplete}>
               <CheckCircle2 className="w-4 h-4 mr-2" />
               Complete Scan
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (
-            <Button 
-              variant="hero" 
+            <Button
+              variant="hero"
               className="flex-1"
-              onClick={() => handleCapture('data:image/jpeg;base64,placeholder')}
+              onClick={() => handleCapture("data:image/jpeg;base64,placeholder")}
               disabled={isCapturing}
             >
               <Camera className="w-4 h-4 mr-2" />

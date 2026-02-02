@@ -3,13 +3,19 @@
  * Comprehensive marketplace for routines, expert consultations, custom reports, equipment, and supplements
  */
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   getMarketplaceItems,
   purchaseMarketplaceItem,
@@ -21,80 +27,90 @@ import {
   type MarketplaceItem,
   type ExpertConsultation,
   type EquipmentRecommendation,
-  type SupplementRecommendation
-} from '@/lib/marketplaceSystem'
-import { ShoppingBag, Users, FileText, Dumbbell, Pill, Calendar, Search, Star, ExternalLink, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
+  type SupplementRecommendation,
+} from "@/lib/marketplaceSystem";
+import {
+  ShoppingBag,
+  Users,
+  FileText,
+  Dumbbell,
+  Pill,
+  Calendar,
+  Search,
+  Star,
+  ExternalLink,
+  Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
 
 export const MarketplaceSystem = () => {
-  const [activeTab, setActiveTab] = useState('routines')
-  const [loading, setLoading] = useState(false)
-  const [marketplaceItems, setMarketplaceItems] = useState<MarketplaceItem[]>([])
-  const [consultations, setConsultations] = useState<ExpertConsultation[]>([])
-  const [equipment, setEquipment] = useState<EquipmentRecommendation[]>([])
-  const [supplements, setSupplements] = useState<SupplementRecommendation[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const [searchQuery, setSearchQuery] = useState('')
+  const [activeTab, setActiveTab] = useState("routines");
+  const [loading, setLoading] = useState(false);
+  const [marketplaceItems, setMarketplaceItems] = useState<MarketplaceItem[]>([]);
+  const [consultations, setConsultations] = useState<ExpertConsultation[]>([]);
+  const [equipment, setEquipment] = useState<EquipmentRecommendation[]>([]);
+  const [supplements, setSupplements] = useState<SupplementRecommendation[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    loadData()
-  }, [activeTab, selectedCategory])
-
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
       switch (activeTab) {
-        case 'routines':
-        case 'courses':
-        case 'videos': {
+        case "routines":
+        case "courses":
+        case "videos": {
           const items = await getMarketplaceItems(
-            activeTab === 'routines' ? 'routine' :
-            activeTab === 'courses' ? 'course' :
-            'video'
-          )
-          setMarketplaceItems(items)
-          break
+            activeTab === "routines" ? "routine" : activeTab === "courses" ? "course" : "video",
+          );
+          setMarketplaceItems(items);
+          break;
         }
-        case 'consultations': {
-          const consultationsData = await getUserConsultations()
-          setConsultations(consultationsData)
-          break
+        case "consultations": {
+          const consultationsData = await getUserConsultations();
+          setConsultations(consultationsData);
+          break;
         }
-        case 'equipment': {
-          const equipmentData = await getEquipmentRecommendations()
-          setEquipment(equipmentData)
-          break
+        case "equipment": {
+          const equipmentData = await getEquipmentRecommendations();
+          setEquipment(equipmentData);
+          break;
         }
-        case 'supplements': {
-          const supplementsData = await getSupplementRecommendations()
-          setSupplements(supplementsData)
-          break
+        case "supplements": {
+          const supplementsData = await getSupplementRecommendations();
+          setSupplements(supplementsData);
+          break;
         }
       }
     } catch (error) {
-      toast.error('Failed to load marketplace data')
+      toast.error("Failed to load marketplace data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [activeTab]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const handlePurchase = async (itemId: string) => {
     try {
-      const success = await purchaseMarketplaceItem(itemId)
+      const success = await purchaseMarketplaceItem(itemId);
       if (success) {
-        await loadData()
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to start purchase')
+      toast.error("Failed to start purchase");
     }
-  }
+  };
 
   const filteredItems = marketplaceItems.filter(item => {
-    const matchesSearch = searchQuery === '' ||
+    const matchesSearch =
+      searchQuery === "" ||
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesSearch
-  })
+      item.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -126,7 +142,7 @@ export const MarketplaceSystem = () => {
                   <Input
                     placeholder="Search routines..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={e => setSearchQuery(e.target.value)}
                     className="pl-10"
                   />
                 </div>
@@ -139,7 +155,10 @@ export const MarketplaceSystem = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredItems.map(item => (
-                    <Card key={item.id} className="glass-card border-border/50 hover:border-primary/50 transition-colors">
+                    <Card
+                      key={item.id}
+                      className="glass-card border-border/50 hover:border-primary/50 transition-colors"
+                    >
                       <CardContent className="p-0">
                         <div className="relative aspect-video bg-muted/30 rounded-t-lg overflow-hidden">
                           {item.thumbnail_url ? (
@@ -166,7 +185,9 @@ export const MarketplaceSystem = () => {
                         </div>
                         <div className="p-4 space-y-2">
                           <h3 className="font-semibold line-clamp-2">{item.title}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {item.description}
+                          </p>
                           {item.expert_name && (
                             <p className="text-xs text-muted-foreground">By {item.expert_name}</p>
                           )}
@@ -183,7 +204,7 @@ export const MarketplaceSystem = () => {
                               </span>
                             </div>
                             <span className="text-lg font-semibold">
-                              {item.is_free ? 'Free' : `$${item.price.toFixed(2)}`}
+                              {item.is_free ? "Free" : `$${item.price.toFixed(2)}`}
                             </span>
                           </div>
                           <Button
@@ -191,7 +212,7 @@ export const MarketplaceSystem = () => {
                             className="w-full"
                             onClick={() => handlePurchase(item.id)}
                           >
-                            {item.is_free ? 'Get Free' : 'Purchase'}
+                            {item.is_free ? "Get Free" : "Purchase"}
                           </Button>
                         </div>
                       </CardContent>
@@ -201,22 +222,190 @@ export const MarketplaceSystem = () => {
               )}
 
               {filteredItems.length === 0 && !loading && (
-                <div className="text-center py-12 text-muted-foreground">
-                  No routines found
-                </div>
+                <div className="text-center py-12 text-muted-foreground">No routines found</div>
               )}
             </TabsContent>
 
             <TabsContent value="courses" className="space-y-4">
-              <div className="text-center py-12 text-muted-foreground">
-                Educational courses coming soon
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    placeholder="Search courses..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
+
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredItems.map(item => (
+                    <Card
+                      key={item.id}
+                      className="glass-card border-border/50 hover:border-primary/50 transition-colors"
+                    >
+                      <CardContent className="p-0">
+                        <div className="relative aspect-video bg-muted/30 rounded-t-lg overflow-hidden">
+                          {item.thumbnail_url ? (
+                            <img
+                              src={item.thumbnail_url}
+                              alt={item.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <FileText className="w-12 h-12 text-muted-foreground" />
+                            </div>
+                          )}
+                          {item.is_featured && (
+                            <Badge className="absolute top-2 left-2" variant="default">
+                              Featured
+                            </Badge>
+                          )}
+                          {item.is_verified && (
+                            <Badge className="absolute top-2 right-2" variant="secondary">
+                              Verified
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="p-4 space-y-2">
+                          <h3 className="font-semibold line-clamp-2">{item.title}</h3>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {item.description}
+                          </p>
+                          {item.expert_name && (
+                            <p className="text-xs text-muted-foreground">By {item.expert_name}</p>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              {item.average_rating && (
+                                <div className="flex items-center gap-1">
+                                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                                  <span className="text-sm">{item.average_rating.toFixed(1)}</span>
+                                </div>
+                              )}
+                              <span className="text-sm text-muted-foreground">
+                                {item.purchase_count} purchases
+                              </span>
+                            </div>
+                            <span className="text-lg font-semibold">
+                              {item.is_free ? "Free" : `$${item.price.toFixed(2)}`}
+                            </span>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="w-full"
+                            onClick={() => handlePurchase(item.id)}
+                          >
+                            {item.is_free ? "Get Free" : "Purchase"}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {filteredItems.length === 0 && !loading && (
+                <div className="text-center py-12 text-muted-foreground">No courses found</div>
+              )}
             </TabsContent>
 
             <TabsContent value="videos" className="space-y-4">
-              <div className="text-center py-12 text-muted-foreground">
-                Expert video content coming soon
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    placeholder="Search videos..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
+
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredItems.map(item => (
+                    <Card
+                      key={item.id}
+                      className="glass-card border-border/50 hover:border-primary/50 transition-colors"
+                    >
+                      <CardContent className="p-0">
+                        <div className="relative aspect-video bg-muted/30 rounded-t-lg overflow-hidden">
+                          {item.thumbnail_url ? (
+                            <img
+                              src={item.thumbnail_url}
+                              alt={item.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Users className="w-12 h-12 text-muted-foreground" />
+                            </div>
+                          )}
+                          {item.is_featured && (
+                            <Badge className="absolute top-2 left-2" variant="default">
+                              Featured
+                            </Badge>
+                          )}
+                          {item.is_verified && (
+                            <Badge className="absolute top-2 right-2" variant="secondary">
+                              Verified
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="p-4 space-y-2">
+                          <h3 className="font-semibold line-clamp-2">{item.title}</h3>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {item.description}
+                          </p>
+                          {item.expert_name && (
+                            <p className="text-xs text-muted-foreground">By {item.expert_name}</p>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              {item.average_rating && (
+                                <div className="flex items-center gap-1">
+                                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                                  <span className="text-sm">{item.average_rating.toFixed(1)}</span>
+                                </div>
+                              )}
+                              <span className="text-sm text-muted-foreground">
+                                {item.purchase_count} purchases
+                              </span>
+                            </div>
+                            <span className="text-lg font-semibold">
+                              {item.is_free ? "Free" : `$${item.price.toFixed(2)}`}
+                            </span>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="w-full"
+                            onClick={() => handlePurchase(item.id)}
+                          >
+                            {item.is_free ? "Get Free" : "Purchase"}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {filteredItems.length === 0 && !loading && (
+                <div className="text-center py-12 text-muted-foreground">No videos found</div>
+              )}
             </TabsContent>
 
             <TabsContent value="consultations" className="space-y-4">
@@ -242,14 +431,18 @@ export const MarketplaceSystem = () => {
                             <p className="text-sm text-muted-foreground">
                               {consultation.scheduled_at
                                 ? new Date(consultation.scheduled_at).toLocaleString()
-                                : 'Not scheduled'}
+                                : "Not scheduled"}
                             </p>
                           </div>
-                          <Badge variant={
-                            consultation.consultation_status === 'completed' ? 'default' :
-                            consultation.consultation_status === 'confirmed' ? 'secondary' :
-                            'outline'
-                          }>
+                          <Badge
+                            variant={
+                              consultation.consultation_status === "completed"
+                                ? "default"
+                                : consultation.consultation_status === "confirmed"
+                                  ? "secondary"
+                                  : "outline"
+                            }
+                          >
                             {consultation.consultation_status}
                           </Badge>
                         </div>
@@ -293,7 +486,7 @@ export const MarketplaceSystem = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => window.open(item.affiliate_url, '_blank')}
+                                onClick={() => window.open(item.affiliate_url, "_blank")}
                               >
                                 <ExternalLink className="w-4 h-4 mr-2" />
                                 View
@@ -341,7 +534,7 @@ export const MarketplaceSystem = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => window.open(item.affiliate_url, '_blank')}
+                                onClick={() => window.open(item.affiliate_url, "_blank")}
                               >
                                 <ExternalLink className="w-4 h-4 mr-2" />
                                 View
@@ -359,6 +552,5 @@ export const MarketplaceSystem = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
+  );
+};

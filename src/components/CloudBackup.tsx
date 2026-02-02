@@ -1,16 +1,24 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
-import { useData } from '@/contexts/DataContext';
-import { encryptData, decryptData } from '@/lib/encryption';
-import { 
-  Cloud, CloudOff, Upload, Download, Shield, Key, 
-  RefreshCw, CheckCircle2, AlertCircle, Loader2 
-} from 'lucide-react';
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { useData } from "@/contexts/DataContext";
+import { encryptData, decryptData } from "@/lib/encryption";
+import {
+  Cloud,
+  CloudOff,
+  Upload,
+  Download,
+  Shield,
+  Key,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 
 interface CloudBackupSettings {
   enabled: boolean;
@@ -19,22 +27,24 @@ interface CloudBackupSettings {
   encryptionKey: string;
 }
 
-const STORAGE_KEY = 'morphoscan_cloud_settings';
+const STORAGE_KEY = "morphoscan_cloud_settings";
 
 export const CloudBackup = () => {
   const { scans, diaryEntries, exportData, importData } = useData();
   const [settings, setSettings] = useState<CloudBackupSettings>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : {
-      enabled: false,
-      autoBackup: false,
-      lastBackup: null,
-      encryptionKey: ''
-    };
+    return saved
+      ? JSON.parse(saved)
+      : {
+          enabled: false,
+          autoBackup: false,
+          lastBackup: null,
+          encryptionKey: "",
+        };
   });
   const [isUploading, setIsUploading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [customKey, setCustomKey] = useState('');
+  const [customKey, setCustomKey] = useState("");
 
   const saveSettings = (newSettings: CloudBackupSettings) => {
     setSettings(newSettings);
@@ -43,20 +53,20 @@ export const CloudBackup = () => {
 
   const handleEnableCloud = () => {
     if (!settings.enabled && !customKey) {
-      toast.error('Please enter an encryption key first');
+      toast.error("Please enter an encryption key first");
       return;
     }
     saveSettings({
       ...settings,
       enabled: !settings.enabled,
-      encryptionKey: customKey || settings.encryptionKey
+      encryptionKey: customKey || settings.encryptionKey,
     });
-    toast.success(settings.enabled ? 'Cloud backup disabled' : 'Cloud backup enabled');
+    toast.success(settings.enabled ? "Cloud backup disabled" : "Cloud backup enabled");
   };
 
   const handleBackupToCloud = async () => {
     if (!settings.enabled) {
-      toast.error('Enable cloud backup first');
+      toast.error("Enable cloud backup first");
       return;
     }
 
@@ -64,26 +74,26 @@ export const CloudBackup = () => {
     try {
       const data = exportData();
       const encrypted = await encryptData(JSON.stringify(data));
-      
+
       // Store in localStorage as "cloud" simulation
       // In production, this would upload to actual cloud storage
       const cloudData = {
         data: encrypted,
         timestamp: new Date().toISOString(),
-        checksum: btoa(JSON.stringify(data).slice(0, 50))
+        checksum: btoa(JSON.stringify(data).slice(0, 50)),
       };
-      localStorage.setItem('morphoscan_cloud_backup', JSON.stringify(cloudData));
-      
+      localStorage.setItem("morphoscan_cloud_backup", JSON.stringify(cloudData));
+
       saveSettings({
         ...settings,
-        lastBackup: new Date().toISOString()
+        lastBackup: new Date().toISOString(),
       });
-      
-      toast.success('Backup uploaded successfully', {
-        description: `${scans.length} scans and ${diaryEntries.length} diary entries backed up`
+
+      toast.success("Backup uploaded successfully", {
+        description: `${scans.length} scans and ${diaryEntries.length} diary entries backed up`,
       });
     } catch (error) {
-      toast.error('Backup failed', { description: 'Could not encrypt data' });
+      toast.error("Backup failed", { description: "Could not encrypt data" });
     }
     setIsUploading(false);
   };
@@ -91,9 +101,9 @@ export const CloudBackup = () => {
   const handleRestoreFromCloud = async () => {
     setIsDownloading(true);
     try {
-      const cloudBackup = localStorage.getItem('morphoscan_cloud_backup');
+      const cloudBackup = localStorage.getItem("morphoscan_cloud_backup");
       if (!cloudBackup) {
-        toast.error('No cloud backup found');
+        toast.error("No cloud backup found");
         setIsDownloading(false);
         return;
       }
@@ -101,13 +111,13 @@ export const CloudBackup = () => {
       const { data: encryptedData } = JSON.parse(cloudBackup);
       const decrypted = await decryptData(encryptedData);
       const parsedData = JSON.parse(decrypted);
-      
+
       await importData(parsedData);
-      toast.success('Data restored successfully', {
-        description: `${parsedData.scans?.length || 0} scans and ${parsedData.diaryEntries?.length || 0} entries restored`
+      toast.success("Data restored successfully", {
+        description: `${parsedData.scans?.length || 0} scans and ${parsedData.diaryEntries?.length || 0} entries restored`,
       });
     } catch (error) {
-      toast.error('Restore failed', { description: 'Could not decrypt data or invalid format' });
+      toast.error("Restore failed", { description: "Could not decrypt data or invalid format" });
     }
     setIsDownloading(false);
   };
@@ -117,7 +127,7 @@ export const CloudBackup = () => {
     crypto.getRandomValues(array);
     const key = btoa(String.fromCharCode(...array)).slice(0, 32);
     setCustomKey(key);
-    toast.success('Key generated! Save this key securely.');
+    toast.success("Key generated! Save this key securely.");
   };
 
   return (
@@ -136,7 +146,8 @@ export const CloudBackup = () => {
             <div>
               <p className="text-sm font-medium text-foreground">End-to-End Encryption</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Your data is encrypted before leaving your device. Only you can decrypt it with your key.
+                Your data is encrypted before leaving your device. Only you can decrypt it with your
+                key.
               </p>
             </div>
           </div>
@@ -153,7 +164,7 @@ export const CloudBackup = () => {
               type="password"
               placeholder="Enter or generate encryption key"
               value={customKey}
-              onChange={(e) => setCustomKey(e.target.value)}
+              onChange={e => setCustomKey(e.target.value)}
               className="flex-1"
             />
             <Button variant="outline" size="sm" onClick={generateEncryptionKey}>
@@ -176,14 +187,11 @@ export const CloudBackup = () => {
             <div>
               <p className="font-medium">Cloud Backup</p>
               <p className="text-xs text-muted-foreground">
-                {settings.enabled ? 'Enabled' : 'Disabled'}
+                {settings.enabled ? "Enabled" : "Disabled"}
               </p>
             </div>
           </div>
-          <Switch
-            checked={settings.enabled}
-            onCheckedChange={handleEnableCloud}
-          />
+          <Switch checked={settings.enabled} onCheckedChange={handleEnableCloud} />
         </div>
 
         {/* Auto Backup */}
@@ -198,7 +206,7 @@ export const CloudBackup = () => {
             </div>
             <Switch
               checked={settings.autoBackup}
-              onCheckedChange={(checked) => saveSettings({ ...settings, autoBackup: checked })}
+              onCheckedChange={checked => saveSettings({ ...settings, autoBackup: checked })}
             />
           </div>
         )}
@@ -246,7 +254,8 @@ export const CloudBackup = () => {
         <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
           <AlertCircle className="w-4 h-4 text-warning mt-0.5" />
           <p className="text-xs text-muted-foreground">
-            Cloud backup stores encrypted data locally as a simulation. In production, this would connect to secure cloud storage.
+            Cloud backup stores encrypted data locally as a simulation. In production, this would
+            connect to secure cloud storage.
           </p>
         </div>
       </CardContent>

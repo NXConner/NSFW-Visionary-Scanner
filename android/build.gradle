@@ -1,11 +1,10 @@
 // Top-level build file for Capacitor Android project
 buildscript {
     ext {
-        compileSdkVersion = 36
-        targetSdkVersion = 36
-        minSdkVersion = 24
-        kotlinVersion = '2.2.20'
-        kotlin_version = kotlinVersion
+        compileSdkVersion = 35
+        targetSdkVersion = 34
+        minSdkVersion = 22
+        kotlinVersion = '1.9.25'
         newArchEnabled = false
         runtimeSchedulerAlwaysEnabled = false
     }
@@ -14,8 +13,10 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.9.1'
+        classpath 'com.android.tools.build:gradle:8.5.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+        // Google Services (Firebase) Gradle plugin
+        classpath 'com.google.gms:google-services:4.4.0'
     }
 }
 
@@ -23,29 +24,6 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-    }
-}
-
-subprojects {
-    plugins.withId("org.jetbrains.kotlin.android") {
-        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-            kotlinOptions.jvmTarget = "21"
-        }
-    }
-    plugins.withId("kotlin-android") {
-        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-            kotlinOptions.jvmTarget = "21"
-        }
-    }
-    afterEvaluate { project ->
-        if (project.plugins.hasPlugin("com.android.application") || project.plugins.hasPlugin("com.android.library")) {
-            project.android {
-                compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_21
-                    targetCompatibility JavaVersion.VERSION_21
-                }
-            }
-        }
     }
 }
 

@@ -1,10 +1,15 @@
 /**
- * Biometric Authentication Utilities
- * Supports Face ID, Touch ID, and Fingerprint authentication
+ * Biometric Authentication
+ *
+ * Uses `capacitor-native-biometric` on iOS/Android and provides a safe no-op
+ * implementation on web.
+ *
+ * Note: This is a non-React utility module (the React hook lives at `src/hooks/useBiometricAuth.ts`).
  */
 
-import { Capacitor } from '@capacitor/core';
-import { BiometricType, NativeBiometric } from 'capacitor-native-biometric';
+import { Capacitor } from "@capacitor/core";
+
+export type BiometricType = "touchId" | "faceId" | "fingerprint" | "face" | "iris" | "none";
 
 export interface BiometricAuthResult {
   success: boolean;
@@ -12,110 +17,123 @@ export interface BiometricAuthResult {
   biometricType?: BiometricType;
 }
 
-/**
- * Check if biometric authentication is available
- */
 export async function isBiometricAvailable(): Promise<{
   available: boolean;
   type?: BiometricType;
   error?: string;
 }> {
-  try {
-    if (Capacitor.getPlatform() === 'web') {
-      // Check Web Authentication API
-      if (window.PublicKeyCredential) {
-        return { available: true, type: 'fingerprint' };
-      }
-      return { available: false, error: 'Biometric authentication not supported on web' };
-    }
+  const platform = Capacitor.getPlatform();
+  if (platform === "web") {
+    return { available: false, error: "Biometric authentication not supported on web" };
+  }
 
-    // Native platforms
-    const result = await NativeBiometric.checkAvailability();
-    return {
-      available: result.isAvailable,
-      type: result.biometryType,
+  try {
+    const { NativeBiometric } = await import("capacitor-native-biometric");
+    const result = await NativeBiometric.isAvailable();
+
+    const typeMap: Record<number, BiometricType> = {
+      1: "fingerprint",
+      2: "face",
+      3: "iris",
+      4: "fingerprint",
     };
-  } catch (error) {
+
     return {
-      available: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      available: Boolean(result.isAvailable),
+      type: result.biometryType ? typeMap[result.biometryType] : undefined,
     };
+  } catch (e) {
+    return { available: false, error: e instanceof Error ? e.message : "Biometric not available" };
   }
 }
 
-/**
- * Authenticate using biometrics
- */
 export async function authenticateWithBiometric(
-  reason: string = 'Authenticate to access MorphoScan Pro'
+  reason: string = "Authenticate",
 ): Promise<BiometricAuthResult> {
+  const availability = await isBiometricAvailable();
+  if (!availability.available)
+    return { success: false, error: availability.error ?? "Not available on this platform" };
+
   try {
-    if (Capacitor.getPlatform() === 'web') {
-      // Use Web Authentication API
-      if (!window.PublicKeyCredential) {
-        return { success: false, error: 'Biometric authentication not supported' };
-      }
-
-      // WebAuthn credential request
-      const credential = await navigator.credentials.get({
-        publicKey: {
-          challenge: new Uint8Array(32),
-          timeout: 60000,
-          userVerification: 'required',
-        },
-      });
-
-      if (credential) {
-        return { success: true, biometricType: 'fingerprint' };
-      }
-
-      return { success: false, error: 'Authentication cancelled' };
-    }
-
-    // Native platforms
-    const result = await NativeBiometric.verifyIdentity({
+    const { NativeBiometric } = await import("capacitor-native-biometric");
+    await NativeBiometric.verifyIdentity({
       reason,
-      title: 'Biometric Authentication',
-      subtitle: 'Use your biometric to unlock',
-      description: 'Authenticate to access your health data',
+      title: "Biometric Authentication",
+      subtitle: "Verify your identity",
+      description: "Use your fingerprint or face to continue",
+      maxAttempts: 3,
       useFallback: true,
-      fallbackTitle: 'Use PIN',
+      fallbackTitle: "Use PIN",
     });
-
-    if (result.verified) {
-      const availability = await isBiometricAvailable();
-      return {
-        success: true,
-        biometricType: availability.type,
-      };
-    }
-
-    return { success: false, error: 'Authentication failed' };
-  } catch (error) {
+    return { success: true, biometricType: availability.type };
+  } catch (e) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Authentication error',
+      error: e instanceof Error ? e.message : "Biometric authentication failed",
+      biometricType: availability.type,
     };
   }
 }
 
-/**
- * Get biometric type name for display
- */
-export function getBiometricTypeName(type?: BiometricType): string {
-  switch (type) {
-    case 'faceID':
-      return 'Face ID';
-    case 'touchID':
-      return 'Touch ID';
-    case 'fingerprint':
-      return 'Fingerprint';
-    case 'face':
-      return 'Face Recognition';
-    case 'iris':
-      return 'Iris';
-    default:
-      return 'Biometric';
+function resolveServerKey(server?: string) {
+  if (server && server.trim()) return server.trim();
+  // Prefer deployment host as a stable key; fallback to an app constant.
+  if (typeof window !== "undefined" && window.location?.host) return window.location.host;
+  return "app.local";
+}
+
+export async function setBiometricCredentials(
+  server: string,
+  username: string,
+  password: string,
+): Promise<boolean> {
+  const availability = await isBiometricAvailable();
+  if (!availability.available) return false;
+
+  try {
+    const { NativeBiometric } = await import("capacitor-native-biometric");
+    await NativeBiometric.setCredentials({
+      username,
+      password,
+      server: resolveServerKey(server),
+    });
+    return true;
+  } catch {
+    return false;
   }
 }
 
+export async function getBiometricCredentials(
+  server: string,
+): Promise<{ username: string; password: string } | null> {
+  const availability = await isBiometricAvailable();
+  if (!availability.available) return null;
+
+  const auth = await authenticateWithBiometric("Verify your identity to retrieve credentials");
+  if (!auth.success) return null;
+
+  try {
+    const { NativeBiometric } = await import("capacitor-native-biometric");
+    const credentials = await NativeBiometric.getCredentials({
+      server: resolveServerKey(server),
+    });
+    return credentials ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteBiometricCredentials(server: string): Promise<boolean> {
+  const availability = await isBiometricAvailable();
+  if (!availability.available) return false;
+
+  try {
+    const { NativeBiometric } = await import("capacitor-native-biometric");
+    await NativeBiometric.deleteCredentials({
+      server: resolveServerKey(server),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}

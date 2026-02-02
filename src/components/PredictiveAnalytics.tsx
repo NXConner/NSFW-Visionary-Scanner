@@ -1,20 +1,36 @@
-import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { MedicalDisclaimer } from '@/components/MedicalDisclaimer';
-import { 
-  TrendingUp, TrendingDown, Target, Calendar, 
-  Sparkles, Brain, ChartLine, Award, AlertTriangle,
-  ArrowUpRight, ArrowDownRight, Minus
-} from 'lucide-react';
+import { useState, useMemo } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Area, ReferenceLine
-} from 'recharts';
+  TrendingUp,
+  TrendingDown,
+  Target,
+  Calendar,
+  Sparkles,
+  Brain,
+  ChartLine,
+  Award,
+  AlertTriangle,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+} from "lucide-react";
+import {
+  LazyLineChart,
+  LazyAreaChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Area,
+} from "@/components/lazyLoaders/LazyCharts";
 
 interface DataPoint {
   date: string;
@@ -34,35 +50,47 @@ interface PredictiveAnalyticsProps {
 
 export const PredictiveAnalytics = ({
   historicalData,
-  currentMeasurements
+  currentMeasurements,
 }: PredictiveAnalyticsProps) => {
-  const [timeframe, setTimeframe] = useState<'30d' | '90d' | '6m' | '1y'>('90d');
+  const [timeframe, setTimeframe] = useState<"30d" | "90d" | "6m" | "1y">("90d");
 
   // Generate predictions based on historical trend
   const predictions = useMemo(() => {
     if (historicalData.length < 2) {
-      return { length: 0, circumference: 0, confidence: 0, trend: 'stable' as const };
+      return { length: 0, circumference: 0, confidence: 0, trend: "stable" as const };
     }
 
     // Simple linear regression for prediction
     const n = historicalData.length;
     const recentData = historicalData.slice(-Math.min(n, 10));
-    
-    const lengthTrend = recentData.length > 1 
-      ? (recentData[recentData.length - 1].length - recentData[0].length) / recentData.length
-      : 0;
-    
-    const circumferenceTrend = recentData.length > 1
-      ? (recentData[recentData.length - 1].circumference - recentData[0].circumference) / recentData.length
-      : 0;
 
-    const daysToPredict = timeframe === '30d' ? 30 : timeframe === '90d' ? 90 : timeframe === '6m' ? 180 : 365;
-    
+    const lengthTrend =
+      recentData.length > 1
+        ? (recentData[recentData.length - 1].length - recentData[0].length) / recentData.length
+        : 0;
+
+    const circumferenceTrend =
+      recentData.length > 1
+        ? (recentData[recentData.length - 1].circumference - recentData[0].circumference) /
+          recentData.length
+        : 0;
+
+    const daysToPredict =
+      timeframe === "30d" ? 30 : timeframe === "90d" ? 90 : timeframe === "6m" ? 180 : 365;
+
     return {
       length: +(currentMeasurements.length + lengthTrend * daysToPredict).toFixed(2),
-      circumference: +(currentMeasurements.circumference + circumferenceTrend * daysToPredict).toFixed(2),
+      circumference: +(
+        currentMeasurements.circumference +
+        circumferenceTrend * daysToPredict
+      ).toFixed(2),
       confidence: Math.min(95, 60 + historicalData.length * 2),
-      trend: lengthTrend > 0.01 ? 'growing' as const : lengthTrend < -0.01 ? 'declining' as const : 'stable' as const
+      trend:
+        lengthTrend > 0.01
+          ? ("growing" as const)
+          : lengthTrend < -0.01
+            ? ("declining" as const)
+            : ("stable" as const),
     };
   }, [historicalData, currentMeasurements, timeframe]);
 
@@ -70,26 +98,31 @@ export const PredictiveAnalytics = ({
   const chartData = useMemo(() => {
     const actual = historicalData.map(d => ({
       ...d,
-      type: 'actual'
+      type: "actual",
     }));
 
-    const lastDate = historicalData.length > 0 
-      ? new Date(historicalData[historicalData.length - 1].date)
-      : new Date();
+    const lastDate =
+      historicalData.length > 0
+        ? new Date(historicalData[historicalData.length - 1].date)
+        : new Date();
 
-    const daysToPredict = timeframe === '30d' ? 30 : timeframe === '90d' ? 90 : timeframe === '6m' ? 180 : 365;
+    const daysToPredict =
+      timeframe === "30d" ? 30 : timeframe === "90d" ? 90 : timeframe === "6m" ? 180 : 365;
     const predictedPoints = [];
-    
+
     for (let i = 1; i <= 5; i++) {
       const futureDate = new Date(lastDate);
       futureDate.setDate(futureDate.getDate() + (daysToPredict / 5) * i);
-      
+
       const progress = i / 5;
       predictedPoints.push({
-        date: futureDate.toISOString().split('T')[0],
-        length: currentMeasurements.length + (predictions.length - currentMeasurements.length) * progress,
-        circumference: currentMeasurements.circumference + (predictions.circumference - currentMeasurements.circumference) * progress,
-        type: 'predicted'
+        date: futureDate.toISOString().split("T")[0],
+        length:
+          currentMeasurements.length + (predictions.length - currentMeasurements.length) * progress,
+        circumference:
+          currentMeasurements.circumference +
+          (predictions.circumference - currentMeasurements.circumference) * progress,
+        type: "predicted",
       });
     }
 
@@ -97,8 +130,9 @@ export const PredictiveAnalytics = ({
   }, [historicalData, predictions, currentMeasurements, timeframe]);
 
   const getTrendIcon = () => {
-    if (predictions.trend === 'growing') return <TrendingUp className="w-4 h-4 text-success" />;
-    if (predictions.trend === 'declining') return <TrendingDown className="w-4 h-4 text-destructive" />;
+    if (predictions.trend === "growing") return <TrendingUp className="w-4 h-4 text-success" />;
+    if (predictions.trend === "declining")
+      return <TrendingDown className="w-4 h-4 text-destructive" />;
     return <Minus className="w-4 h-4 text-muted-foreground" />;
   };
 
@@ -123,7 +157,7 @@ export const PredictiveAnalytics = ({
         {/* Contextual Disclaimer */}
         <MedicalDisclaimer mode="contextual" />
         {/* Timeframe selector */}
-        <Tabs value={timeframe} onValueChange={(v) => setTimeframe(v as any)}>
+        <Tabs value={timeframe} onValueChange={v => setTimeframe(v as "30d" | "90d" | "6m" | "1y")}>
           <TabsList className="grid grid-cols-4 w-full">
             <TabsTrigger value="30d">30 Days</TabsTrigger>
             <TabsTrigger value="90d">90 Days</TabsTrigger>
@@ -152,8 +186,9 @@ export const PredictiveAnalytics = ({
             <div className="text-2xl font-bold text-primary">
               {predictions.length.toFixed(1)} <span className="text-sm font-normal">cm</span>
             </div>
-            <div className={`text-xs ${lengthChange >= 0 ? 'text-success' : 'text-destructive'}`}>
-              {lengthChange >= 0 ? '+' : ''}{lengthChange.toFixed(2)} cm from current
+            <div className={`text-xs ${lengthChange >= 0 ? "text-success" : "text-destructive"}`}>
+              {lengthChange >= 0 ? "+" : ""}
+              {lengthChange.toFixed(2)} cm from current
             </div>
           </motion.div>
 
@@ -176,8 +211,11 @@ export const PredictiveAnalytics = ({
             <div className="text-2xl font-bold text-accent">
               {predictions.circumference.toFixed(1)} <span className="text-sm font-normal">cm</span>
             </div>
-            <div className={`text-xs ${circumferenceChange >= 0 ? 'text-success' : 'text-destructive'}`}>
-              {circumferenceChange >= 0 ? '+' : ''}{circumferenceChange.toFixed(2)} cm from current
+            <div
+              className={`text-xs ${circumferenceChange >= 0 ? "text-success" : "text-destructive"}`}
+            >
+              {circumferenceChange >= 0 ? "+" : ""}
+              {circumferenceChange.toFixed(2)} cm from current
             </div>
           </motion.div>
         </div>
@@ -188,32 +226,36 @@ export const PredictiveAnalytics = ({
             {getTrendIcon()}
             <span className="text-sm font-medium capitalize">{predictions.trend} Trend</span>
           </div>
-          <span className="text-xs text-muted-foreground">Based on {historicalData.length} measurements</span>
+          <span className="text-xs text-muted-foreground">
+            Based on {historicalData.length} measurements
+          </span>
         </div>
 
         {/* Prediction chart */}
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <LazyLineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                tickFormatter={value =>
+                  new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                }
               />
-              <YAxis 
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                domain={['auto', 'auto']}
+              <YAxis
+                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                domain={["auto", "auto"]}
               />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px'
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
                 }}
-                labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                labelFormatter={value => new Date(value).toLocaleDateString()}
               />
-              
+
               {/* Actual data */}
               <Line
                 type="monotone"
@@ -223,7 +265,7 @@ export const PredictiveAnalytics = ({
                 dot={false}
                 name="Length (cm)"
               />
-              
+
               {/* Prediction area */}
               <Area
                 type="monotone"
@@ -231,7 +273,7 @@ export const PredictiveAnalytics = ({
                 fill="hsl(var(--primary) / 0.1)"
                 stroke="transparent"
               />
-            </LineChart>
+            </LazyLineChart>
           </ResponsiveContainer>
         </div>
 
@@ -242,7 +284,7 @@ export const PredictiveAnalytics = ({
             AI Insights
           </h4>
           <div className="space-y-2">
-            {predictions.trend === 'growing' && (
+            {predictions.trend === "growing" && (
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -259,8 +301,8 @@ export const PredictiveAnalytics = ({
                 </div>
               </motion.div>
             )}
-            
-            {predictions.trend === 'stable' && (
+
+            {predictions.trend === "stable" && (
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -271,7 +313,8 @@ export const PredictiveAnalytics = ({
                   <div>
                     <p className="font-medium text-primary">Stable Measurements</p>
                     <p className="text-xs text-muted-foreground">
-                      Your measurements are consistent. Consider adjusting your routine for new gains.
+                      Your measurements are consistent. Consider adjusting your routine for new
+                      gains.
                     </p>
                   </div>
                 </div>
@@ -290,7 +333,8 @@ export const PredictiveAnalytics = ({
                   <div>
                     <p className="font-medium text-warning">More Data Needed</p>
                     <p className="text-xs text-muted-foreground">
-                      Log more measurements to improve prediction accuracy. Currently at {historicalData.length}/5 minimum entries.
+                      Log more measurements to improve prediction accuracy. Currently at{" "}
+                      {historicalData.length}/5 minimum entries.
                     </p>
                   </div>
                 </div>

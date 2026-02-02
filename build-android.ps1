@@ -6,9 +6,9 @@ Write-Host "=== MorphoScan Pro - Android Build Process ===" -ForegroundColor Cya
 Write-Host ""
 
 # Step 1: Build the web app
-Write-Host "Step 1: Building web application..." -ForegroundColor Yellow
+Write-Host "Step 1: Building web application (NSFW direct)..." -ForegroundColor Yellow
 try {
-    npm run build
+    npm run build:nsfw:direct
     if (Test-Path dist) {
         Write-Host "Build successful!" -ForegroundColor Green
     } else {

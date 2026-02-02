@@ -82,6 +82,25 @@ CREATE TABLE IF NOT EXISTS challenge_participants (
   UNIQUE(challenge_id, user_id)
 );
 
+-- Ensure challenge_participants has expected columns when table pre-exists
+ALTER TABLE challenge_participants
+  ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+
+ALTER TABLE challenge_participants
+  ADD COLUMN IF NOT EXISTS progress_percentage DECIMAL(5,2) DEFAULT 0;
+
+ALTER TABLE challenge_participants
+  ADD COLUMN IF NOT EXISTS current_metrics JSONB;
+
+ALTER TABLE challenge_participants
+  ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ DEFAULT NOW();
+
+ALTER TABLE challenge_participants
+  ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
+
+ALTER TABLE challenge_participants
+  ADD COLUMN IF NOT EXISTS last_activity_at TIMESTAMPTZ DEFAULT NOW();
+
 -- Challenge check-ins (daily/weekly progress)
 CREATE TABLE IF NOT EXISTS challenge_checkins (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -116,6 +135,37 @@ CREATE TABLE IF NOT EXISTS leaderboards (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure leaderboards has expected columns when table pre-exists
+ALTER TABLE leaderboards
+  ADD COLUMN IF NOT EXISTS name TEXT;
+
+ALTER TABLE leaderboards
+  ADD COLUMN IF NOT EXISTS description TEXT;
+
+ALTER TABLE leaderboards
+  ADD COLUMN IF NOT EXISTS metric_type TEXT;
+
+ALTER TABLE leaderboards
+  ADD COLUMN IF NOT EXISTS period_start DATE;
+
+ALTER TABLE leaderboards
+  ADD COLUMN IF NOT EXISTS period_end DATE;
+
+ALTER TABLE leaderboards
+  ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+
+ALTER TABLE leaderboards
+  ADD COLUMN IF NOT EXISTS is_anonymous BOOLEAN DEFAULT true;
+
+ALTER TABLE leaderboards
+  ADD COLUMN IF NOT EXISTS requires_opt_in BOOLEAN DEFAULT true;
+
+ALTER TABLE leaderboards
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+
+ALTER TABLE leaderboards
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 -- Leaderboard entries
 CREATE TABLE IF NOT EXISTS leaderboard_entries (
@@ -169,6 +219,20 @@ ALTER TABLE challenge_checkins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leaderboards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leaderboard_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE progress_share_interactions ENABLE ROW LEVEL SECURITY;
+
+-- Ensure policies are idempotent if rerun
+DROP POLICY IF EXISTS "Anyone can view approved progress shares" ON progress_shares;
+DROP POLICY IF EXISTS "Users can create their own progress shares" ON progress_shares;
+DROP POLICY IF EXISTS "Users can update their own progress shares" ON progress_shares;
+DROP POLICY IF EXISTS "Users can delete their own progress shares" ON progress_shares;
+DROP POLICY IF EXISTS "Anyone can view active challenges" ON challenges;
+DROP POLICY IF EXISTS "Users can view challenge participants" ON challenge_participants;
+DROP POLICY IF EXISTS "Users can manage their own challenge participation" ON challenge_participants;
+DROP POLICY IF EXISTS "Users can view check-ins for challenges they participate in" ON challenge_checkins;
+DROP POLICY IF EXISTS "Users can create check-ins for their own participation" ON challenge_checkins;
+DROP POLICY IF EXISTS "Anyone can view leaderboards" ON leaderboards;
+DROP POLICY IF EXISTS "Anyone can view leaderboard entries" ON leaderboard_entries;
+DROP POLICY IF EXISTS "Users can manage their own interactions" ON progress_share_interactions;
 
 -- Progress shares policies
 CREATE POLICY "Anyone can view approved progress shares"

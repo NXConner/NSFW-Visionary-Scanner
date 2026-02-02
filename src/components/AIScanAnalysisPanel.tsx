@@ -2,20 +2,34 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  Brain, 
-  Activity, 
-  AlertTriangle, 
-  CheckCircle, 
+import {
+  Brain,
+  Activity,
+  AlertTriangle,
+  CheckCircle,
   Clock,
   Loader2,
   ShieldAlert,
-  TrendingUp
+  TrendingUp,
 } from "lucide-react";
-import { ScanAnalysisResult } from "@/hooks/useAIScanAnalysis";
-import { VisualContentDisplay } from "./VisualContentDisplay";
-import { useVisualContent } from "@/hooks/useVisualContent";
-import { VISUAL_CONTENT_CATEGORIES } from "@/lib/visualContentManager";
+
+interface ScanAnalysisResult {
+  overallHealth: "good" | "fair" | "concerning" | "needs_attention";
+  confidenceLevel: number;
+  curvatureAssessment: {
+    detected: boolean;
+    estimatedAngle?: number;
+    direction?: string;
+    severity?: string;
+  };
+  skinHealth: {
+    status: string;
+    observations: string[];
+  };
+  urgency: "routine" | "soon" | "urgent";
+  recommendations: string[];
+  disclaimer: string;
+}
 
 interface AIScanAnalysisPanelProps {
   result: ScanAnalysisResult | null;
@@ -23,16 +37,6 @@ interface AIScanAnalysisPanelProps {
 }
 
 export const AIScanAnalysisPanel = ({ result, isAnalyzing }: AIScanAnalysisPanelProps) => {
-  // Load visual content for analysis
-  const { content: analysisVisuals } = useVisualContent({
-    categories: [
-      VISUAL_CONTENT_CATEGORIES.ANATOMY,
-      VISUAL_CONTENT_CATEGORIES.HEALTH_CONDITIONS,
-    ],
-    autoLoad: true,
-    autoInvert: true,
-  });
-
   if (isAnalyzing) {
     return (
       <Card className="glass">
@@ -56,28 +60,41 @@ export const AIScanAnalysisPanel = ({ result, isAnalyzing }: AIScanAnalysisPanel
 
   const getHealthColor = (health: string) => {
     switch (health) {
-      case "good": return "bg-green-500/20 text-green-500 border-green-500/30";
-      case "fair": return "bg-yellow-500/20 text-yellow-500 border-yellow-500/30";
-      case "concerning": return "bg-red-500/20 text-red-500 border-red-500/30";
-      default: return "bg-muted text-muted-foreground";
+      case "good":
+        return "bg-green-500/20 text-green-500 border-green-500/30";
+      case "fair":
+        return "bg-yellow-500/20 text-yellow-500 border-yellow-500/30";
+      case "concerning":
+      case "needs_attention":
+        return "bg-red-500/20 text-red-500 border-red-500/30";
+      default:
+        return "bg-muted text-muted-foreground";
     }
   };
 
   const getUrgencyIcon = (urgency: string) => {
     switch (urgency) {
-      case "routine": return <Clock className="w-4 h-4" />;
-      case "soon": return <TrendingUp className="w-4 h-4" />;
-      case "urgent": return <AlertTriangle className="w-4 h-4" />;
-      default: return <Clock className="w-4 h-4" />;
+      case "routine":
+        return <Clock className="w-4 h-4" />;
+      case "soon":
+        return <TrendingUp className="w-4 h-4" />;
+      case "urgent":
+        return <AlertTriangle className="w-4 h-4" />;
+      default:
+        return <Clock className="w-4 h-4" />;
     }
   };
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
-      case "routine": return "bg-green-500/20 text-green-500";
-      case "soon": return "bg-yellow-500/20 text-yellow-500";
-      case "urgent": return "bg-red-500/20 text-red-500";
-      default: return "bg-muted text-muted-foreground";
+      case "routine":
+        return "bg-green-500/20 text-green-500";
+      case "soon":
+        return "bg-yellow-500/20 text-yellow-500";
+      case "urgent":
+        return "bg-red-500/20 text-red-500";
+      default:
+        return "bg-muted text-muted-foreground";
     }
   };
 
@@ -95,8 +112,12 @@ export const AIScanAnalysisPanel = ({ result, isAnalyzing }: AIScanAnalysisPanel
           <span className="text-sm font-medium">Overall Assessment</span>
           <Badge className={getHealthColor(result.overallHealth)}>
             {result.overallHealth === "good" && <CheckCircle className="w-3 h-3 mr-1" />}
-            {result.overallHealth === "concerning" && <AlertTriangle className="w-3 h-3 mr-1" />}
-            {result.overallHealth.charAt(0).toUpperCase() + result.overallHealth.slice(1)}
+            {(result.overallHealth === "concerning" ||
+              result.overallHealth === "needs_attention") && (
+              <AlertTriangle className="w-3 h-3 mr-1" />
+            )}
+            {result.overallHealth.charAt(0).toUpperCase() +
+              result.overallHealth.slice(1).replace("_", " ")}
           </Badge>
         </div>
 
@@ -110,7 +131,7 @@ export const AIScanAnalysisPanel = ({ result, isAnalyzing }: AIScanAnalysisPanel
         </div>
 
         {/* Curvature Assessment */}
-        {result.curvatureAssessment.detected && (
+        {result.curvatureAssessment?.detected && (
           <div className="p-3 rounded-lg bg-muted/50 space-y-2">
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-primary" />
@@ -120,7 +141,9 @@ export const AIScanAnalysisPanel = ({ result, isAnalyzing }: AIScanAnalysisPanel
               {result.curvatureAssessment.estimatedAngle && (
                 <div>
                   <span className="text-muted-foreground">Angle:</span>
-                  <span className="ml-2 font-medium">{result.curvatureAssessment.estimatedAngle}°</span>
+                  <span className="ml-2 font-medium">
+                    {result.curvatureAssessment.estimatedAngle}°
+                  </span>
                 </div>
               )}
               {result.curvatureAssessment.direction && (
@@ -138,52 +161,30 @@ export const AIScanAnalysisPanel = ({ result, isAnalyzing }: AIScanAnalysisPanel
                 </div>
               )}
             </div>
-            {/* Visual reference for curvature */}
-            {analysisVisuals.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-border/50">
-                <VisualContentDisplay
-                  content={analysisVisuals.filter(v =>
-                    v.tags.some(tag => tag.includes('curvature') || tag.includes('angle'))
-                  ).slice(0, 1)}
-                  title="Curvature Reference"
-                  showThumbnails={false}
-                />
-              </div>
-            )}
           </div>
         )}
 
         {/* Skin Health */}
-        <div className="p-3 rounded-lg bg-muted/50 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="font-medium text-sm">Skin Health</span>
-            <Badge variant="outline" className="text-xs">
-              {result.skinHealth.status.replace("_", " ")}
-            </Badge>
-          </div>
-          {result.skinHealth.observations.length > 0 && (
-            <ul className="text-xs text-muted-foreground space-y-1">
-              {result.skinHealth.observations.map((obs, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="text-primary mt-1">•</span>
-                  {obs}
-                </li>
-              ))}
-            </ul>
-          )}
-          {/* Visual reference for skin health */}
-          {analysisVisuals.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-border/50">
-              <VisualContentDisplay
-                content={analysisVisuals.filter(v =>
-                  v.tags.some(tag => tag.includes('skin') || tag.includes('health'))
-                ).slice(0, 1)}
-                title="Skin Health Reference"
-                showThumbnails={false}
-              />
+        {result.skinHealth && (
+          <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-sm">Skin Health</span>
+              <Badge variant="outline" className="text-xs">
+                {result.skinHealth.status?.replace("_", " ") || "Normal"}
+              </Badge>
             </div>
-          )}
-        </div>
+            {result.skinHealth.observations?.length > 0 && (
+              <ul className="text-xs text-muted-foreground space-y-1">
+                {result.skinHealth.observations.map((obs, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-primary mt-1">•</span>
+                    {obs}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {/* Urgency */}
         <div className="flex items-center justify-between">
@@ -195,7 +196,7 @@ export const AIScanAnalysisPanel = ({ result, isAnalyzing }: AIScanAnalysisPanel
         </div>
 
         {/* Recommendations */}
-        {result.recommendations.length > 0 && (
+        {result.recommendations?.length > 0 && (
           <div className="space-y-2">
             <span className="text-sm font-medium">Recommendations</span>
             <ul className="space-y-1.5">
@@ -210,12 +211,14 @@ export const AIScanAnalysisPanel = ({ result, isAnalyzing }: AIScanAnalysisPanel
         )}
 
         {/* Disclaimer */}
-        <Alert className="border-amber-500/30 bg-amber-500/10">
-          <ShieldAlert className="h-4 w-4 text-amber-500" />
-          <AlertDescription className="text-xs text-amber-200/80">
-            {result.disclaimer}
-          </AlertDescription>
-        </Alert>
+        {result.disclaimer && (
+          <Alert className="border-amber-500/30 bg-amber-500/10">
+            <ShieldAlert className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-xs text-amber-200/80">
+              {result.disclaimer}
+            </AlertDescription>
+          </Alert>
+        )}
       </CardContent>
     </Card>
   );

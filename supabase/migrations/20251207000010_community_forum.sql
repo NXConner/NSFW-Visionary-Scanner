@@ -79,6 +79,72 @@ CREATE TABLE IF NOT EXISTS forum_posts (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Ensure forum_posts has expected columns/constraints when table pre-exists
+ALTER TABLE forum_posts
+  ADD COLUMN IF NOT EXISTS thread_id UUID;
+
+ALTER TABLE forum_posts
+  ADD COLUMN IF NOT EXISTS parent_post_id UUID;
+
+ALTER TABLE forum_posts
+  ADD COLUMN IF NOT EXISTS content TEXT;
+
+ALTER TABLE forum_posts
+  ADD COLUMN IF NOT EXISTS is_anonymous BOOLEAN DEFAULT false;
+
+ALTER TABLE forum_posts
+  ADD COLUMN IF NOT EXISTS is_expert_answer BOOLEAN DEFAULT false;
+
+ALTER TABLE forum_posts
+  ADD COLUMN IF NOT EXISTS like_count INTEGER DEFAULT 0;
+
+ALTER TABLE forum_posts
+  ADD COLUMN IF NOT EXISTS helpful_count INTEGER DEFAULT 0;
+
+ALTER TABLE forum_posts
+  ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT true;
+
+ALTER TABLE forum_posts
+  ADD COLUMN IF NOT EXISTS moderation_notes TEXT;
+
+ALTER TABLE forum_posts
+  ADD COLUMN IF NOT EXISTS moderated_by UUID;
+
+ALTER TABLE forum_posts
+  ADD COLUMN IF NOT EXISTS moderated_at TIMESTAMPTZ;
+
+ALTER TABLE forum_posts
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+
+ALTER TABLE forum_posts
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'forum_posts_thread_id_fkey'
+  ) THEN
+    ALTER TABLE forum_posts
+      ADD CONSTRAINT forum_posts_thread_id_fkey
+      FOREIGN KEY (thread_id) REFERENCES forum_threads(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'forum_posts_parent_post_id_fkey'
+  ) THEN
+    ALTER TABLE forum_posts
+      ADD CONSTRAINT forum_posts_parent_post_id_fkey
+      FOREIGN KEY (parent_post_id) REFERENCES forum_posts(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
 -- User interactions (likes, helpful marks)
 CREATE TABLE IF NOT EXISTS forum_interactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -3,122 +3,140 @@
  * Premium position packs, video content, educational courses, expert-created content, ratings, and purchases
  */
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   getPremiumContent,
   purchasePremiumContent,
   addToWishlist,
   getWishlist,
   createPremiumContentReview,
-  type PremiumContentItem
-} from '@/lib/premiumContentMarketplace'
-import { hasNSFWContent, isSFW } from '@/lib/featureFlags'
-import { ShoppingBag, Heart, Star, TrendingUp, Loader2, Lock, Search, Filter, CheckCircle2 } from 'lucide-react'
-import { toast } from 'sonner'
+  type PremiumContentItem,
+} from "@/lib/premiumContentMarketplace";
+import { AgeVerificationModal } from "@/dlc/components/AgeVerificationModal";
+import { Link } from "react-router-dom";
+import {
+  ShoppingBag,
+  Heart,
+  Star,
+  TrendingUp,
+  Loader2,
+  Lock,
+  Search,
+  Filter,
+  CheckCircle2,
+  Shield,
+} from "lucide-react";
+import { toast } from "sonner";
+import { getAppVersion } from "@/lib/featureFlags";
+import { useDLC } from "@/dlc/context/DLCContext";
+
+const premiumContentTypes = [
+  "position_pack",
+  "video",
+  "course",
+  "expert_content",
+  "bundle",
+] as const;
+type PremiumContentType = (typeof premiumContentTypes)[number];
 
 export const PremiumContentMarketplace = () => {
-  const [activeTab, setActiveTab] = useState('browse')
-  const [loading, setLoading] = useState(false)
-  const [content, setContent] = useState<PremiumContentItem[]>([])
-  const [wishlist, setWishlist] = useState<PremiumContentItem[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const [selectedType, setSelectedType] = useState<string>('all')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [nsfwAvailable, setNsfwAvailable] = useState(false)
-  const [isCheckingNsfw, setIsCheckingNsfw] = useState(true)
+  const [activeTab, setActiveTab] = useState("browse");
+  const [loading, setLoading] = useState(false);
+  const [content, setContent] = useState<PremiumContentItem[]>([]);
+  const [wishlist, setWishlist] = useState<PremiumContentItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const { isAgeVerified, isLoading: dlcLoading } = useDLC();
+  const [showAgeModal, setShowAgeModal] = useState(false);
+  const appVersion = getAppVersion();
 
   const contentTypes = [
-    { id: 'all', label: 'All Types' },
-    { id: 'position_pack', label: 'Position Packs' },
-    { id: 'video', label: 'Videos' },
-    { id: 'course', label: 'Courses' },
-    { id: 'expert_content', label: 'Expert Content' },
-    { id: 'bundle', label: 'Bundles' }
-  ]
+    { id: "all", label: "All Types" },
+    { id: "position_pack", label: "Position Packs" },
+    { id: "video", label: "Videos" },
+    { id: "course", label: "Courses" },
+    { id: "expert_content", label: "Expert Content" },
+    { id: "bundle", label: "Bundles" },
+  ];
 
-  useEffect(() => {
-    const checkNsfw = async () => {
-      setIsCheckingNsfw(true)
-      const available = await hasNSFWContent()
-      setNsfwAvailable(available)
-      setIsCheckingNsfw(false)
-    }
-    checkNsfw()
-  }, [])
-
-  useEffect(() => {
-    if (nsfwAvailable) {
-      loadData()
-    }
-  }, [activeTab, selectedCategory, selectedType, nsfwAvailable])
-
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
       switch (activeTab) {
-        case 'browse': {
+        case "browse": {
           const contentData = await getPremiumContent(
-            selectedType === 'all' ? undefined : selectedType as any,
-            selectedCategory === 'all' ? undefined : selectedCategory
-          )
-          setContent(contentData)
-          break
+            selectedType === "all" ? undefined : (selectedType as PremiumContentType),
+            selectedCategory === "all" ? undefined : selectedCategory,
+          );
+          setContent(contentData);
+          break;
         }
-        case 'wishlist': {
-          const wishlistData = await getWishlist()
-          setWishlist(wishlistData)
-          break
+        case "wishlist": {
+          const wishlistData = await getWishlist();
+          setWishlist(wishlistData);
+          break;
         }
       }
-    } catch (error) {
-      toast.error('Failed to load content')
+    } catch {
+      toast.error("Failed to load content");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
+  }, [activeTab, selectedCategory, selectedType]);
+
+  useEffect(() => {
+    // Marketplace should be reachable for eligible builds once age is verified.
+    // Users must be able to browse/purchase before owning DLC.
+    if (appVersion !== "sfw" && isAgeVerified && !dlcLoading) {
+      void loadData();
+    }
+  }, [appVersion, isAgeVerified, loadData, dlcLoading]);
+
+  // Show loading while DLC context is loading - AFTER all hooks
+  if (dlcLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
   }
 
   const handlePurchase = async (contentId: string) => {
     try {
-      const success = await purchasePremiumContent(contentId)
+      const success = await purchasePremiumContent(contentId);
       if (success) {
-        await loadData()
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to start purchase')
+      toast.error("Failed to start purchase");
     }
-  }
+  };
 
   const handleAddToWishlist = async (contentId: string) => {
     try {
-      const success = await addToWishlist(contentId)
+      const success = await addToWishlist(contentId);
       if (success) {
-        await loadData()
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to add to wishlist')
+      toast.error("Failed to add to wishlist");
     }
-  }
+  };
 
-  if (isCheckingNsfw) {
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <Card className="glass-card border-border/50">
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <Loader2 className="w-12 h-12 text-muted-foreground animate-spin mb-4" />
-            <p className="text-muted-foreground">Loading...</p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  if (isSFW() || !nsfwAvailable) {
+  if (appVersion === "sfw") {
     return (
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <Card className="glass-card border-border/50">
@@ -126,26 +144,86 @@ export const PremiumContentMarketplace = () => {
             <div className="p-4 rounded-full bg-muted/30 mb-4">
               <Lock className="w-12 h-12 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">NSFW Content Not Available</h3>
+            <h3 className="text-xl font-semibold mb-2">{"Not available in SFW build"}</h3>
             <p className="text-muted-foreground max-w-md mb-4">
-              Premium content marketplace is only available in the NSFW version or with a DLC upgrade.
+              {
+                "This marketplace contains adult content and is only available in Hybrid/Direct builds."
+              }
             </p>
-            <Badge variant="secondary">Requires NSFW Version or DLC</Badge>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button asChild className="gap-2">
+                <Link to="/store">
+                  <Lock className="w-4 h-4" />
+                  Open DLC Store
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/pricing">View Pricing</Link>
+              </Button>
+            </div>
+            <Badge variant="secondary" className="mt-3">
+              {"Restricted"}
+            </Badge>
           </CardContent>
         </Card>
       </div>
-    )
+    );
+  }
+
+  if (!isAgeVerified) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <Card className="glass-card border-border/50">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="p-4 rounded-full bg-muted/30 mb-4">
+              <Shield className="w-12 h-12 text-muted-foreground" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Age Verification Required</h3>
+            <p className="text-muted-foreground max-w-md mb-4">
+              Please verify you are 18+ to access the premium marketplace.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button onClick={() => setShowAgeModal(true)} className="gap-2">
+                <Shield className="w-4 h-4" />
+                Verify Age
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/pricing">View Pricing</Link>
+              </Button>
+            </div>
+            <Badge variant="secondary" className="mt-3">
+              18+ Required
+            </Badge>
+          </CardContent>
+        </Card>
+        <AgeVerificationModal
+          isOpen={showAgeModal}
+          onClose={() => setShowAgeModal(false)}
+          onVerified={() => {
+            setShowAgeModal(false);
+          }}
+        />
+      </div>
+    );
   }
 
   const filteredContent = content.filter(item => {
-    const matchesSearch = searchQuery === '' ||
+    const matchesSearch =
+      searchQuery === "" ||
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesSearch
-  })
+      item.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <AgeVerificationModal
+        isOpen={showAgeModal}
+        onClose={() => setShowAgeModal(false)}
+        onVerified={() => {
+          setShowAgeModal(false);
+        }}
+      />
       <Card className="glass-card border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -170,7 +248,7 @@ export const PremiumContentMarketplace = () => {
                   <Input
                     placeholder="Search content..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={e => setSearchQuery(e.target.value)}
                     className="pl-10"
                   />
                 </div>
@@ -180,7 +258,9 @@ export const PremiumContentMarketplace = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {contentTypes.map(type => (
-                      <SelectItem key={type.id} value={type.id}>{type.label}</SelectItem>
+                      <SelectItem key={type.id} value={type.id}>
+                        {type.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -193,7 +273,10 @@ export const PremiumContentMarketplace = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredContent.map(item => (
-                    <Card key={item.id} className="glass-card border-border/50 hover:border-primary/50 transition-colors">
+                    <Card
+                      key={item.id}
+                      className="glass-card border-border/50 hover:border-primary/50 transition-colors"
+                    >
                       <CardContent className="p-0">
                         <div className="relative aspect-video bg-muted/30 rounded-t-lg overflow-hidden">
                           {item.thumbnail_url ? (
@@ -221,7 +304,9 @@ export const PremiumContentMarketplace = () => {
                         </div>
                         <div className="p-4 space-y-2">
                           <h3 className="font-semibold line-clamp-2">{item.title}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {item.description}
+                          </p>
                           {item.expert_name && (
                             <p className="text-xs text-muted-foreground">By {item.expert_name}</p>
                           )}
@@ -264,9 +349,7 @@ export const PremiumContentMarketplace = () => {
               )}
 
               {filteredContent.length === 0 && !loading && (
-                <div className="text-center py-12 text-muted-foreground">
-                  No content found
-                </div>
+                <div className="text-center py-12 text-muted-foreground">No content found</div>
               )}
             </TabsContent>
 
@@ -281,7 +364,9 @@ export const PremiumContentMarketplace = () => {
                     <Card key={item.id} className="glass-card border-border/50">
                       <CardContent className="p-4">
                         <h3 className="font-semibold mb-2">{item.title}</h3>
-                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{item.description}</p>
+                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                          {item.description}
+                        </p>
                         <div className="flex items-center justify-between">
                           <span className="text-lg font-semibold">${item.price.toFixed(2)}</span>
                           <Button size="sm" onClick={() => handlePurchase(item.id)}>
@@ -298,6 +383,5 @@ export const PremiumContentMarketplace = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
+  );
+};

@@ -1,68 +1,58 @@
 /**
- * Email Marketing System
- * Handles email campaigns, automation, segmentation, and analytics
+ * Email Marketing System (Supabase-backed + provider via Edge Function)
+ *
+ * Backed by:
+ * - supabase/migrations/20251214194000_email_marketing.sql
+ *
+ * Sending is performed via:
+ * - supabase/functions/send-email (admin-only)
  */
 
-import { supabase } from '@/integrations/supabase/client'
-import { logger } from './logger'
-import { toast } from 'sonner'
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { fromExtended } from "@/lib/supabaseExtensions";
+import { logger } from "@/lib/logger";
 
 export interface EmailCampaign {
-  id: string
-  name: string
-  subject: string
-  content: string
-  segment: string
-  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused'
-  scheduled_at: string | null
-  sent_at: string | null
-  created_at: string
+  id: string;
+  name: string;
+  subject: string;
+  content: string;
+  segment: string;
+  status: "draft" | "scheduled" | "sending" | "sent" | "paused";
+  scheduled_at: string | null;
+  sent_at: string | null;
+  created_at: string;
 }
 
 export interface EmailTemplate {
-  id: string
-  name: string
-  subject: string
-  content: string
-  category: 'welcome' | 'onboarding' | 'engagement' | 'retention' | 'promotional' | 'transactional'
-  variables: string[]
-  created_at: string
+  id: string;
+  name: string;
+  subject: string;
+  content: string;
+  category: "welcome" | "onboarding" | "engagement" | "retention" | "promotional" | "transactional";
+  variables: string[];
+  created_at: string;
 }
 
 export interface EmailSegment {
-  id: string
-  name: string
-  criteria: Record<string, any>
-  user_count: number
-  created_at: string
+  id: string;
+  name: string;
+  criteria: Record<string, any>;
+  user_count: number;
+  created_at: string;
 }
 
 /**
- * Initialize email service (SendGrid/Mailchimp)
+ * Initialize email service
  */
 export async function initializeEmailService(): Promise<boolean> {
+  // Client cannot verify server-side provider env vars; consider this initialized if auth works.
   try {
-    // Check if email service is configured
-    const emailApiKey = import.meta.env.VITE_EMAIL_SERVICE_API_KEY
-    if (!emailApiKey) {
-      logger.warn('Email service API key not configured')
-      return false
-    }
-
-    // Test connection
-    const { error } = await supabase.functions.invoke('test-email-service', {
-      body: { test: true }
-    })
-
-    if (error) {
-      logger.error('Email service connection failed:', error)
-      return false
-    }
-
-    return true
-  } catch (error) {
-    logger.error('Error initializing email service:', error)
-    return false
+    const { data } = await supabase.auth.getUser();
+    return Boolean(data.user);
+  } catch {
+    return false;
   }
 }
 
@@ -73,27 +63,40 @@ export async function sendEmail(
   to: string,
   subject: string,
   content: string,
-  templateId?: string
+  templateId?: string,
 ): Promise<boolean> {
   try {
-    const { error } = await supabase.functions.invoke('send-email', {
-      body: {
-        to,
-        subject,
-        content,
-        template_id: templateId
-      }
-    })
+    const t = String(to || "").trim();
+    const s = String(subject || "").trim();
+    let c = String(content || "");
 
-    if (error) {
-      logger.error('Error sending email:', error)
-      return false
+    if (!t || !s || !c) {
+      toast.error("Missing to/subject/content");
+      return false;
     }
 
-    return true
+    if (templateId) {
+      const { data: tpl, error: tplErr } = await fromExtended("email_templates")
+        .select("*")
+        .eq("id", templateId)
+        .maybeSingle();
+      if (!tplErr && tpl?.content) c = String(tpl.content);
+    }
+
+    const { error } = await supabase.functions.invoke("send-email", {
+      body: { to: t, subject: s, content: c },
+    });
+
+    if (error) {
+      toast.error(error.message || "Failed to send email");
+      return false;
+    }
+    toast.success("Email sent");
+    return true;
   } catch (error) {
-    logger.error('Error in sendEmail:', error)
-    return false
+    logger.error("sendEmail error", { error });
+    toast.error("Failed to send email");
+    return false;
   }
 }
 
@@ -101,60 +104,98 @@ export async function sendEmail(
  * Send welcome email
  */
 export async function sendWelcomeEmail(userEmail: string, userName?: string): Promise<boolean> {
-  const subject = 'Welcome to our Health Tracking App!'
-  const content = `
-    <h1>Welcome${userName ? `, ${userName}` : ''}!</h1>
-    <p>Thank you for joining our health tracking community.</p>
-    <p>Get started by:</p>
-    <ul>
-      <li>Completing your first scan</li>
-      <li>Setting up your health diary</li>
-      <li>Exploring our education center</li>
-    </ul>
-    <p>If you have any questions, feel free to reach out!</p>
-  `
+  try {
+    // Prefer a template if available
 
-  return await sendEmail(userEmail, subject, content, 'welcome')
+    const { data: tpl } = await fromExtended("email_templates")
+      .select("*")
+      .eq("category", "welcome")
+      .eq("is_active", true)
+      .order("updated_at", { ascending: false })
+      .limit(1);
+
+    const template = Array.isArray(tpl) ? tpl[0] : null;
+    if (!template) {
+      toast.error("No welcome email template configured");
+      return false;
+    }
+
+    const content = String(template.content || "")
+      .replace(/\{\{name\}\}/g, userName || "")
+      .replace(/\{\{email\}\}/g, userEmail);
+
+    return await sendEmail(
+      userEmail,
+      String(template.subject || "Welcome"),
+      content,
+      String(template.id),
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**
  * Send onboarding email sequence
  */
 export async function sendOnboardingEmail(day: number, userEmail: string): Promise<boolean> {
-  const templates = {
-    1: {
-      subject: 'Day 1: Getting Started',
-      content: 'Welcome! Here\'s how to get started...'
-    },
-    3: {
-      subject: 'Day 3: Explore Features',
-      content: 'Discover our key features...'
-    },
-    7: {
-      subject: 'Day 7: Unlock Premium',
-      content: 'Ready to unlock premium features?'
-    }
+  const d = Math.max(1, Math.min(30, Number(day)));
+
+  const { data: tpl } = await fromExtended("email_templates")
+    .select("*")
+    .eq("category", "onboarding")
+    .eq("is_active", true)
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
+  const template = Array.isArray(tpl) ? tpl[0] : null;
+  if (!template) {
+    toast.error("No onboarding email template configured");
+    return false;
   }
 
-  const template = templates[day as keyof typeof templates]
-  if (!template) return false
-
-  return await sendEmail(userEmail, template.subject, template.content, `onboarding-day-${day}`)
+  const content = String(template.content || "")
+    .replace(/\{\{day\}\}/g, String(d))
+    .replace(/\{\{email\}\}/g, userEmail);
+  return await sendEmail(
+    userEmail,
+    String(template.subject || `Onboarding Day ${d}`),
+    content,
+    String(template.id),
+  );
 }
 
 /**
  * Send re-engagement email
  */
-export async function sendReEngagementEmail(userEmail: string, daysInactive: number): Promise<boolean> {
-  const subject = `We miss you! It's been ${daysInactive} days`
-  const content = `
-    <h1>We miss you!</h1>
-    <p>It's been ${daysInactive} days since your last activity.</p>
-    <p>Come back and continue your health journey!</p>
-    <a href="${window.location.origin}">Return to App</a>
-  `
+export async function sendReEngagementEmail(
+  userEmail: string,
+  daysInactive: number,
+): Promise<boolean> {
+  const days = Math.max(1, Math.min(365, Number(daysInactive)));
 
-  return await sendEmail(userEmail, subject, content, 're-engagement')
+  const { data: tpl } = await fromExtended("email_templates")
+    .select("*")
+    .eq("category", "retention")
+    .eq("is_active", true)
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
+  const template = Array.isArray(tpl) ? tpl[0] : null;
+  if (!template) {
+    toast.error("No retention email template configured");
+    return false;
+  }
+
+  const content = String(template.content || "")
+    .replace(/\{\{days_inactive\}\}/g, String(days))
+    .replace(/\{\{email\}\}/g, userEmail);
+  return await sendEmail(
+    userEmail,
+    String(template.subject || "We miss you"),
+    content,
+    String(template.id),
+  );
 }
 
 /**
@@ -163,56 +204,60 @@ export async function sendReEngagementEmail(userEmail: string, daysInactive: num
 export async function sendUpgradeEmail(
   userEmail: string,
   currentTier: string,
-  targetTier: string
+  targetTier: string,
 ): Promise<boolean> {
-  const subject = `Unlock ${targetTier} Features`
-  const content = `
-    <h1>Unlock ${targetTier} Features</h1>
-    <p>Upgrade from ${currentTier} to ${targetTier} and get access to:</p>
-    <ul>
-      <li>Advanced features</li>
-      <li>Premium content</li>
-      <li>Priority support</li>
-    </ul>
-    <a href="${window.location.origin}/pricing">Upgrade Now</a>
-  `
+  const { data: tpl } = await fromExtended("email_templates")
+    .select("*")
+    .eq("category", "promotional")
+    .eq("is_active", true)
+    .order("updated_at", { ascending: false })
+    .limit(1);
 
-  return await sendEmail(userEmail, subject, content, 'upgrade')
+  const template = Array.isArray(tpl) ? tpl[0] : null;
+  if (!template) {
+    toast.error("No promotional email template configured");
+    return false;
+  }
+
+  const content = String(template.content || "")
+    .replace(/\{\{current_tier\}\}/g, currentTier)
+    .replace(/\{\{target_tier\}\}/g, targetTier)
+    .replace(/\{\{email\}\}/g, userEmail);
+
+  return await sendEmail(
+    userEmail,
+    String(template.subject || "Upgrade available"),
+    content,
+    String(template.id),
+  );
 }
 
 /**
  * Get email analytics
  */
 export async function getEmailAnalytics(): Promise<{
-  total_sent: number
-  total_opened: number
-  total_clicked: number
-  open_rate: number
-  click_rate: number
+  total_sent: number;
+  total_opened: number;
+  total_clicked: number;
+  open_rate: number;
+  click_rate: number;
 } | null> {
   try {
-    const { data, error } = await supabase
-      .from('email_analytics')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
+    const { data: sent, error } = await fromExtended("email_send_events")
+      .select("status", { count: "exact", head: true });
 
-    if (error) {
-      logger.error('Error fetching email analytics:', error)
-      return null
-    }
+    if (error) return null;
 
+    // We only store sent/failed currently; open/click tracking requires provider webhooks.
+    const total_sent = Number(sent?.count ?? 0);
     return {
-      total_sent: data?.total_sent || 0,
-      total_opened: data?.total_opened || 0,
-      total_clicked: data?.total_clicked || 0,
-      open_rate: data?.total_sent > 0 ? (data.total_opened / data.total_sent) * 100 : 0,
-      click_rate: data?.total_sent > 0 ? (data.total_clicked / data.total_sent) * 100 : 0
-    }
-  } catch (error) {
-    logger.error('Error getting email analytics:', error)
-    return null
+      total_sent,
+      total_opened: 0,
+      total_clicked: 0,
+      open_rate: 0,
+      click_rate: 0,
+    };
+  } catch {
+    return null;
   }
 }
-

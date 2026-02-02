@@ -1,42 +1,52 @@
-import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useData } from '@/contexts/DataContext';
-import { format } from 'date-fns';
-import { ImageIcon, ArrowLeftRight, Calendar, TrendingUp, TrendingDown, Minus, ZoomIn } from 'lucide-react';
-import { VisualContentDisplay } from './VisualContentDisplay';
-import { useVisualContent } from '@/hooks/useVisualContent';
-import { VISUAL_CONTENT_CATEGORIES } from '@/lib/visualContentManager';
+import { useState, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useData } from "@/contexts/DataContext";
+import { format } from "date-fns";
+import {
+  ImageIcon,
+  ArrowLeftRight,
+  Calendar,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  ZoomIn,
+} from "lucide-react";
+import { VisualContentDisplay } from "./VisualContentDisplay";
+import { useVisualContent } from "@/hooks/useVisualContent";
+import { VISUAL_CONTENT_CATEGORIES } from "@/lib/visualContentManager";
+import { FilteredImage } from "@/components/media/FilteredImage";
 
 export const ProgressPhotos = () => {
   const { scans } = useData();
-  const [selectedLeft, setSelectedLeft] = useState<string>('');
-  const [selectedRight, setSelectedRight] = useState<string>('');
+  const [selectedLeft, setSelectedLeft] = useState<string>("");
+  const [selectedRight, setSelectedRight] = useState<string>("");
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   // Load visual content for progress tracking
   const { content: progressVisuals } = useVisualContent({
-    categories: [
-      VISUAL_CONTENT_CATEGORIES.PROGRESS,
-      VISUAL_CONTENT_CATEGORIES.MEASUREMENT,
-    ],
+    categories: [VISUAL_CONTENT_CATEGORIES.PROGRESS, VISUAL_CONTENT_CATEGORIES.MEASUREMENT],
     autoLoad: true,
     autoInvert: true,
   });
 
-  const scansWithImages = useMemo(() => 
-    scans.filter(s => s.image_data), [scans]
-  );
+  const scansWithImages = useMemo(() => scans.filter(s => s.image_data), [scans]);
 
   const leftScan = scansWithImages.find(s => s.id === selectedLeft);
   const rightScan = scansWithImages.find(s => s.id === selectedRight);
 
   const getComparison = () => {
     if (!leftScan || !rightScan) return null;
-    
+
     const angleDiff = rightScan.curvature_angle - leftScan.curvature_angle;
     const lengthDiff = rightScan.length - leftScan.length;
     const circumDiff = rightScan.circumference - leftScan.circumference;
@@ -62,8 +72,8 @@ export const ProgressPhotos = () => {
             </div>
             <h3 className="text-xl font-semibold mb-2">Not Enough Photos</h3>
             <p className="text-muted-foreground max-w-md">
-              You need at least 2 scans with captured images to compare progress. 
-              Use the Scanner to capture more images.
+              You need at least 2 scans with captured images to compare progress. Use the Scanner to
+              capture more images.
             </p>
           </CardContent>
         </Card>
@@ -99,30 +109,34 @@ export const ProgressPhotos = () => {
         <CardContent>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-3">
-              <label className="text-sm font-medium">Earlier Photo</label>
+              <label className="text-sm font-medium" htmlFor="progress-photo-earlier">
+                Earlier Photo
+              </label>
               <Select value={selectedLeft} onValueChange={setSelectedLeft}>
-                <SelectTrigger>
+                <SelectTrigger id="progress-photo-earlier">
                   <SelectValue placeholder="Select earlier scan" />
                 </SelectTrigger>
                 <SelectContent>
                   {scansWithImages.map(scan => (
                     <SelectItem key={scan.id} value={scan.id}>
-                      {format(new Date(scan.created_at), 'MMM d, yyyy h:mm a')}
+                      {format(new Date(scan.created_at), "MMM d, yyyy h:mm a")}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-3">
-              <label className="text-sm font-medium">Later Photo</label>
+              <label className="text-sm font-medium" htmlFor="progress-photo-later">
+                Later Photo
+              </label>
               <Select value={selectedRight} onValueChange={setSelectedRight}>
-                <SelectTrigger>
+                <SelectTrigger id="progress-photo-later">
                   <SelectValue placeholder="Select later scan" />
                 </SelectTrigger>
                 <SelectContent>
                   {scansWithImages.map(scan => (
                     <SelectItem key={scan.id} value={scan.id}>
-                      {format(new Date(scan.created_at), 'MMM d, yyyy h:mm a')}
+                      {format(new Date(scan.created_at), "MMM d, yyyy h:mm a")}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -140,10 +154,10 @@ export const ProgressPhotos = () => {
                 <div className="flex items-center justify-between">
                   <Badge variant="outline" className="border-primary/30">
                     <Calendar className="w-3 h-3 mr-1" />
-                    {format(new Date(leftScan.created_at), 'MMM d, yyyy')}
+                    {format(new Date(leftScan.created_at), "MMM d, yyyy")}
                   </Badge>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     variant="ghost"
                     onClick={() => setZoomedImage(leftScan.image_data)}
                   >
@@ -153,8 +167,8 @@ export const ProgressPhotos = () => {
               </CardHeader>
               <CardContent>
                 <div className="aspect-square rounded-lg overflow-hidden bg-muted/20 mb-4">
-                  <img 
-                    src={leftScan.image_data!} 
+                  <FilteredImage
+                    src={leftScan.image_data!}
                     alt="Earlier scan"
                     className="w-full h-full object-cover"
                   />
@@ -181,10 +195,10 @@ export const ProgressPhotos = () => {
                 <div className="flex items-center justify-between">
                   <Badge variant="outline" className="border-accent/30">
                     <Calendar className="w-3 h-3 mr-1" />
-                    {format(new Date(rightScan.created_at), 'MMM d, yyyy')}
+                    {format(new Date(rightScan.created_at), "MMM d, yyyy")}
                   </Badge>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     variant="ghost"
                     onClick={() => setZoomedImage(rightScan.image_data)}
                   >
@@ -194,8 +208,8 @@ export const ProgressPhotos = () => {
               </CardHeader>
               <CardContent>
                 <div className="aspect-square rounded-lg overflow-hidden bg-muted/20 mb-4">
-                  <img 
-                    src={rightScan.image_data!} 
+                  <FilteredImage
+                    src={rightScan.image_data!}
                     alt="Later scan"
                     className="w-full h-full object-cover"
                   />
@@ -223,7 +237,8 @@ export const ProgressPhotos = () => {
               <CardHeader>
                 <CardTitle>Change Analysis</CardTitle>
                 <CardDescription>
-                  Comparing {format(new Date(leftScan.created_at), 'MMM d')} to {format(new Date(rightScan.created_at), 'MMM d, yyyy')}
+                  Comparing {format(new Date(leftScan.created_at), "MMM d")} to{" "}
+                  {format(new Date(rightScan.created_at), "MMM d, yyyy")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -234,10 +249,15 @@ export const ProgressPhotos = () => {
                       <TrendIcon value={comparison.angleDiff} />
                     </div>
                     <p className="text-2xl font-bold">
-                      {comparison.angleDiff > 0 ? '+' : ''}{comparison.angleDiff}°
+                      {comparison.angleDiff > 0 ? "+" : ""}
+                      {comparison.angleDiff}°
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {comparison.angleDiff > 0 ? 'Increased curvature' : comparison.angleDiff < 0 ? 'Reduced curvature' : 'No change'}
+                      {comparison.angleDiff > 0
+                        ? "Increased curvature"
+                        : comparison.angleDiff < 0
+                          ? "Reduced curvature"
+                          : "No change"}
                     </p>
                   </div>
                   <div className="p-4 rounded-lg bg-muted/20 border border-border/50">
@@ -246,10 +266,15 @@ export const ProgressPhotos = () => {
                       <TrendIcon value={-comparison.lengthDiff} />
                     </div>
                     <p className="text-2xl font-bold">
-                      {comparison.lengthDiff > 0 ? '+' : ''}{comparison.lengthDiff.toFixed(1)} cm
+                      {comparison.lengthDiff > 0 ? "+" : ""}
+                      {comparison.lengthDiff.toFixed(1)} cm
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {comparison.lengthDiff > 0 ? 'Increased' : comparison.lengthDiff < 0 ? 'Decreased' : 'No change'}
+                      {comparison.lengthDiff > 0
+                        ? "Increased"
+                        : comparison.lengthDiff < 0
+                          ? "Decreased"
+                          : "No change"}
                     </p>
                   </div>
                   <div className="p-4 rounded-lg bg-muted/20 border border-border/50">
@@ -258,10 +283,15 @@ export const ProgressPhotos = () => {
                       <TrendIcon value={-comparison.circumDiff} />
                     </div>
                     <p className="text-2xl font-bold">
-                      {comparison.circumDiff > 0 ? '+' : ''}{comparison.circumDiff.toFixed(1)} cm
+                      {comparison.circumDiff > 0 ? "+" : ""}
+                      {comparison.circumDiff.toFixed(1)} cm
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {comparison.circumDiff > 0 ? 'Increased' : comparison.circumDiff < 0 ? 'Decreased' : 'No change'}
+                      {comparison.circumDiff > 0
+                        ? "Increased"
+                        : comparison.circumDiff < 0
+                          ? "Decreased"
+                          : "No change"}
                     </p>
                   </div>
                 </div>
@@ -277,7 +307,7 @@ export const ProgressPhotos = () => {
             <DialogTitle>Photo Detail</DialogTitle>
           </DialogHeader>
           {zoomedImage && (
-            <img src={zoomedImage} alt="Zoomed scan" className="w-full rounded-lg" />
+            <FilteredImage src={zoomedImage} alt="Zoomed scan" className="w-full rounded-lg" />
           )}
         </DialogContent>
       </Dialog>

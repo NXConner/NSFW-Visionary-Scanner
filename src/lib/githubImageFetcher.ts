@@ -3,11 +3,11 @@
  * Fetches images from GitHub repositories
  */
 
-interface GitHubFile {
+export interface GitHubFile {
   name: string;
   path: string;
   download_url: string;
-  type: 'file' | 'dir';
+  type: "file" | "dir";
   size: number;
 }
 
@@ -23,34 +23,27 @@ interface GitHubRepoConfig {
  * @param config - Repository configuration
  * @returns Promise resolving to array of file information
  */
-export async function fetchGitHubFiles(
-  config: GitHubRepoConfig
-): Promise<GitHubFile[]> {
-  const { owner, repo, branch = 'main', path = '' } = config;
+export async function fetchGitHubFiles(config: GitHubRepoConfig): Promise<GitHubFile[]> {
+  const { owner, repo, branch = "main", path = "" } = config;
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
-  
-  try {
-    const response = await fetch(apiUrl, {
-      headers: {
-        'Accept': 'application/vnd.github.v3+json',
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    
-    // Handle both single file and directory responses
-    if (Array.isArray(data)) {
-      return data;
-    } else {
-      return [data];
-    }
-  } catch (error) {
-    console.error('Error fetching from GitHub:', error);
-    throw error;
+
+  const response = await fetch(apiUrl, {
+    headers: {
+      Accept: "application/vnd.github.v3+json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+
+  // Handle both single file and directory responses
+  if (Array.isArray(data)) {
+    return data;
+  } else {
+    return [data];
   }
 }
 
@@ -62,14 +55,14 @@ export async function fetchGitHubFiles(
  */
 export async function fetchGitHubImages(
   config: GitHubRepoConfig,
-  imageExtensions: string[] = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+  imageExtensions: string[] = ["jpg", "jpeg", "png", "gif", "webp"],
 ): Promise<GitHubFile[]> {
   const files = await fetchGitHubFiles(config);
-  
-  return files.filter((file) => {
-    if (file.type !== 'file') return false;
-    
-    const extension = file.name.split('.').pop()?.toLowerCase();
+
+  return files.filter(file => {
+    if (file.type !== "file") return false;
+
+    const extension = file.name.split(".").pop()?.toLowerCase();
     return extension && imageExtensions.includes(extension);
   });
 }
@@ -79,30 +72,28 @@ export async function fetchGitHubImages(
  * @param config - Repository configuration
  * @returns Promise resolving to array of image file information
  */
-export async function fetchGitHubImagesRecursive(
-  config: GitHubRepoConfig
-): Promise<GitHubFile[]> {
+export async function fetchGitHubImagesRecursive(config: GitHubRepoConfig): Promise<GitHubFile[]> {
   const images: GitHubFile[] = [];
-  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-  
-  async function traverse(path: string = '') {
+  const imageExtensions = ["jpg", "jpeg", "png", "gif", "webp"];
+
+  async function traverse(path: string = "") {
     const files = await fetchGitHubFiles({ ...config, path });
-    
+
     for (const file of files) {
-      if (file.type === 'dir') {
+      if (file.type === "dir") {
         // Recursively fetch from subdirectories
         await traverse(file.path);
       } else {
         // Check if it's an image
-        const extension = file.name.split('.').pop()?.toLowerCase();
+        const extension = file.name.split(".").pop()?.toLowerCase();
         if (extension && imageExtensions.includes(extension)) {
           images.push(file);
         }
       }
     }
   }
-  
-  await traverse(config.path || '');
+
+  await traverse(config.path || "");
   return images;
 }
 
@@ -112,21 +103,21 @@ export async function fetchGitHubImagesRecursive(
  * @returns Promise resolving to array of image file information
  */
 export async function fetchImagesFromMultipleRepos(
-  configs: GitHubRepoConfig[]
+  configs: GitHubRepoConfig[],
 ): Promise<GitHubFile[]> {
   const allImages: GitHubFile[] = [];
-  
+
   await Promise.allSettled(
-    configs.map(async (config) => {
+    configs.map(async config => {
       try {
         const images = await fetchGitHubImagesRecursive(config);
         allImages.push(...images);
       } catch (error) {
-        console.error(`Error fetching from ${config.owner}/${config.repo}:`, error);
+        // Error silently handled - failed fetches are ignored
       }
-    })
+    }),
   );
-  
+
   return allImages;
 }
 
@@ -142,7 +133,7 @@ export function getGitHubImageUrl(
   owner: string,
   repo: string,
   path: string,
-  branch: string = 'main'
+  branch: string = "main",
 ): string {
   return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
 }
@@ -152,14 +143,13 @@ export function getGitHubImageUrl(
  */
 export const REPOSITORY_CONFIGS = {
   RANDOM_SEX_POSITION: {
-    owner: 'raminr77',
-    repo: 'random-sex-position',
-    branch: 'main',
+    owner: "raminr77",
+    repo: "random-sex-position",
+    branch: "main",
   },
   SEX_POSITIONS: {
-    owner: 'adminlove520',
-    repo: 'Sex-Positions',
-    branch: 'main',
+    owner: "adminlove520",
+    repo: "Sex-Positions",
+    branch: "main",
   },
 } as const;
-

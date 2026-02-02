@@ -1,40 +1,56 @@
-import { useState, useRef } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import { useData } from '@/contexts/DataContext';
-import { 
-  Upload, Image, Camera, Check, X, Ruler, Target, 
-  RotateCcw, Save, AlertCircle
-} from 'lucide-react';
+import { useState, useRef } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { useData } from "@/contexts/DataContext";
+import { useAIScanAnalysis } from "@/hooks/useAIScanAnalysis";
+import { measureImage } from "@/scanner/measurement";
+import {
+  Upload,
+  Image,
+  Camera,
+  Check,
+  X,
+  Ruler,
+  Target,
+  RotateCcw,
+  Save,
+  AlertCircle,
+} from "lucide-react";
+import { FilteredImage } from "@/components/media/FilteredImage";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
+import type { MeasurementState } from "@/lib/growersVsShowers";
 
 export const ImageUploadScan = () => {
   const { saveScan } = useData();
+  const { analyzeImage } = useAIScanAnalysis({ saveToHistory: true });
   const [isOpen, setIsOpen] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [measurementState, setMeasurementState] = useState<MeasurementState>("unknown");
+  const [erectLength, setErectLength] = useState("");
+  const [erectCircumference, setErectCircumference] = useState("");
   const [measurements, setMeasurements] = useState({
-    length: '',
-    circumference: '',
-    curvatureAngle: '',
-    curvatureDirection: 'Dorsal (upward)'
+    length: "",
+    circumference: "",
+    curvatureAngle: "",
+    curvatureDirection: "Dorsal (upward)",
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,47 +58,70 @@ export const ImageUploadScan = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('Image must be under 10MB');
+      toast.error("Image must be under 10MB");
       return;
     }
 
     const reader = new FileReader();
-    reader.onload = (event) => {
-      setUploadedImage(event.target?.result as string);
-      simulateAnalysis();
+    reader.onload = async event => {
+      const img = event.target?.result as string;
+      setUploadedImage(img);
+      await runAnalysis(img);
     };
     reader.readAsDataURL(file);
   };
 
-  const simulateAnalysis = () => {
+  const runAnalysis = async (img: string) => {
     setIsProcessing(true);
-    // Simulate AI analysis
-    setTimeout(() => {
-      setMeasurements({
-        length: (12 + Math.random() * 6).toFixed(1),
-        circumference: (10 + Math.random() * 4).toFixed(1),
-        curvatureAngle: Math.floor(Math.random() * 35).toString(),
-        curvatureDirection: ['Dorsal (upward)', 'Ventral (downward)', 'Lateral (left)', 'Lateral (right)'][Math.floor(Math.random() * 4)]
+    try {
+      // Deterministic measurement pass (works offline; best-effort without calibration)
+      try {
+        const det = await measureImage(
+          { imageDataUrl: img, calibration: { source: "none" }, requestedUnits: "cm" },
+          { maxDim: 1024, polyDegree: 3 },
+        );
+        if (det.annotatedImageDataUrl) setUploadedImage(det.annotatedImageDataUrl);
+        setMeasurements(prev => ({
+          ...prev,
+          curvatureAngle: det.curvatureAngleDeg
+            ? String(Math.round(det.curvatureAngleDeg))
+            : prev.curvatureAngle,
+        }));
+      } catch {
+        // ignore
+      }
+
+      const analysis = await analyzeImage(img);
+      setMeasurements(prev => ({
+        ...prev,
+        curvatureAngle: analysis?.curvatureAssessment.estimatedAngle
+          ? String(Math.round(analysis.curvatureAssessment.estimatedAngle))
+          : "",
+        curvatureDirection: analysis?.curvatureAssessment.direction || prev.curvatureDirection,
+      }));
+      toast.success("Image analyzed!", {
+        description: "Curvature assessment ready. Enter length & circumference to save.",
       });
+    } finally {
       setIsProcessing(false);
-      toast.success('Image analyzed!', { description: 'Review and adjust measurements as needed' });
-    }, 2000);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file && file.type.startsWith("image/")) {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setUploadedImage(event.target?.result as string);
-        simulateAnalysis();
+      reader.onload = async event => {
+        const img = event.target?.result as string;
+        setUploadedImage(img);
+        await runAnalysis(img);
       };
       reader.readAsDataURL(file);
     }
@@ -90,35 +129,65 @@ export const ImageUploadScan = () => {
 
   const handleSave = async () => {
     if (!uploadedImage) {
-      toast.error('Please upload an image first');
+      toast.error("Please upload an image first");
       return;
     }
 
+    const length = Number.parseFloat(measurements.length);
+    const circumference = Number.parseFloat(measurements.circumference);
+    if (
+      !Number.isFinite(length) ||
+      length <= 0 ||
+      !Number.isFinite(circumference) ||
+      circumference <= 0
+    ) {
+      toast.error("Enter valid length and circumference before saving");
+      return;
+    }
+
+    if (measurementState === "paired") {
+      const eLen = Number.parseFloat(erectLength);
+      const eCirc = Number.parseFloat(erectCircumference);
+      if (!Number.isFinite(eLen) || eLen <= 0 || !Number.isFinite(eCirc) || eCirc <= 0) {
+        toast.error("Enter valid paired erect length and circumference");
+        return;
+      }
+    }
+
     await saveScan({
-      scan_type: 'uploaded',
-      length: parseFloat(measurements.length) || null,
-      circumference: parseFloat(measurements.circumference) || null,
-      curvature_angle: parseFloat(measurements.curvatureAngle) || null,
+      scan_type: "uploaded",
+      length,
+      circumference,
+      erect_length: measurementState === "paired" ? Number.parseFloat(erectLength) : null,
+      erect_circumference:
+        measurementState === "paired" ? Number.parseFloat(erectCircumference) : null,
+      measurement_context: { state: measurementState },
+      curvature_angle: Number.isFinite(Number.parseFloat(measurements.curvatureAngle))
+        ? Number.parseFloat(measurements.curvatureAngle)
+        : 0,
       curvature_direction: measurements.curvatureDirection,
       image_data: uploadedImage,
-      notes: 'Uploaded from device gallery',
+      notes: "Uploaded from device gallery",
     });
 
-    toast.success('Scan saved!', { description: 'Added to your health diary' });
+    toast.success("Scan saved!", { description: "Added to your health diary" });
     resetForm();
     setIsOpen(false);
   };
 
   const resetForm = () => {
     setUploadedImage(null);
+    setMeasurementState("unknown");
+    setErectLength("");
+    setErectCircumference("");
     setMeasurements({
-      length: '',
-      circumference: '',
-      curvatureAngle: '',
-      curvatureDirection: 'Dorsal (upward)'
+      length: "",
+      circumference: "",
+      curvatureAngle: "",
+      curvatureDirection: "Dorsal (upward)",
     });
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -142,10 +211,11 @@ export const ImageUploadScan = () => {
         <div className="space-y-6">
           {/* Upload Area */}
           {!uploadedImage ? (
-            <div
-              className="border-2 border-dashed border-border/50 rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+            <button
+              type="button"
+              className="w-full border-2 border-dashed border-border/50 rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
               onDrop={handleDrop}
-              onDragOver={(e) => e.preventDefault()}
+              onDragOver={e => e.preventDefault()}
               onClick={() => fileInputRef.current?.click()}
             >
               <input
@@ -163,14 +233,14 @@ export const ImageUploadScan = () => {
               <Badge variant="outline" className="text-xs">
                 Supports JPG, PNG, HEIC up to 10MB
               </Badge>
-            </div>
+            </button>
           ) : (
             <div className="space-y-4">
               {/* Image Preview */}
               <div className="relative rounded-xl overflow-hidden border border-border/50">
-                <img 
-                  src={uploadedImage} 
-                  alt="Uploaded" 
+                <FilteredImage
+                  src={uploadedImage}
+                  alt="Uploaded"
                   className="w-full aspect-[4/3] object-cover"
                 />
                 {isProcessing && (
@@ -197,8 +267,32 @@ export const ImageUploadScan = () => {
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
                     <AlertCircle className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />
                     <p className="text-xs text-muted-foreground">
-                      AI-estimated measurements. Please verify and adjust if needed for accuracy.
+                      Curvature assessment is AI-assisted. Enter and verify length/circumference for
+                      accuracy.
                     </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center justify-between">
+                      <span>Measurement state</span>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {measurementState}
+                      </span>
+                    </Label>
+                    <Select
+                      value={measurementState}
+                      onValueChange={v => setMeasurementState(v as MeasurementState)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unknown">Unknown</SelectItem>
+                        <SelectItem value="flaccid">Flaccid</SelectItem>
+                        <SelectItem value="erect">Erect</SelectItem>
+                        <SelectItem value="paired">Paired (flaccid + erect)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -211,7 +305,7 @@ export const ImageUploadScan = () => {
                         type="number"
                         step="0.1"
                         value={measurements.length}
-                        onChange={(e) => setMeasurements({ ...measurements, length: e.target.value })}
+                        onChange={e => setMeasurements({ ...measurements, length: e.target.value })}
                         placeholder="e.g., 14.5"
                       />
                     </div>
@@ -224,11 +318,50 @@ export const ImageUploadScan = () => {
                         type="number"
                         step="0.1"
                         value={measurements.circumference}
-                        onChange={(e) => setMeasurements({ ...measurements, circumference: e.target.value })}
+                        onChange={e =>
+                          setMeasurements({ ...measurements, circumference: e.target.value })
+                        }
                         placeholder="e.g., 12.0"
                       />
                     </div>
                   </div>
+
+                  {measurementState === "paired" && (
+                    <div className="rounded-xl border border-border/50 bg-secondary/10 p-4 space-y-4">
+                      <div className="text-sm font-medium">Paired erect values</div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2">
+                            <Ruler className="w-4 h-4 text-primary" />
+                            Erect length (cm)
+                          </Label>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            value={erectLength}
+                            onChange={e => setErectLength(e.target.value)}
+                            placeholder="e.g., 15.8"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2">
+                            <Target className="w-4 h-4 text-primary" />
+                            Erect circumference (cm)
+                          </Label>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            value={erectCircumference}
+                            onChange={e => setErectCircumference(e.target.value)}
+                            placeholder="e.g., 13.2"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Paired entries improve Growers vs Showers accuracy.
+                      </p>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -236,15 +369,19 @@ export const ImageUploadScan = () => {
                       <Input
                         type="number"
                         value={measurements.curvatureAngle}
-                        onChange={(e) => setMeasurements({ ...measurements, curvatureAngle: e.target.value })}
+                        onChange={e =>
+                          setMeasurements({ ...measurements, curvatureAngle: e.target.value })
+                        }
                         placeholder="e.g., 15"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label>Curvature Direction</Label>
-                      <Select 
+                      <Select
                         value={measurements.curvatureDirection}
-                        onValueChange={(v) => setMeasurements({ ...measurements, curvatureDirection: v })}
+                        onValueChange={v =>
+                          setMeasurements({ ...measurements, curvatureDirection: v })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -265,8 +402,8 @@ export const ImageUploadScan = () => {
 
           {/* Actions */}
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="flex-1"
               onClick={() => {
                 resetForm();
@@ -275,8 +412,8 @@ export const ImageUploadScan = () => {
             >
               Cancel
             </Button>
-            <Button 
-              variant="gradient" 
+            <Button
+              variant="gradient"
               className="flex-1 gap-2"
               onClick={handleSave}
               disabled={!uploadedImage || isProcessing}

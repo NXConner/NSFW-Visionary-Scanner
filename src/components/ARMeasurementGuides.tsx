@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Ruler, Move, RotateCw, Target, Maximize2 } from 'lucide-react';
-import { VisualContentDisplay } from './VisualContentDisplay';
-import { useVisualContent } from '@/hooks/useVisualContent';
-import { VISUAL_CONTENT_CATEGORIES } from '@/lib/visualContentManager';
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Ruler, Move, RotateCw, Target, Maximize2 } from "lucide-react";
+import { VisualContentDisplay } from "./VisualContentDisplay";
+import { useVisualContent } from "@/hooks/useVisualContent";
+import { VISUAL_CONTENT_CATEGORIES } from "@/lib/visualContentManager";
 
 interface ARMeasurementGuidesProps {
   isActive: boolean;
-  measurementType: 'length' | 'circumference' | 'angle';
+  measurementType: "length" | "circumference" | "angle";
   detectedDimensions?: { width: number; height: number };
   calibrationFactor?: number;
 }
@@ -16,7 +16,7 @@ export const ARMeasurementGuides = ({
   isActive,
   measurementType,
   detectedDimensions,
-  calibrationFactor = 1
+  calibrationFactor = 1,
 }: ARMeasurementGuidesProps) => {
   const [guidePosition, setGuidePosition] = useState({ x: 50, y: 50 });
   const [guideLength, setGuideLength] = useState(120);
@@ -25,10 +25,7 @@ export const ARMeasurementGuides = ({
 
   // Load visual content for measurement guides
   const { content: measurementVisuals } = useVisualContent({
-    categories: [
-      VISUAL_CONTENT_CATEGORIES.MEASUREMENT,
-      VISUAL_CONTENT_CATEGORIES.TUTORIALS,
-    ],
+    categories: [VISUAL_CONTENT_CATEGORIES.MEASUREMENT, VISUAL_CONTENT_CATEGORIES.TUTORIALS],
     autoLoad: true,
     autoInvert: true,
   });
@@ -64,7 +61,7 @@ export const ARMeasurementGuides = ({
             </feMerge>
           </filter>
         </defs>
-        
+
         {/* Main measurement line */}
         <motion.line
           x1="50%"
@@ -79,21 +76,29 @@ export const ARMeasurementGuides = ({
           animate={{ pathLength: 1 }}
           transition={{ duration: 1, ease: "easeInOut" }}
         />
-        
+
         {/* Top marker */}
-        <motion.g initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+        <motion.g
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
           <line x1="45%" y1="15%" x2="55%" y2="15%" stroke="hsl(var(--primary))" strokeWidth="2" />
           <circle cx="50%" cy="15%" r="6" fill="hsl(var(--primary))" className="animate-pulse" />
         </motion.g>
-        
+
         {/* Bottom marker */}
-        <motion.g initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+        <motion.g
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
           <line x1="45%" y1="85%" x2="55%" y2="85%" stroke="hsl(var(--primary))" strokeWidth="2" />
           <circle cx="50%" cy="85%" r="6" fill="hsl(var(--primary))" className="animate-pulse" />
         </motion.g>
-        
+
         {/* Ruler ticks */}
-        {[20, 30, 40, 50, 60, 70, 80].map((y) => (
+        {[20, 30, 40, 50, 60, 70, 80].map(y => (
           <motion.line
             key={y}
             x1="48%"
@@ -108,7 +113,7 @@ export const ARMeasurementGuides = ({
           />
         ))}
       </svg>
-      
+
       {/* Measurement display */}
       <AnimatePresence>
         {showMeasurement && (
@@ -142,7 +147,7 @@ export const ARMeasurementGuides = ({
             <stop offset="100%" stopColor="hsl(var(--accent))" />
           </linearGradient>
         </defs>
-        
+
         {/* Outer ring */}
         <motion.circle
           cx="100"
@@ -156,7 +161,7 @@ export const ARMeasurementGuides = ({
           animate={{ pathLength: 1 }}
           transition={{ duration: 1.5, ease: "easeInOut" }}
         />
-        
+
         {/* Inner measurement ring */}
         <motion.circle
           cx="100"
@@ -169,9 +174,9 @@ export const ARMeasurementGuides = ({
           animate={{ scale: 1 }}
           transition={{ delay: 0.5 }}
         />
-        
+
         {/* Measurement points */}
-        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => {
+        {[0, 45, 90, 135, 180, 225, 270, 315].map(angle => {
           const x = 100 + 80 * Math.cos((angle * Math.PI) / 180);
           const y = 100 + 80 * Math.sin((angle * Math.PI) / 180);
           return (
@@ -189,7 +194,7 @@ export const ARMeasurementGuides = ({
           );
         })}
       </svg>
-      
+
       {/* Circumference label */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -219,7 +224,7 @@ export const ARMeasurementGuides = ({
             <stop offset="100%" stopColor="hsl(var(--destructive))" />
           </linearGradient>
         </defs>
-        
+
         {/* Reference line (0°) */}
         <motion.line
           x1="50%"
@@ -232,7 +237,7 @@ export const ARMeasurementGuides = ({
           initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
         />
-        
+
         {/* Angle arc */}
         <motion.path
           d="M 50% 50% Q 60% 35% 65% 50%"
@@ -243,9 +248,9 @@ export const ARMeasurementGuides = ({
           animate={{ pathLength: 1 }}
           transition={{ duration: 1 }}
         />
-        
+
         {/* Angle markers */}
-        {[0, 15, 30, 45].map((angle) => {
+        {[0, 15, 30, 45].map(angle => {
           const x = 50 + 20 * Math.sin((angle * Math.PI) / 180);
           const y = 50 - 20 * Math.cos((angle * Math.PI) / 180);
           return (
@@ -265,7 +270,7 @@ export const ARMeasurementGuides = ({
           );
         })}
       </svg>
-      
+
       {/* Angle indicator */}
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
@@ -283,10 +288,10 @@ export const ARMeasurementGuides = ({
 
   return (
     <div className="absolute inset-0 overflow-hidden">
-      {measurementType === 'length' && renderLengthGuide()}
-      {measurementType === 'circumference' && renderCircumferenceGuide()}
-      {measurementType === 'angle' && renderAngleGuide()}
-      
+      {measurementType === "length" && renderLengthGuide()}
+      {measurementType === "circumference" && renderCircumferenceGuide()}
+      {measurementType === "angle" && renderAngleGuide()}
+
       {/* Instruction overlay */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -295,20 +300,20 @@ export const ARMeasurementGuides = ({
       >
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/20">
-            {measurementType === 'length' && <Maximize2 className="w-5 h-5 text-primary" />}
-            {measurementType === 'circumference' && <RotateCw className="w-5 h-5 text-primary" />}
-            {measurementType === 'angle' && <Target className="w-5 h-5 text-primary" />}
+            {measurementType === "length" && <Maximize2 className="w-5 h-5 text-primary" />}
+            {measurementType === "circumference" && <RotateCw className="w-5 h-5 text-primary" />}
+            {measurementType === "angle" && <Target className="w-5 h-5 text-primary" />}
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium">
-              {measurementType === 'length' && 'Align subject with vertical guide'}
-              {measurementType === 'circumference' && 'Position for wrap measurement'}
-              {measurementType === 'angle' && 'Hold steady for curvature detection'}
+              {measurementType === "length" && "Align subject with vertical guide"}
+              {measurementType === "circumference" && "Position for wrap measurement"}
+              {measurementType === "angle" && "Hold steady for curvature detection"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {measurementType === 'length' && 'Ensure full length is visible'}
-              {measurementType === 'circumference' && 'Camera will estimate girth'}
-              {measurementType === 'angle' && 'AI analyzing deviation angle'}
+              {measurementType === "length" && "Ensure full length is visible"}
+              {measurementType === "circumference" && "Camera will estimate girth"}
+              {measurementType === "angle" && "AI analyzing deviation angle"}
             </p>
           </div>
           {measurementVisuals.length > 0 && (
@@ -316,7 +321,7 @@ export const ARMeasurementGuides = ({
               onClick={() => setShowVisualGuide(!showVisualGuide)}
               className="px-3 py-1.5 text-xs bg-primary/20 hover:bg-primary/30 rounded-lg transition-colors"
             >
-              {showVisualGuide ? 'Hide' : 'Show'} Guide
+              {showVisualGuide ? "Hide" : "Show"} Guide
             </button>
           )}
         </div>
@@ -331,13 +336,16 @@ export const ARMeasurementGuides = ({
         >
           <h4 className="text-sm font-semibold mb-2">Visual Reference Guide</h4>
           <VisualContentDisplay
-            content={measurementVisuals.filter(v =>
-              v.tags.some(tag => 
-                tag.includes(measurementType) || 
-                tag.includes('measurement') || 
-                tag.includes('positioning')
+            content={measurementVisuals
+              .filter(v =>
+                v.tags.some(
+                  tag =>
+                    tag.includes(measurementType) ||
+                    tag.includes("measurement") ||
+                    tag.includes("positioning"),
+                ),
               )
-            ).slice(0, 2)}
+              .slice(0, 2)}
             showThumbnails={false}
             className="max-h-48"
           />

@@ -1,48 +1,79 @@
-import { useState, useEffect } from 'react'
-import { PricingCard } from '@/components/PricingCard'
-import { getPricingTiers, getDLCOptions, formatPrice, type PricingTier } from '@/lib/pricing'
-import { useAuth } from '@/contexts/AuthContext'
-import { useFeatureAccess } from '@/hooks/useFeatureAccess'
-import { isHybrid, getDistributionChannel } from '@/lib/featureFlags'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Check, Star, Zap, Crown, Key, Download, Store, Globe } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from "react";
+import { PricingCard } from "@/components/PricingCard";
+import { getPricingTiers, getDLCOptions, formatPrice, type PricingTier } from "@/lib/pricing";
+import { useAuth } from "@/contexts/AuthContext";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { isHybrid, getDistributionChannel } from "@/lib/featureFlags";
+import { BUILD_ALLOW_ADULT_BUNDLE } from "@/lib/buildFlags";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Check, Star, Zap, Crown, Key, Download, Store, Globe } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { useAnalytics } from "@/lib/analytics";
+import { useSearchParams } from "react-router-dom";
+import { useBetaAccess } from "@/lib/betaAccess";
 
 const Pricing = () => {
-  const [billingInterval, setBillingInterval] = useState<'month' | 'year'>('month')
-  const [priceType, setPriceType] = useState<'subscription' | 'one-time'>('subscription')
-  const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([])
-  const [dlcOptions, setDlcOptions] = useState<PricingTier[]>([])
-  const [loading, setLoading] = useState(true)
-  const { user } = useAuth()
-  const { tier: currentTier } = useFeatureAccess()
-  const navigate = useNavigate()
-  const channel = getDistributionChannel()
-  const isHybridVersion = isHybrid()
+  const [billingInterval, setBillingInterval] = useState<"month" | "year">("month");
+  const [priceType, setPriceType] = useState<"subscription" | "one-time">("subscription");
+  const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
+  const [dlcOptions, setDlcOptions] = useState<PricingTier[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { tier: currentTier } = useFeatureAccess();
+  const { status: betaStatus } = useBetaAccess(user?.id);
+  const navigate = useNavigate();
+  const channel = getDistributionChannel();
+  const isHybridVersion = isHybrid();
+  const { trackUserAction } = useAnalytics();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const loadPricing = async () => {
-      setLoading(true)
+      setLoading(true);
       try {
-        const tiers = await getPricingTiers()
-        setPricingTiers(tiers)
-        
+        const tiers = await getPricingTiers();
+        setPricingTiers(tiers);
+
         if (isHybridVersion) {
-          const dlc = await getDLCOptions()
-          setDlcOptions(dlc)
+          const dlc = await getDLCOptions();
+          setDlcOptions(dlc);
         }
       } catch (error) {
-        console.error('Failed to load pricing', error)
+        // Error silently handled
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
+    };
+    loadPricing();
+  }, [isHybridVersion]);
+
+  useEffect(() => {
+    if (!user) return;
+    trackUserAction("paywall_view", "funnel", {
+      page: "pricing",
+      channel,
+      isHybridVersion,
+      currentTier,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user) return;
+    const success = searchParams.get("success") === "true";
+    const canceled = searchParams.get("canceled") === "true";
+    if (success) {
+      trackUserAction("checkout_return_success", "funnel", { page: "pricing" });
     }
-    loadPricing()
-  }, [isHybridVersion])
+    if (canceled) {
+      trackUserAction("checkout_return_canceled", "funnel", { page: "pricing" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, searchParams]);
 
   if (!user) {
     return (
@@ -53,34 +84,79 @@ const Pricing = () => {
             <p className="text-xl text-muted-foreground mb-8">
               Unlock the full potential of your health journey
             </p>
-            <Button onClick={() => navigate('/auth')} size="lg">
+            <Button onClick={() => navigate("/auth")} size="lg">
               Sign In to Get Started
             </Button>
           </div>
         </div>
       </div>
-    )
+    );
+  }
+
+  if (betaStatus.active) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="container mx-auto px-4 py-16">
+          <div className="max-w-3xl mx-auto">
+            <Card className="border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="w-5 h-5" />
+                  Beta Access Enabled
+                </CardTitle>
+                <CardDescription>
+                  Purchases are disabled for beta testers. Your account is unlocked for premium +
+                  DLC testing.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {betaStatus.expiresAt ? (
+                  <Badge variant="outline">
+                    Expires: {new Date(betaStatus.expiresAt).toLocaleString()}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline">No expiry</Badge>
+                )}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button asChild variant="gradient">
+                    <Link to="/dlc">Go to DLC Store</Link>
+                  </Button>
+                  <Button asChild variant="secondary">
+                    <Link to="/">Back to Home</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Filter tiers based on selected price type and billing interval
   const filteredTiers = pricingTiers.filter(tier => {
-    if (priceType === 'subscription') {
-      return (tier.priceType === 'monthly' || tier.priceType === 'yearly') &&
-             (billingInterval === 'month' ? tier.priceType === 'monthly' : tier.priceType === 'yearly')
+    if (priceType === "subscription") {
+      return (
+        (tier.priceType === "monthly" || tier.priceType === "yearly") &&
+        (billingInterval === "month" ? tier.priceType === "monthly" : tier.priceType === "yearly")
+      );
     } else {
-      return tier.priceType === 'one-time' || tier.priceType === 'lifetime'
+      return tier.priceType === "one-time" || tier.priceType === "lifetime";
     }
-  })
+  });
 
   // Group tiers by name for display
-  const groupedTiers = filteredTiers.reduce((acc, tier) => {
-    const key = tier.name
-    if (!acc[key]) {
-      acc[key] = []
-    }
-    acc[key].push(tier)
-    return acc
-  }, {} as Record<string, PricingTier[]>)
+  const groupedTiers = filteredTiers.reduce(
+    (acc, tier) => {
+      const key = tier.name;
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(tier);
+      return acc;
+    },
+    {} as Record<string, PricingTier[]>,
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
@@ -93,7 +169,7 @@ const Pricing = () => {
 
           {/* Distribution Channel Badge */}
           <div className="flex items-center justify-center gap-2 mb-4">
-            {channel === 'store' ? (
+            {channel === "store" ? (
               <Badge variant="outline" className="gap-2">
                 <Store className="w-4 h-4" />
                 Store Version
@@ -107,7 +183,11 @@ const Pricing = () => {
           </div>
 
           {/* Price Type Tabs */}
-          <Tabs value={priceType} onValueChange={(v) => setPriceType(v as 'subscription' | 'one-time')} className="mb-8">
+          <Tabs
+            value={priceType}
+            onValueChange={v => setPriceType(v as "subscription" | "one-time")}
+            className="mb-8"
+          >
             <TabsList className="inline-flex">
               <TabsTrigger value="subscription">Subscriptions</TabsTrigger>
               <TabsTrigger value="one-time">One-Time Purchases</TabsTrigger>
@@ -115,30 +195,28 @@ const Pricing = () => {
           </Tabs>
 
           {/* Billing Toggle (only for subscriptions) */}
-          {priceType === 'subscription' && (
+          {priceType === "subscription" && (
             <div className="inline-flex items-center bg-white dark:bg-gray-800 rounded-lg p-1 shadow-sm mb-8">
               <button
-                onClick={() => setBillingInterval('month')}
+                onClick={() => setBillingInterval("month")}
                 className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                  billingInterval === 'month'
-                    ? 'bg-blue-500 text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                  billingInterval === "month"
+                    ? "bg-blue-500 text-white"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
                 }`}
               >
                 Monthly
               </button>
               <button
-                onClick={() => setBillingInterval('year')}
+                onClick={() => setBillingInterval("year")}
                 className={`px-6 py-2 rounded-md text-sm font-medium transition-colors relative ${
-                  billingInterval === 'year'
-                    ? 'bg-blue-500 text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                  billingInterval === "year"
+                    ? "bg-blue-500 text-white"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
                 }`}
               >
                 Yearly
-                <Badge className="absolute -top-2 -right-2 bg-green-500 text-xs">
-                  Save 20%
-                </Badge>
+                <Badge className="absolute -top-2 -right-2 bg-green-500 text-xs">Save 20%</Badge>
               </button>
             </div>
           )}
@@ -153,9 +231,9 @@ const Pricing = () => {
             {/* Pricing Cards */}
             <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto mb-16">
               {Object.values(groupedTiers).map((tierGroup, index) => {
-                const tier = tierGroup[0] // Use first tier for display
-                const isPopular = tier.popular || false
-                
+                const tier = tierGroup[0]; // Use first tier for display
+                const isPopular = tier.popular || false;
+
                 return (
                   <PricingCard
                     key={tier.id}
@@ -163,25 +241,30 @@ const Pricing = () => {
                       id: tier.id,
                       name: tier.name,
                       price: tier.price,
-                      interval: tier.priceType === 'yearly' ? 'year' : tier.priceType === 'monthly' ? 'month' : 'one-time',
-                      stripePriceId: tier.stripePriceId || '',
+                      interval:
+                        tier.priceType === "yearly"
+                          ? "year"
+                          : tier.priceType === "monthly"
+                            ? "month"
+                            : "one-time",
+                      stripePriceId: tier.stripePriceId || "",
                       features: tier.features,
-                      popular: isPopular
+                      popular: isPopular,
                     }}
                     isPopular={isPopular}
                     currentPlan={currentTier}
                   />
-                )
+                );
               })}
             </div>
 
-            {/* DLC Upgrade Section (Hybrid Version Only) */}
-            {isHybridVersion && dlcOptions.length > 0 && (
+            {/* DLC Upgrade Section (Direct bundles only) */}
+            {BUILD_ALLOW_ADULT_BUNDLE && isHybridVersion && dlcOptions.length > 0 && (
               <Card className="max-w-4xl mx-auto mb-16 border-primary/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Key className="w-5 h-5" />
-                    NSFW Content Upgrade (DLC)
+                    Adult Content Upgrade (DLC)
                   </CardTitle>
                   <CardDescription>
                     Unlock adult content and features with a one-time DLC purchase
@@ -189,7 +272,7 @@ const Pricing = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid md:grid-cols-2 gap-6">
-                    {dlcOptions.map((dlc) => (
+                    {dlcOptions.map(dlc => (
                       <Card key={dlc.id} className="border-2">
                         <CardHeader>
                           <CardTitle className="text-xl">{dlc.name}</CardTitle>
@@ -197,7 +280,7 @@ const Pricing = () => {
                             {formatPrice(dlc.price)}
                           </div>
                           <Badge variant="outline" className="mt-2">
-                            {dlc.distributionChannel === 'store' ? 'Store User' : 'Direct User'}
+                            {dlc.distributionChannel === "store" ? "Store User" : "Direct User"}
                           </Badge>
                         </CardHeader>
                         <CardContent>
@@ -210,9 +293,7 @@ const Pricing = () => {
                             ))}
                           </ul>
                           <Button asChild className="w-full" variant="gradient">
-                            <Link to="/dlc">
-                              Purchase DLC
-                            </Link>
+                            <Link to="/dlc">Purchase DLC</Link>
                           </Button>
                         </CardContent>
                       </Card>
@@ -244,27 +325,51 @@ const Pricing = () => {
                     <tbody className="divide-y">
                       <tr>
                         <td className="py-4 px-6 font-medium">3D/2D Morphology Scanner</td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
                       </tr>
                       <tr className="bg-gray-50 dark:bg-gray-800">
                         <td className="py-4 px-6 font-medium">Health Diary & Calendar</td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
                       </tr>
                       <tr>
                         <td className="py-4 px-6 font-medium">Education Center</td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
                       </tr>
                       <tr className="bg-gray-50 dark:bg-gray-800">
                         <td className="py-4 px-6 font-medium">Emergency Guidance</td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
                       </tr>
                       <tr>
                         <td className="py-4 px-6 font-medium flex items-center gap-2">
@@ -272,20 +377,32 @@ const Pricing = () => {
                           Positions Gallery
                         </td>
                         <td className="text-center py-4">—</td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
                       </tr>
                       <tr className="bg-gray-50 dark:bg-gray-800">
                         <td className="py-4 px-6 font-medium">PE Progress Photos</td>
                         <td className="text-center py-4">—</td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
                       </tr>
                       <tr>
                         <td className="py-4 px-6 font-medium">Cloud Backup & Sync</td>
                         <td className="text-center py-4">—</td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
                       </tr>
                       <tr className="bg-gray-50 dark:bg-gray-800">
                         <td className="py-4 px-6 font-medium flex items-center gap-2">
@@ -294,7 +411,9 @@ const Pricing = () => {
                         </td>
                         <td className="text-center py-4">—</td>
                         <td className="text-center py-4">—</td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
                       </tr>
                       <tr>
                         <td className="py-4 px-6 font-medium flex items-center gap-2">
@@ -303,19 +422,25 @@ const Pricing = () => {
                         </td>
                         <td className="text-center py-4">—</td>
                         <td className="text-center py-4">—</td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
                       </tr>
                       <tr className="bg-gray-50 dark:bg-gray-800">
                         <td className="py-4 px-6 font-medium">Medical Export (HL7 FHIR)</td>
                         <td className="text-center py-4">—</td>
                         <td className="text-center py-4">—</td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
                       </tr>
                       <tr>
                         <td className="py-4 px-6 font-medium">Priority Support</td>
                         <td className="text-center py-4">—</td>
                         <td className="text-center py-4">—</td>
-                        <td className="text-center py-4"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
+                        <td className="text-center py-4">
+                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -333,7 +458,9 @@ const Pricing = () => {
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground">
-                      Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately for upgrades, or at the end of your current billing period for downgrades.
+                      Yes! You can upgrade or downgrade your plan at any time. Changes take effect
+                      immediately for upgrades, or at the end of your current billing period for
+                      downgrades.
                     </p>
                   </CardContent>
                 </Card>
@@ -344,7 +471,8 @@ const Pricing = () => {
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground">
-                      Absolutely. All health data is encrypted with AES-256-GCM encryption. We follow HIPAA guidelines and GDPR compliance standards.
+                      Absolutely. All health data is encrypted with AES-256-GCM encryption. We
+                      follow HIPAA guidelines and GDPR compliance standards.
                     </p>
                   </CardContent>
                 </Card>
@@ -355,7 +483,8 @@ const Pricing = () => {
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground">
-                      We accept all major credit cards, PayPal, and digital wallets through our secure Stripe integration.
+                      We accept all major credit cards, PayPal, and digital wallets through our
+                      secure Stripe integration.
                     </p>
                   </CardContent>
                 </Card>
@@ -366,7 +495,8 @@ const Pricing = () => {
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground">
-                      Yes, you can cancel your subscription at any time. You'll retain access to premium features until the end of your billing period.
+                      Yes, you can cancel your subscription at any time. You'll retain access to
+                      premium features until the end of your billing period.
                     </p>
                   </CardContent>
                 </Card>
@@ -379,7 +509,9 @@ const Pricing = () => {
                       </CardHeader>
                       <CardContent>
                         <p className="text-muted-foreground">
-                          The DLC upgrade unlocks all NSFW content and features. It's a one-time purchase that requires the base SFW app. Purchase from our website after installing the app.
+                          The DLC upgrade unlocks all adult content and features. It's a one-time
+                          purchase that requires the base SFW app. Purchase from our website after
+                          installing the app.
                         </p>
                       </CardContent>
                     </Card>
@@ -390,7 +522,8 @@ const Pricing = () => {
                       </CardHeader>
                       <CardContent>
                         <p className="text-muted-foreground">
-                          After purchasing, you'll receive a license key via email. Go to the DLC page in the app and enter your license key to unlock NSFW content.
+                          After purchasing, you'll receive a license key via email. Go to the DLC
+                          page in the app and enter your license key to unlock adult content.
                         </p>
                       </CardContent>
                     </Card>
@@ -402,7 +535,7 @@ const Pricing = () => {
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Pricing
+export default Pricing;

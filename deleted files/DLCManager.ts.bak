@@ -1,0 +1,846 @@
+/**
+ * DLC Manager
+ * Core orchestrator for the DLC system
+ */
+
+import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
+import { dlcRegistry, DLCRegistry } from './DLCRegistry';
+import { getDeviceId, getDevicePlatform } from './device';
+import {
+  serializeAgeVerification,
+  serializeDLCLicense,
+  serializeDLCInstallation,
+  serializeDLCPackage,
+} from './serializers';
+import type {
+  DLCPackage,
+  DLCLicense,
+  DLCInstallation,
+  DLCDownload,
+  DownloadProgress,
+  LicenseValidationResult,
+  DLCUpdate,
+  DLCError,
+  DLCErrorCode,
+  DevicePlatform,
+  AgeVerification,
+  AppUpdateSource,
+  DLCStoreState,
+} from './types';
+
+// ============================================
+// Local cache keys (offline-first)
+// ============================================
+
+const CACHE_KEY_LICENSES = 'dlc_cache_licenses_v1';
+const CACHE_KEY_INSTALLATIONS = 'dlc_cache_installations_v1';
+const CACHE_KEY_PACKAGES = 'dlc_cache_packages_v1';
+const CACHE_KEY_AGE_VERIFICATION = 'dlc_cache_age_verification_v1';
+const CACHE_KEY_UPDATE_SOURCE = 'dlc_cache_update_source_v1';
+
+// ============================================
+// DLC Manager Class
+// ============================================
+
+export class DLCManager {
+  private registry: DLCRegistry;
+  private deviceId: string;
+  private platform: DevicePlatform;
+  private packages: Map<string, DLCPackage> = new Map();
+  private licenses: Map<string, DLCLicense> = new Map();
+  private installations: Map<string, DLCInstallation> = new Map();
+  private downloads: Map<string, DownloadProgress> = new Map();
+  private initialized: boolean = false;
+  
+  constructor() {
+    this.registry = dlcRegistry;
+    this.deviceId = getDeviceId();
+    this.platform = getDevicePlatform();
+  }
+  
+  // ==========================================
+  // Initialization
+  // ==========================================
+  
+  async initialize(): Promise<void> {
+    if (this.initialized) return;
+    
+    try {
+      logger.info('DLCManager: Initializing...');
+      
+      // Load user's licenses and installations
+      await Promise.all([
+        this.loadPackages(),
+        this.loadLicenses(),
+        this.loadInstallations(),
+      ]);
+      
+      this.initialized = true;
+      logger.info('DLCManager: Initialized successfully');
+    } catch (error) {
+      logger.error('DLCManager: Initialization failed', error);
+      throw error;
+    }
+  }
+  
+  // ==========================================
+  // Package Management
+  // ==========================================
+  
+  /**
+   * Get all available packages
+   */
+  getAvailablePackages(): DLCPackage[] {
+    const fromDb = Array.from(this.packages.values()).filter(p => p.isActive);
+    if (fromDb.length > 0) return fromDb.sort((a, b) => a.displayOrder - b.displayOrder);
+    return this.registry.getAllPackages();
+  }
+  
+  /**
+   * Get a specific package
+   */
+  getPackage(packageId: string): DLCPackage | undefined {
+    return this.packages.get(packageId) || this.registry.getPackage(packageId);
+  }
+  
+  /**
+   * Get featured packages
+   */
+  getFeaturedPackages(): DLCPackage[] {
+    const available = this.getAvailablePackages();
+    const featured = available.filter(p => p.isFeatured);
+    if (featured.length > 0) return featured;
+    return this.registry.getFeaturedPackages();
+  }
+  
+  /**
+   * Get packages owned by the current user
+   */
+  getOwnedPackages(): DLCPackage[] {
+    const ownedIds = Array.from(this.licenses.keys());
+    return ownedIds
+      .map(id => this.getPackage(id))
+      .filter((pkg): pkg is DLCPackage => pkg !== undefined);
+  }
+  
+  /**
+   * Get installed packages
+   */
+  getInstalledPackages(): DLCPackage[] {
+    const installedIds = Array.from(this.installations.keys());
+    return installedIds
+      .map(id => this.getPackage(id))
+      .filter((pkg): pkg is DLCPackage => pkg !== undefined);
+  }
+  
+  /**
+   * Check if user owns a package
+   */
+  ownsPackage(packageId: string): boolean {
+    return this.licenses.has(packageId);
+  }
+  
+  /**
+   * Check if a package is installed
+   */
+  isPackageInstalled(packageId: string): boolean {
+    return this.installations.has(packageId);
+  }
+  
+  /**
+   * Check if a specific feature is available
+   */
+  hasFeature(featureId: string): boolean {
+    // Feature access should be granted if the user OWNS or INSTALLS a package that includes it.
+    // Installation is still required for offline module loading, but UI gating should reflect ownership.
+    const installedIds = Array.from(this.installations.keys());
+    const ownedIds = Array.from(this.licenses.keys());
+    for (const packageId of [...new Set([...installedIds, ...ownedIds])]) {
+      const pkg = this.getPackage(packageId);
+      if (!pkg) continue;
+      if (pkg.features.some(f => f.id === featureId)) return true;
+    }
+    return false;
+  }
+  
+  // ==========================================
+  // License Management
+  // ==========================================
+  
+  /**
+   * Load user's licenses from database
+   */
+  private async loadLicenses(): Promise<void> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      this.licenses.clear();
+
+      if (!user) {
+        logger.info('DLCManager: No user, skipping license load');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('dlc_licenses')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) {
+        logger.warn('DLCManager: Failed to load licenses from DB, using cache', error);
+        this.loadLicensesFromCache();
+        return;
+      }
+
+      (data || [])
+        .map(serializeDLCLicense)
+        .filter(l => l.isActive)
+        .forEach((license) => {
+          if (license.packageId) {
+            this.licenses.set(license.packageId, license);
+          }
+        });
+
+      this.saveLicensesToCache();
+      logger.info(`DLCManager: Loaded ${this.licenses.size} licenses`);
+    } catch (error) {
+      logger.error('DLCManager: Failed to load licenses', error);
+      this.loadLicensesFromCache();
+    }
+  }
+  
+  /**
+   * Get license for a package
+   */
+  getLicense(packageId: string): DLCLicense | undefined {
+    return this.licenses.get(packageId);
+  }
+  
+  /**
+   * Validate a license
+   */
+  async validateLicense(packageId: string): Promise<LicenseValidationResult> {
+    const license = this.licenses.get(packageId);
+    
+    if (!license) {
+      return {
+        isValid: false,
+        error: 'license_not_found',
+        deviceAuthorized: false,
+      };
+    }
+    
+    // Check if license is active
+    if (!license.isActive) {
+      return {
+        isValid: false,
+        license,
+        error: 'license_revoked',
+        deviceAuthorized: false,
+      };
+    }
+    
+    // Check subscription expiration
+    if (license.licenseType === 'subscription' && license.subscriptionEnd) {
+      const now = new Date();
+      const expirationDate = new Date(license.subscriptionEnd);
+      
+      if (now > expirationDate) {
+        // Check grace period
+        if (license.gracePeriodUntil) {
+          const gracePeriod = new Date(license.gracePeriodUntil);
+          if (now > gracePeriod) {
+            return {
+              isValid: false,
+              license,
+              error: 'subscription_expired',
+              deviceAuthorized: false,
+            };
+          }
+        } else {
+          return {
+            isValid: false,
+            license,
+            error: 'subscription_expired',
+            deviceAuthorized: false,
+          };
+        }
+      }
+    }
+    
+    // Check offline cache validity
+    const offlineValid = this.checkOfflineValidity(license);
+    
+    return {
+      isValid: true,
+      license,
+      deviceAuthorized: true,
+      expiresAt: license.subscriptionEnd ? new Date(license.subscriptionEnd) : undefined,
+      offlineValidUntil: offlineValid ? license.offlineCacheExpiresAt : undefined,
+    };
+  }
+  
+  /**
+   * Check if license is valid for offline use
+   */
+  private checkOfflineValidity(license: DLCLicense): boolean {
+    if (!license.offlineCacheExpiresAt) return false;
+    
+    const now = new Date();
+    const cacheExpiry = new Date(license.offlineCacheExpiresAt);
+    
+    return now < cacheExpiry;
+  }
+  
+  /**
+   * Activate a license with a license key
+   */
+  async activateLicense(licenseKey: string): Promise<{ success: boolean; packageId?: string; error?: string }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { success: false, error: 'Please sign in to activate a license' };
+
+      logger.info('DLCManager: Activating license', { prefix: licenseKey.substring(0, 4) + '...' });
+
+      // Prefer server-side verification to enforce device binding & expiry rules
+      const { data, error } = await supabase.functions.invoke('verify-dlc-license', {
+        body: { licenseKey, userId: user.id, deviceId: this.deviceId },
+      });
+
+      if (error) {
+        logger.warn('DLCManager: License verification function failed, falling back to DB lookup', error);
+      }
+
+      // Reload licenses from DB (source of truth)
+      await this.loadLicenses();
+
+      // Best-effort determine packageId to return
+      const packageIdFromFn = (data as any)?.license?.packageId as string | undefined;
+      if (packageIdFromFn) {
+        return { success: true, packageId: packageIdFromFn };
+      }
+
+      // Fallback: try to locate license row by key
+      const { data: row, error: fetchError } = await supabase
+        .from('dlc_licenses')
+        .select('*')
+        .eq('license_key', licenseKey)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (fetchError) {
+        return { success: false, error: 'License activated but could not be loaded. Please refresh.' };
+      }
+
+      // Use serializer which handles both package_id and legacy columns
+      const license = row ? serializeDLCLicense(row) : null;
+      return { success: true, packageId: license?.packageId };
+    } catch (error) {
+      logger.error('DLCManager: License activation failed', error);
+      return { success: false, error: 'Activation failed' };
+    }
+  }
+  
+  private saveLicensesToCache(): void {
+    try {
+      const licenses = Array.from(this.licenses.values());
+      localStorage.setItem(CACHE_KEY_LICENSES, JSON.stringify(licenses));
+    } catch {
+      // ignore
+    }
+  }
+
+  private loadLicensesFromCache(): void {
+    try {
+      const stored = localStorage.getItem(CACHE_KEY_LICENSES) || localStorage.getItem('dlc_licenses');
+      if (!stored) return;
+      const licenses = JSON.parse(stored) as DLCLicense[];
+      licenses.forEach((license) => {
+        // revive dates (best-effort)
+        (license as any).purchaseDate = new Date((license as any).purchaseDate);
+        (license as any).createdAt = new Date((license as any).createdAt);
+        (license as any).updatedAt = new Date((license as any).updatedAt);
+        if ((license as any).subscriptionEnd) (license as any).subscriptionEnd = new Date((license as any).subscriptionEnd);
+        if ((license as any).offlineCacheExpiresAt) (license as any).offlineCacheExpiresAt = new Date((license as any).offlineCacheExpiresAt);
+        if (license.isActive && license.packageId) this.licenses.set(license.packageId, license);
+      });
+    } catch {
+      // ignore
+    }
+  }
+  
+  // ==========================================
+  // Installation Management
+  // ==========================================
+  
+  /**
+   * Load user's installations from storage
+   */
+  private async loadInstallations(): Promise<void> {
+    // dlc_installations table doesn't exist in DB - use local cache only
+    this.installations.clear();
+    this.loadInstallationsFromCache();
+    logger.info(`DLCManager: Loaded ${this.installations.size} installations from cache`);
+  }
+  
+  /**
+   * Get installation for a package
+   */
+  getInstallation(packageId: string): DLCInstallation | undefined {
+    return this.installations.get(packageId);
+  }
+  
+  /**
+   * Install a DLC package
+   */
+  async installPackage(packageId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Check if user owns the package
+      if (!this.ownsPackage(packageId)) {
+        return { success: false, error: 'License required' };
+      }
+      
+      // Validate license
+      const validation = await this.validateLicense(packageId);
+      if (!validation.isValid) {
+        return { success: false, error: validation.error || 'Invalid license' };
+      }
+      
+      const pkg = this.registry.getPackage(packageId);
+      if (!pkg) {
+        return { success: false, error: 'Package not found' };
+      }
+      
+      const license = this.licenses.get(packageId);
+      if (!license) {
+        return { success: false, error: 'License not found' };
+      }
+      
+      logger.info('DLCManager: Installing package', { packageId });
+      
+      // Create installation record
+      const installation: DLCInstallation = {
+        id: crypto.randomUUID(),
+        userId: license.userId,
+        licenseId: license.id,
+        packageId,
+        deviceId: this.deviceId,
+        installedVersion: pkg.version,
+        contentVersion: pkg.contentVersion,
+        installDate: new Date(),
+        installSource: 'manual',
+        devicePlatform: this.platform,
+        appVersion: '1.0.0', // Would come from app config
+        isInstalled: true,
+        isCorrupted: false,
+        lastIntegrityCheck: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      
+      // Store installation in memory/cache (local-only, no DB table exists)
+      this.installations.set(packageId, installation);
+      this.saveInstallationsToCache();
+      
+      // If it's a bundle, also mark included packages as installed
+      if (pkg.includedPackages) {
+        for (const includedId of pkg.includedPackages) {
+          if (!this.installations.has(includedId)) {
+            const includedPkg = this.getPackage(includedId);
+            if (includedPkg) {
+              const includedInstallation: DLCInstallation = {
+                ...installation,
+                id: crypto.randomUUID(),
+                packageId: includedId,
+                installedVersion: includedPkg.version,
+                contentVersion: includedPkg.contentVersion,
+              };
+              this.installations.set(includedId, includedInstallation);
+            }
+          }
+        }
+        this.saveInstallationsToCache();
+      }
+      
+      logger.info('DLCManager: Package installed', { packageId });
+      
+      return { success: true };
+    } catch (error) {
+      logger.error('DLCManager: Installation failed', error);
+      return { success: false, error: 'Installation failed' };
+    }
+  }
+  
+  /**
+   * Uninstall a DLC package
+   */
+  async uninstallPackage(packageId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const installation = this.installations.get(packageId);
+      if (!installation) {
+        return { success: false, error: 'Package not installed' };
+      }
+      
+      logger.info('DLCManager: Uninstalling package', { packageId });
+      
+      // Remove installation locally (local-only, no DB table exists)
+      this.installations.delete(packageId);
+      this.saveInstallationsToCache();
+      
+      // Clear cached content
+      await this.clearPackageCache(packageId);
+      
+      logger.info('DLCManager: Package uninstalled', { packageId });
+      
+      return { success: true };
+    } catch (error) {
+      logger.error('DLCManager: Uninstall failed', error);
+      return { success: false, error: 'Uninstall failed' };
+    }
+  }
+  
+  private saveInstallationsToCache(): void {
+    try {
+      const installations = Array.from(this.installations.values());
+      localStorage.setItem(CACHE_KEY_INSTALLATIONS, JSON.stringify(installations));
+    } catch {
+      // ignore
+    }
+  }
+
+  private loadInstallationsFromCache(): void {
+    try {
+      const stored = localStorage.getItem(CACHE_KEY_INSTALLATIONS) || localStorage.getItem('dlc_installations');
+      if (!stored) return;
+      const installations = JSON.parse(stored) as DLCInstallation[];
+      installations.forEach((installation) => {
+        (installation as any).installDate = new Date((installation as any).installDate);
+        (installation as any).createdAt = new Date((installation as any).createdAt);
+        (installation as any).updatedAt = new Date((installation as any).updatedAt);
+        if (installation.isInstalled && installation.deviceId === this.deviceId) {
+          this.installations.set(installation.packageId, installation);
+        }
+      });
+    } catch {
+      // ignore
+    }
+  }
+  
+  /**
+   * Clear cached content for a package
+   */
+  private async clearPackageCache(packageId: string): Promise<void> {
+    // Clear from localStorage
+    const cacheKeys = Object.keys(localStorage).filter(key => 
+      key.startsWith(`dlc_cache_${packageId}`)
+    );
+    cacheKeys.forEach(key => localStorage.removeItem(key));
+    
+    // Clear from IndexedDB if available
+    if ('indexedDB' in window) {
+      try {
+        const db = await this.openCacheDB();
+        const tx = db.transaction(['dlc_content'], 'readwrite');
+        const store = tx.objectStore('dlc_content');
+        
+        const request = store.index('packageId').openCursor(IDBKeyRange.only(packageId));
+        request.onsuccess = (event) => {
+          const cursor = (event.target as IDBRequest).result;
+          if (cursor) {
+            cursor.delete();
+            cursor.continue();
+          }
+        };
+      } catch (error) {
+        logger.warn('DLCManager: Failed to clear IndexedDB cache', error);
+      }
+    }
+  }
+  
+  /**
+   * Open the cache IndexedDB
+   */
+  private openCacheDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('dlc_cache', 1);
+      
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+      
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains('dlc_content')) {
+          const store = db.createObjectStore('dlc_content', { keyPath: 'id' });
+          store.createIndex('packageId', 'packageId', { unique: false });
+        }
+      };
+    });
+  }
+  
+  // ==========================================
+  // Download Management
+  // ==========================================
+  
+  /**
+   * Get download progress for a package
+   */
+  getDownloadProgress(packageId: string): DownloadProgress | undefined {
+    return this.downloads.get(packageId);
+  }
+  
+  /**
+   * Get all active downloads
+   */
+  getActiveDownloads(): DownloadProgress[] {
+    return Array.from(this.downloads.values())
+      .filter(d => d.status === 'downloading' || d.status === 'pending');
+  }
+  
+  // ==========================================
+  // Update Management
+  // ==========================================
+  
+  /**
+   * Check for updates for installed packages
+   */
+  async checkForUpdates(): Promise<DLCUpdate[]> {
+    const updates: DLCUpdate[] = [];
+    
+    for (const [packageId, installation] of this.installations) {
+      const pkg = this.registry.getPackage(packageId);
+      if (!pkg) continue;
+      
+      // Compare versions
+      if (pkg.version !== installation.installedVersion || 
+          pkg.contentVersion !== installation.contentVersion) {
+        updates.push({
+          packageId,
+          currentVersion: installation.installedVersion,
+          latestVersion: pkg.version,
+          updateType: this.determineUpdateType(installation.installedVersion, pkg.version),
+          updatePolicy: 'notify',
+          changelog: pkg.contentChangelog?.find(c => c.version === pkg.contentVersion)?.changes || [],
+          downloadSizeBytes: pkg.downloadSizeBytes || 0,
+          isRequired: false,
+          releaseDate: pkg.updatedAt,
+        });
+      }
+    }
+    
+    return updates;
+  }
+  
+  /**
+   * Determine update type based on version comparison
+   */
+  private determineUpdateType(current: string, latest: string): DLCUpdate['updateType'] {
+    const [currentMajor, currentMinor] = current.split('.').map(Number);
+    const [latestMajor, latestMinor] = latest.split('.').map(Number);
+    
+    if (latestMajor > currentMajor) return 'major';
+    if (latestMinor > currentMinor) return 'minor';
+    return 'patch';
+  }
+  
+  // ==========================================
+  // Age Verification
+  // ==========================================
+  
+  /**
+   * Check if user has verified their age
+   */
+  async isAgeVerified(): Promise<boolean> {
+    // dlc_age_verifications table doesn't exist - use local cache only
+    return this.isAgeVerifiedFromCache();
+  }
+  
+  /**
+   * Verify user's age
+   */
+  async verifyAge(declaredAge: number, consent: boolean): Promise<boolean> {
+    if (declaredAge < 18 || !consent) return false;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || 'anonymous';
+
+    const now = new Date();
+    const verification: AgeVerification = {
+      id: crypto.randomUUID(),
+      userId,
+      verifiedAt: now,
+      verificationMethod: 'self_declared',
+      declaredAge,
+      isVerified: true,
+      termsAccepted: true,
+      termsAcceptedAt: now,
+      termsVersion: '1.0',
+      adultContentConsent: true,
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+    };
+
+    // Store locally only (no DB table exists)
+    this.saveAgeVerificationToCache(verification);
+    return true;
+  }
+
+  private saveAgeVerificationToCache(verification: AgeVerification): void {
+    try {
+      localStorage.setItem(CACHE_KEY_AGE_VERIFICATION, JSON.stringify(verification));
+      // Back-compat for older callers
+      localStorage.setItem('dlc_age_verified', JSON.stringify(verification));
+    } catch {
+      // ignore
+    }
+  }
+
+  private isAgeVerifiedFromCache(): boolean {
+    try {
+      const stored = localStorage.getItem(CACHE_KEY_AGE_VERIFICATION) || localStorage.getItem('dlc_age_verified');
+      if (!stored) return false;
+      const verification = JSON.parse(stored) as AgeVerification;
+      return verification.isVerified && verification.adultContentConsent;
+    } catch {
+      return false;
+    }
+  }
+  
+  // ==========================================
+  // Update Source Management
+  // ==========================================
+  
+  /**
+   * Get current update source
+   */
+  getUpdateSource(): 'store' | 'website' {
+    // If any DLC is installed, updates must come from website
+    if (this.installations.size > 0) return 'website';
+
+    const cached = this.getUpdateSourceFromCache();
+    return cached?.currentUpdateSource || 'store';
+  }
+  
+  /**
+   * Check if update source warning has been acknowledged
+   */
+  isUpdateSourceAcknowledged(): boolean {
+    const cached = this.getUpdateSourceFromCache();
+    return cached?.updateSourceAcknowledged === true;
+  }
+  
+  /**
+   * Acknowledge update source change
+   */
+  acknowledgeUpdateSourceChange(): void {
+    const now = new Date();
+    const source: AppUpdateSource = {
+      userId: 'unknown',
+      deviceId: this.deviceId,
+      originalInstallSource: 'direct',
+      currentUpdateSource: 'website',
+      sourceChangedAt: now,
+      sourceChangeReason: 'dlc_installed',
+      updateSourceAcknowledged: true,
+      acknowledgedAt: now,
+    };
+
+    this.saveUpdateSourceToCache(source);
+
+    // dlc_update_sources table doesn't exist - local cache only
+  }
+
+  private getUpdateSourceFromCache(): AppUpdateSource | null {
+    try {
+      const stored = localStorage.getItem(CACHE_KEY_UPDATE_SOURCE) || localStorage.getItem('dlc_update_source');
+      if (!stored) return null;
+      const source = JSON.parse(stored) as AppUpdateSource;
+      return source;
+    } catch {
+      return null;
+    }
+  }
+
+  private saveUpdateSourceToCache(source: AppUpdateSource): void {
+    try {
+      localStorage.setItem(CACHE_KEY_UPDATE_SOURCE, JSON.stringify(source));
+      localStorage.setItem('dlc_update_source', JSON.stringify(source));
+    } catch {
+      // ignore
+    }
+  }
+  
+  // ==========================================
+  // Upgrade Pricing
+  // ==========================================
+  
+  /**
+   * Calculate upgrade price for a package
+   */
+  calculateUpgradePrice(targetPackageId: string): number {
+    const ownedPackageIds = Array.from(this.licenses.keys());
+    return this.registry.calculateUpgradePrice(targetPackageId, ownedPackageIds);
+  }
+  
+  // ==========================================
+  // Store State
+  // ==========================================
+  
+  /**
+   * Get complete store state
+   */
+  getStoreState(): DLCStoreState {
+    return {
+      packages: this.getAvailablePackages(),
+      ownedPackages: Array.from(this.licenses.keys()),
+      installedPackages: Array.from(this.installations.keys()),
+      downloads: Object.fromEntries(this.downloads),
+      isLoading: false,
+      error: null,
+    };
+  }
+
+  // ==========================================
+  // Packages (DB-backed with offline cache)
+  // ==========================================
+
+  private async loadPackages(): Promise<void> {
+    // dlc_packages table doesn't exist - use local cache and registry only
+    this.packages.clear();
+    this.loadPackagesFromCache();
+    
+    // If no cached packages, use registry
+    if (this.packages.size === 0) {
+      this.registry.getAllPackages().forEach((pkg) => {
+        this.packages.set(pkg.packageId, pkg);
+      });
+    }
+    
+    logger.info(`DLCManager: Loaded ${this.packages.size} packages`);
+  }
+
+  private savePackagesToCache(): void {
+    try {
+      const packages = Array.from(this.packages.values());
+      localStorage.setItem(CACHE_KEY_PACKAGES, JSON.stringify(packages));
+    } catch {
+      // ignore
+    }
+  }
+
+  private loadPackagesFromCache(): void {
+    try {
+      const stored = localStorage.getItem(CACHE_KEY_PACKAGES);
+      if (!stored) return;
+      const packages = JSON.parse(stored) as DLCPackage[];
+      packages.forEach((pkg) => {
+        (pkg as any).createdAt = new Date((pkg as any).createdAt);
+        (pkg as any).updatedAt = new Date((pkg as any).updatedAt);
+        this.packages.set(pkg.packageId, pkg);
+      });
+    } catch {
+      // ignore
+    }
+  }
+}
+
+// Export singleton instance
+export const dlcManager = new DLCManager();

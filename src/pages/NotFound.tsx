@@ -4,8 +4,9 @@ import { useEffect } from "react";
 const NotFound = () => {
   const location = useLocation();
 
+  // Log 404 for analytics (location.pathname is already tracked)
   useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
+    console.warn("404 Not Found:", location.pathname);
   }, [location.pathname]);
 
   return (

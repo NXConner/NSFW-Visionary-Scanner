@@ -19,10 +19,12 @@ export const Footer = () => {
       { label: "Safety Guide", href: "#" },
       { label: "FAQ", href: "#" },
       { label: "Find Specialists", href: "#" },
+      { label: "Credits & Resources", href: "/credits", isRoute: true },
     ],
     legal: [
       { label: "Privacy Policy", href: "/privacy", isRoute: true },
       { label: "Terms of Service", href: "/terms", isRoute: true },
+      { label: "Credits & Resources", href: "/credits", isRoute: true },
       { label: "Data Security", href: "#" },
       { label: "Medical Disclaimer", href: "#" },
     ],
@@ -40,12 +42,13 @@ export const Footer = () => {
                 <div className="absolute inset-0 rounded-xl gradient-primary opacity-50 blur-lg" />
               </div>
               <div>
-                <h3 className="text-lg font-bold gradient-text">GrowthTracker</h3>
+                <h3 className="text-lg font-bold gradient-text">MorphoScan Pro</h3>
                 <p className="text-[10px] text-muted-foreground -mt-1">Men's Health</p>
               </div>
             </div>
             <p className="text-muted-foreground text-sm max-w-xs mb-6">
-              Your private companion for tracking growth, health, and wellness. 100% local, 100% private.
+              Your private companion for tracking growth, health, and wellness. 100% local, 100%
+              private.
             </p>
             <div className="flex gap-3 items-center text-xs text-muted-foreground">
               <Shield className="w-4 h-4 text-success" />
@@ -57,7 +60,7 @@ export const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Features</h4>
             <ul className="space-y-3">
-              {footerLinks.features.map((link) => (
+              {footerLinks.features.map(link => (
                 <li key={link.label}>
                   <a
                     href={link.href}
@@ -73,14 +76,23 @@ export const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Resources</h4>
             <ul className="space-y-3">
-              {footerLinks.resources.map((link) => (
+              {footerLinks.resources.map(link => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {link.label}
-                  </a>
+                  {"isRoute" in link && link.isRoute ? (
+                    <Link
+                      to={link.href}
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
@@ -89,7 +101,7 @@ export const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Legal</h4>
             <ul className="space-y-3">
-              {footerLinks.legal.map((link) => (
+              {footerLinks.legal.map(link => (
                 <li key={link.label}>
                   {link.isRoute ? (
                     <Link
@@ -120,9 +132,9 @@ export const Footer = () => {
               <div>
                 <p className="text-xs font-semibold text-warning mb-1">Medical Disclaimer</p>
                 <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
-                  This app is for educational and tracking purposes only. It is not a medical device and 
-                  does not provide medical diagnoses. Always consult a qualified healthcare provider for 
-                  medical advice, diagnosis, or treatment.
+                  This app is for educational and tracking purposes only. It is not a medical device
+                  and does not provide medical diagnoses. Always consult a qualified healthcare
+                  provider for medical advice, diagnosis, or treatment.
                 </p>
                 <p className="text-[11px] font-medium text-primary italic">
                   "We're a tool, for your tool. Don't be a fool—we're not a doctor."
@@ -137,7 +149,7 @@ export const Footer = () => {
         {/* Bottom */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © {currentYear} GrowthTracker. Personal use only.
+            © {currentYear} MorphoScan Pro. Personal use only.
           </p>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-2">

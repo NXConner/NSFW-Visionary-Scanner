@@ -25,8 +25,8 @@ echo "📦 Step 1: Installing dependencies..."
 npm install
 
 echo ""
-echo "🔧 Step 2: Building web app..."
-npm run build
+echo "🔧 Step 2: Building web app (NSFW direct)..."
+npm run build:nsfw:direct
 
 echo ""
 echo "📱 Step 3: Adding Android platform (if not exists)..."

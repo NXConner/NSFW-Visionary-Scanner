@@ -3,111 +3,132 @@
  * UI component for managing API keys, webhooks, and API usage analytics
  */
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   createAPIKey,
   getAPIKeys,
   revokeAPIKey,
   createWebhook,
   getWebhooks,
-  verifyWebhook,
   type APIKey,
-  type Webhook
-} from '@/lib/apiWebhooks'
-import { Key, Webhook as WebhookIcon, Plus, Trash2, Eye, EyeOff, Loader2, Copy, CheckCircle2 } from 'lucide-react'
-import { toast } from 'sonner'
+  type Webhook,
+} from "@/lib/apiWebhooks";
+import { validateWebhookUrl } from "@/lib/urlValidation";
+import { Key, Webhook as WebhookIcon, Plus, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 
 export const APIWebhooks = () => {
-  const [activeTab, setActiveTab] = useState('api-keys')
-  const [loading, setLoading] = useState(false)
-  const [apiKeys, setApiKeys] = useState<APIKey[]>([])
-  const [webhooks, setWebhooks] = useState<Webhook[]>([])
-  const [showNewKeyForm, setShowNewKeyForm] = useState(false)
-  const [showNewWebhookForm, setShowNewWebhookForm] = useState(false)
-  const [newKeyName, setNewKeyName] = useState('')
-  const [newKeyTier, setNewKeyTier] = useState<'basic' | 'pro' | 'enterprise'>('basic')
-  const [newWebhookName, setNewWebhookName] = useState('')
-  const [newWebhookUrl, setNewWebhookUrl] = useState('')
-  const [newWebhookEvents, setNewWebhookEvents] = useState<string[]>([])
-  const [revealedKeys, setRevealedKeys] = useState<Set<string>>(new Set())
+  const [activeTab, setActiveTab] = useState("api-keys");
+  const [loading, setLoading] = useState(false);
+  const [apiKeys, setApiKeys] = useState<APIKey[]>([]);
+  const [webhooks, setWebhooks] = useState<Webhook[]>([]);
+  const [showNewKeyForm, setShowNewKeyForm] = useState(false);
+  const [showNewWebhookForm, setShowNewWebhookForm] = useState(false);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [newKeyTier, setNewKeyTier] = useState<"basic" | "pro" | "enterprise">("basic");
+  const [newWebhookName, setNewWebhookName] = useState("");
+  const [newWebhookUrl, setNewWebhookUrl] = useState("");
+  const [newWebhookEvents, setNewWebhookEvents] = useState<string[]>([]);
+  const [webhookUrlError, setWebhookUrlError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData()
-  }, [activeTab])
-
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
-      if (activeTab === 'api-keys') {
-        const keys = await getAPIKeys()
-        setApiKeys(keys)
+      if (activeTab === "api-keys") {
+        const keys = await getAPIKeys();
+        setApiKeys(keys);
       } else {
-        const hooks = await getWebhooks()
-        setWebhooks(hooks)
+        const hooks = await getWebhooks();
+        setWebhooks(hooks);
       }
     } catch (error) {
-      toast.error('Failed to load data')
+      toast.error("Failed to load data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [activeTab]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const handleCreateAPIKey = async () => {
     if (!newKeyName.trim()) {
-      toast.error('Please enter a key name')
-      return
+      toast.error("Please enter a key name");
+      return;
     }
 
     try {
-      const result = await createAPIKey(newKeyName, newKeyTier)
+      const result = await createAPIKey(newKeyName, newKeyTier);
       if (result) {
-        setNewKeyName('')
-        setShowNewKeyForm(false)
-        setRevealedKeys(new Set([result.apiKeyRecord.id]))
-        await loadData()
-        toast.success(`API key created! Key: ${result.api_key.substring(0, 20)}...`)
+        setNewKeyName("");
+        setShowNewKeyForm(false);
+        await loadData();
+        toast.success(`API key created! Key: ${result.api_key.substring(0, 20)}...`);
       }
     } catch (error) {
-      toast.error('Failed to create API key')
+      toast.error("Failed to create API key");
     }
-  }
+  };
+
+  // Validate webhook URL on change
+  const handleWebhookUrlChange = (url: string) => {
+    setNewWebhookUrl(url);
+    if (url.trim()) {
+      const validation = validateWebhookUrl(url);
+      setWebhookUrlError(validation.isValid ? null : validation.error || null);
+    } else {
+      setWebhookUrlError(null);
+    }
+  };
 
   const handleCreateWebhook = async () => {
     if (!newWebhookName.trim() || !newWebhookUrl.trim()) {
-      toast.error('Please fill in all fields')
-      return
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    // Validate URL before submission
+    const validation = validateWebhookUrl(newWebhookUrl);
+    if (!validation.isValid) {
+      toast.error(validation.error || "Invalid webhook URL");
+      setWebhookUrlError(validation.error || null);
+      return;
     }
 
     try {
-      const webhook = await createWebhook(newWebhookName, newWebhookUrl, newWebhookEvents)
+      const webhook = await createWebhook(newWebhookName, newWebhookUrl, newWebhookEvents);
       if (webhook) {
-        setNewWebhookName('')
-        setNewWebhookUrl('')
-        setNewWebhookEvents([])
-        setShowNewWebhookForm(false)
-        await loadData()
+        setNewWebhookName("");
+        setNewWebhookUrl("");
+        setNewWebhookEvents([]);
+        setWebhookUrlError(null);
+        setShowNewWebhookForm(false);
+        await loadData();
+        toast.success("Webhook created successfully");
       }
     } catch (error) {
-      toast.error('Failed to create webhook')
+      const message = error instanceof Error ? error.message : "Failed to create webhook";
+      toast.error(message);
     }
-  }
+  };
 
   const handleRevokeKey = async (keyId: string) => {
     try {
-      const success = await revokeAPIKey(keyId)
+      const success = await revokeAPIKey(keyId);
       if (success) {
-        await loadData()
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to revoke key')
+      toast.error("Failed to revoke key");
     }
-  }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -144,16 +165,18 @@ export const APIWebhooks = () => {
                       <Label>Key Name</Label>
                       <Input
                         value={newKeyName}
-                        onChange={(e) => setNewKeyName(e.target.value)}
+                        onChange={e => setNewKeyName(e.target.value)}
                         placeholder="My API Key"
                       />
                     </div>
                     <div>
                       <Label>Access Tier</Label>
                       <select
-                        className="w-full p-2 border rounded"
+                        className="w-full p-2 border rounded bg-background"
                         value={newKeyTier}
-                        onChange={(e) => setNewKeyTier(e.target.value as any)}
+                        onChange={e =>
+                          setNewKeyTier(e.target.value as "basic" | "pro" | "enterprise")
+                        }
                       >
                         <option value="basic">Basic</option>
                         <option value="pro">Pro</option>
@@ -161,8 +184,12 @@ export const APIWebhooks = () => {
                       </select>
                     </div>
                     <div className="flex gap-2">
-                      <Button onClick={handleCreateAPIKey} className="flex-1">Create</Button>
-                      <Button variant="outline" onClick={() => setShowNewKeyForm(false)}>Cancel</Button>
+                      <Button onClick={handleCreateAPIKey} className="flex-1">
+                        Create
+                      </Button>
+                      <Button variant="outline" onClick={() => setShowNewKeyForm(false)}>
+                        Cancel
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -189,13 +216,9 @@ export const APIWebhooks = () => {
                               )}
                             </div>
                             <p className="text-sm text-muted-foreground">
-                              Prefix: {key.api_key_prefix}... • {key.total_requests} requests
+                              Prefix: {key.api_key_prefix}... • Rate: {key.rate_limit_per_minute}
+                              /min
                             </p>
-                            {key.last_used_at && (
-                              <p className="text-xs text-muted-foreground">
-                                Last used: {new Date(key.last_used_at).toLocaleString()}
-                              </p>
-                            )}
                           </div>
                           {key.is_active && (
                             <Button
@@ -230,7 +253,7 @@ export const APIWebhooks = () => {
                       <Label>Webhook Name</Label>
                       <Input
                         value={newWebhookName}
-                        onChange={(e) => setNewWebhookName(e.target.value)}
+                        onChange={e => setNewWebhookName(e.target.value)}
                         placeholder="My Webhook"
                       />
                     </div>
@@ -238,13 +261,24 @@ export const APIWebhooks = () => {
                       <Label>Webhook URL</Label>
                       <Input
                         value={newWebhookUrl}
-                        onChange={(e) => setNewWebhookUrl(e.target.value)}
-                        placeholder="https://example.com/webhook"
+                        onChange={e => handleWebhookUrlChange(e.target.value)}
+                        placeholder="https://your-domain.tld/webhooks/morphoscan"
+                        className={webhookUrlError ? "border-destructive" : ""}
                       />
+                      {webhookUrlError && (
+                        <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {webhookUrlError}
+                        </p>
+                      )}
                     </div>
                     <div className="flex gap-2">
-                      <Button onClick={handleCreateWebhook} className="flex-1">Create</Button>
-                      <Button variant="outline" onClick={() => setShowNewWebhookForm(false)}>Cancel</Button>
+                      <Button onClick={handleCreateWebhook} className="flex-1">
+                        Create
+                      </Button>
+                      <Button variant="outline" onClick={() => setShowNewWebhookForm(false)}>
+                        Cancel
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -263,23 +297,15 @@ export const APIWebhooks = () => {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <h4 className="font-semibold">{webhook.webhook_name}</h4>
-                              {webhook.is_verified ? (
-                                <Badge variant="default">
-                                  <CheckCircle2 className="w-3 h-3 mr-1" />
-                                  Verified
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline">Unverified</Badge>
-                              )}
                               {webhook.is_active ? (
-                                <Badge variant="secondary">Active</Badge>
+                                <Badge variant="default">Active</Badge>
                               ) : (
                                 <Badge variant="outline">Inactive</Badge>
                               )}
                             </div>
                             <p className="text-sm text-muted-foreground">{webhook.webhook_url}</p>
                             <p className="text-xs text-muted-foreground">
-                              {webhook.successful_deliveries} successful • {webhook.failed_deliveries} failed
+                              Events: {webhook.subscribed_events.join(", ") || "All"}
                             </p>
                           </div>
                         </div>
@@ -293,6 +319,5 @@ export const APIWebhooks = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
+  );
+};

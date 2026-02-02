@@ -1,0 +1,117 @@
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { logger } from "@/lib/logger";
+import type { MultiCameraSession } from "./types";
+
+export async function getMultiCameraSessions(): Promise<MultiCameraSession[]> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from("multi_camera_sessions")
+      .select("*")
+      .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
+      .order("updated_at", { ascending: false });
+
+    if (error) {
+      logger.error("Error fetching sessions", { error: error.message });
+      return [];
+    }
+
+    return (data || []) as MultiCameraSession[];
+  } catch (error) {
+    logger.error("Error in getMultiCameraSessions", { error });
+    return [];
+  }
+}
+
+export async function createMultiCameraSession(
+  sessionName: string,
+  sessionType: MultiCameraSession["session_type"],
+  partnerId: string | null = null,
+  quality: MultiCameraSession["quality"] = "1080p",
+): Promise<MultiCameraSession | null> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Please sign in to create session");
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from("multi_camera_sessions")
+      .insert({
+        user_id: user.id,
+        partner_id: partnerId,
+        session_name: sessionName,
+        session_type: sessionType,
+        quality,
+        sync_enabled: partnerId !== null,
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      logger.error("Error creating session", { error: error.message });
+      toast.error("Failed to create session");
+      return null;
+    }
+
+    toast.success("Recording session created!");
+    return data as MultiCameraSession;
+  } catch (error) {
+    logger.error("Error in createMultiCameraSession", { error });
+    return null;
+  }
+}
+
+export async function startRecording(sessionId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("multi_camera_sessions")
+      .update({ recording_status: "recording", started_at: new Date().toISOString() })
+      .eq("id", sessionId);
+
+    if (error) {
+      logger.error("Error starting recording", { error: error.message });
+      toast.error("Failed to start recording");
+      return false;
+    }
+
+    toast.success("Recording started!");
+    return true;
+  } catch (error) {
+    logger.error("Error in startRecording", { error });
+    return false;
+  }
+}
+
+export async function stopRecording(sessionId: string, durationSeconds: number): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("multi_camera_sessions")
+      .update({
+        recording_status: "completed",
+        completed_at: new Date().toISOString(),
+        duration_seconds: durationSeconds,
+      })
+      .eq("id", sessionId);
+
+    if (error) {
+      logger.error("Error stopping recording", { error: error.message });
+      toast.error("Failed to stop recording");
+      return false;
+    }
+
+    toast.success("Recording completed!");
+    return true;
+  } catch (error) {
+    logger.error("Error in stopRecording", { error });
+    return false;
+  }
+}

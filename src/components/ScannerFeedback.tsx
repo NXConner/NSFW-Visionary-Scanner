@@ -1,20 +1,34 @@
-import { useState, useEffect } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Card, CardContent } from '@/components/ui/card';
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
 import {
-  CheckCircle2, Circle, Sun, Camera, Ruler, Move,
-  Target, AlertTriangle, ChevronRight, ChevronLeft,
-  Hand, Lightbulb, Timer, Eye, Volume2, VolumeX, Info
-} from 'lucide-react';
+  CheckCircle2,
+  Circle,
+  Sun,
+  Camera,
+  Ruler,
+  Move,
+  Target,
+  AlertTriangle,
+  ChevronRight,
+  ChevronLeft,
+  Hand,
+  Lightbulb,
+  Timer,
+  Eye,
+  Volume2,
+  VolumeX,
+  Info,
+} from "lucide-react";
 
-type ScanPhase = 'preparation' | 'positioning' | 'alignment' | 'capture' | 'complete';
+type ScanPhase = "preparation" | "positioning" | "alignment" | "capture" | "complete";
 
 interface QualityIndicator {
   label: string;
   value: number;
-  status: 'good' | 'warning' | 'poor';
+  status: "good" | "warning" | "poor";
   icon: React.ReactNode;
 }
 
@@ -31,93 +45,104 @@ export const ScannerFeedback = ({
   isStabilized,
   scanMode,
   onCapture,
-  brightness = 100
+  brightness = 100,
 }: ScannerFeedbackProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [showGuide, setShowGuide] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [qualityScore, setQualityScore] = useState(0);
 
-  const preparationSteps = [
-    { 
-      id: 'lighting', 
-      title: 'Check Lighting', 
-      description: 'Ensure bright, even lighting without harsh shadows',
-      icon: <Sun className="w-5 h-5" />,
-      tip: 'Natural daylight or diffused lamp works best'
-    },
-    { 
-      id: 'position', 
-      title: 'Position Device', 
-      description: 'Hold device 12-18 inches away, perpendicular to subject',
-      icon: <Camera className="w-5 h-5" />,
-      tip: 'Use a tripod or stable surface for best results'
-    },
-    { 
-      id: 'reference', 
-      title: 'Add Reference', 
-      description: 'Place a ruler or card of known size in frame',
-      icon: <Ruler className="w-5 h-5" />,
-      tip: 'Credit card = 85.6mm × 53.98mm for scale'
-    },
-    { 
-      id: 'align', 
-      title: 'Align Subject', 
-      description: 'Center within the frame guides',
-      icon: <Target className="w-5 h-5" />,
-      tip: 'Use grid overlay for precise alignment'
-    },
-    { 
-      id: 'steady', 
-      title: 'Hold Steady', 
-      description: 'Keep device still until capture completes',
-      icon: <Hand className="w-5 h-5" />,
-      tip: 'Use timer delay for hands-free capture'
-    }
-  ];
+  const preparationSteps = useMemo(
+    () => [
+      {
+        id: "lighting",
+        title: "Check Lighting",
+        description: "Ensure bright, even lighting without harsh shadows",
+        icon: <Sun className="w-5 h-5" />,
+        tip: "Natural daylight or diffused lamp works best",
+      },
+      {
+        id: "position",
+        title: "Position Device",
+        description: "Hold device 12-18 inches away, perpendicular to subject",
+        icon: <Camera className="w-5 h-5" />,
+        tip: "Use a tripod or stable surface for best results",
+      },
+      {
+        id: "reference",
+        title: "Add Reference",
+        description: "Place a ruler or card of known size in frame",
+        icon: <Ruler className="w-5 h-5" />,
+        tip: "Credit card = 85.6mm × 53.98mm for scale",
+      },
+      {
+        id: "align",
+        title: "Align Subject",
+        description: "Center within the frame guides",
+        icon: <Target className="w-5 h-5" />,
+        tip: "Use grid overlay for precise alignment",
+      },
+      {
+        id: "steady",
+        title: "Hold Steady",
+        description: "Keep device still until capture completes",
+        icon: <Hand className="w-5 h-5" />,
+        tip: "Use timer delay for hands-free capture",
+      },
+    ],
+    [],
+  );
 
   // Calculate quality indicators
-  const qualityIndicators: QualityIndicator[] = [
-    {
-      label: 'Lighting',
-      value: brightness >= 80 && brightness <= 120 ? 100 : brightness < 80 ? 60 : 70,
-      status: brightness >= 80 && brightness <= 120 ? 'good' : brightness < 60 ? 'poor' : 'warning',
-      icon: <Sun className="w-3 h-3" />
-    },
-    {
-      label: 'Stability',
-      value: isStabilized ? 100 : 40,
-      status: isStabilized ? 'good' : 'warning',
-      icon: <Hand className="w-3 h-3" />
-    },
-    {
-      label: 'Focus',
-      value: isActive ? 85 : 0,
-      status: isActive ? 'good' : 'poor',
-      icon: <Eye className="w-3 h-3" />
-    }
-  ];
+  const qualityIndicators: QualityIndicator[] = useMemo(
+    () => [
+      {
+        label: "Lighting",
+        value: brightness >= 80 && brightness <= 120 ? 100 : brightness < 80 ? 60 : 70,
+        status:
+          brightness >= 80 && brightness <= 120 ? "good" : brightness < 60 ? "poor" : "warning",
+        icon: <Sun className="w-3 h-3" />,
+      },
+      {
+        label: "Stability",
+        value: isStabilized ? 100 : 40,
+        status: isStabilized ? "good" : "warning",
+        icon: <Hand className="w-3 h-3" />,
+      },
+      {
+        label: "Focus",
+        value: isActive ? 85 : 0,
+        status: isActive ? "good" : "poor",
+        icon: <Eye className="w-3 h-3" />,
+      },
+    ],
+    [brightness, isStabilized, isActive],
+  );
 
   useEffect(() => {
-    const avgQuality = qualityIndicators.reduce((sum, q) => sum + q.value, 0) / qualityIndicators.length;
+    const avgQuality =
+      qualityIndicators.reduce((sum, q) => sum + q.value, 0) / qualityIndicators.length;
     setQualityScore(Math.round(avgQuality));
-  }, [brightness, isStabilized, isActive]);
+  }, [qualityIndicators]);
 
   // Voice guidance (browser speech synthesis)
-  const speak = (text: string) => {
-    if (audioEnabled && 'speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      speechSynthesis.speak(utterance);
-    }
-  };
+  const speak = useCallback(
+    (text: string) => {
+      if (audioEnabled && "speechSynthesis" in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        speechSynthesis.speak(utterance);
+      }
+    },
+    [audioEnabled],
+  );
 
   useEffect(() => {
-    if (audioEnabled && scanMode === 'camera') {
-      speak(preparationSteps[currentStep]?.description || '');
+    if (audioEnabled && scanMode === "camera") {
+      speak(preparationSteps[currentStep]?.description || "");
     }
-  }, [currentStep, audioEnabled, scanMode]);
+  }, [audioEnabled, scanMode, currentStep, preparationSteps, speak]);
 
   const nextStep = () => {
     if (currentStep < preparationSteps.length - 1) {
@@ -131,12 +156,12 @@ export const ScannerFeedback = ({
     }
   };
 
-  if (!isActive && scanMode === 'idle') return null;
+  if (!isActive && scanMode === "idle") return null;
 
   return (
     <>
       {/* Step-by-Step Guide Overlay */}
-      {showGuide && scanMode === 'camera' && (
+      {showGuide && scanMode === "camera" && (
         <div className="absolute bottom-28 left-2 right-2 z-20 animate-fade-in">
           <Card className="bg-background/95 backdrop-blur-lg border-primary/20 shadow-lg">
             <CardContent className="p-4">
@@ -148,17 +173,13 @@ export const ScannerFeedback = ({
                       key={step.id}
                       className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                         index < currentStep
-                          ? 'bg-success text-success-foreground'
+                          ? "bg-success text-success-foreground"
                           : index === currentStep
-                          ? 'bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-2 ring-offset-background'
-                          : 'bg-muted text-muted-foreground'
+                            ? "bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-2 ring-offset-background"
+                            : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      {index < currentStep ? (
-                        <CheckCircle2 className="w-3 h-3" />
-                      ) : (
-                        index + 1
-                      )}
+                      {index < currentStep ? <CheckCircle2 className="w-3 h-3" /> : index + 1}
                     </div>
                   ))}
                 </div>
@@ -217,7 +238,7 @@ export const ScannerFeedback = ({
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Back
                 </Button>
-                
+
                 {currentStep === preparationSteps.length - 1 ? (
                   <Button
                     variant="default"
@@ -230,12 +251,7 @@ export const ScannerFeedback = ({
                     Capture Now
                   </Button>
                 ) : (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={nextStep}
-                    className="h-8"
-                  >
+                  <Button variant="default" size="sm" onClick={nextStep} className="h-8">
                     Next
                     <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
@@ -247,7 +263,7 @@ export const ScannerFeedback = ({
       )}
 
       {/* Collapsed Guide Toggle */}
-      {!showGuide && scanMode === 'camera' && (
+      {!showGuide && scanMode === "camera" && (
         <Button
           variant="outline"
           size="sm"
@@ -263,7 +279,7 @@ export const ScannerFeedback = ({
 };
 
 // Positioning Overlay Component
-export const PositioningOverlay = ({ scanType }: { scanType: '3d' | '2d' }) => {
+export const PositioningOverlay = ({ scanType }: { scanType: "3d" | "2d" }) => {
   return (
     <div className="absolute inset-0 pointer-events-none z-10">
       {/* Body outline guide */}
@@ -282,9 +298,33 @@ export const PositioningOverlay = ({ scanType }: { scanType: '3d' | '2d' }) => {
         />
 
         {/* Center crosshair - simplified */}
-        <circle cx="50" cy="50" r="2" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.3" opacity="0.5" />
-        <line x1="50" y1="47" x2="50" y2="53" stroke="hsl(var(--primary))" strokeWidth="0.3" opacity="0.5" />
-        <line x1="47" y1="50" x2="53" y2="50" stroke="hsl(var(--primary))" strokeWidth="0.3" opacity="0.5" />
+        <circle
+          cx="50"
+          cy="50"
+          r="2"
+          fill="none"
+          stroke="hsl(var(--primary))"
+          strokeWidth="0.3"
+          opacity="0.5"
+        />
+        <line
+          x1="50"
+          y1="47"
+          x2="50"
+          y2="53"
+          stroke="hsl(var(--primary))"
+          strokeWidth="0.3"
+          opacity="0.5"
+        />
+        <line
+          x1="47"
+          y1="50"
+          x2="53"
+          y2="50"
+          stroke="hsl(var(--primary))"
+          strokeWidth="0.3"
+          opacity="0.5"
+        />
 
         {/* Corner focus brackets - minimal */}
         <g stroke="hsl(var(--primary))" strokeWidth="0.6" fill="none" opacity="0.6">
@@ -306,10 +346,18 @@ export const AngleMeasurementOverlay = ({ angle = 0 }: { angle: number }) => {
         {/* Protractor arc */}
         <g transform="translate(50, 70)">
           {/* Base line */}
-          <line x1="-30" y1="0" x2="30" y2="0" stroke="hsl(var(--accent))" strokeWidth="0.5" opacity="0.5" />
-          
+          <line
+            x1="-30"
+            y1="0"
+            x2="30"
+            y2="0"
+            stroke="hsl(var(--accent))"
+            strokeWidth="0.5"
+            opacity="0.5"
+          />
+
           {/* Degree markers */}
-          {[0, 15, 30, 45, 60, 75, 90].map((deg) => {
+          {[0, 15, 30, 45, 60, 75, 90].map(deg => {
             const rad = (deg * Math.PI) / 180;
             const x = -Math.cos(rad) * 25;
             const y = -Math.sin(rad) * 25;
@@ -363,7 +411,14 @@ export const AngleMeasurementOverlay = ({ angle = 0 }: { angle: number }) => {
         </g>
 
         {/* Angle display */}
-        <text x="50" y="95" fontSize="4" fill="hsl(var(--primary))" textAnchor="middle" fontWeight="bold">
+        <text
+          x="50"
+          y="95"
+          fontSize="4"
+          fill="hsl(var(--primary))"
+          textAnchor="middle"
+          fontWeight="bold"
+        >
           {angle}° CURVATURE
         </text>
       </svg>
@@ -372,30 +427,32 @@ export const AngleMeasurementOverlay = ({ angle = 0 }: { angle: number }) => {
 };
 
 // Real-time Guidance Messages
-export const GuidanceMessage = ({ 
-  message, 
-  type = 'info' 
-}: { 
-  message: string; 
-  type?: 'info' | 'success' | 'warning' | 'error' 
+export const GuidanceMessage = ({
+  message,
+  type = "info",
+}: {
+  message: string;
+  type?: "info" | "success" | "warning" | "error";
 }) => {
   const colors = {
-    info: 'bg-primary/10 border-primary/30 text-primary',
-    success: 'bg-success/10 border-success/30 text-success',
-    warning: 'bg-warning/10 border-warning/30 text-warning',
-    error: 'bg-destructive/10 border-destructive/30 text-destructive'
+    info: "bg-primary/10 border-primary/30 text-primary",
+    success: "bg-success/10 border-success/30 text-success",
+    warning: "bg-warning/10 border-warning/30 text-warning",
+    error: "bg-destructive/10 border-destructive/30 text-destructive",
   };
 
   const icons = {
     info: <Info className="w-3 h-3" />,
     success: <CheckCircle2 className="w-3 h-3" />,
     warning: <AlertTriangle className="w-3 h-3" />,
-    error: <AlertTriangle className="w-3 h-3" />
+    error: <AlertTriangle className="w-3 h-3" />,
   };
 
   return (
     <div className="absolute top-14 left-1/2 -translate-x-1/2 w-[calc(100%-4rem)] max-w-md z-20 animate-fade-in">
-      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border backdrop-blur-md ${colors[type]}`}>
+      <div
+        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border backdrop-blur-md ${colors[type]}`}
+      >
         {icons[type]}
         <span className="text-xs font-medium">{message}</span>
       </div>

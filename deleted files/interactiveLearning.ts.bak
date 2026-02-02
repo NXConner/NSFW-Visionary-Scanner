@@ -1,0 +1,624 @@
+/**
+ * Interactive Learning Modules System - Database Implementation
+ * Courses, modules, lessons, quizzes, progress tracking, and certificates
+ */
+
+import { supabase } from '@/integrations/supabase/client'
+import { toast } from 'sonner'
+import { logger } from './logger'
+
+export interface LearningCourse {
+  id: string
+  title: string
+  description?: string | null
+  category?: string | null
+  difficulty_level?: string | null
+  estimated_duration_minutes?: number | null
+  module_count?: number | null
+  lesson_count?: number | null
+  thumbnail_url?: string | null
+  intro_video_url?: string | null
+  order_index?: number | null
+  is_featured?: boolean | null
+  is_premium?: boolean | null
+  is_published?: boolean | null
+  enrollment_count?: number | null
+  completion_count?: number | null
+  average_rating?: number | null
+  rating_count?: number | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export interface LearningModule {
+  id: string
+  course_id: string
+  title: string
+  description?: string | null
+  order_index?: number | null
+  estimated_duration_minutes?: number | null
+  lesson_count?: number | null
+  created_at?: string | null
+  updated_at?: string | null
+  lessons?: LearningLesson[]
+}
+
+export interface LearningLesson {
+  id: string
+  module_id: string
+  title: string
+  content_type: string
+  content_data?: any
+  order_index?: number | null
+  estimated_duration_minutes?: number | null
+  requires_completion_of?: string[] | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export interface LearningEnrollment {
+  id: string
+  user_id: string
+  course_id: string
+  progress_percentage?: number | null
+  current_module_id?: string | null
+  current_lesson_id?: string | null
+  started_at?: string | null
+  completed_at?: string | null
+  last_accessed_at?: string | null
+  course?: LearningCourse
+}
+
+export interface LearningLessonProgress {
+  id: string
+  user_id: string
+  lesson_id: string
+  is_completed?: boolean | null
+  completion_percentage?: number | null
+  time_spent_minutes?: number | null
+  attempts?: number | null
+  completed_at?: string | null
+  last_accessed_at?: string | null
+}
+
+export interface LearningQuiz {
+  id: string
+  lesson_id?: string | null
+  course_id?: string | null
+  title: string
+  description?: string | null
+  quiz_type?: string | null
+  questions: QuizQuestion[]
+  passing_score?: number | null
+  time_limit_minutes?: number | null
+  attempt_limit?: number | null
+  show_results_immediately?: boolean | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export interface QuizQuestion {
+  id: string
+  question_text: string
+  question_type: string
+  options?: string[]
+  correct_answer: string | string[]
+  explanation?: string
+  points?: number
+}
+
+export interface LearningQuizAttempt {
+  id: string
+  user_id: string
+  quiz_id: string
+  answers: Record<string, string | string[]>
+  score?: number | null
+  percentage_score?: number | null
+  passed?: boolean | null
+  time_taken_seconds?: number | null
+  started_at?: string | null
+  completed_at?: string | null
+  created_at?: string | null
+}
+
+export interface LearningCertificate {
+  id: string
+  user_id: string
+  course_id: string
+  certificate_number: string
+  certificate_data?: any
+  issued_at?: string | null
+  created_at?: string | null
+  course?: LearningCourse
+}
+
+export interface LearningPath {
+  id?: string
+  user_id?: string
+  name: string
+  description?: string
+  path_type?: string
+  course_ids: string[]
+  current_course_index?: number
+  progress_percentage?: number
+  started_at?: string
+  completed_at?: string
+  created_at?: string
+  updated_at?: string
+}
+
+// Get all learning courses
+export async function getLearningCourses(
+  category?: string,
+  featured?: boolean,
+  premiumOnly?: boolean,
+  limit: number = 50
+): Promise<LearningCourse[]> {
+  try {
+    let query = supabase
+      .from('learning_courses')
+      .select('*')
+      .eq('is_published', true)
+      .order('order_index', { ascending: true })
+      .limit(limit)
+
+    if (category) {
+      query = query.eq('category', category)
+    }
+    if (featured) {
+      query = query.eq('is_featured', true)
+    }
+    if (premiumOnly) {
+      query = query.eq('is_premium', true)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    logger.error('Failed to fetch courses', { error })
+    return []
+  }
+}
+
+// Get a single course with modules and lessons
+export async function getLearningCourse(courseId: string): Promise<{
+  course: LearningCourse | null
+  modules: LearningModule[]
+  lessons: LearningLesson[]
+}> {
+  try {
+    const [courseResult, modulesResult] = await Promise.all([
+      supabase.from('learning_courses').select('*').eq('id', courseId).maybeSingle(),
+      supabase.from('learning_modules').select('*').eq('course_id', courseId).order('order_index')
+    ])
+
+    if (courseResult.error) throw courseResult.error
+    if (modulesResult.error) throw modulesResult.error
+
+    const modules = modulesResult.data || []
+    const moduleIds = modules.map(m => m.id)
+
+    let lessons: LearningLesson[] = []
+    if (moduleIds.length > 0) {
+      const { data: lessonsData, error: lessonsError } = await supabase
+        .from('learning_lessons')
+        .select('*')
+        .in('module_id', moduleIds)
+        .order('order_index')
+
+      if (lessonsError) throw lessonsError
+      lessons = lessonsData || []
+    }
+
+    return { course: courseResult.data, modules, lessons }
+  } catch (error) {
+    logger.error('Failed to fetch course details', { error })
+    return { course: null, modules: [], lessons: [] }
+  }
+}
+
+// Enroll in a course
+export async function enrollInCourse(courseId: string): Promise<LearningEnrollment | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      toast.error('Please sign in to enroll')
+      return null
+    }
+
+    // Check existing enrollment
+    const { data: existing } = await supabase
+      .from('learning_enrollments')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('course_id', courseId)
+      .maybeSingle()
+
+    if (existing) {
+      toast.info('You are already enrolled in this course')
+      return existing
+    }
+
+    const { data, error } = await supabase
+      .from('learning_enrollments')
+      .insert({
+        user_id: user.id,
+        course_id: courseId,
+        progress_percentage: 0,
+        started_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    // Update enrollment count (if the function exists)
+    try {
+      await supabase
+        .from('learning_courses')
+        .update({ enrollment_count: (await supabase.from('learning_courses').select('enrollment_count').eq('id', courseId).single()).data?.enrollment_count || 0 + 1 })
+        .eq('id', courseId)
+    } catch {
+      // Ignore if update fails
+    }
+
+    toast.success('Successfully enrolled in course!')
+    return data
+  } catch (error) {
+    logger.error('Failed to enroll in course', { error })
+    toast.error('Failed to enroll in course')
+    return null
+  }
+}
+
+// Get user enrollments
+export async function getUserEnrollments(): Promise<LearningEnrollment[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+
+    const { data, error } = await supabase
+      .from('learning_enrollments')
+      .select(`
+        *,
+        course:learning_courses(*)
+      `)
+      .eq('user_id', user.id)
+      .order('last_accessed_at', { ascending: false, nullsFirst: false })
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    logger.error('Failed to fetch enrollments', { error })
+    return []
+  }
+}
+
+// Update lesson progress
+export async function updateLessonProgress(
+  lessonId: string,
+  progress: Partial<LearningLessonProgress>
+): Promise<LearningLessonProgress | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+
+    const { data: existing } = await supabase
+      .from('learning_lesson_progress')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('lesson_id', lessonId)
+      .maybeSingle()
+
+    if (existing) {
+      const { data, error } = await supabase
+        .from('learning_lesson_progress')
+        .update({
+          ...progress,
+          last_accessed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existing.id)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    } else {
+      const { data, error } = await supabase
+        .from('learning_lesson_progress')
+        .insert({
+          user_id: user.id,
+          lesson_id: lessonId,
+          ...progress,
+          last_accessed_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    }
+  } catch (error) {
+    logger.error('Failed to update lesson progress', { error })
+    return null
+  }
+}
+
+// Complete a lesson
+export async function completeLesson(lessonId: string): Promise<void> {
+  const result = await updateLessonProgress(lessonId, {
+    is_completed: true,
+    completion_percentage: 100,
+    completed_at: new Date().toISOString()
+  })
+
+  if (result) {
+    toast.success('Lesson completed! 🎉')
+    // Update enrollment progress
+    await updateEnrollmentProgress(lessonId)
+  }
+}
+
+// Get lesson progress
+export async function getLessonProgress(lessonId: string): Promise<LearningLessonProgress | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+
+    const { data, error } = await supabase
+      .from('learning_lesson_progress')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('lesson_id', lessonId)
+      .maybeSingle()
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    logger.error('Failed to fetch lesson progress', { error })
+    return null
+  }
+}
+
+// Get course progress percentage
+export async function getCourseProgress(courseId: string): Promise<number> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return 0
+
+    const { data: enrollment } = await supabase
+      .from('learning_enrollments')
+      .select('progress_percentage')
+      .eq('user_id', user.id)
+      .eq('course_id', courseId)
+      .maybeSingle()
+
+    return enrollment?.progress_percentage || 0
+  } catch (error) {
+    return 0
+  }
+}
+
+// Get user certificates
+export async function getUserCertificates(): Promise<LearningCertificate[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+
+    const { data, error } = await supabase
+      .from('learning_certificates')
+      .select(`
+        *,
+        course:learning_courses(*)
+      `)
+      .eq('user_id', user.id)
+      .order('issued_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    logger.error('Failed to fetch certificates', { error })
+    return []
+  }
+}
+
+// Alias for backward compatibility
+export async function getCertificates(): Promise<LearningCertificate[]> {
+  return getUserCertificates()
+}
+
+// Issue certificate upon course completion
+export async function issueCertificate(courseId: string): Promise<LearningCertificate | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+
+    // Check if certificate already exists
+    const { data: existing } = await supabase
+      .from('learning_certificates')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('course_id', courseId)
+      .maybeSingle()
+
+    if (existing) {
+      toast.info('Certificate already issued')
+      return existing
+    }
+
+    const certificateNumber = `CERT-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+
+    const { data, error } = await supabase
+      .from('learning_certificates')
+      .insert({
+        user_id: user.id,
+        course_id: courseId,
+        certificate_number: certificateNumber,
+        issued_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    toast.success('Certificate issued! 🎓')
+    return data
+  } catch (error) {
+    logger.error('Failed to issue certificate', { error })
+    toast.error('Failed to issue certificate')
+    return null
+  }
+}
+
+// Get recommended courses
+export async function getRecommendedCourses(): Promise<LearningCourse[]> {
+  return getLearningCourses(undefined, true, false, 5)
+}
+
+// Alias for backward compatibility
+export async function getCourseRecommendations(): Promise<LearningCourse[]> {
+  return getRecommendedCourses()
+}
+
+// Search courses
+export async function searchCourses(query: string): Promise<LearningCourse[]> {
+  try {
+    const { data, error } = await supabase
+      .from('learning_courses')
+      .select('*')
+      .eq('is_published', true)
+      .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+      .limit(20)
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    logger.error('Failed to search courses', { error })
+    return []
+  }
+}
+
+// Get learning paths (stub - table doesn't exist yet)
+export async function getLearningPaths(): Promise<LearningPath[]> {
+  return []
+}
+
+// Create learning path (stub - table doesn't exist yet)
+export async function createLearningPath(
+  name: string,
+  courseIds: string[],
+  description?: string
+): Promise<LearningPath | null> {
+  toast.info('Learning paths coming soon')
+  return null
+}
+
+// Get quiz for lesson (stub - quizzes table doesn't exist yet)
+export async function getLessonQuiz(_lessonId: string): Promise<LearningQuiz | null> {
+  return null
+}
+
+// Get quiz for course (stub)
+export async function getCourseQuiz(_courseId: string): Promise<LearningQuiz | null> {
+  return null
+}
+
+// Submit quiz attempt (stub)
+export async function submitQuizAttempt(
+  quizId: string,
+  answers: Record<string, string | string[]>,
+  timeTakenSeconds?: number
+): Promise<LearningQuizAttempt | null> {
+  toast.info('Quizzes coming soon')
+  return null
+}
+
+// Get quiz attempts (stub)
+export async function getQuizAttempts(_quizId: string): Promise<LearningQuizAttempt[]> {
+  return []
+}
+
+// Get course reviews (stub)
+export async function getCourseReviews(_courseId: string): Promise<any[]> {
+  return []
+}
+
+// Submit course review (stub)
+export async function submitCourseReview(
+  _courseId: string,
+  _rating: number,
+  _review?: string
+): Promise<any | null> {
+  toast.info('Course reviews coming soon')
+  return null
+}
+
+// Helper to update enrollment progress after completing lessons
+async function updateEnrollmentProgress(lessonId: string): Promise<void> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    // Get the lesson to find its module and course
+    const { data: lesson } = await supabase
+      .from('learning_lessons')
+      .select('module_id')
+      .eq('id', lessonId)
+      .maybeSingle()
+
+    if (!lesson) return
+
+    const { data: module } = await supabase
+      .from('learning_modules')
+      .select('course_id')
+      .eq('id', lesson.module_id)
+      .maybeSingle()
+
+    if (!module) return
+
+    // Calculate progress
+    const { data: allLessons } = await supabase
+      .from('learning_lessons')
+      .select('id')
+      .in('module_id', 
+        (await supabase
+          .from('learning_modules')
+          .select('id')
+          .eq('course_id', module.course_id)
+        ).data?.map(m => m.id) || []
+      )
+
+    const lessonIds = allLessons?.map(l => l.id) || []
+
+    const { data: completedLessons } = await supabase
+      .from('learning_lesson_progress')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('is_completed', true)
+      .in('lesson_id', lessonIds)
+
+    const progress = lessonIds.length > 0 
+      ? Math.round(((completedLessons?.length || 0) / lessonIds.length) * 100)
+      : 0
+
+    await supabase
+      .from('learning_enrollments')
+      .update({
+        progress_percentage: progress,
+        current_lesson_id: lessonId,
+        last_accessed_at: new Date().toISOString(),
+        ...(progress === 100 ? { completed_at: new Date().toISOString() } : {})
+      })
+      .eq('user_id', user.id)
+      .eq('course_id', module.course_id)
+
+    // Issue certificate if completed
+    if (progress === 100) {
+      await issueCertificate(module.course_id)
+    }
+  } catch (error) {
+    logger.error('Failed to update enrollment progress', { error })
+  }
+}

@@ -1,71 +1,138 @@
-/**
- * Video Editing Edge Function
- * Handles video editing operations (cut, merge, transitions, effects)
- * Note: Full FFmpeg integration would require a separate service
- * This is a placeholder that handles edit metadata and coordinates with external service
- */
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
-serve(async (req) => {
+type ReqBody = {
+  recording_id?: string;
+  edit_type: string;
+  edit_name?: string;
+  edit_config?: Record<string, unknown>;
+  camera_switches?: Record<string, unknown>;
+  masking_data?: Record<string, unknown>;
+  transitions?: Record<string, unknown>;
+};
+
+serve(async req => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
-    const { edit_type, video_id, edit_data } = await req.json()
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const token = authHeader.replace("Bearer ", "");
 
-    if (!edit_type || !video_id || !edit_data) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      )
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!supabaseUrl || !serviceRoleKey) throw new Error("Supabase not configured");
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data: userRes, error: authError } = await supabase.auth.getUser(token);
+    const user = userRes?.user;
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Invalid authentication" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    // Ensure age gate for adult features
+    const { data: age, error: ageError } = await supabase
+      .from("dlc_age_verifications")
+      .select("is_verified, adult_content_consent, terms_accepted")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (ageError) throw ageError;
+    if (!(age?.is_verified && age?.adult_content_consent && age?.terms_accepted)) {
+      return new Response(JSON.stringify({ error: "Age verification required" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    // Create edit record
+    const body = (await req.json()) as ReqBody;
+    const recordingId = body.recording_id ? String(body.recording_id) : "";
+    const editType = String(body.edit_type || "");
+    if (!recordingId || !editType) {
+      return new Response(JSON.stringify({ error: "Missing required fields" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Ownership check: recording must belong to user (or shared with partner, handled by RLS in app; here we enforce user ownership)
+    const { data: rec, error: recError } = await supabase
+      .from("video_recordings")
+      .select("id, user_id")
+      .eq("id", recordingId)
+      .maybeSingle();
+    if (recError) throw recError;
+    if (!rec || rec.user_id !== user.id) {
+      return new Response(JSON.stringify({ error: "Not permitted" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const payload = {
+      recording_id: recordingId,
+      user_id: user.id,
+      edit_name: body.edit_name ? String(body.edit_name) : null,
+      edit_type: editType,
+      edit_config: body.edit_config ?? {},
+      camera_switches: body.camera_switches ?? null,
+      masking_data: body.masking_data ?? null,
+      transitions: body.transitions ?? null,
+      edit_status: "pending",
+    };
+
     const { data: edit, error } = await supabase
-      .from('video_edits')
-      .insert({
-        video_id,
-        edit_type,
-        edit_data,
-        status: 'pending'
-      })
-      .select()
-      .single()
+      .from("video_edits")
+      .insert(payload)
+      .select("id, edit_status, created_at")
+      .single();
 
     if (error) {
-      return new Response(
-        JSON.stringify({ error: `Failed to create edit: ${error.message}` }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: `Failed to create edit: ${error.message}` }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // In production, this would:
-    // 1. Queue the edit job to a video processing service (e.g., AWS MediaConvert, Cloudinary)
-    // 2. Use FFmpeg via a worker service
-    // 3. Process the video according to edit_data
-    // 4. Upload the edited video
-    // 5. Update the edit record with the result
-
-    // For now, return the edit record
-    // The actual processing would be handled by an external service
+    // Note: This function records edit intent.
+    // Actual media processing should be performed by a dedicated worker/service.
     return new Response(
       JSON.stringify({
         success: true,
         edit_id: edit.id,
-        message: 'Edit queued for processing. In production, this would trigger video processing.'
+        status: edit.edit_status,
+        message: "Edit queued for processing.",
       }),
-      { headers: { 'Content-Type': 'application/json' } }
-    )
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (error) {
-    console.error('Error in video-editing:', error)
-    return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    )
+    const message = error instanceof Error ? error.message : "Internal server error";
+    console.error("video-editing error:", error);
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
-})
-
+});

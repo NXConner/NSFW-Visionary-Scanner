@@ -1,102 +1,133 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { ScannerSection } from '../ScannerSection'
-import { useCamera } from '../../hooks/useCamera'
-import { useUserRoles } from '../../hooks/useUserRoles'
+import React from "react";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-// Mock the hooks
-vi.mock('../../hooks/useCamera')
-vi.mock('../../hooks/useUserRoles')
-vi.mock('../../hooks/useFeatureAccess', () => ({
-  useFeatureAccess: () => ({
-    canUseAI: true,
-    canUseAdvanced: true,
-    isPremium: true
-  })
-}))
+import { ScannerSection } from "@/components/ScannerSection";
 
-const mockUseCamera = vi.mocked(useCamera)
-const mockUseUserRoles = vi.mocked(useUserRoles)
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+  },
+}));
 
-describe('ScannerSection', () => {
+const stopCameraMock = vi.fn();
+const startCameraMock = vi.fn(async () => ({ ok: true as const }));
+const captureImageMock = vi.fn(() => "data:image/jpeg;base64,AAAA");
+const setFocusModeMock = vi.fn(async () => true);
+const setFocusDistanceMock = vi.fn(async () => true);
+const tapToFocusMock = vi.fn(async () => true);
+const setTorchMock = vi.fn(async () => true);
+const setZoomFactorMock = vi.fn(async () => true);
+
+vi.mock("@/hooks/useCamera", () => ({
+  useCamera: () => ({
+    videoRef: { current: null },
+    canvasRef: { current: null },
+    isActive: false,
+    isStarting: false,
+    error: null,
+    startCamera: startCameraMock,
+    stopCamera: stopCameraMock,
+    captureImage: captureImageMock,
+    getVideoTrack: () => null,
+    focusState: "searching",
+    tapFocusFeedback: null,
+    setFocusMode: setFocusModeMock,
+    setFocusDistance: setFocusDistanceMock,
+    tapToFocus: tapToFocusMock,
+    setTorch: setTorchMock,
+    setZoomFactor: setZoomFactorMock,
+    lockExposure: vi.fn(async () => true),
+    lockWhiteBalance: vi.fn(async () => true),
+  }),
+}));
+
+vi.mock("@/contexts/DataContext", () => ({
+  useData: () => ({ saveScan: vi.fn(async () => {}) }),
+}));
+
+vi.mock("@/hooks/useAIScanAnalysis", () => ({
+  useAIScanAnalysis: () => ({
+    analyzeImage: vi.fn(),
+    isAnalyzing: false,
+    result: null,
+    reset: vi.fn(),
+  }),
+}));
+
+vi.mock("@/hooks/useVisualContent", () => ({
+  useVisualContent: () => ({ content: [] }),
+}));
+
+vi.mock("@/hooks/useFeatureFlag", () => ({
+  useFeatureFlag: () => false,
+}));
+
+// Stub heavy child components so we can test ScannerSection state transitions deterministically.
+vi.mock("@/components/scanner/ScannerBackgroundEffects", () => ({
+  ScannerBackgroundEffects: () => <div data-testid="bg-effects" />,
+}));
+vi.mock("@/components/scanner/ScannerHeaderBlock", () => ({
+  ScannerHeaderBlock: ({ scanMode }: { scanMode: string }) => (
+    <div data-testid="header">{scanMode}</div>
+  ),
+}));
+vi.mock("@/components/scanner/ScannerSidePanel", () => ({
+  ScannerSidePanel: ({ scanMode }: { scanMode: string }) => (
+    <div data-testid="side-panel">{scanMode}</div>
+  ),
+}));
+vi.mock("@/components/scanner/ScannerViewCard", () => ({
+  ScannerViewCard: (props: any) => (
+    <div>
+      <div data-testid="scan-mode">{props.scanMode}</div>
+      <div data-testid="captured">{props.capturedImage ? "yes" : "no"}</div>
+      <button onClick={props.onStartCamera}>start</button>
+      <button onClick={props.onReset}>reset</button>
+    </div>
+  ),
+}));
+vi.mock("@/components/ScannerTutorial", () => ({
+  ScannerTutorial: () => null,
+}));
+vi.mock("@/components/CalibrationWizard", () => ({
+  CalibrationWizard: () => null,
+}));
+
+describe("ScannerSection", () => {
   beforeEach(() => {
-    mockUseCamera.mockReturnValue({
-      stream: null,
-      startCamera: vi.fn(),
-      stopCamera: vi.fn(),
-      captureImage: vi.fn(),
-      isLoading: false,
-      error: null,
-      hasPermission: true
-    })
+    stopCameraMock.mockClear();
+    startCameraMock.mockClear();
+    captureImageMock.mockClear();
+  });
 
-    mockUseUserRoles.mockReturnValue({
-      user: { id: 'test-user-id', email: 'test@example.com' },
-      roles: ['user'],
-      isAdmin: false,
-      isPro: false,
-      isPremium: false,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn()
-    })
-  })
+  it("renders and starts camera (scanMode idle -> camera)", async () => {
+    render(<ScannerSection />);
+    expect(screen.getByTestId("scan-mode").textContent).toBe("idle");
 
-  it('renders scanner interface', () => {
-    render(<ScannerSection />)
-    expect(screen.getByText(/scanner/i)).toBeInTheDocument()
-  })
-
-  it('shows camera permission request', () => {
-    mockUseCamera.mockReturnValue({
-      ...mockUseCamera(),
-      hasPermission: false
-    })
-
-    render(<ScannerSection />)
-    expect(screen.getByText(/camera permission/i)).toBeInTheDocument()
-  })
-
-  it('handles camera start', async () => {
-    const mockStartCamera = vi.fn()
-    mockUseCamera.mockReturnValue({
-      ...mockUseCamera(),
-      startCamera: mockStartCamera
-    })
-
-    render(<ScannerSection />)
-
-    const startButton = screen.getByRole('button', { name: /start/i })
-    fireEvent.click(startButton)
-
+    fireEvent.click(screen.getByText("start"));
     await waitFor(() => {
-      expect(mockStartCamera).toHaveBeenCalled()
-    })
-  })
+      expect(startCameraMock).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId("scan-mode").textContent).toBe("camera");
+    });
+  });
 
-  it('displays measurement results', () => {
-    // Mock measurement data
-    render(<ScannerSection />)
+  it("resets back to idle and stops camera", async () => {
+    render(<ScannerSection />);
 
-    // Should show measurement interface
-    expect(screen.getByText(/measurement/i)).toBeInTheDocument()
-  })
+    fireEvent.click(screen.getByText("start"));
+    await waitFor(() => expect(screen.getByTestId("scan-mode").textContent).toBe("camera"));
 
-  it('handles premium features for free users', () => {
-    mockUseUserRoles.mockReturnValue({
-      user: { id: 'test-user-id', email: 'test@example.com' },
-      roles: ['user'],
-      isAdmin: false,
-      isPro: false,
-      isPremium: false,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn()
-    })
+    fireEvent.click(screen.getByText("reset"));
+    await waitFor(() => expect(screen.getByTestId("scan-mode").textContent).toBe("idle"));
+    expect(stopCameraMock).toHaveBeenCalled();
+  });
 
-    render(<ScannerSection />)
-
-    // Should show upgrade prompts for premium features
-    expect(screen.getByText(/upgrade/i)).toBeInTheDocument()
-  })
-})
+  it("stops camera on unmount (cleanup)", () => {
+    const { unmount } = render(<ScannerSection />);
+    unmount();
+    expect(stopCameraMock).toHaveBeenCalled();
+  });
+});

@@ -111,6 +111,10 @@ CREATE TABLE IF NOT EXISTS expert_consultations (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Ensure expert_consultations has marketplace status column when table pre-exists
+ALTER TABLE expert_consultations
+  ADD COLUMN IF NOT EXISTS consultation_status TEXT;
+
 -- Custom Report Generation (Paid)
 CREATE TABLE IF NOT EXISTS custom_reports (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -143,6 +147,10 @@ CREATE TABLE IF NOT EXISTS custom_reports (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure custom_reports has generation_status when table pre-exists
+ALTER TABLE custom_reports
+  ADD COLUMN IF NOT EXISTS generation_status TEXT;
 
 -- Equipment Recommendations (Affiliate)
 CREATE TABLE IF NOT EXISTS equipment_recommendations (
@@ -275,6 +283,20 @@ ALTER TABLE equipment_recommendations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE supplement_recommendations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE marketplace_purchases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE affiliate_commissions ENABLE ROW LEVEL SECURITY;
+
+-- Ensure policies are idempotent if rerun
+DROP POLICY IF EXISTS "Authenticated users can view marketplace categories" ON marketplace_categories;
+DROP POLICY IF EXISTS "Authenticated users can view active marketplace items" ON marketplace_items;
+DROP POLICY IF EXISTS "Creators can manage own marketplace items" ON marketplace_items;
+DROP POLICY IF EXISTS "Users can view own consultations" ON expert_consultations;
+DROP POLICY IF EXISTS "Users can create consultations" ON expert_consultations;
+DROP POLICY IF EXISTS "Experts can update consultations" ON expert_consultations;
+DROP POLICY IF EXISTS "Users can manage own custom reports" ON custom_reports;
+DROP POLICY IF EXISTS "Authenticated users can view equipment recommendations" ON equipment_recommendations;
+DROP POLICY IF EXISTS "Authenticated users can view supplement recommendations" ON supplement_recommendations;
+DROP POLICY IF EXISTS "Users can view own marketplace purchases" ON marketplace_purchases;
+DROP POLICY IF EXISTS "Users can create purchases" ON marketplace_purchases;
+DROP POLICY IF EXISTS "Users can view own affiliate commissions" ON affiliate_commissions;
 
 -- Marketplace Categories: All authenticated users can view
 CREATE POLICY "Authenticated users can view marketplace categories"

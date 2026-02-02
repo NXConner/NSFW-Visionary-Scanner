@@ -1,441 +1,346 @@
 /**
- * Community Forum System
- * Manages discussion boards, threads, posts, replies, moderation, and user engagement
+ * Community Forum System - Supabase implementation
+ *
+ * Backed by tables created in `supabase/migrations/20251207000010_community_forum.sql`.
+ * RLS enforces per-user write permissions and public read for approved content.
  */
 
-import { supabase } from '@/integrations/supabase/client'
-import { logger } from './logger'
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ForumCategory {
-  id?: string
-  name: string
-  description?: string
-  slug: string
-  icon?: string
-  color?: string
-  order_index?: number
-  is_nsfw?: boolean
-  is_private?: boolean
-  requires_premium?: boolean
-  post_count?: number
-  thread_count?: number
-  last_activity_at?: string
-  created_at?: string
-  updated_at?: string
+  id?: string;
+  name: string;
+  description?: string;
+  slug: string;
+  icon?: string;
+  color?: string;
+  order_index?: number;
+  is_nsfw?: boolean;
+  is_private?: boolean;
+  requires_premium?: boolean;
+  post_count?: number;
+  thread_count?: number;
+  last_activity_at?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ForumThread {
-  id?: string
-  category_id: string
-  user_id?: string
-  title: string
-  content: string
-  is_anonymous?: boolean
-  is_pinned?: boolean
-  is_locked?: boolean
-  is_expert_qa?: boolean
-  is_success_story?: boolean
-  view_count?: number
-  reply_count?: number
-  like_count?: number
-  helpful_count?: number
-  is_approved?: boolean
-  last_reply_at?: string
-  last_reply_by?: string
-  created_at?: string
-  updated_at?: string
+  id?: string;
+  category_id: string;
+  user_id?: string;
+  title: string;
+  content: string;
+  is_anonymous?: boolean;
+  is_pinned?: boolean;
+  is_locked?: boolean;
+  is_expert_qa?: boolean;
+  is_success_story?: boolean;
+  view_count?: number;
+  reply_count?: number;
+  like_count?: number;
+  helpful_count?: number;
+  is_approved?: boolean;
+  last_reply_at?: string;
+  last_reply_by?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ForumPost {
-  id?: string
-  thread_id: string
-  user_id?: string
-  parent_post_id?: string
-  content: string
-  is_anonymous?: boolean
-  is_expert_answer?: boolean
-  like_count?: number
-  helpful_count?: number
-  is_approved?: boolean
-  created_at?: string
-  updated_at?: string
+  id?: string;
+  thread_id: string;
+  user_id?: string;
+  parent_post_id?: string;
+  content: string;
+  is_anonymous?: boolean;
+  is_expert_answer?: boolean;
+  like_count?: number;
+  helpful_count?: number;
+  is_approved?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ForumInteraction {
-  id?: string
-  user_id?: string
-  content_type: 'thread' | 'post'
-  content_id: string
-  interaction_type: 'like' | 'helpful' | 'bookmark'
-  created_at?: string
+  id?: string;
+  user_id?: string;
+  content_type: "thread" | "post";
+  content_id: string;
+  interaction_type: "like" | "helpful" | "bookmark";
+  created_at?: string;
 }
 
 export interface UserReputation {
-  id?: string
-  user_id?: string
-  reputation_points?: number
-  post_count?: number
-  thread_count?: number
-  helpful_marks_received?: number
-  expert_answers_count?: number
-  badges?: string[]
-  level?: number
-  updated_at?: string
+  id?: string;
+  user_id?: string;
+  reputation_points?: number;
+  post_count?: number;
+  thread_count?: number;
+  helpful_marks_received?: number;
+  expert_answers_count?: number;
+  badges?: string[];
+  level?: number;
+  updated_at?: string;
 }
 
-/**
- * Get forum categories
- */
+async function requireUserId(): Promise<string> {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw error;
+  if (!data.user) throw new Error("Not authenticated");
+  return data.user.id;
+}
+
+function escapeLike(term: string) {
+  // Escape characters with special meaning in LIKE patterns: %, _
+  return term.replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
 export async function getForumCategories(): Promise<ForumCategory[]> {
-  try {
-    const { data, error } = await supabase
-      .from('forum_categories')
-      .select('*')
-      .order('order_index', { ascending: true })
-      .order('name', { ascending: true })
+  const { data, error } = await supabase
 
-    if (error) throw error
-    return data || []
-  } catch (error) {
-    logger.error('Failed to get forum categories', { error })
-    throw error
-  }
+    .from("forum_categories" as any)
+    .select("*")
+    .order("order_index", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []) as unknown as ForumCategory[];
 }
 
-/**
- * Get threads for a category
- */
 export async function getForumThreads(
   categoryId?: string,
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
 ): Promise<ForumThread[]> {
-  try {
-    let query = supabase
-      .from('forum_threads')
-      .select('*')
-      .eq('is_approved', true)
-      .order('is_pinned', { ascending: false })
-      .order('last_reply_at', { ascending: false, nullsFirst: false })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
+  let q = supabase
+    .from("forum_threads" as any)
+    .select("*")
+    .order("is_pinned", { ascending: false });
+  q = q
+    .order("last_reply_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
+  if (categoryId) q = q.eq("category_id", categoryId);
+  q = q.range(offset, offset + limit - 1);
 
-    if (categoryId) {
-      query = query.eq('category_id', categoryId)
-    }
-
-    const { data, error } = await query
-
-    if (error) throw error
-    return data || []
-  } catch (error) {
-    logger.error('Failed to get forum threads', { error })
-    throw error
-  }
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as unknown as ForumThread[];
 }
 
-/**
- * Get a single thread with posts
- */
 export async function getForumThread(threadId: string): Promise<{
-  thread: ForumThread | null
-  posts: ForumPost[]
+  thread: ForumThread | null;
+  posts: ForumPost[];
 }> {
-  try {
-    // Get thread
-    const { data: thread, error: threadError } = await supabase
-      .from('forum_threads')
-      .select('*')
-      .eq('id', threadId)
-      .single()
+  const { data: thread, error: threadErr } = await supabase
 
-    if (threadError) throw threadError
+    .from("forum_threads" as any)
+    .select("*")
+    .eq("id", threadId)
+    .maybeSingle();
 
-    // Increment view count
-    if (thread) {
-      await supabase
-        .from('forum_threads')
-        .update({ view_count: (thread.view_count || 0) + 1 })
-        .eq('id', threadId)
-    }
+  if (threadErr) throw threadErr;
 
-    // Get posts
-    const { data: posts, error: postsError } = await supabase
-      .from('forum_posts')
-      .select('*')
-      .eq('thread_id', threadId)
-      .eq('is_approved', true)
-      .order('created_at', { ascending: true })
+  const { data: posts, error: postsErr } = await supabase
 
-    if (postsError) throw postsError
+    .from("forum_posts" as any)
+    .select("*")
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: true });
 
-    return {
-      thread: thread || null,
-      posts: posts || []
-    }
-  } catch (error) {
-    logger.error('Failed to get forum thread', { error, threadId })
-    throw error
-  }
+  if (postsErr) throw postsErr;
+  return {
+    thread: (thread ?? null) as unknown as ForumThread | null,
+    posts: (posts ?? []) as unknown as ForumPost[],
+  };
 }
 
-/**
- * Create a new thread
- */
 export async function createForumThread(
-  thread: Omit<ForumThread, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'view_count' | 'reply_count' | 'like_count' | 'helpful_count' | 'is_approved'>
-): Promise<ForumThread> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('User not authenticated')
+  thread: Omit<
+    ForumThread,
+    | "id"
+    | "user_id"
+    | "created_at"
+    | "updated_at"
+    | "view_count"
+    | "reply_count"
+    | "like_count"
+    | "helpful_count"
+    | "is_approved"
+  >,
+): Promise<ForumThread | null> {
+  const userId = await requireUserId();
 
-    const { data, error } = await supabase
-      .from('forum_threads')
-      .insert({
-        ...thread,
-        user_id: thread.is_anonymous ? null : user.id,
-      })
-      .select()
-      .single()
+  const { data, error } = await supabase
 
-    if (error) throw error
+    .from("forum_threads" as any)
+    .insert({
+      user_id: userId,
+      category_id: thread.category_id,
+      title: thread.title,
+      content: thread.content,
+      is_anonymous: thread.is_anonymous ?? false,
+      is_success_story: thread.is_success_story ?? false,
+      is_expert_qa: thread.is_expert_qa ?? false,
+    })
+    .select("*")
+    .single();
 
-    logger.info('Forum thread created', { threadId: data.id })
-    return data
-  } catch (error) {
-    logger.error('Failed to create forum thread', { error, thread })
-    throw error
-  }
+  if (error) throw error;
+  return (data ?? null) as unknown as ForumThread | null;
 }
 
-/**
- * Create a post (reply)
- */
 export async function createForumPost(
-  post: Omit<ForumPost, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'like_count' | 'helpful_count' | 'is_approved'>
-): Promise<ForumPost> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('User not authenticated')
+  post: Omit<
+    ForumPost,
+    "id" | "user_id" | "created_at" | "updated_at" | "like_count" | "helpful_count" | "is_approved"
+  >,
+): Promise<ForumPost | null> {
+  const userId = await requireUserId();
 
-    const { data, error } = await supabase
-      .from('forum_posts')
-      .insert({
-        ...post,
-        user_id: post.is_anonymous ? null : user.id,
-      })
-      .select()
-      .single()
+  const { data, error } = await supabase
 
-    if (error) throw error
+    .from("forum_posts" as any)
+    .insert({
+      user_id: userId,
+      thread_id: post.thread_id,
+      parent_post_id: post.parent_post_id ?? null,
+      content: post.content,
+      is_anonymous: post.is_anonymous ?? false,
+      is_expert_answer: post.is_expert_answer ?? false,
+    })
+    .select("*")
+    .single();
 
-    logger.info('Forum post created', { postId: data.id })
-    return data
-  } catch (error) {
-    logger.error('Failed to create forum post', { error, post })
-    throw error
-  }
+  if (error) throw error;
+  return (data ?? null) as unknown as ForumPost | null;
 }
 
-/**
- * Like or mark content as helpful
- */
 export async function interactWithContent(
-  contentType: 'thread' | 'post',
+  contentType: "thread" | "post",
   contentId: string,
-  interactionType: 'like' | 'helpful' | 'bookmark'
+  interactionType: "like" | "helpful" | "bookmark",
 ): Promise<void> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('User not authenticated')
+  const userId = await requireUserId();
 
-    // Check if interaction already exists
-    const { data: existing } = await supabase
-      .from('forum_interactions')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('content_type', contentType)
-      .eq('content_id', contentId)
-      .eq('interaction_type', interactionType)
-      .single()
+  // Toggle interaction (insert if missing; delete if exists)
+  const { data: existing, error: existingErr } = await supabase
 
-    if (existing) {
-      // Remove interaction (toggle off)
-      await supabase
-        .from('forum_interactions')
-        .delete()
-        .eq('id', existing.id)
+    .from("forum_interactions" as any)
+    .select("id")
+    .eq("user_id", userId)
+    .eq("content_type", contentType)
+    .eq("content_id", contentId)
+    .eq("interaction_type", interactionType)
+    .maybeSingle();
 
-      // Decrement count
-      const table = contentType === 'thread' ? 'forum_threads' : 'forum_posts'
-      const countField = interactionType === 'like' ? 'like_count' : 'helpful_count'
-      
-      const { data: content } = await supabase
-        .from(table)
-        .select(countField)
-        .eq('id', contentId)
-        .single()
+  if (existingErr && existingErr.code !== "PGRST116") throw existingErr;
 
-      if (content) {
-        await supabase
-          .from(table)
-          .update({ [countField]: Math.max((content[countField] || 0) - 1, 0) })
-          .eq('id', contentId)
-      }
-    } else {
-      // Add interaction
-      await supabase
-        .from('forum_interactions')
-        .insert({
-          user_id: user.id,
-          content_type: contentType,
-          content_id: contentId,
-          interaction_type: interactionType,
-        })
+  if ((existing as any)?.id) {
+    const { error } = await supabase
 
-      // Increment count
-      const table = contentType === 'thread' ? 'forum_threads' : 'forum_posts'
-      const countField = interactionType === 'like' ? 'like_count' : 'helpful_count'
-      
-      const { data: content } = await supabase
-        .from(table)
-        .select(countField)
-        .eq('id', contentId)
-        .single()
-
-      if (content) {
-        await supabase
-          .from(table)
-          .update({ [countField]: (content[countField] || 0) + 1 })
-          .eq('id', contentId)
-      }
-    }
-  } catch (error) {
-    logger.error('Failed to interact with content', { error, contentType, contentId, interactionType })
-    throw error
+      .from("forum_interactions" as any)
+      .delete()
+      .eq("id", (existing as any).id);
+    if (error) throw error;
+    return;
   }
+
+  const { error } = await supabase.from("forum_interactions" as any).insert({
+    user_id: userId,
+    content_type: contentType,
+    content_id: contentId,
+    interaction_type: interactionType,
+  });
+  if (error) throw error;
 }
 
-/**
- * Get user reputation
- */
 export async function getUserReputation(userId?: string): Promise<UserReputation | null> {
-  try {
-    const targetUserId = userId || (await supabase.auth.getUser()).data.user?.id
-    if (!targetUserId) return null
+  const resolvedUserId = userId ?? (await requireUserId());
+  const { data, error } = await supabase
 
-    const { data, error } = await supabase
-      .from('forum_user_reputation')
-      .select('*')
-      .eq('user_id', targetUserId)
-      .single()
+    .from("forum_user_reputation" as any)
+    .select("*")
+    .eq("user_id", resolvedUserId)
+    .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') throw error // PGRST116 = no rows returned
-    return data || null
-  } catch (error) {
-    logger.error('Failed to get user reputation', { error })
-    return null
-  }
+  if (error) throw error;
+  if (data) return data as UserReputation;
+  return {
+    user_id: resolvedUserId,
+    reputation_points: 0,
+    post_count: 0,
+    thread_count: 0,
+    level: 1,
+  } as UserReputation;
 }
 
-/**
- * Search threads
- */
 export async function searchForumThreads(
   query: string,
-  categoryId?: string
+  categoryId?: string,
 ): Promise<ForumThread[]> {
-  try {
-    let supabaseQuery = supabase
-      .from('forum_threads')
-      .select('*')
-      .eq('is_approved', true)
-      .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
-      .order('created_at', { ascending: false })
-      .limit(20)
+  const q = query.trim();
+  if (!q) return [];
 
-    if (categoryId) {
-      supabaseQuery = supabaseQuery.eq('category_id', categoryId)
-    }
+  let builder = supabase.from("forum_threads" as any).select("*");
+  if (categoryId) builder = builder.eq("category_id", categoryId);
+  const needle = escapeLike(q);
+  // Note: PostgREST `ilike` treats patterns; we escape wildcards best-effort.
+  builder = builder
+    .or(`title.ilike.%${needle}%,content.ilike.%${needle}%`)
+    .order("created_at", { ascending: false })
+    .limit(50);
 
-    const { data, error } = await supabaseQuery
-
-    if (error) throw error
-    return data || []
-  } catch (error) {
-    logger.error('Failed to search forum threads', { error, query })
-    throw error
-  }
+  const { data, error } = await builder;
+  if (error) throw error;
+  return (data ?? []) as unknown as ForumThread[];
 }
 
-/**
- * Get user's threads
- */
 export async function getUserThreads(userId?: string): Promise<ForumThread[]> {
-  try {
-    const targetUserId = userId || (await supabase.auth.getUser()).data.user?.id
-    if (!targetUserId) return []
+  const resolvedUserId = userId ?? (await requireUserId());
+  const { data, error } = await supabase
 
-    const { data, error } = await supabase
-      .from('forum_threads')
-      .select('*')
-      .eq('user_id', targetUserId)
-      .order('created_at', { ascending: false })
-
-    if (error) throw error
-    return data || []
-  } catch (error) {
-    logger.error('Failed to get user threads', { error })
-    throw error
-  }
+    .from("forum_threads" as any)
+    .select("*")
+    .eq("user_id", resolvedUserId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []) as unknown as ForumThread[];
 }
 
-/**
- * Get user's posts
- */
 export async function getUserPosts(userId?: string): Promise<ForumPost[]> {
-  try {
-    const targetUserId = userId || (await supabase.auth.getUser()).data.user?.id
-    if (!targetUserId) return []
+  const resolvedUserId = userId ?? (await requireUserId());
+  const { data, error } = await supabase
 
-    const { data, error } = await supabase
-      .from('forum_posts')
-      .select('*')
-      .eq('user_id', targetUserId)
-      .order('created_at', { ascending: false })
-
-    if (error) throw error
-    return data || []
-  } catch (error) {
-    logger.error('Failed to get user posts', { error })
-    throw error
-  }
+    .from("forum_posts" as any)
+    .select("*")
+    .eq("user_id", resolvedUserId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return (data ?? []) as unknown as ForumPost[];
 }
 
-/**
- * Check if user has interacted with content
- */
 export async function hasUserInteracted(
-  contentType: 'thread' | 'post',
+  contentType: "thread" | "post",
   contentId: string,
-  interactionType: 'like' | 'helpful' | 'bookmark'
+  interactionType: "like" | "helpful" | "bookmark",
 ): Promise<boolean> {
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return false
+    const userId = await requireUserId();
+    const { data, error } = await supabase
 
-    const { data } = await supabase
-      .from('forum_interactions')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('content_type', contentType)
-      .eq('content_id', contentId)
-      .eq('interaction_type', interactionType)
-      .single()
-
-    return !!data
-  } catch (error) {
-    return false
+      .from("forum_interactions" as any)
+      .select("id")
+      .eq("user_id", userId)
+      .eq("content_type", contentType)
+      .eq("content_id", contentId)
+      .eq("interaction_type", interactionType)
+      .maybeSingle();
+    if (error) throw error;
+    return Boolean((data as any)?.id);
+  } catch {
+    return false;
   }
 }
-

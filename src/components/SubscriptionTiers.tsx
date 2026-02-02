@@ -3,97 +3,111 @@
  * UI component for viewing, comparing, and subscribing to expanded subscription tiers
  */
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Check, Crown, Zap, Building2, GraduationCap, Loader2, Star } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Check, Crown, Zap, Building2, GraduationCap, Loader2, Star } from "lucide-react";
 import {
   getSubscriptionTiers,
   getTierComparisonFeatures,
   subscribeToTier,
   getUserSubscriptionPlan,
   type SubscriptionTier,
-  type TierComparisonFeature
-} from '@/lib/subscriptionTiers'
-import { toast } from 'sonner'
+  type TierComparisonFeature,
+} from "@/lib/subscriptionTiers";
+import { toast } from "sonner";
 
 export const SubscriptionTiers = () => {
-  const [loading, setLoading] = useState(false)
-  const [tiers, setTiers] = useState<SubscriptionTier[]>([])
-  const [comparisonFeatures, setComparisonFeatures] = useState<TierComparisonFeature[]>([])
-  const [currentPlan, setCurrentPlan] = useState<any>(null)
-  const [selectedPlanType, setSelectedPlanType] = useState<'monthly' | 'annual' | 'lifetime'>('monthly')
+  type CurrentPlan = Awaited<ReturnType<typeof getUserSubscriptionPlan>>;
+
+  const [loading, setLoading] = useState(false);
+  const [tiers, setTiers] = useState<SubscriptionTier[]>([]);
+  const [comparisonFeatures, setComparisonFeatures] = useState<TierComparisonFeature[]>([]);
+  const [currentPlan, setCurrentPlan] = useState<CurrentPlan>(null);
+  const [selectedPlanType, setSelectedPlanType] = useState<"monthly" | "annual" | "lifetime">(
+    "monthly",
+  );
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData();
+  }, []);
 
   const loadData = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const [tiersData, featuresData, planData] = await Promise.all([
         getSubscriptionTiers(),
         getTierComparisonFeatures(),
-        getUserSubscriptionPlan()
-      ])
-      setTiers(tiersData)
-      setComparisonFeatures(featuresData)
-      setCurrentPlan(planData)
+        getUserSubscriptionPlan(),
+      ]);
+      setTiers(tiersData);
+      setComparisonFeatures(featuresData);
+      setCurrentPlan(planData);
     } catch (error) {
-      toast.error('Failed to load subscription tiers')
+      toast.error("Failed to load subscription tiers");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSubscribe = async (tierId: string) => {
     try {
-      const success = await subscribeToTier(tierId, selectedPlanType)
+      const success = await subscribeToTier(tierId, selectedPlanType);
       if (success) {
-        await loadData()
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to start subscription')
+      toast.error("Failed to start subscription");
     }
-  }
+  };
 
   const getTierIcon = (tierId: string) => {
     switch (tierId) {
-      case 'free': return null
-      case 'pro': return <Zap className="w-5 h-5" />
-      case 'premium': return <Crown className="w-5 h-5" />
-      case 'health_pro': return <Star className="w-5 h-5" />
-      case 'enterprise': return <Building2 className="w-5 h-5" />
-      case 'student': return <GraduationCap className="w-5 h-5" />
-      default: return null
+      case "free":
+        return null;
+      case "pro":
+        return <Zap className="w-5 h-5" />;
+      case "premium":
+        return <Crown className="w-5 h-5" />;
+      case "health_pro":
+        return <Star className="w-5 h-5" />;
+      case "enterprise":
+        return <Building2 className="w-5 h-5" />;
+      case "student":
+        return <GraduationCap className="w-5 h-5" />;
+      default:
+        return null;
     }
-  }
+  };
 
   const getPrice = (tier: SubscriptionTier) => {
     switch (selectedPlanType) {
-      case 'monthly':
-        return tier.monthly_price
-      case 'annual':
-        return tier.annual_price || tier.monthly_price * 12
-      case 'lifetime':
-        return tier.lifetime_price || tier.monthly_price * 60
+      case "monthly":
+        return tier.monthly_price;
+      case "annual":
+        return tier.annual_price || tier.monthly_price * 12;
+      case "lifetime":
+        return tier.lifetime_price || tier.monthly_price * 60;
     }
-  }
+  };
 
   const formatPrice = (price: number) => {
-    if (price === 0) return 'Free'
-    return `$${price.toFixed(2)}`
-  }
+    if (price === 0) return "Free";
+    return `$${price.toFixed(2)}`;
+  };
 
   const getBillingPeriod = () => {
     switch (selectedPlanType) {
-      case 'monthly': return '/month'
-      case 'annual': return '/year'
-      case 'lifetime': return ' (one-time)'
+      case "monthly":
+        return "/month";
+      case "annual":
+        return "/year";
+      case "lifetime":
+        return " (one-time)";
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -105,16 +119,14 @@ export const SubscriptionTiers = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <Card className="glass-card border-border/50">
         <CardHeader>
-          <CardTitle className="text-3xl font-bold text-center mb-2">
-            Choose Your Plan
-          </CardTitle>
+          <CardTitle className="text-3xl font-bold text-center mb-2">Choose Your Plan</CardTitle>
           <CardDescription className="text-center">
             Select the perfect plan for your needs. All plans include a 30-day money-back guarantee.
           </CardDescription>
@@ -123,27 +135,31 @@ export const SubscriptionTiers = () => {
           {/* Plan Type Selector */}
           <div className="flex justify-center gap-2 mb-8">
             <Button
-              variant={selectedPlanType === 'monthly' ? 'default' : 'outline'}
-              onClick={() => setSelectedPlanType('monthly')}
+              variant={selectedPlanType === "monthly" ? "default" : "outline"}
+              onClick={() => setSelectedPlanType("monthly")}
             >
               Monthly
             </Button>
             <Button
-              variant={selectedPlanType === 'annual' ? 'default' : 'outline'}
-              onClick={() => setSelectedPlanType('annual')}
+              variant={selectedPlanType === "annual" ? "default" : "outline"}
+              onClick={() => setSelectedPlanType("annual")}
             >
               Annual
-              {selectedPlanType === 'annual' && (
-                <Badge variant="secondary" className="ml-2">Save 20%</Badge>
+              {selectedPlanType === "annual" && (
+                <Badge variant="secondary" className="ml-2">
+                  Save 20%
+                </Badge>
               )}
             </Button>
             <Button
-              variant={selectedPlanType === 'lifetime' ? 'default' : 'outline'}
-              onClick={() => setSelectedPlanType('lifetime')}
+              variant={selectedPlanType === "lifetime" ? "default" : "outline"}
+              onClick={() => setSelectedPlanType("lifetime")}
             >
               Lifetime
-              {selectedPlanType === 'lifetime' && (
-                <Badge variant="secondary" className="ml-2">Best Value</Badge>
+              {selectedPlanType === "lifetime" && (
+                <Badge variant="secondary" className="ml-2">
+                  Best Value
+                </Badge>
               )}
             </Button>
           </div>
@@ -151,16 +167,16 @@ export const SubscriptionTiers = () => {
           {/* Tier Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tiers.map(tier => {
-              const price = getPrice(tier)
-              const isCurrentPlan = currentPlan?.tier_id === tier.tier_id
-              const Icon = getTierIcon(tier.tier_id)
+              const price = getPrice(tier);
+              const isCurrentPlan = currentPlan?.tier_id === tier.tier_id;
+              const Icon = getTierIcon(tier.tier_id);
 
               return (
                 <Card
                   key={tier.id}
                   className={`glass-card border-border/50 relative ${
-                    tier.is_popular ? 'border-primary ring-2 ring-primary/20' : ''
-                  } ${isCurrentPlan ? 'border-green-500' : ''}`}
+                    tier.is_popular ? "border-primary ring-2 ring-primary/20" : ""
+                  } ${isCurrentPlan ? "border-green-500" : ""}`}
                 >
                   {tier.is_popular && (
                     <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -192,7 +208,7 @@ export const SubscriptionTiers = () => {
                           </span>
                         )}
                       </div>
-                      {selectedPlanType === 'annual' && tier.annual_discount_percentage > 0 && (
+                      {selectedPlanType === "annual" && tier.annual_discount_percentage > 0 && (
                         <div className="text-sm text-muted-foreground mt-1">
                           Save {tier.annual_discount_percentage}% vs monthly
                         </div>
@@ -201,8 +217,8 @@ export const SubscriptionTiers = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <ul className="space-y-2">
-                      {tier.features.map((feature, index) => (
-                        <li key={index} className="flex items-start gap-2">
+                      {tier.features.map((feature) => (
+                        <li key={feature} className="flex items-start gap-2">
                           <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                           <span className="text-sm">{feature}</span>
                         </li>
@@ -212,8 +228,8 @@ export const SubscriptionTiers = () => {
                       <div className="pt-2 border-t">
                         <p className="text-xs text-muted-foreground mb-2">Limitations:</p>
                         <ul className="space-y-1">
-                          {tier.limitations.map((limitation, index) => (
-                            <li key={index} className="text-xs text-muted-foreground">
+                          {tier.limitations.map((limitation) => (
+                            <li key={limitation} className="text-xs text-muted-foreground">
                               • {limitation}
                             </li>
                           ))}
@@ -222,15 +238,15 @@ export const SubscriptionTiers = () => {
                     )}
                     <Button
                       className="w-full"
-                      variant={tier.is_popular ? 'default' : 'outline'}
+                      variant={tier.is_popular ? "default" : "outline"}
                       onClick={() => handleSubscribe(tier.tier_id)}
                       disabled={isCurrentPlan}
                     >
-                      {isCurrentPlan ? 'Current Plan' : 'Subscribe'}
+                      {isCurrentPlan ? "Current Plan" : "Subscribe"}
                     </Button>
                   </CardContent>
                 </Card>
-              )
+              );
             })}
           </div>
 
@@ -282,6 +298,5 @@ export const SubscriptionTiers = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
+  );
+};

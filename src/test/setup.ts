@@ -1,17 +1,18 @@
-import { expect, afterEach } from 'vitest'
-import { cleanup } from '@testing-library/react'
-import * as matchers from '@testing-library/jest-dom/matchers'
+import { expect, afterEach } from "vitest";
+import { cleanup } from "@testing-library/react";
+import * as matchers from "@testing-library/jest-dom/matchers";
+import "../test-utils/fakeIndexedDB";
 
 // Extend Vitest's expect with jest-dom matchers
-expect.extend(matchers)
+expect.extend(matchers);
 
 // Clean up after each test
 afterEach(() => {
-  cleanup()
-})
+  cleanup();
+});
 
 // Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: (query: string) => ({
     matches: false,
@@ -23,35 +24,33 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: () => {},
     dispatchEvent: () => {},
   }),
-})
+});
 
 // Mock IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-  observe() {
-    return null
-  }
-  disconnect() {
-    return null
-  }
-  unobserve() {
-    return null
+class MockIntersectionObserver implements IntersectionObserver {
+  readonly root: Element | Document | null = null;
+  readonly rootMargin: string = "";
+  readonly thresholds: ReadonlyArray<number> = [];
+
+  constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {}
+
+  observe(): void {}
+  disconnect(): void {}
+  unobserve(): void {}
+  takeRecords(): IntersectionObserverEntry[] {
+    return [];
   }
 }
 
+global.IntersectionObserver = MockIntersectionObserver;
+
 // Mock ResizeObserver
-global.ResizeObserver = class ResizeObserver {
-  constructor(cb: ResizeObserverCallback) {
-    this.cb = cb
-  }
-  cb: ResizeObserverCallback
-  observe() {
-    return null
-  }
-  disconnect() {
-    return null
-  }
-  unobserve() {
-    return null
-  }
+class MockResizeObserver implements ResizeObserver {
+  constructor(callback: ResizeObserverCallback) {}
+
+  observe(): void {}
+  disconnect(): void {}
+  unobserve(): void {}
 }
+
+global.ResizeObserver = MockResizeObserver;

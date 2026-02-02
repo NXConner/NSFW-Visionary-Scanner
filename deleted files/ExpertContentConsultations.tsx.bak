@@ -1,0 +1,553 @@
+/**
+ * Expert Content & Consultations System
+ * UI component for expert profiles, articles, videos, Q&A, consultations, workshops, and ratings
+ */
+
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  getExpertProfiles,
+  getExpertProfile,
+  getExpertArticles,
+  getExpertVideos,
+  bookConsultation,
+  getMyConsultations,
+  askExpertQuestion,
+  getExpertQA,
+  rateExpert,
+  getExpertRatings,
+  type ExpertProfile,
+  type ExpertArticle,
+  type ExpertVideo,
+  type ConsultationBooking,
+  type ExpertQA,
+  type ExpertRating
+} from '@/lib/expertContentConsultations'
+import { GraduationCap, BookOpen, Video, MessageSquare, Calendar, Star, Loader2, CheckCircle2, Clock, DollarSign } from 'lucide-react'
+import { toast } from 'sonner'
+
+export const ExpertContentConsultations = () => {
+  const [activeTab, setActiveTab] = useState('experts')
+  const [loading, setLoading] = useState(false)
+  
+  // Experts
+  const [experts, setExperts] = useState<ExpertProfile[]>([])
+  const [selectedExpert, setSelectedExpert] = useState<ExpertProfile | null>(null)
+  
+  // Content
+  const [articles, setArticles] = useState<ExpertArticle[]>([])
+  const [videos, setVideos] = useState<ExpertVideo[]>([])
+  
+  // Consultations
+  const [myConsultations, setMyConsultations] = useState<ConsultationBooking[]>([])
+  const [bookingData, setBookingData] = useState({
+    consultationType: 'live_video',
+    scheduledAt: '',
+    durationMinutes: 60,
+    topic: ''
+  })
+  
+  // Q&A
+  const [qa, setQa] = useState<ExpertQA[]>([])
+  const [newQuestion, setNewQuestion] = useState('')
+  const [questionCategory, setQuestionCategory] = useState('')
+  
+  // Ratings
+  const [ratings, setRatings] = useState<ExpertRating[]>([])
+  const [newRating, setNewRating] = useState({
+    overallRating: 5,
+    reviewTitle: '',
+    reviewText: ''
+  })
+
+  useEffect(() => {
+    loadData()
+  }, [activeTab, selectedExpert])
+
+  const loadData = async () => {
+    setLoading(true)
+    try {
+      switch (activeTab) {
+        case 'experts': {
+          const expertsData = await getExpertProfiles(true)
+          setExperts(expertsData)
+          break
+        }
+        case 'content': {
+          if (selectedExpert) {
+            const [articlesData, videosData] = await Promise.all([
+              getExpertArticles(selectedExpert.id),
+              getExpertVideos(selectedExpert.id)
+            ])
+            setArticles(articlesData)
+            setVideos(videosData)
+          }
+          break
+        }
+        case 'consultations': {
+          const consultationsData = await getMyConsultations()
+          setMyConsultations(consultationsData)
+          break
+        }
+        case 'qa': {
+          if (selectedExpert) {
+            const qaData = await getExpertQA(selectedExpert.id)
+            setQa(qaData)
+          }
+          break
+        }
+        case 'ratings': {
+          if (selectedExpert) {
+            const ratingsData = await getExpertRatings(selectedExpert.id)
+            setRatings(ratingsData)
+          }
+          break
+        }
+      }
+    } catch (error) {
+      console.error('Error loading data:', error)
+      toast.error('Failed to load data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleBookConsultation = async () => {
+    if (!selectedExpert) {
+      toast.error('Please select an expert first')
+      return
+    }
+
+    const result = await bookConsultation(selectedExpert.id, {
+      consultationType: bookingData.consultationType,
+      scheduledAt: bookingData.scheduledAt,
+      durationMinutes: bookingData.durationMinutes,
+      topic: bookingData.topic
+    })
+
+    if (result) {
+      toast.success('Consultation booked!')
+      loadData()
+    }
+  }
+
+  const handleAskQuestion = async () => {
+    if (!selectedExpert || !newQuestion.trim()) {
+      toast.error('Please select an expert and enter a question')
+      return
+    }
+
+    const result = await askExpertQuestion(
+      selectedExpert.id,
+      newQuestion,
+      questionCategory || undefined
+    )
+
+    if (result) {
+      setNewQuestion('')
+      setQuestionCategory('')
+      loadData()
+    }
+  }
+
+  const handleSubmitRating = async () => {
+    if (!selectedExpert) {
+      toast.error('Please select an expert first')
+      return
+    }
+
+    const result = await rateExpert(selectedExpert.id, {
+      overallRating: newRating.overallRating,
+      reviewTitle: newRating.reviewTitle || undefined,
+      reviewText: newRating.reviewText || undefined
+    })
+
+    if (result) {
+      setNewRating({ overallRating: 5, reviewTitle: '', reviewText: '' })
+      loadData()
+    }
+  }
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        className={`h-4 w-4 ${i < rating ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground'}`}
+      />
+    ))
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <GraduationCap className="h-6 w-6 text-primary" />
+            Expert Content & Consultations
+          </CardTitle>
+          <CardDescription>
+            Access expert advice, articles, videos, and book consultations
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid grid-cols-5 w-full">
+              <TabsTrigger value="experts">Experts</TabsTrigger>
+              <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="consultations">Consultations</TabsTrigger>
+              <TabsTrigger value="qa">Q&A</TabsTrigger>
+              <TabsTrigger value="ratings">Ratings</TabsTrigger>
+            </TabsList>
+
+            {loading ? (
+              <div className="flex items-center justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <>
+                {/* Experts Tab */}
+                <TabsContent value="experts" className="space-y-4">
+                  {experts.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <GraduationCap className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No experts available yet</p>
+                      <p className="text-sm">Expert profiles coming soon</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {experts.map(expert => (
+                        <Card 
+                          key={expert.id} 
+                          className={`cursor-pointer transition-all hover:border-primary ${
+                            selectedExpert?.id === expert.id ? 'border-primary ring-2 ring-primary/20' : ''
+                          }`}
+                          onClick={() => setSelectedExpert(expert)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start gap-4">
+                              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                                <GraduationCap className="h-8 w-8 text-muted-foreground" />
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="font-semibold">{expert.display_name}</h3>
+                                <p className="text-sm text-muted-foreground">{expert.bio}</p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <div className="flex">{renderStars(expert.rating || 0)}</div>
+                                  <span className="text-sm text-muted-foreground">
+                                    ({expert.review_count || 0} reviews)
+                                  </span>
+                                </div>
+                                {expert.specialties && expert.specialties.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {expert.specialties.slice(0, 3).map(spec => (
+                                      <Badge key={spec} variant="secondary" className="text-xs">
+                                        {spec}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Content Tab */}
+                <TabsContent value="content" className="space-y-4">
+                  {!selectedExpert ? (
+                    <p className="text-center py-8 text-muted-foreground">
+                      Select an expert to view their content
+                    </p>
+                  ) : (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="font-semibold flex items-center gap-2 mb-4">
+                          <BookOpen className="h-5 w-5" />
+                          Articles
+                        </h3>
+                        {articles.length === 0 ? (
+                          <p className="text-muted-foreground text-sm">No articles available</p>
+                        ) : (
+                          <div className="grid gap-4">
+                            {articles.map(article => (
+                              <Card key={article.id}>
+                                <CardContent className="p-4">
+                                  <h4 className="font-medium">{article.title}</h4>
+                                  <p className="text-sm text-muted-foreground mt-1">{article.content?.substring(0, 150)}...</p>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <h3 className="font-semibold flex items-center gap-2 mb-4">
+                          <Video className="h-5 w-5" />
+                          Videos
+                        </h3>
+                        {videos.length === 0 ? (
+                          <p className="text-muted-foreground text-sm">No videos available</p>
+                        ) : (
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {videos.map(video => (
+                              <Card key={video.id}>
+                                <CardContent className="p-4">
+                                  <h4 className="font-medium">{video.title}</h4>
+                                  <p className="text-sm text-muted-foreground mt-1">{video.description}</p>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Consultations Tab */}
+                <TabsContent value="consultations" className="space-y-4">
+                  {selectedExpert && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Book Consultation with {selectedExpert.display_name}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label>Consultation Type</Label>
+                            <Select 
+                              value={bookingData.consultationType}
+                              onValueChange={v => setBookingData(d => ({ ...d, consultationType: v }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="live_video">Video Call</SelectItem>
+                                <SelectItem value="live_audio">Audio Call</SelectItem>
+                                <SelectItem value="chat">Chat</SelectItem>
+                                <SelectItem value="email">Email</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Scheduled Date & Time</Label>
+                            <Input 
+                              type="datetime-local"
+                              value={bookingData.scheduledAt}
+                              onChange={e => setBookingData(d => ({ ...d, scheduledAt: e.target.value }))}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Duration (minutes)</Label>
+                            <Select 
+                              value={String(bookingData.durationMinutes)}
+                              onValueChange={v => setBookingData(d => ({ ...d, durationMinutes: parseInt(v) }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="30">30 minutes</SelectItem>
+                                <SelectItem value="60">60 minutes</SelectItem>
+                                <SelectItem value="90">90 minutes</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Topic</Label>
+                            <Input 
+                              placeholder="What would you like to discuss?"
+                              value={bookingData.topic}
+                              onChange={e => setBookingData(d => ({ ...d, topic: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+
+                        <Button onClick={handleBookConsultation}>
+                          <Calendar className="mr-2 h-4 w-4" />
+                          Book Consultation
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <div>
+                    <h3 className="font-semibold mb-4">My Consultations</h3>
+                    {myConsultations.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">No consultations booked yet</p>
+                    ) : (
+                      <div className="grid gap-4">
+                        {myConsultations.map(consultation => (
+                          <Card key={consultation.id}>
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-medium">{consultation.consultation_type}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {new Date(consultation.scheduled_at).toLocaleString()}
+                                  </p>
+                                </div>
+                                <Badge variant={
+                                  consultation.status === 'completed' ? 'default' :
+                                  consultation.status === 'confirmed' ? 'secondary' : 'outline'
+                                }>
+                                  {consultation.status}
+                                </Badge>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Q&A Tab */}
+                <TabsContent value="qa" className="space-y-4">
+                  {selectedExpert && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Ask {selectedExpert.display_name}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Your Question</Label>
+                          <Textarea 
+                            placeholder="What would you like to ask?"
+                            value={newQuestion}
+                            onChange={e => setNewQuestion(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Category (optional)</Label>
+                          <Input 
+                            placeholder="e.g., General, Health, Wellness"
+                            value={questionCategory}
+                            onChange={e => setQuestionCategory(e.target.value)}
+                          />
+                        </div>
+                        <Button onClick={handleAskQuestion}>
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                          Submit Question
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <div>
+                    <h3 className="font-semibold mb-4">Q&A</h3>
+                    {qa.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">No Q&A available yet</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {qa.map(item => (
+                          <Card key={item.id}>
+                            <CardContent className="p-4">
+                              <p className="font-medium">Q: {item.question}</p>
+                              {item.answer && (
+                                <p className="text-muted-foreground mt-2">A: {item.answer}</p>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Ratings Tab */}
+                <TabsContent value="ratings" className="space-y-4">
+                  {selectedExpert && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Rate {selectedExpert.display_name}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Overall Rating</Label>
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4, 5].map(star => (
+                              <button
+                                key={star}
+                                onClick={() => setNewRating(r => ({ ...r, overallRating: star }))}
+                                className="p-1 hover:scale-110 transition-transform"
+                              >
+                                <Star className={`h-6 w-6 ${star <= newRating.overallRating ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground'}`} />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Review Title (optional)</Label>
+                          <Input 
+                            placeholder="Summary of your experience"
+                            value={newRating.reviewTitle}
+                            onChange={e => setNewRating(r => ({ ...r, reviewTitle: e.target.value }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Review (optional)</Label>
+                          <Textarea 
+                            placeholder="Share your experience..."
+                            value={newRating.reviewText}
+                            onChange={e => setNewRating(r => ({ ...r, reviewText: e.target.value }))}
+                          />
+                        </div>
+                        <Button onClick={handleSubmitRating}>
+                          <Star className="mr-2 h-4 w-4" />
+                          Submit Rating
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <div>
+                    <h3 className="font-semibold mb-4">Reviews</h3>
+                    {ratings.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">No reviews yet</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {ratings.map(rating => (
+                          <Card key={rating.id}>
+                            <CardContent className="p-4">
+                              <div className="flex items-center gap-2 mb-2">
+                                {renderStars(rating.rating)}
+                              </div>
+                              {rating.review_title && (
+                                <p className="font-medium">{rating.review_title}</p>
+                              )}
+                              {rating.review_text && (
+                                <p className="text-muted-foreground text-sm">{rating.review_text}</p>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+              </>
+            )}
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+export default ExpertContentConsultations

@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
-import { Bell, BellOff, Pill, Activity, Calendar, FileText, Trash2, Clock } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { Bell, BellOff, Pill, Activity, Calendar, FileText, Trash2, Clock } from "lucide-react";
+import { toast } from "sonner";
 
 export const NotificationSettings = () => {
   const {
@@ -25,73 +25,73 @@ export const NotificationSettings = () => {
     cancelAllReminders,
   } = usePushNotifications();
 
-  const [medicationName, setMedicationName] = useState('');
-  const [medicationTime, setMedicationTime] = useState('09:00');
-  const [healthTime, setHealthTime] = useState('08:00');
+  const [medicationName, setMedicationName] = useState("");
+  const [medicationTime, setMedicationTime] = useState("09:00");
+  const [healthTime, setHealthTime] = useState("08:00");
 
   const handleEnableNotifications = async () => {
     const success = await enableNotifications();
     if (success) {
-      toast.success('Notifications enabled!');
+      toast.success("Notifications enabled!");
     } else {
-      toast.error('Failed to enable notifications. Please check your device settings.');
+      toast.error("Failed to enable notifications. Please check your device settings.");
     }
   };
 
   const handleDisableNotifications = async () => {
     await disableNotifications();
-    toast.info('Notifications disabled');
+    toast.info("Notifications disabled");
   };
 
   const handleAddMedicationReminder = async () => {
     if (!medicationName.trim()) {
-      toast.error('Please enter a medication name');
+      toast.error("Please enter a medication name");
       return;
     }
 
-    const [hour, minute] = medicationTime.split(':').map(Number);
+    const [hour, minute] = medicationTime.split(":").map(Number);
     const result = await scheduleMedicationReminder(medicationName, hour, minute);
-    
+
     if (result) {
       toast.success(`Reminder set for ${medicationName} at ${medicationTime}`);
-      setMedicationName('');
+      setMedicationName("");
     } else {
-      toast.error('Failed to set reminder');
+      toast.error("Failed to set reminder");
     }
   };
 
   const handleAddHealthReminder = async () => {
-    const [hour, minute] = healthTime.split(':').map(Number);
+    const [hour, minute] = healthTime.split(":").map(Number);
     const result = await scheduleHealthTrackingReminder(hour, minute);
-    
+
     if (result) {
       toast.success(`Health tracking reminder set for ${healthTime}`);
     } else {
-      toast.error('Failed to set reminder');
+      toast.error("Failed to set reminder");
     }
   };
 
   const handleAddWeeklyReport = async () => {
     const result = await scheduleWeeklyReport(1, 10, 0); // Monday at 10 AM
-    
+
     if (result) {
-      toast.success('Weekly report reminder set for Mondays at 10 AM');
+      toast.success("Weekly report reminder set for Mondays at 10 AM");
     } else {
-      toast.error('Failed to set reminder');
+      toast.error("Failed to set reminder");
     }
   };
 
   const handleCancelReminder = async (id: number) => {
     const success = await cancelReminder(id);
     if (success) {
-      toast.success('Reminder cancelled');
+      toast.success("Reminder cancelled");
     }
   };
 
   const handleCancelAll = async () => {
     const success = await cancelAllReminders();
     if (success) {
-      toast.success('All reminders cancelled');
+      toast.success("All reminders cancelled");
     }
   };
 
@@ -135,13 +135,13 @@ export const NotificationSettings = () => {
             <div>
               <p className="font-medium">Enable Notifications</p>
               <p className="text-sm text-muted-foreground">
-                {permissionStatus === 'granted' ? 'Permissions granted' : 'Requires permission'}
+                {permissionStatus === "granted" ? "Permissions granted" : "Requires permission"}
               </p>
             </div>
           </div>
           <Switch
             checked={settings.enabled}
-            onCheckedChange={(checked) => {
+            onCheckedChange={checked => {
               if (checked) {
                 handleEnableNotifications();
               } else {
@@ -156,7 +156,7 @@ export const NotificationSettings = () => {
             {/* Notification Type Toggles */}
             <div className="space-y-3">
               <h4 className="font-medium text-sm text-muted-foreground">Notification Types</h4>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Pill className="w-4 h-4 text-primary" />
@@ -164,7 +164,7 @@ export const NotificationSettings = () => {
                 </div>
                 <Switch
                   checked={settings.medicationReminders}
-                  onCheckedChange={(checked) => updateSettings({ medicationReminders: checked })}
+                  onCheckedChange={checked => updateSettings({ medicationReminders: checked })}
                 />
               </div>
 
@@ -175,7 +175,7 @@ export const NotificationSettings = () => {
                 </div>
                 <Switch
                   checked={settings.healthAlerts}
-                  onCheckedChange={(checked) => updateSettings({ healthAlerts: checked })}
+                  onCheckedChange={checked => updateSettings({ healthAlerts: checked })}
                 />
               </div>
 
@@ -186,7 +186,7 @@ export const NotificationSettings = () => {
                 </div>
                 <Switch
                   checked={settings.scanReminders}
-                  onCheckedChange={(checked) => updateSettings({ scanReminders: checked })}
+                  onCheckedChange={checked => updateSettings({ scanReminders: checked })}
                 />
               </div>
 
@@ -197,7 +197,7 @@ export const NotificationSettings = () => {
                 </div>
                 <Switch
                   checked={settings.weeklyReports}
-                  onCheckedChange={(checked) => updateSettings({ weeklyReports: checked })}
+                  onCheckedChange={checked => updateSettings({ weeklyReports: checked })}
                 />
               </div>
             </div>
@@ -216,7 +216,7 @@ export const NotificationSettings = () => {
                       id="medication-name"
                       placeholder="e.g., Vitamin D"
                       value={medicationName}
-                      onChange={(e) => setMedicationName(e.target.value)}
+                      onChange={e => setMedicationName(e.target.value)}
                     />
                   </div>
                   <div>
@@ -225,7 +225,7 @@ export const NotificationSettings = () => {
                       id="medication-time"
                       type="time"
                       value={medicationTime}
-                      onChange={(e) => setMedicationTime(e.target.value)}
+                      onChange={e => setMedicationTime(e.target.value)}
                     />
                   </div>
                 </div>
@@ -248,7 +248,7 @@ export const NotificationSettings = () => {
                     id="health-time"
                     type="time"
                     value={healthTime}
-                    onChange={(e) => setHealthTime(e.target.value)}
+                    onChange={e => setHealthTime(e.target.value)}
                   />
                 </div>
                 <Button onClick={handleAddHealthReminder} className="w-full">
@@ -285,9 +285,9 @@ export const NotificationSettings = () => {
                     Clear All
                   </Button>
                 </div>
-                
+
                 <div className="space-y-2">
-                  {scheduledReminders.map((reminder) => (
+                  {scheduledReminders.map(reminder => (
                     <div
                       key={reminder.id}
                       className="flex items-center justify-between p-3 rounded-lg bg-secondary/30"
@@ -297,8 +297,8 @@ export const NotificationSettings = () => {
                         <div>
                           <p className="text-sm font-medium">{reminder.title}</p>
                           <p className="text-xs text-muted-foreground">
-                            {reminder.schedule.hour.toString().padStart(2, '0')}:
-                            {reminder.schedule.minute.toString().padStart(2, '0')}
+                            {reminder.schedule.hour.toString().padStart(2, "0")}:
+                            {reminder.schedule.minute.toString().padStart(2, "0")}
                             {reminder.schedule.weekday && ` (Day ${reminder.schedule.weekday})`}
                           </p>
                         </div>

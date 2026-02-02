@@ -1,0 +1,511 @@
+/**
+ * DLC Registry
+ * Manages the catalog of available DLC packages and bundles
+ */
+
+import type {
+  DLCPackage,
+  DLCFeature,
+  DLCFeatureCategory,
+  DLCBundleManifest,
+} from './types';
+
+// ============================================
+// Package Definitions
+// ============================================
+
+const POSITIONS_FEATURES: DLCFeature[] = [
+  { id: 'positions_gallery', name: 'Positions Gallery', description: '100+ intimate positions with visual guides', icon: 'Heart', category: 'positions' },
+  { id: 'position_details', name: 'Position Details', description: 'Detailed instructions and tips for each position', icon: 'Info', category: 'positions' },
+  { id: 'position_favorites', name: 'Favorites', description: 'Save and organize your favorite positions', icon: 'Star', category: 'positions' },
+  { id: 'position_filters', name: 'Advanced Filters', description: 'Filter by difficulty, category, and more', icon: 'Filter', category: 'positions' },
+  { id: 'position_playlists', name: 'Position Playlists', description: 'Create custom position playlists', icon: 'List', category: 'positions' },
+];
+
+const VIDEO_FEATURES: DLCFeature[] = [
+  { id: 'video_library', name: 'Video Library', description: 'Premium adult video content library', icon: 'Video', category: 'videos' },
+  { id: 'video_streaming', name: 'HD Streaming', description: 'Stream videos in high definition', icon: 'Play', category: 'videos' },
+  { id: 'video_downloads', name: 'Offline Downloads', description: 'Download videos for offline viewing', icon: 'Download', category: 'videos' },
+  { id: 'video_playlists', name: 'Video Playlists', description: 'Create and manage video playlists', icon: 'List', category: 'videos' },
+  { id: 'video_progress', name: 'Progress Tracking', description: 'Track your viewing progress', icon: 'CheckCircle', category: 'videos' },
+];
+
+const ANALYTICS_FEATURES: DLCFeature[] = [
+  { id: 'wellness_analytics', name: 'Wellness Analytics', description: 'Detailed intimate wellness tracking', icon: 'BarChart', category: 'analytics' },
+  { id: 'partner_sync', name: 'Partner Sync', description: 'Sync data with your partner', icon: 'Users', category: 'analytics' },
+  { id: 'intimate_reports', name: 'Intimate Reports', description: 'Generate detailed wellness reports', icon: 'FileText', category: 'analytics' },
+  { id: 'trend_analysis', name: 'Trend Analysis', description: 'Analyze patterns and trends', icon: 'TrendingUp', category: 'analytics' },
+  { id: 'relationship_insights', name: 'Relationship Insights', description: 'AI-powered relationship insights', icon: 'Lightbulb', category: 'analytics' },
+];
+
+const COMMUNITY_FEATURES: DLCFeature[] = [
+  { id: 'private_forum', name: 'Private Forum', description: 'Access to private adult community forum', icon: 'MessageCircle', category: 'community' },
+  { id: 'private_groups', name: 'Private Groups', description: 'Join or create private discussion groups', icon: 'Users', category: 'community' },
+  { id: 'expert_qa', name: 'Expert Q&A', description: 'Ask questions to verified experts', icon: 'HelpCircle', category: 'community' },
+  { id: 'creator_marketplace', name: 'Creator Marketplace', description: 'Access premium content from creators', icon: 'ShoppingBag', category: 'marketplace' },
+  { id: 'exclusive_content', name: 'Exclusive Content', description: 'Members-only exclusive content', icon: 'Lock', category: 'community' },
+];
+
+const ADVANCED_FEATURES: DLCFeature[] = [
+  { id: 'multi_camera', name: 'Multi-Camera Recording', description: 'Record with multiple cameras simultaneously', icon: 'Camera', category: 'advanced' },
+  { id: 'intimate_dates', name: 'Intimate Date Planner', description: 'Plan and schedule intimate dates', icon: 'Calendar', category: 'advanced' },
+  { id: 'ai_companion', name: 'AI Companion Chat', description: 'Chat with an AI companion for suggestions', icon: 'MessageSquare', category: 'advanced' },
+  { id: 'partner_video_sync', name: 'Partner Video Sync', description: 'Sync video recording with partner', icon: 'Link', category: 'advanced' },
+];
+
+// ============================================
+// Package Catalog
+// ============================================
+
+export const DLC_PACKAGES: Record<string, Omit<DLCPackage, 'id' | 'createdAt' | 'updatedAt'>> = {
+  'dlc-positions': {
+    packageId: 'dlc-positions',
+    packageName: 'Positions Collection',
+    packageType: 'individual',
+    safeDescription: 'Comprehensive guide to partner connection techniques with visual instructions and expert tips for adults',
+    fullDescription: '100+ intimate positions with detailed instructions, images, difficulty ratings, and expert tips. Includes favorites, playlists, and advanced filtering.',
+    marketingTagline: 'Explore 100+ ways to connect',
+    priceUsd: 9.99,
+    priceType: 'one_time',
+    regionalPricing: { EUR: 8.99, GBP: 7.99, CAD: 12.99 },
+    features: POSITIONS_FEATURES,
+    version: '1.0.0',
+    contentVersion: '2024.12.1',
+    minAppVersion: '1.0.0',
+    isActive: true,
+    isFeatured: false,
+    displayOrder: 1,
+    contentRating: '18+',
+    localizedNames: {
+      es: 'Colección de Posiciones',
+      de: 'Positionssammlung',
+      fr: 'Collection de Positions',
+    },
+    localizedDescriptions: {
+      es: 'Guía completa de técnicas de conexión con instrucciones visuales',
+      de: 'Umfassender Leitfaden für Verbindungstechniken mit visuellen Anleitungen',
+      fr: 'Guide complet des techniques de connexion avec instructions visuelles',
+    },
+  },
+  
+  'dlc-videos': {
+    packageId: 'dlc-videos',
+    packageName: 'Video Library',
+    packageType: 'individual',
+    safeDescription: 'Premium video library featuring expert demonstrations and educational wellness content for adults',
+    fullDescription: 'Extensive library of adult educational videos with HD streaming, offline downloads, playlists, and progress tracking.',
+    marketingTagline: 'Learn from the experts',
+    priceUsd: 14.99,
+    priceType: 'one_time',
+    regionalPricing: { EUR: 12.99, GBP: 11.99, CAD: 18.99 },
+    features: VIDEO_FEATURES,
+    version: '1.0.0',
+    contentVersion: '2024.12.1',
+    minAppVersion: '1.0.0',
+    isActive: true,
+    isFeatured: false,
+    displayOrder: 2,
+    contentRating: '18+',
+  },
+  
+  'dlc-intimate': {
+    packageId: 'dlc-intimate',
+    packageName: 'Intimate Experience Pack',
+    packageType: 'bundle',
+    safeDescription: 'Complete intimate wellness toolkit with guides, tracking, and partner features',
+    fullDescription: 'Everything in Positions Collection plus intimate wellness analytics, partner sync, relationship insights, and detailed reports.',
+    marketingTagline: 'The complete couple\'s toolkit',
+    priceUsd: 14.99,
+    priceType: 'one_time',
+    regionalPricing: { EUR: 12.99, GBP: 11.99, CAD: 18.99 },
+    features: [...POSITIONS_FEATURES, ...ANALYTICS_FEATURES],
+    includedPackages: ['dlc-positions'],
+    version: '1.0.0',
+    contentVersion: '2024.12.1',
+    minAppVersion: '1.0.0',
+    isActive: true,
+    isFeatured: true,
+    displayOrder: 3,
+    contentRating: '18+',
+  },
+  
+  'dlc-creator': {
+    packageId: 'dlc-creator',
+    packageName: 'Creator & Community Pack',
+    packageType: 'bundle',
+    safeDescription: 'Join our exclusive community with premium content from verified wellness experts',
+    fullDescription: 'Everything in Video Library plus private community forum, expert Q&A, creator marketplace, and exclusive members-only content.',
+    marketingTagline: 'Join the community',
+    priceUsd: 19.99,
+    priceType: 'one_time',
+    regionalPricing: { EUR: 17.99, GBP: 15.99, CAD: 24.99 },
+    features: [...VIDEO_FEATURES, ...COMMUNITY_FEATURES],
+    includedPackages: ['dlc-videos'],
+    version: '1.0.0',
+    contentVersion: '2024.12.1',
+    minAppVersion: '1.0.0',
+    isActive: true,
+    isFeatured: false,
+    displayOrder: 4,
+    contentRating: '18+',
+  },
+  
+  'dlc-advanced': {
+    packageId: 'dlc-advanced',
+    packageName: 'Advanced Features Pack',
+    packageType: 'bundle',
+    safeDescription: 'Premium suite of advanced features for the complete intimate experience',
+    fullDescription: 'The ultimate package: Positions Collection + Video Library + Multi-camera recording + Intimate date planner + AI companion chat + Partner video sync.',
+    marketingTagline: 'Unlock everything',
+    priceUsd: 29.99,
+    priceType: 'one_time',
+    regionalPricing: { EUR: 26.99, GBP: 23.99, CAD: 37.99 },
+    features: [...POSITIONS_FEATURES, ...VIDEO_FEATURES, ...ADVANCED_FEATURES],
+    includedPackages: ['dlc-positions', 'dlc-videos'],
+    version: '1.0.0',
+    contentVersion: '2024.12.1',
+    minAppVersion: '1.0.0',
+    isActive: true,
+    isFeatured: true,
+    displayOrder: 5,
+    contentRating: '18+',
+  },
+  
+  'dlc-complete': {
+    packageId: 'dlc-complete',
+    packageName: 'Ultimate Complete Pack',
+    packageType: 'bundle',
+    safeDescription: 'The complete experience - all premium features unlocked forever with lifetime access',
+    fullDescription: 'Every feature, every piece of content, lifetime access. Includes all current and future content updates. The best value for the complete experience.',
+    marketingTagline: 'The ultimate experience',
+    priceUsd: 39.99,
+    priceType: 'one_time',
+    regionalPricing: { EUR: 35.99, GBP: 31.99, CAD: 49.99 },
+    features: [...POSITIONS_FEATURES, ...VIDEO_FEATURES, ...ANALYTICS_FEATURES, ...COMMUNITY_FEATURES, ...ADVANCED_FEATURES],
+    includedPackages: ['dlc-positions', 'dlc-videos', 'dlc-intimate', 'dlc-creator', 'dlc-advanced'],
+    version: '1.0.0',
+    contentVersion: '2024.12.1',
+    minAppVersion: '1.0.0',
+    isActive: true,
+    isFeatured: true,
+    displayOrder: 6,
+    contentRating: '18+',
+  },
+  
+  'dlc-subscription': {
+    packageId: 'dlc-subscription',
+    packageName: 'All-Access Pass',
+    packageType: 'subscription',
+    safeDescription: 'Full access to everything with continuous updates and priority support',
+    fullDescription: 'Subscribe for complete access to all features, all content, continuous updates, and priority support. Cancel anytime.',
+    marketingTagline: 'All access, always updated',
+    priceUsd: 9.99,
+    priceType: 'subscription',
+    subscriptionInterval: 'monthly',
+    regionalPricing: { EUR: 8.99, GBP: 7.99, CAD: 12.99 },
+    features: [...POSITIONS_FEATURES, ...VIDEO_FEATURES, ...ANALYTICS_FEATURES, ...COMMUNITY_FEATURES, ...ADVANCED_FEATURES],
+    includedPackages: ['dlc-positions', 'dlc-videos', 'dlc-intimate', 'dlc-creator', 'dlc-advanced'],
+    version: '1.0.0',
+    contentVersion: '2024.12.1',
+    minAppVersion: '1.0.0',
+    isActive: true,
+    isFeatured: false,
+    displayOrder: 7,
+    contentRating: '18+',
+  },
+};
+
+// ============================================
+// Bundle Manifests
+// ============================================
+
+export const BUNDLE_MANIFESTS: Record<string, DLCBundleManifest> = {
+  'dlc-positions': {
+    id: 'dlc-positions',
+    name: 'Positions Collection',
+    version: '1.0.0',
+    contentVersion: '2024.12.1',
+    description: {
+      safe: 'Comprehensive guide to partner connection techniques with visual instructions',
+      full: '100+ intimate positions with detailed instructions, images, and expert tips',
+    },
+    includes: [
+      { module: 'core/positions', features: ['gallery', 'details', 'favorites', 'filters', 'playlists'] },
+    ],
+    dependencies: [],
+    pricing: { type: 'one_time', price: 9.99, currency: 'USD' },
+    requirements: { minAppVersion: '1.0.0', ageVerification: true },
+    distribution: { downloadSize: '15MB', installSize: '25MB', checksum: '' },
+  },
+  
+  'dlc-videos': {
+    id: 'dlc-videos',
+    name: 'Video Library',
+    version: '1.0.0',
+    contentVersion: '2024.12.1',
+    description: {
+      safe: 'Premium video library featuring expert demonstrations and educational content',
+      full: 'Extensive library of adult educational videos with HD streaming and downloads',
+    },
+    includes: [
+      { module: 'core/videos', features: ['library', 'streaming', 'downloads', 'playlists', 'progress'] },
+    ],
+    dependencies: [],
+    pricing: { type: 'one_time', price: 14.99, currency: 'USD' },
+    requirements: { minAppVersion: '1.0.0', ageVerification: true },
+    distribution: { downloadSize: '20MB', installSize: '35MB', checksum: '' },
+  },
+  
+  'dlc-intimate': {
+    id: 'dlc-intimate',
+    name: 'Intimate Experience Pack',
+    version: '1.0.0',
+    contentVersion: '2024.12.1',
+    description: {
+      safe: 'Complete intimate wellness toolkit with guides, tracking, and partner features',
+      full: 'Positions + Analytics + Partner Sync for the complete couples experience',
+    },
+    includes: [
+      { module: 'core/positions', features: ['gallery', 'details', 'favorites', 'filters', 'playlists'] },
+      { module: 'core/analytics', features: ['wellness', 'partner_sync', 'reports', 'trends', 'insights'] },
+    ],
+    dependencies: [],
+    pricing: { type: 'one_time', price: 14.99, currency: 'USD' },
+    requirements: { minAppVersion: '1.0.0', ageVerification: true },
+    distribution: { downloadSize: '25MB', installSize: '40MB', checksum: '' },
+  },
+  
+  'dlc-advanced': {
+    id: 'dlc-advanced',
+    name: 'Advanced Features Pack',
+    version: '1.0.0',
+    contentVersion: '2024.12.1',
+    description: {
+      safe: 'Premium suite of advanced features for the complete intimate experience',
+      full: 'Positions + Videos + Recording + Date Planning + AI Chat',
+    },
+    includes: [
+      { module: 'core/positions', features: ['gallery', 'details', 'favorites', 'filters', 'playlists'] },
+      { module: 'core/videos', features: ['library', 'streaming', 'downloads', 'playlists', 'progress'] },
+      { module: 'core/advanced', features: ['multi_camera', 'date_planner', 'ai_chat', 'partner_sync'] },
+    ],
+    dependencies: [],
+    pricing: { type: 'one_time', price: 29.99, currency: 'USD' },
+    requirements: { minAppVersion: '1.0.0', ageVerification: true },
+    distribution: { downloadSize: '50MB', installSize: '80MB', checksum: '' },
+  },
+  
+  'dlc-complete': {
+    id: 'dlc-complete',
+    name: 'Ultimate Complete Pack',
+    version: '1.0.0',
+    contentVersion: '2024.12.1',
+    description: {
+      safe: 'The complete experience - all premium features unlocked forever',
+      full: 'Everything included: Positions, Videos, Analytics, Community, Advanced Features',
+    },
+    includes: [
+      { module: 'core/positions', features: ['gallery', 'details', 'favorites', 'filters', 'playlists'] },
+      { module: 'core/videos', features: ['library', 'streaming', 'downloads', 'playlists', 'progress'] },
+      { module: 'core/analytics', features: ['wellness', 'partner_sync', 'reports', 'trends', 'insights'] },
+      { module: 'core/community', features: ['forum', 'groups', 'expert_qa', 'marketplace', 'exclusive'] },
+      { module: 'core/advanced', features: ['multi_camera', 'date_planner', 'ai_chat', 'partner_sync'] },
+    ],
+    dependencies: [],
+    pricing: { type: 'one_time', price: 39.99, currency: 'USD' },
+    requirements: { minAppVersion: '1.0.0', ageVerification: true },
+    distribution: { downloadSize: '75MB', installSize: '120MB', checksum: '' },
+  },
+};
+
+// ============================================
+// Registry Class
+// ============================================
+
+export class DLCRegistry {
+  private packages: Map<string, DLCPackage> = new Map();
+  private manifests: Map<string, DLCBundleManifest> = new Map();
+  
+  constructor() {
+    this.initializePackages();
+  }
+  
+  private initializePackages(): void {
+    // Convert package definitions to DLCPackage objects
+    Object.entries(DLC_PACKAGES).forEach(([id, pkg]) => {
+      this.packages.set(id, {
+        ...pkg,
+        id: crypto.randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    });
+    
+    // Load manifests
+    Object.entries(BUNDLE_MANIFESTS).forEach(([id, manifest]) => {
+      this.manifests.set(id, manifest);
+    });
+  }
+  
+  /**
+   * Get all available packages
+   */
+  getAllPackages(): DLCPackage[] {
+    return Array.from(this.packages.values())
+      .filter(pkg => pkg.isActive)
+      .sort((a, b) => a.displayOrder - b.displayOrder);
+  }
+  
+  /**
+   * Get a specific package by ID
+   */
+  getPackage(packageId: string): DLCPackage | undefined {
+    return this.packages.get(packageId);
+  }
+  
+  /**
+   * Get featured packages
+   */
+  getFeaturedPackages(): DLCPackage[] {
+    return this.getAllPackages().filter(pkg => pkg.isFeatured);
+  }
+  
+  /**
+   * Get individual packages (not bundles)
+   */
+  getIndividualPackages(): DLCPackage[] {
+    return this.getAllPackages().filter(pkg => pkg.packageType === 'individual');
+  }
+  
+  /**
+   * Get bundle packages
+   */
+  getBundlePackages(): DLCPackage[] {
+    return this.getAllPackages().filter(pkg => pkg.packageType === 'bundle');
+  }
+  
+  /**
+   * Get subscription packages
+   */
+  getSubscriptionPackages(): DLCPackage[] {
+    return this.getAllPackages().filter(pkg => pkg.packageType === 'subscription');
+  }
+  
+  /**
+   * Get bundle manifest
+   */
+  getManifest(packageId: string): DLCBundleManifest | undefined {
+    return this.manifests.get(packageId);
+  }
+  
+  /**
+   * Get all features for a package (including from included packages)
+   */
+  getAllFeaturesForPackage(packageId: string): DLCFeature[] {
+    const pkg = this.getPackage(packageId);
+    if (!pkg) return [];
+    
+    const features = [...pkg.features];
+    
+    // If it's a bundle, include features from all included packages
+    if (pkg.includedPackages) {
+      pkg.includedPackages.forEach(includedId => {
+        const includedPkg = this.getPackage(includedId);
+        if (includedPkg) {
+          includedPkg.features.forEach(feature => {
+            if (!features.some(f => f.id === feature.id)) {
+              features.push(feature);
+            }
+          });
+        }
+      });
+    }
+    
+    return features;
+  }
+  
+  /**
+   * Check if a feature is available in a package
+   */
+  hasFeature(packageId: string, featureId: string): boolean {
+    const features = this.getAllFeaturesForPackage(packageId);
+    return features.some(f => f.id === featureId);
+  }
+  
+  /**
+   * Get features by category
+   */
+  getFeaturesByCategory(category: DLCFeatureCategory): DLCFeature[] {
+    const allFeatures: DLCFeature[] = [];
+    
+    this.packages.forEach(pkg => {
+      pkg.features.forEach(feature => {
+        if (feature.category === category && !allFeatures.some(f => f.id === feature.id)) {
+          allFeatures.push(feature);
+        }
+      });
+    });
+    
+    return allFeatures;
+  }
+  
+  /**
+   * Calculate upgrade price from owned packages to target package
+   */
+  calculateUpgradePrice(targetPackageId: string, ownedPackageIds: string[]): number {
+    const targetPkg = this.getPackage(targetPackageId);
+    if (!targetPkg) return 0;
+    
+    let ownedValue = 0;
+    
+    ownedPackageIds.forEach(ownedId => {
+      const ownedPkg = this.getPackage(ownedId);
+      if (ownedPkg) {
+        // Check if owned package's features are subset of target
+        const ownedFeatureIds = new Set(ownedPkg.features.map(f => f.id));
+        const targetFeatureIds = new Set(this.getAllFeaturesForPackage(targetPackageId).map(f => f.id));
+        
+        const isSubset = [...ownedFeatureIds].every(id => targetFeatureIds.has(id));
+        
+        if (isSubset) {
+          ownedValue += ownedPkg.priceUsd;
+        }
+      }
+    });
+    
+    return Math.max(0, targetPkg.priceUsd - ownedValue);
+  }
+  
+  /**
+   * Get localized package name
+   */
+  getLocalizedName(packageId: string, locale: string): string {
+    const pkg = this.getPackage(packageId);
+    if (!pkg) return '';
+    
+    return pkg.localizedNames?.[locale] || pkg.packageName;
+  }
+  
+  /**
+   * Get localized package description
+   */
+  getLocalizedDescription(packageId: string, locale: string): string {
+    const pkg = this.getPackage(packageId);
+    if (!pkg) return '';
+    
+    return pkg.localizedDescriptions?.[locale] || pkg.safeDescription;
+  }
+  
+  /**
+   * Get price in regional currency
+   */
+  getRegionalPrice(packageId: string, currency: string): number {
+    const pkg = this.getPackage(packageId);
+    if (!pkg) return 0;
+    
+    return pkg.regionalPricing?.[currency] || pkg.priceUsd;
+  }
+}
+
+// Export singleton instance
+export const dlcRegistry = new DLCRegistry();

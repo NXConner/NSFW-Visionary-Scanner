@@ -1,0 +1,1 @@
+import{r as o,af as a}from"./index-DtOCbwg8.js";function S(e,r){const[c,n]=o.useState(()=>{try{const t=a.getItem(e);return t?JSON.parse(t):r}catch{return r}}),u=o.useCallback(t=>{n(f=>{const s=typeof t=="function"?t(f):t;return a.setItem(e,JSON.stringify(s)),s})},[e]);return[c,u]}export{S as u};

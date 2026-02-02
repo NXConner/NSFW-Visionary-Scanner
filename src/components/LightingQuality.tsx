@@ -13,7 +13,11 @@ const getLightingState = (brightness: number, contrast: number) => {
   return { label: "Lighting optimal", tone: "success" };
 };
 
-export const LightingQuality = ({ brightness, contrast, isVisible = true }: LightingQualityProps) => {
+export const LightingQuality = ({
+  brightness,
+  contrast,
+  isVisible = true,
+}: LightingQualityProps) => {
   if (!isVisible) return null;
   const { label, tone } = getLightingState(brightness, contrast);
 
