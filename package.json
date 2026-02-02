@@ -44,6 +44,7 @@
     "perf:load": "k6 run -e BASE_URL=\"http://localhost:4173\" performance-tests/load-test.js",
     "optimize:all": "npm run perf:audit && npm run a11y:audit && npm run analyze:bundle",
     "preflight:all": "npm run check:production && npm run check:pre-submission && npm run optimize:all",
+    "verify:sfw:bundle": "node scripts/verify-sfw-bundle.mjs dist",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",

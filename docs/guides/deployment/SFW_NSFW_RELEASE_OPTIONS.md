@@ -121,6 +121,7 @@ For any NSFW function:
 ### Step 6: Verification Checklist
 
 - SFW bundle contains no NSFW routes/assets/strings.
+- Run: `npm run verify:sfw:bundle` after SFW build.
 - NSFW tables blocked for non-entitled users by RLS.
 - NSFW storage bucket is private and signed URLs are required.
 - NSFW edge functions reject missing entitlements.

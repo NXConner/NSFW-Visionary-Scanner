@@ -14,6 +14,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const ADULT_RATINGS = new Set(["18+", "adult", "explicit", "nsfw"]);
+
+const isAdultRating = (rating?: string | null): boolean =>
+  ADULT_RATINGS.has(String(rating || "").trim().toLowerCase());
+
 serve(async req => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -53,6 +58,14 @@ serve(async req => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const { data: roleRows } = await supabaseClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
+    const roles = (roleRows || []).map((r: any) => String(r.role || ""));
+    const hasNsfwAccess =
+      roles.includes("nsfw_access") || roles.includes("admin") || roles.includes("super_admin");
 
     // Optional packageId request (if client wants a specific package)
     let requestedPackageId: string | null = null;
@@ -97,6 +110,57 @@ serve(async req => {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    const packageIds = activeLicenses
+      .map((l: any) => String(l.package_id || "").trim())
+      .filter(Boolean);
+
+    let requiresAdultEntitlement = false;
+    if (requestedPackageId) {
+      const { data: pkgRow, error: pkgError } = await supabaseClient
+        .from("dlc_packages")
+        .select("package_id, content_rating, is_active")
+        .eq("package_id", requestedPackageId)
+        .maybeSingle();
+      if (pkgError) throw pkgError;
+      if (!pkgRow || pkgRow.is_active === false) {
+        return new Response(JSON.stringify({ error: "Package not available" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      requiresAdultEntitlement = isAdultRating(pkgRow.content_rating);
+    } else if (packageIds.length > 0) {
+      const { data: pkgRows, error: pkgError } = await supabaseClient
+        .from("dlc_packages")
+        .select("package_id, content_rating, is_active")
+        .in("package_id", packageIds);
+      if (pkgError) throw pkgError;
+      requiresAdultEntitlement = (pkgRows || []).some(row => isAdultRating(row.content_rating));
+    }
+
+    if (requiresAdultEntitlement && !hasNsfwAccess) {
+      return new Response(JSON.stringify({ error: "NSFW entitlement required" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (requiresAdultEntitlement) {
+      const { data: age, error: ageError } = await supabaseClient
+        .from("dlc_age_verifications")
+        .select("is_verified, adult_content_consent, terms_accepted")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (ageError) throw ageError;
+      const okAge = Boolean(age?.is_verified && age?.adult_content_consent && age?.terms_accepted);
+      if (!okAge) {
+        return new Response(JSON.stringify({ error: "Age verification required" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Get latest content package (global)

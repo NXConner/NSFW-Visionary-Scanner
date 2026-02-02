@@ -14,6 +14,11 @@ type ReqBody = {
   devicePlatform?: "web" | "android" | "ios";
 };
 
+const ADULT_RATINGS = new Set(["18+", "adult", "explicit", "nsfw"]);
+
+const isAdultRating = (rating?: string | null): boolean =>
+  ADULT_RATINGS.has(String(rating || "").trim().toLowerCase());
+
 serve(async req => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -55,6 +60,7 @@ serve(async req => {
       .eq("user_id", user.id);
     const roles = (roleRows || []).map((r: any) => String(r.role || ""));
     const isSuperAdmin = roles.includes("super_admin") || email === "n8ter8@gmail.com";
+    const hasNsfwAccess = isSuperAdmin || roles.includes("nsfw_access") || roles.includes("admin");
 
     const body = (await req.json()) as ReqBody;
     const packageId = String(body.packageId || "");
@@ -79,6 +85,26 @@ serve(async req => {
     if (!assetPath.startsWith(`${packageId}/`)) {
       return new Response(JSON.stringify({ error: "Invalid asset path" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: packageRow, error: packageError } = await supabase
+      .from("dlc_packages")
+      .select("package_id, content_rating, is_active")
+      .eq("package_id", packageId)
+      .maybeSingle();
+    if (packageError) throw packageError;
+    if (!packageRow || packageRow.is_active === false) {
+      return new Response(JSON.stringify({ error: "Package not available" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (isAdultRating(packageRow.content_rating) && !hasNsfwAccess) {
+      return new Response(JSON.stringify({ error: "NSFW entitlement required" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
