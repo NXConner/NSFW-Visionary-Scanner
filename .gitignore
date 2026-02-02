@@ -8,8 +8,6 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
-dist-ssr
 *.local
 
 # Editor directories and files
@@ -43,5 +41,3 @@ android/gradle.properties
 .env.development.local
 
 # Build artifacts
-android/app/build/
-ios/App/build/core
