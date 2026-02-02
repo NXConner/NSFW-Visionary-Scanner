@@ -4,7 +4,7 @@ import { RouteTopNav } from "@/components/navigation/RouteTopNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DLCContentImport } from "@/components/dlc/admin/DLCContentImport";
-import { ContentModerationPanel } from "@/components/admin/ContentModerationPanel";
+import { NsfwModerationQueuePanel } from "@/components/admin/nsfw/NsfwModerationQueuePanel";
 import { NsfwVideoContentAdminPanel } from "@/components/admin/nsfw/NsfwVideoContentAdminPanel";
 import { NsfwTopicLibraryAdminPanel } from "@/components/admin/nsfw/NsfwTopicLibraryAdminPanel";
 import { NsfwConsentPolicyAdminPanel } from "@/components/admin/nsfw/NsfwConsentPolicyAdminPanel";
@@ -66,7 +66,7 @@ export default function AdminNsfwContent(): React.ReactElement {
             <NsfwConsentPolicyAdminPanel />
           </TabsContent>
           <TabsContent value="moderation">
-            <ContentModerationPanel />
+            <NsfwModerationQueuePanel />
           </TabsContent>
           <TabsContent value="import">
             <Suspense

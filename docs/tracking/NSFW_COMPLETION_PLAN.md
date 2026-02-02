@@ -26,7 +26,7 @@
 | P2 | Video pipeline (record, upload, playback, edit) | P1 | Done | MediaRecorder, chunk upload, merge, player, editing backend |
 | P3 | Seductive AI chat backend | P0 | Done | Edge function, provider integration, prompts, memory, safety, throttling |
 | P4 | Advanced NSFW features completion | P1, P2 | Done | Partner sync sessions, screenshots UI, dates media, positions detail |
-| P5 | NSFW content pipelines + admin tools | P1 | Not Started | Topics import, moderation tools, rating tiers |
+| P5 | NSFW content pipelines + admin tools | P1 | Done | Topics import rollback, rating tiers, moderation, creator verify |
 | P6 | Privacy/consent hardening | P0 | Not Started | Session lock, incognito/redaction, policy block UX |
 | P7 | DLC/addon productionization | P0 | Not Started | Registry UI, versioning, catalog validation |
 | P8 | Testing + QA + perf | P0-P7 | Not Started | Unit/integration/E2E/perf coverage for NSFW flows |
@@ -121,12 +121,12 @@
 ---
 
 ## P5 — NSFW Content Pipelines + Admin Tools
-**Status**: Not Started
+**Status**: Done
 
-- [ ] Topics import: dry-run, validation, rollback
-- [ ] Rating tiers (`educational`, `demonstrative`, `explicit`)
-- [ ] Forum moderation tools + queues
-- [ ] Creator verification + takedown flow
+- [x] Topics import: dry-run, validation, rollback
+- [x] Rating tiers (`educational`, `demonstrative`, `explicit`)
+- [x] Forum moderation tools + queues
+- [x] Creator verification + takedown flow
 
 **Files to update**
 - `src/components/dlc/admin/DLCContentImport.tsx`
@@ -240,3 +240,4 @@
 - 2026-02-02: P2 completed (recording/upload/playback/edit pipeline).
 - 2026-02-02: P3 completed (provider integration, prompts, memory, safety, throttling).
 - 2026-02-02: P4 completed (partner sync sessions, screenshots UI, dates media, positions detail).
+- 2026-02-02: P5 completed (topics import rollback, rating tiers, moderation, creator verify).

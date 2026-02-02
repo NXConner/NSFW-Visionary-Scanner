@@ -36,9 +36,11 @@ export async function fetchNsfwTopics(): Promise<NsfwTopic[]> {
 export async function fetchTopicLibraryItems({
   topicId,
   requiresFeatureIds,
+  contentRating,
 }: {
   topicId: string | null;
   requiresFeatureIds: string[];
+  contentRating?: "educational" | "demonstrative" | "explicit" | "all";
 }): Promise<NsfwTopicLibraryItem[]> {
   let q = fromExtended("nsfw_topic_library_items")
     .select(
@@ -50,6 +52,7 @@ export async function fetchTopicLibraryItems({
 
   if (topicId) q = q.eq("topic_id", topicId);
   if (requiresFeatureIds.length > 0) q = q.in("requires_feature_id", requiresFeatureIds);
+  if (contentRating && contentRating !== "all") q = q.eq("content_rating", contentRating);
 
   const { data, error } = await q;
   if (error) throw new Error(error.message);

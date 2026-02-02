@@ -18,13 +18,13 @@ import {
   getVideoDownloads,
   requestVideoDownload,
   updateVideoProgress as updateVideoProgressFn,
-  type NSFWVideoContent,
+  type NSFWVideoContent as NSFWVideoItem,
   type NSFWVideoPlaylist,
   type NSFWVideoDownload,
   type NSFWVideoProgress
 } from '@/lib/nsfwVideoContent'
 import { hasNSFWContent, isSFW } from '@/lib/featureFlags'
-import { Play, Download, Bookmark, Star, Clock, Eye, Search, Plus, Filter, Loader2, Lock, CheckCircle2, X } from 'lucide-react'
+import { Play, Download, Bookmark, Star, Clock, Eye, Search, Plus, Filter, Loader2, Lock, CheckCircle2, X, Video } from 'lucide-react'
 import { toast } from 'sonner'
 import { VideoPlayer } from '@/components/VideoPlayer'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -32,12 +32,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 export const NSFWVideoContent = () => {
   const [activeTab, setActiveTab] = useState('browse')
   const [loading, setLoading] = useState(false)
-  const [videos, setVideos] = useState<NSFWVideoContent[]>([])
-  const [selectedVideo, setSelectedVideo] = useState<NSFWVideoContent | null>(null)
+  const [videos, setVideos] = useState<NSFWVideoItem[]>([])
+  const [selectedVideo, setSelectedVideo] = useState<NSFWVideoItem | null>(null)
   const [playlists, setPlaylists] = useState<NSFWVideoPlaylist[]>([])
   const [downloads, setDownloads] = useState<NSFWVideoDownload[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all')
+  const [selectedRating, setSelectedRating] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [nsfwAvailable, setNsfwAvailable] = useState(false)
   const [isCheckingNsfw, setIsCheckingNsfw] = useState(true)
@@ -61,6 +62,13 @@ export const NSFWVideoContent = () => {
     { id: 'expert', label: 'Expert' }
   ]
 
+  const ratingLevels = [
+    { id: 'all', label: 'All Ratings' },
+    { id: 'educational', label: 'Educational' },
+    { id: 'demonstrative', label: 'Demonstrative' },
+    { id: 'explicit', label: 'Explicit' }
+  ]
+
   useEffect(() => {
     const checkNsfw = async () => {
       setIsCheckingNsfw(true)
@@ -75,7 +83,7 @@ export const NSFWVideoContent = () => {
     if (nsfwAvailable) {
       loadData()
     }
-  }, [activeTab, selectedCategory, selectedDifficulty, nsfwAvailable])
+  }, [activeTab, selectedCategory, selectedDifficulty, selectedRating, nsfwAvailable])
 
   const loadData = async () => {
     setLoading(true)
@@ -84,7 +92,8 @@ export const NSFWVideoContent = () => {
         case 'browse': {
           const videosData = await getNSFWVideos(
             selectedCategory === 'all' ? undefined : selectedCategory as any,
-            selectedDifficulty === 'all' ? undefined : selectedDifficulty as any
+            selectedDifficulty === 'all' ? undefined : selectedDifficulty as any,
+            selectedRating === 'all' ? undefined : selectedRating as any
           )
           setVideos(videosData)
           break
@@ -210,6 +219,16 @@ export const NSFWVideoContent = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {difficultyLevels.map(level => (
+                      <SelectItem key={level.id} value={level.id}>{level.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedRating} onValueChange={setSelectedRating}>
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Rating tier" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ratingLevels.map(level => (
                       <SelectItem key={level.id} value={level.id}>{level.label}</SelectItem>
                     ))}
                   </SelectContent>
@@ -377,18 +396,24 @@ export const NSFWVideoContent = () => {
             </DialogHeader>
             <div className="space-y-4">
                 <VideoPlayer
-                  videoUrl={selectedVideo.video_url_4k || selectedVideo.video_url_2k || selectedVideo.video_url_hd || selectedVideo.video_url_sd || ''}
-                  videoId={selectedVideo.id}
-                title={selectedVideo.title}
-                showScreenshots={true}
-                onProgress={async (progress) => {
-                  // Update video progress (percentage)
-                  if (selectedVideo) {
-                    const currentTime = (progress / 100) * (selectedVideo.video_duration_seconds || 0)
-                    await updateVideoProgressFn(selectedVideo.id, currentTime)
+                  videoUrl={
+                    selectedVideo.video_url_4k ||
+                    selectedVideo.video_url_2k ||
+                    selectedVideo.video_url_hd ||
+                    selectedVideo.video_url_sd ||
+                    ''
                   }
-                }}
-              />
+                  recordingId={selectedVideo.id}
+                  title={selectedVideo.title}
+                  showScreenshots={true}
+                  onProgress={async (progress) => {
+                    if (selectedVideo) {
+                      const currentTime =
+                        (progress / 100) * (selectedVideo.video_duration_seconds || 0)
+                      await updateVideoProgressFn(selectedVideo.id, currentTime, currentTime)
+                    }
+                  }}
+                />
               {selectedVideo.description && (
                 <div className="space-y-2">
                   <h4 className="font-semibold">Description</h4>
