@@ -34,6 +34,17 @@ This convention is enforced by the edge signing functions (assets must be under 
 
 These contain headers only. Fill with real content data and then import via the Admin UI.
 
+### Seed content (original editorial)
+
+- `seed/topics_pps_original.csv` (topics library, tiered ratings)
+- `seed/education_expert_content_pps.json` (expert articles)
+
+Import topics via Admin → DLC Content Import → Topics. Import expert content via:
+
+```powershell
+npm run dlc:import-expert-content -- --file docs/product/dlc/dlc-content/seed/education_expert_content_pps.json
+```
+
 ### Optional validator (recommended)
 
 You can validate a CSV/JSON file locally before importing:

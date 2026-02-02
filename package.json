@@ -57,6 +57,7 @@
     "test:rls:partner-sync": "tsx scripts/rls-check-partner-sync.ts",
     "dlc:validate-import": "tsx scripts/validate-dlc-import.ts",
     "dlc:validate-catalog": "tsx scripts/validate-dlc-catalog.ts",
+    "dlc:import-expert-content": "tsx scripts/import-education-expert-content.ts",
     "addons:validate-registry": "tsx scripts/validate-addon-registry.ts",
     "android:sync": "cross-env NODE_ENV=production npx cap sync android",
     "android:build": "cd android && ./gradlew.bat assembleRelease && cd ..",

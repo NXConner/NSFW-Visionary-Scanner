@@ -30,7 +30,7 @@
 | P6 | Privacy/consent hardening | P0 | Done | Session lock, panic exit, incognito/redaction, audit logs |
 | P7 | DLC/addon productionization | P0 | Done | Registry UI, versioning, catalog validation |
 | P8 | Testing + QA + perf | P0-P7 | Done | Unit/integration/E2E/perf coverage for NSFW flows |
-| P9 | Content production + licensing | P1 | Blocked | Licensed media library, expert content, compliance checks |
+| P9 | Content production + licensing | P1 | In Progress | Licensed media library, expert content, compliance checks |
 
 ---
 
@@ -185,12 +185,12 @@
 ---
 
 ## P9 — Content Production + Licensing
-**Status**: Blocked (licensed assets required)
+**Status**: In Progress (licensed assets required)
 
 - [ ] Licensed NSFW video library (rights cleared)
 - [ ] Positions media library (rights cleared)
-- [ ] Expert content: profiles, articles, videos
-- [ ] Topics library with tiered ratings
+- [x] Expert content: profiles, articles, videos (text authored; videos pending)
+- [x] Topics library with tiered ratings
 - [ ] Compliance review for all content
 
 **Note**: No placeholder content in dev/prod. Use licensed or user-provided assets only.
@@ -198,6 +198,8 @@
 **Notes**:
 - Positions illustrations source recorded (MIT) in `docs/product/dlc/licensing/SOURCES.md` but still needs import.
 - adminlove520/Sex-Positions has no recorded license (pending).
+- sexpositions.club image usage terms do not grant app distribution rights.
+- Topics and expert content authored in `docs/product/dlc/dlc-content/seed/`; import still required.
 
 ---
 
