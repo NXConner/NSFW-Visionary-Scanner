@@ -6,7 +6,7 @@
     maven="android:app:unspecified"
     agpVersion="8.9.1"
     buildFolder="build"
-    bootClassPath="/workspace/android-sdk/platforms/android-36/android.jar:/workspace/android-sdk/build-tools/35.0.0/core-lambda-stubs.jar"
+    bootClassPath="/usr/lib/android-sdk/platforms/android-36/android.jar:/usr/lib/android-sdk/build-tools/35.0.0/core-lambda-stubs.jar"
     javaSourceLevel="21"
     compileTarget="android-36">
   <lintOptions
