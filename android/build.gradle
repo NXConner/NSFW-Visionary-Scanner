@@ -1,8 +1,8 @@
 // Top-level build file for Capacitor Android project
 buildscript {
     ext {
-        compileSdkVersion = 34
-        targetSdkVersion = 34
+        compileSdkVersion = 36
+        targetSdkVersion = 36
         minSdkVersion = 22
         kotlinVersion = '2.2.20'
         kotlin_version = kotlinVersion
@@ -14,7 +14,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.3.0'
+        classpath 'com.android.tools.build:gradle:8.9.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
     }
 }

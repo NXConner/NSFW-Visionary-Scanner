@@ -26,6 +26,9 @@ dist-ssr
 # Android local configuration (contains machine-specific paths)
 android/local.properties
 
+# Local Android SDK installs
+android-sdk/
+
 # Android Gradle properties (contains sensitive signing configuration)
 android/gradle.properties
 
