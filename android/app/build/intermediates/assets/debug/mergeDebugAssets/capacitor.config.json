@@ -1,0 +1,47 @@
+{
+	"appId": "com.morphoscan.pro",
+	"appName": "MorphoScan Pro",
+	"webDir": "dist",
+	"bundledWebRuntime": false,
+	"android": {
+		"allowMixedContent": true,
+		"captureInput": true,
+		"webContentsDebuggingEnabled": true
+	},
+	"ios": {
+		"contentInset": "automatic",
+		"allowsLinkPreview": true,
+		"scrollEnabled": true,
+		"limitsNavigationsToAppBoundDomains": false
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"backgroundColor": "#0a0a0a",
+			"androidScaleType": "CENTER_CROP",
+			"showSpinner": false,
+			"iosSpinnerStyle": "small",
+			"spinnerColor": "#8B5CF6"
+		},
+		"StatusBar": {
+			"style": "dark",
+			"backgroundColor": "#0a0a0a"
+		},
+		"Keyboard": {
+			"resize": "body",
+			"resizeOnFullScreen": true
+		},
+		"PushNotifications": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"alert"
+			]
+		},
+		"LocalNotifications": {
+			"smallIcon": "ic_stat_icon",
+			"iconColor": "#8B5CF6",
+			"sound": "default"
+		}
+	}
+}

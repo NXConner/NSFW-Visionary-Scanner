@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.morphoscan.pro.app-mergeReleaseResources-41:/values-v25/values-v25.xml",
+            "map": [
+                {
+                    "source": "/home/ubuntu/.gradle/caches/8.11.1/transforms/09237ab0809f6f25e4ace0dce8068758/transformed/appcompat-1.7.1/res/values-v25/values-v25.xml",
+                    "from": {
+                        "startLines": "2,3,4,6",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,126,209,308",
+                        "endLines": "2,3,5,7",
+                        "endColumns": "70,82,12,12",
+                        "endOffsets": "121,204,303,414"
+                    }
+                }
+            ]
+        }
+    ]
+}

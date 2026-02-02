@@ -1,0 +1,23 @@
+R_DEF: Internal format may change without notice
+local
+dimen fab_margin
+id FirstFragment
+id SecondFragment
+id action_FirstFragment_to_SecondFragment
+id action_SecondFragment_to_FirstFragment
+id nav_graph
+id webview
+layout activity_auth_acitivy
+layout bridge_layout_main
+navigation nav_graph
+string first_fragment_label
+string hello_first_fragment
+string hello_second_fragment
+string my_string
+string next
+string previous
+string second_fragment_label
+string title_activity_auth_activity
+style AppTheme.AppBarOverlay
+style AppTheme.PopupOverlay
+style AppTheme.Transparent

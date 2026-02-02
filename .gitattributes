@@ -1,0 +1,2 @@
+android-sdk/cmdline-tools.zip filter=lfs diff=lfs merge=lfs -text
+android/*.hprof filter=lfs diff=lfs merge=lfs -text
