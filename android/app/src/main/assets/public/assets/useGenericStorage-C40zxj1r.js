@@ -1,1 +1,0 @@
-import{r as o,ar as a}from"./index-MGDVbeSQ.js";function f(e,r){const[c,n]=o.useState(()=>{try{const t=a.getItem(e);return t?JSON.parse(t):r}catch{return r}}),u=o.useCallback(t=>{n(i=>{const s=typeof t=="function"?t(i):t;return a.setItem(e,JSON.stringify(s)),s})},[e]);return[c,u]}export{f as u};

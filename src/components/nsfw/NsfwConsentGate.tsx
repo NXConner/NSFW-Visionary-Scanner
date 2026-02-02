@@ -6,6 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useNsfwConsent } from "@/hooks/useNsfwConsent";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserRoles } from "@/hooks/useUserRoles";
 
 type NsfwConsentGateProps = {
   featureIds: string[];
@@ -20,6 +22,11 @@ export function NsfwConsentGate({
   description = "Please review and accept the consent statements below to continue.",
   children,
 }: NsfwConsentGateProps): JSX.Element {
+  const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked, loading: authLoading, rolesLoading } =
+    useAuth();
+  const { isAdmin, isSuperAdmin: isSuperAdminRole, isLoading: rolesHookLoading } = useUserRoles();
+  const isPrivileged =
+    isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole;
   const { loading, load, requiredPolicies, missingPolicies, hasConsent, acceptAll } =
     useNsfwConsent(featureIds);
   const [checked, setChecked] = useState<Set<string>>(new Set());
@@ -37,7 +44,7 @@ export function NsfwConsentGate({
     return missingPolicies.every(p => checked.has(p.policy_key));
   }, [checked, missingPolicies]);
 
-  if (loading) {
+  if (authLoading || rolesLoading || rolesHookLoading || loading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Card className="glass-card border-border/50">
@@ -49,6 +56,8 @@ export function NsfwConsentGate({
       </div>
     );
   }
+
+  if (isPrivileged) return <>{children}</>;
 
   if (hasConsent) return <>{children}</>;
 

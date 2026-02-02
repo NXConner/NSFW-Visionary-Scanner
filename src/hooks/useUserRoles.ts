@@ -19,6 +19,25 @@ interface UseUserRolesReturn {
 // Cache for roles to prevent excessive DB calls on re-renders
 let cachedRoles: { userId: string; roles: AppRole[]; timestamp: number } | null = null;
 const CACHE_TTL = 30000; // 30 seconds
+const USER_ROLES_STORAGE_KEY = "user_roles";
+
+const persistRoles = (nextRoles: AppRole[]) => {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(USER_ROLES_STORAGE_KEY, JSON.stringify(nextRoles));
+  } catch {
+    // localStorage may be unavailable
+  }
+};
+
+const clearPersistedRoles = () => {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.removeItem(USER_ROLES_STORAGE_KEY);
+  } catch {
+    // localStorage may be unavailable
+  }
+};
 
 export const useUserRoles = (): UseUserRolesReturn => {
   const [user, setUser] = useState<any>(null);
@@ -52,6 +71,7 @@ export const useUserRoles = (): UseUserRolesReturn => {
       if (!user) {
         setRoles([]);
         clearSuperAdminCache();
+        clearPersistedRoles();
         return;
       }
 
@@ -63,6 +83,7 @@ export const useUserRoles = (): UseUserRolesReturn => {
         now - cachedRoles.timestamp < CACHE_TTL
       ) {
         setRoles(cachedRoles.roles);
+        persistRoles(cachedRoles.roles);
         return;
       }
 
@@ -94,6 +115,7 @@ export const useUserRoles = (): UseUserRolesReturn => {
       cachedRoles = { userId: user.id, roles: dbRoles, timestamp: now };
       
       setRoles(dbRoles);
+      persistRoles(dbRoles);
     } catch (err) {
       if (!mountedRef.current) return;
       setError(err instanceof Error ? err.message : "Failed to fetch roles");
