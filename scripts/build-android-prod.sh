@@ -12,6 +12,9 @@ BUILD_TYPE="release"
 OUTPUT_DIR="android-builds"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
+# Ensure Vite builds with Capacitor-safe base paths
+export CAPACITOR_BUILD=1
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'

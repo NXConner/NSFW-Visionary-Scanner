@@ -5,6 +5,8 @@ Write-Host ""
 Write-Host "=== Initializing Android Build Environment ===" -ForegroundColor Cyan
 Write-Host ""
 
+$env:CAPACITOR_BUILD = "1"
+
 # Step 1: Ensure we're in the right directory
 if (-not (Test-Path "android")) {
     Write-Host "Error: android folder not found!" -ForegroundColor Red

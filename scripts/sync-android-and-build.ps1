@@ -5,6 +5,8 @@ Write-Host ""
 Write-Host "=== Syncing Android and Building APK ===" -ForegroundColor Cyan
 Write-Host ""
 
+$env:CAPACITOR_BUILD = "1"
+
 # Step 0: Build web app (NSFW direct)
 Write-Host "Step 0: Building web app (NSFW direct)..." -ForegroundColor Yellow
 try {

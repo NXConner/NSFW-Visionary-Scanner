@@ -13,6 +13,8 @@ Write-Host ""
 Write-Host "=== MorphoScan Pro - Complete Android APK Build ===" -ForegroundColor Cyan
 Write-Host ""
 
+$env:CAPACITOR_BUILD = "1"
+
 $ErrorActionPreference = "Continue"
 
 # Step 1: Check prerequisites

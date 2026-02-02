@@ -5,6 +5,8 @@ Write-Host ""
 Write-Host "=== Building Android APK ===" -ForegroundColor Cyan
 Write-Host ""
 
+$env:CAPACITOR_BUILD = "1"
+
 # Step 1: Ensure dist folder exists
 if (-not (Test-Path "dist")) {
     Write-Host "Building web app first (NSFW direct)..." -ForegroundColor Yellow
