@@ -157,6 +157,7 @@ export function RecordingTab({ isActive }: { isActive: boolean }): JSX.Element {
         if (user && uploads.length > 0) {
           const streamRows = await Promise.all(
             uploads.map(async u => {
+              const resolvedUrl = u.bucket === "recordings" ? null : u.publicUrl;
               const { data: inserted, error } = await fromExtended("camera_streams")
                 .insert({
                   session_id: currentSession.id,
@@ -165,7 +166,7 @@ export function RecordingTab({ isActive }: { isActive: boolean }): JSX.Element {
                   device_type: "webcam",
                   is_active: false,
                   is_recording: false,
-                  video_url: u.publicUrl,
+                  video_url: resolvedUrl,
                   video_storage_path: u.path,
                   video_duration_seconds: duration,
                   video_size_bytes: u.sizeBytes,

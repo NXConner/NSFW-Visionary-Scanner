@@ -42,6 +42,39 @@ function guessMimeType(assetPathOrUrl: string): string {
   return "video/mp4";
 }
 
+const MAX_OFFLINE_BYTES = Number(
+  (import.meta as any).env?.VITE_NSFW_OFFLINE_MAX_BYTES ?? 5 * 1024 * 1024 * 1024,
+);
+const MIN_FREE_BYTES = Number(
+  (import.meta as any).env?.VITE_NSFW_OFFLINE_MIN_FREE_BYTES ?? 500 * 1024 * 1024,
+);
+
+async function getContentLength(url: string): Promise<number> {
+  try {
+    const head = await fetch(url, { method: "HEAD" });
+    if (!head.ok) return 0;
+    return parseInt(head.headers.get("Content-Length") || "0", 10) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function hasStorageCapacity(expectedBytes?: number): Promise<boolean> {
+  if (typeof navigator === "undefined" || !navigator.storage?.estimate) return true;
+  try {
+    const { usage = 0, quota = 0 } = await navigator.storage.estimate();
+    if (!quota) return true;
+    const free = Math.max(0, quota - usage);
+    if (expectedBytes && expectedBytes > 0) {
+      if (free < expectedBytes + MIN_FREE_BYTES) return false;
+      if (usage + expectedBytes > MAX_OFFLINE_BYTES) return false;
+    }
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 async function resolveVideoAsset(
   videoId: string,
   quality: VideoQuality,
@@ -159,6 +192,19 @@ export async function downloadNSFWVideoOffline(params: {
       dlcPackId: assetRes.dlcPackId,
     });
     const mimeType = guessMimeType(assetRef);
+
+    const expectedBytes = await getContentLength(url);
+    const okStorage = await hasStorageCapacity(expectedBytes || undefined);
+    if (!okStorage) {
+      await upsertDownloadRow({
+        videoId: params.videoId,
+        quality: params.quality,
+        status: "failed",
+        filePath: `nsfw_video:${params.videoId}:${params.quality}`,
+        errorMessage: "Insufficient storage for offline download",
+      });
+      return { success: false, error: "Insufficient storage for offline download" };
+    }
 
     await upsertDownloadRow({
       videoId: params.videoId,

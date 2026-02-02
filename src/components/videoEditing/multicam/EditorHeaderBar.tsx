@@ -12,7 +12,11 @@ export function EditorHeaderBar(props: {
   onLoadDraft: () => void;
   onSaveDraft: () => void;
   onQueue: () => void;
+  onRender: () => void;
   queuing: boolean;
+  rendering: boolean;
+  renderPhase?: string;
+  renderProgress?: number;
 }): JSX.Element {
   const {
     editName,
@@ -22,7 +26,11 @@ export function EditorHeaderBar(props: {
     onLoadDraft,
     onSaveDraft,
     onQueue,
+    onRender,
     queuing,
+    rendering,
+    renderPhase,
+    renderProgress,
   } = props;
 
   return (
@@ -50,8 +58,17 @@ export function EditorHeaderBar(props: {
             {queuing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             Queue render
           </Button>
+          <Button onClick={onRender} disabled={rendering} className="gap-2" variant="secondary">
+            {rendering ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            Render locally
+          </Button>
         </div>
       </div>
+      {rendering && (
+        <div className="text-xs text-muted-foreground">
+          {renderPhase ?? "rendering"} · {Math.round(renderProgress ?? 0)}%
+        </div>
+      )}
     </div>
   );
 }

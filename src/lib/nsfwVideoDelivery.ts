@@ -51,6 +51,7 @@ export async function getNSFWVideoPlaybackUrl(params: {
   videoId: string;
   quality: VideoQuality;
   mode?: VideoPlaybackMode;
+  forceRefresh?: boolean;
 }): Promise<ResolvedVideoSource | null> {
   const mode: VideoPlaybackMode = params.mode ?? "cache_first";
 
@@ -97,6 +98,7 @@ export async function getNSFWVideoPlaybackUrl(params: {
       expiresInSeconds: mode === "stream" ? 60 * 60 : 5 * 60,
       deviceId,
       devicePlatform,
+      forceRefresh: params.forceRefresh,
     });
   } catch (error) {
     logger.error("nsfwVideoDelivery: failed to sign video url", {

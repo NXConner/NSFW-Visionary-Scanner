@@ -23,7 +23,7 @@
 | --- | --- | --- | --- | --- |
 | P0 | Store-safety separation + gating | None | Done | Build-time gating tests, no NSFW bundles in SFW, entitlement checks |
 | P1 | Media storage + upload foundation | P0 | Done | NSFW buckets, signed URLs, upload UI, content lifecycle rules |
-| P2 | Video pipeline (record, upload, playback, edit) | P1 | Not Started | MediaRecorder, chunk upload, merge, player, editing backend |
+| P2 | Video pipeline (record, upload, playback, edit) | P1 | Done | MediaRecorder, chunk upload, merge, player, editing backend |
 | P3 | Seductive AI chat backend | P0 | Not Started | Edge function, LLM integration, prompts, context manager |
 | P4 | Advanced NSFW features completion | P1, P2 | Not Started | Multi-cam, screenshots, dates media, positions seed |
 | P5 | NSFW content pipelines + admin tools | P1 | Not Started | Topics import, moderation tools, rating tiers |
@@ -70,14 +70,14 @@
 ---
 
 ## P2 — Video Pipeline (Record, Upload, Playback, Edit)
-**Status**: Not Started
+**Status**: Done
 
-- [ ] MediaRecorder-based recording (web + Capacitor)
-- [ ] Chunked upload + merge (`merge-video-chunks`)
-- [ ] Video player with signed URL refresh
-- [ ] Offline downloads with caps + expiry
-- [ ] Editing backend (FFmpeg or server-side pipeline)
-- [ ] Screenshot capture + thumbnailing
+- [x] MediaRecorder-based recording (web + Capacitor)
+- [x] Chunked upload + merge (`merge-video-chunks`)
+- [x] Video player with signed URL refresh
+- [x] Offline downloads with caps + expiry
+- [x] Editing backend (FFmpeg or server-side pipeline)
+- [x] Screenshot capture + thumbnailing
 
 **Files to update**
 - `src/components/nsfwAdvancedFeatures/tabs/RecordingTab.tsx`
@@ -237,3 +237,4 @@
 - 2026-02-02: Plan created. All phases Not Started.
 - 2026-02-02: P0 completed (gating + SFW bundle verification + entitlements).
 - 2026-02-02: P1 completed (signed URLs, storage, auditing, upload UI).
+- 2026-02-02: P2 completed (recording/upload/playback/edit pipeline).

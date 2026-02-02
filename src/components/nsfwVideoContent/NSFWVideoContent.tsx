@@ -73,12 +73,15 @@ export const NSFWVideoContent = ({
   const [playerMode, setPlayerMode] = useState<VideoPlaybackMode>("cache_first");
   const [playerUrl, setPlayerUrl] = useState<string | null>(null);
   const [playerLoading, setPlayerLoading] = useState(false);
+  const [playerRefreshToken, setPlayerRefreshToken] = useState(0);
   const progressRef = useRef<{ videoId: string; current: number; duration: number }>({
     videoId: "",
     current: 0,
     duration: 0,
   });
   const lastProgressSentMs = useRef(0);
+  const lastRefreshMs = useRef(0);
+  const forceRefreshRef = useRef(false);
 
   const { isAgeVerified } = useDLC();
   const { isAvailable: hasVideoDLC, isLoading: dlcLoading } = useDLCFeature("video_library");
@@ -161,14 +164,24 @@ export const NSFWVideoContent = ({
           videoId: selectedVideoId,
           quality: playerQuality,
           mode: playerMode,
+          forceRefresh: forceRefreshRef.current,
         });
+        forceRefreshRef.current = false;
         setPlayerUrl(res?.url ?? null);
       } finally {
         setPlayerLoading(false);
       }
     };
     void run();
-  }, [selectedVideoId, playerQuality, playerMode]);
+  }, [selectedVideoId, playerQuality, playerMode, playerRefreshToken]);
+
+  const refreshPlayerUrl = useCallback(() => {
+    const now = Date.now();
+    if (now - lastRefreshMs.current < 5000) return;
+    lastRefreshMs.current = now;
+    forceRefreshRef.current = true;
+    setPlayerRefreshToken(t => t + 1);
+  }, []);
 
   useEffect(() => {
     const run = async () => {
@@ -481,6 +494,7 @@ export const NSFWVideoContent = ({
           void flushWatchHistory();
           void loadData();
         }}
+        onRequestRefresh={refreshPlayerUrl}
       />
     </div>
   );
