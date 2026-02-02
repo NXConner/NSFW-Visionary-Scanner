@@ -3,11 +3,17 @@
  * Provides sharing buttons for various platforms
  */
 
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 import {
-  Share2, Twitter, Facebook, Linkedin, Mail, Link as LinkIcon,
-  Copy, CheckCircle2
-} from 'lucide-react'
+  Share2,
+  Twitter,
+  Facebook,
+  Linkedin,
+  Mail,
+  Link as LinkIcon,
+  Copy,
+  CheckCircle2,
+} from "lucide-react";
 import {
   shareToTwitter,
   shareToFacebook,
@@ -15,24 +21,24 @@ import {
   shareViaEmail,
   copyLinkToClipboard,
   shareToNative,
-  type ShareOptions
-} from '@/lib/socialSharing'
-import { useState } from 'react'
-import { toast } from 'sonner'
+  type ShareOptions,
+} from "@/lib/socialSharing";
+import { useState } from "react";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu";
 
 interface SocialShareProps {
-  title?: string
-  text?: string
-  url?: string
-  image?: string
-  variant?: 'button' | 'icon' | 'dropdown'
-  showLabel?: boolean
+  title?: string;
+  text?: string;
+  url?: string;
+  image?: string;
+  variant?: "button" | "icon" | "dropdown";
+  showLabel?: boolean;
 }
 
 export const SocialShare = ({
@@ -40,41 +46,41 @@ export const SocialShare = ({
   text,
   url,
   image,
-  variant = 'button',
-  showLabel = true
+  variant = "button",
+  showLabel = true,
 }: SocialShareProps) => {
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState(false);
 
   const shareOptions: ShareOptions = {
     title,
     text,
     url,
-    image
-  }
+    image,
+  };
 
   const handleCopy = async () => {
-    const success = await copyLinkToClipboard(url)
+    const success = await copyLinkToClipboard(url);
     if (success) {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
-  }
+  };
 
   const handleNativeShare = async () => {
-    const success = await shareToNative(shareOptions)
+    const success = await shareToNative(shareOptions);
     if (!success) {
       // Fallback to copy if native share not available
-      handleCopy()
+      handleCopy();
     }
-  }
+  };
 
-  if (variant === 'dropdown') {
+  if (variant === "dropdown") {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm">
             <Share2 className="w-4 h-4 mr-2" />
-            {showLabel && 'Share'}
+            {showLabel && "Share"}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -113,26 +119,16 @@ export const SocialShare = ({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    )
+    );
   }
 
-  if (variant === 'icon') {
+  if (variant === "icon") {
     return (
       <div className="flex gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleNativeShare}
-          title="Share"
-        >
+        <Button variant="ghost" size="icon" onClick={handleNativeShare} title="Share">
           <Share2 className="w-4 h-4" />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleCopy}
-          title="Copy link"
-        >
+        <Button variant="ghost" size="icon" onClick={handleCopy} title="Copy link">
           {copied ? (
             <CheckCircle2 className="w-4 h-4 text-green-500" />
           ) : (
@@ -140,38 +136,22 @@ export const SocialShare = ({
           )}
         </Button>
       </div>
-    )
+    );
   }
 
   return (
     <div className="flex flex-wrap gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleNativeShare}
-      >
+      <Button variant="outline" size="sm" onClick={handleNativeShare}>
         <Share2 className="w-4 h-4 mr-2" />
-        {showLabel && 'Share'}
+        {showLabel && "Share"}
       </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => shareToTwitter(shareOptions)}
-      >
+      <Button variant="outline" size="sm" onClick={() => shareToTwitter(shareOptions)}>
         <Twitter className="w-4 h-4" />
       </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => shareToFacebook(shareOptions)}
-      >
+      <Button variant="outline" size="sm" onClick={() => shareToFacebook(shareOptions)}>
         <Facebook className="w-4 h-4" />
       </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleCopy}
-      >
+      <Button variant="outline" size="sm" onClick={handleCopy}>
         {copied ? (
           <CheckCircle2 className="w-4 h-4 text-green-500" />
         ) : (
@@ -179,6 +159,5 @@ export const SocialShare = ({
         )}
       </Button>
     </div>
-  )
-}
-
+  );
+};

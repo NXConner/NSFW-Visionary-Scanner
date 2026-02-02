@@ -1,224 +1,116 @@
-/**
- * Video Screenshot Utilities
- * Captures screenshots from video at specific timestamps
- */
+import { supabase } from "@/integrations/supabase/client";
+import { fromExtended } from "@/lib/supabaseExtensions";
+import { logger } from "@/lib/logger";
+import { uploadFile } from "@/lib/mediaUpload";
 
-import { uploadFile, STORAGE_BUCKETS } from './mediaUpload'
-import { supabase } from '@/integrations/supabase/client'
-import { logger } from './logger'
-import { toast } from 'sonner'
+export type VideoScreenshot = {
+  id: string;
+  recording_id: string;
+  user_id: string;
+  screenshot_name: string | null;
+  timestamp_seconds: number;
+  image_url: string | null;
+  image_storage_path: string | null;
+  thumbnail_url: string | null;
+  is_edited: boolean | null;
+  edit_data: Record<string, unknown> | null;
+  created_at: string;
+};
 
-export interface VideoScreenshot {
-  id: string
-  video_id: string
-  timestamp_seconds: number
-  image_url: string
-  image_path: string
-  thumbnail_url: string | null
-  created_at: string
+function canvasToPngFile(canvas: HTMLCanvasElement, fileName: string): Promise<File | null> {
+  return new Promise(resolve => {
+    canvas.toBlob(
+      blob => {
+        if (!blob) return resolve(null);
+        resolve(new File([blob], fileName, { type: "image/png" }));
+      },
+      "image/png",
+      1,
+    );
+  });
 }
 
-/**
- * Capture screenshot from video element at specific timestamp
- */
 export async function captureVideoScreenshot(
-  videoElement: HTMLVideoElement,
-  timestamp: number,
-  videoId: string
+  videoEl: HTMLVideoElement,
+  timestampSeconds: number,
+  recordingId: string,
 ): Promise<VideoScreenshot | null> {
   try {
-    // Set video to timestamp
-    videoElement.currentTime = timestamp
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return null;
 
-    // Wait for video to seek
-    await new Promise((resolve) => {
-      videoElement.onseeked = resolve
-      setTimeout(resolve, 1000) // Timeout after 1 second
-    })
+    const w = videoEl.videoWidth;
+    const h = videoEl.videoHeight;
+    if (!w || !h) return null;
 
-    // Create canvas and capture frame
-    const canvas = document.createElement('canvas')
-    canvas.width = videoElement.videoWidth
-    canvas.height = videoElement.videoHeight
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) {
-      toast.error('Failed to capture screenshot')
-      return null
-    }
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
 
-    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height)
+    ctx.drawImage(videoEl, 0, 0, w, h);
 
-    // Convert to blob
-    const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.9)
-    })
+    const fileName = `screenshot-${recordingId}-${Date.now()}.png`;
+    const file = await canvasToPngFile(canvas, fileName);
+    if (!file) return null;
 
-    if (!blob) {
-      toast.error('Failed to create screenshot')
-      return null
-    }
+    const upload = await uploadFile(file, {
+      folder: `screenshots/${recordingId}`,
+      compress: false,
+      allowedTypes: ["image/png"],
+      maxSize: 15 * 1024 * 1024,
+    });
 
-    // Create file from blob
-    const file = new File([blob], `screenshot-${Date.now()}.jpg`, { type: 'image/jpeg' })
+    if (!upload) return null;
 
-    // Upload screenshot
-    const uploadResult = await uploadFile(file, {
-      bucket: STORAGE_BUCKETS.SCREENSHOTS,
-      folder: `videos/${videoId}`,
-      compress: true,
-      quality: 0.9
-    })
-
-    if (!uploadResult) {
-      return null
-    }
-
-    // Create thumbnail (smaller version)
-    const thumbnailBlob = await new Promise<Blob | null>((resolve) => {
-      const thumbCanvas = document.createElement('canvas')
-      thumbCanvas.width = 320
-      thumbCanvas.height = 180
-      const thumbCtx = thumbCanvas.getContext('2d')
-      if (!thumbCtx) {
-        resolve(null)
-        return
-      }
-      thumbCtx.drawImage(canvas, 0, 0, thumbCanvas.width, thumbCanvas.height)
-      thumbCanvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7)
-    })
-
-    let thumbnailUrl: string | null = null
-    if (thumbnailBlob) {
-      const thumbnailFile = new File([thumbnailBlob], `thumb-${Date.now()}.jpg`, { type: 'image/jpeg' })
-      const thumbResult = await uploadFile(thumbnailFile, {
-        bucket: STORAGE_BUCKETS.SCREENSHOTS,
-        folder: `videos/${videoId}/thumbnails`
-      })
-      thumbnailUrl = thumbResult?.url || null
-    }
-
-    // Save to database
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      toast.error('Please sign in')
-      return null
-    }
-
-    const { data, error } = await supabase
-      .from('video_screenshots')
+    const { data, error } = await fromExtended("video_screenshots")
       .insert({
-        video_id: videoId,
-        timestamp_seconds: timestamp,
-        image_url: uploadResult.url,
-        image_path: uploadResult.path,
-        thumbnail_url: thumbnailUrl
+        recording_id: recordingId,
+        user_id: auth.user.id,
+        screenshot_name: fileName,
+        timestamp_seconds: Number(timestampSeconds ?? 0),
+        image_url: upload.publicUrl ?? null,
+        image_storage_path: upload.path,
+        thumbnail_url: upload.publicUrl ?? null,
+        is_edited: false,
+        edit_data: null,
       })
-      .select()
-      .single()
+      .select("*")
+      .single();
 
     if (error) {
-      logger.error('Error saving screenshot:', error)
-      toast.error('Failed to save screenshot')
-      return null
+      logger.error("captureVideoScreenshot: insert failed", { error: error.message });
+      return null;
     }
 
-    toast.success('Screenshot captured!')
-    return data as VideoScreenshot
+    return data as VideoScreenshot;
   } catch (error) {
-    logger.error('Error in captureVideoScreenshot:', error)
-    toast.error('Failed to capture screenshot')
-    return null
+    logger.error("captureVideoScreenshot failed", { error });
+    return null;
   }
 }
 
-/**
- * Capture multiple screenshots at different timestamps
- */
-export async function captureVideoScreenshots(
-  videoElement: HTMLVideoElement,
-  timestamps: number[],
-  videoId: string
-): Promise<VideoScreenshot[]> {
-  const screenshots: VideoScreenshot[] = []
-
-  for (const timestamp of timestamps) {
-    const screenshot = await captureVideoScreenshot(videoElement, timestamp, videoId)
-    if (screenshot) {
-      screenshots.push(screenshot)
-    }
-  }
-
-  return screenshots
-}
-
-/**
- * Get screenshots for a video
- */
-export async function getVideoScreenshots(videoId: string): Promise<VideoScreenshot[]> {
+export async function getVideoScreenshots(recordingId: string): Promise<VideoScreenshot[]> {
   try {
-    const { data, error } = await supabase
-      .from('video_screenshots')
-      .select('*')
-      .eq('video_id', videoId)
-      .order('timestamp_seconds', { ascending: true })
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return [];
+
+    const { data, error } = await fromExtended("video_screenshots")
+      .select("*")
+      .eq("recording_id", recordingId)
+      .eq("user_id", auth.user.id)
+      .order("created_at", { ascending: false });
 
     if (error) {
-      logger.error('Error fetching screenshots:', error)
-      return []
+      logger.error("getVideoScreenshots failed", { error: error.message });
+      return [];
     }
 
-    return (data || []) as VideoScreenshot[]
+    return (data || []) as VideoScreenshot[];
   } catch (error) {
-    logger.error('Error in getVideoScreenshots:', error)
-    return []
+    logger.error("getVideoScreenshots error", { error });
+    return [];
   }
 }
-
-/**
- * Delete screenshot
- */
-export async function deleteScreenshot(screenshotId: string): Promise<boolean> {
-  try {
-    // Get screenshot to get file path
-    const { data: screenshot } = await supabase
-      .from('video_screenshots')
-      .select('image_path, thumbnail_url')
-      .eq('id', screenshotId)
-      .single()
-
-    if (screenshot) {
-      // Delete from storage
-      if (screenshot.image_path) {
-        await supabase.storage
-          .from(STORAGE_BUCKETS.SCREENSHOTS)
-          .remove([screenshot.image_path])
-      }
-
-      if (screenshot.thumbnail_url) {
-        const thumbPath = screenshot.thumbnail_url.split('/').slice(-2).join('/')
-        await supabase.storage
-          .from(STORAGE_BUCKETS.SCREENSHOTS)
-          .remove([thumbPath])
-      }
-    }
-
-    // Delete from database
-    const { error } = await supabase
-      .from('video_screenshots')
-      .delete()
-      .eq('id', screenshotId)
-
-    if (error) {
-      logger.error('Error deleting screenshot:', error)
-      return false
-    }
-
-    toast.success('Screenshot deleted')
-    return true
-  } catch (error) {
-    logger.error('Error in deleteScreenshot:', error)
-    return false
-  }
-}
-

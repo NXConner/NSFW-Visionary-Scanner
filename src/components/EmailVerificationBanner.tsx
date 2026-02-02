@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mail, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { logger } from '@/lib/logger';
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Mail, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 interface EmailVerificationBannerProps {
   email: string;
@@ -20,7 +20,7 @@ export const EmailVerificationBanner = ({ email, onVerified }: EmailVerification
     setIsResending(true);
     try {
       const { error } = await supabase.auth.resend({
-        type: 'signup',
+        type: "signup",
         email: email,
         options: {
           emailRedirectTo: `${window.location.origin}/auth?verified=true`,
@@ -29,11 +29,11 @@ export const EmailVerificationBanner = ({ email, onVerified }: EmailVerification
 
       if (error) throw error;
 
-      toast.success('Verification email sent! Check your inbox.');
-      logger.userAction('verification_email_resent', undefined, { email });
+      toast.success("Verification email sent! Check your inbox.");
+      logger.userAction("verification_email_resent", undefined, { email });
     } catch (error) {
-      logger.error('Failed to resend verification email', { error, email });
-      toast.error(error instanceof Error ? error.message : 'Failed to send verification email');
+      logger.error("Failed to resend verification email", { error, email });
+      toast.error(error instanceof Error ? error.message : "Failed to send verification email");
     } finally {
       setIsResending(false);
     }
@@ -42,20 +42,23 @@ export const EmailVerificationBanner = ({ email, onVerified }: EmailVerification
   const handleCheckVerification = async () => {
     setIsChecking(true);
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
       if (error) throw error;
 
       if (user?.email_confirmed_at) {
-        toast.success('Email verified!');
+        toast.success("Email verified!");
         onVerified?.();
-        logger.userAction('email_verified', user.id);
+        logger.userAction("email_verified", user.id);
       } else {
-        toast.info('Email not yet verified. Please check your inbox.');
+        toast.info("Email not yet verified. Please check your inbox.");
       }
     } catch (error) {
-      logger.error('Failed to check verification status', { error });
-      toast.error('Failed to check verification status');
+      logger.error("Failed to check verification status", { error });
+      toast.error("Failed to check verification status");
     } finally {
       setIsChecking(false);
     }
@@ -69,7 +72,8 @@ export const EmailVerificationBanner = ({ email, onVerified }: EmailVerification
           <div className="flex-1">
             <p className="font-medium text-warning mb-1">Email Verification Required</p>
             <p className="text-sm text-muted-foreground">
-              Please verify your email address ({email}) to access all features. Check your inbox for the verification link.
+              Please verify your email address ({email}) to access all features. Check your inbox
+              for the verification link.
             </p>
           </div>
           <div className="flex gap-2">
@@ -115,4 +119,3 @@ export const EmailVerificationBanner = ({ email, onVerified }: EmailVerification
     </Alert>
   );
 };
-

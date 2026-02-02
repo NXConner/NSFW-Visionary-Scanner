@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS enhanced_diary_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  base_entry_id UUID REFERENCES diary_entries(id) ON DELETE CASCADE, -- Link to base diary entry if exists
+  base_entry_id UUID REFERENCES public.health_diary(id) ON DELETE CASCADE, -- Link to base diary entry if exists
   
   entry_date DATE NOT NULL,
   entry_time TIME,
@@ -188,6 +188,21 @@ CREATE TABLE IF NOT EXISTS symptom_patterns (
   identified_at TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure symptom_patterns has expected user_id when table pre-exists
+ALTER TABLE symptom_patterns
+  ADD COLUMN IF NOT EXISTS user_id UUID;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'symptom_patterns_user_id_fkey'
+  ) THEN
+    ALTER TABLE symptom_patterns
+      ADD CONSTRAINT symptom_patterns_user_id_fkey
+      FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+  END IF;
+END $$;
 
 -- Medication Schedule
 CREATE TABLE IF NOT EXISTS medication_schedules (

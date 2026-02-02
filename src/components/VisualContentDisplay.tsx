@@ -3,11 +3,11 @@
  * Displays images, GIFs, videos, and animations with controls
  */
 
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Play,
   Pause,
@@ -20,8 +20,8 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
-} from 'lucide-react';
-import type { VisualContent } from '@/lib/visualContentManager';
+} from "lucide-react";
+import type { VisualContent } from "@/lib/visualContentManager";
 
 interface VisualContentDisplayProps {
   content: VisualContent[];
@@ -38,7 +38,7 @@ export const VisualContentDisplay: React.FC<VisualContentDisplayProps> = ({
   showThumbnails = true,
   autoPlay = false,
   loop = true,
-  className = '',
+  className = "",
 }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -78,30 +78,28 @@ export const VisualContentDisplay: React.FC<VisualContentDisplayProps> = ({
 
   return (
     <div className={className}>
-      {title && (
-        <h3 className="text-lg font-semibold mb-4">{title}</h3>
-      )}
+      {title && <h3 className="text-lg font-semibold mb-4">{title}</h3>}
 
       {/* Main Display */}
       <Card className="overflow-hidden">
         <div className="relative aspect-video bg-muted/30">
-          {currentItem.type === 'image' && (
+          {currentItem.type === "image" && (
             <img
               src={currentItem.url}
-              alt={currentItem.title || 'Visual content'}
+              alt={currentItem.title || "Visual content"}
               className="w-full h-full object-contain"
             />
           )}
 
-          {currentItem.type === 'gif' && (
+          {currentItem.type === "gif" && (
             <img
               src={currentItem.url}
-              alt={currentItem.title || 'GIF'}
+              alt={currentItem.title || "GIF"}
               className="w-full h-full object-contain"
             />
           )}
 
-          {currentItem.type === 'video' && (
+          {currentItem.type === "video" && (
             <>
               <video
                 ref={setVideoRef}
@@ -111,7 +109,15 @@ export const VisualContentDisplay: React.FC<VisualContentDisplayProps> = ({
                 muted={isMuted}
                 autoPlay={autoPlay}
                 playsInline
-              />
+              >
+                <track
+                  kind="captions"
+                  srcLang="en"
+                  label="English"
+                  src={"data:text/vtt,WEBVTT%0A%0A"}
+                  default
+                />
+              </video>
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                 <Button
                   variant="secondary"
@@ -167,9 +173,9 @@ export const VisualContentDisplay: React.FC<VisualContentDisplayProps> = ({
 
           {/* Type Badge */}
           <Badge className="absolute top-2 left-2">
-            {currentItem.type === 'gif' && 'GIF'}
-            {currentItem.type === 'video' && <Video className="w-3 h-3 mr-1" />}
-            {currentItem.type === 'image' && <ImageIcon className="w-3 h-3 mr-1" />}
+            {currentItem.type === "gif" && "GIF"}
+            {currentItem.type === "video" && <Video className="w-3 h-3 mr-1" />}
+            {currentItem.type === "image" && <ImageIcon className="w-3 h-3 mr-1" />}
             {currentItem.type}
           </Badge>
 
@@ -184,9 +190,7 @@ export const VisualContentDisplay: React.FC<VisualContentDisplayProps> = ({
         {/* Info */}
         {(currentItem.title || currentItem.description) && (
           <CardContent className="pt-4">
-            {currentItem.title && (
-              <h4 className="font-semibold mb-1">{currentItem.title}</h4>
-            )}
+            {currentItem.title && <h4 className="font-semibold mb-1">{currentItem.title}</h4>}
             {currentItem.description && (
               <p className="text-sm text-muted-foreground">{currentItem.description}</p>
             )}
@@ -203,8 +207,8 @@ export const VisualContentDisplay: React.FC<VisualContentDisplayProps> = ({
               onClick={() => setSelectedIndex(index)}
               className={`flex-shrink-0 w-20 h-20 rounded overflow-hidden border-2 transition-all ${
                 index === selectedIndex
-                  ? 'border-primary scale-105'
-                  : 'border-transparent opacity-60 hover:opacity-100'
+                  ? "border-primary scale-105"
+                  : "border-transparent opacity-60 hover:opacity-100"
               }`}
             >
               {item.thumbnail ? (
@@ -215,7 +219,7 @@ export const VisualContentDisplay: React.FC<VisualContentDisplayProps> = ({
                 />
               ) : (
                 <div className="w-full h-full bg-muted/30 flex items-center justify-center">
-                  {item.type === 'video' ? (
+                  {item.type === "video" ? (
                     <Video className="w-6 h-6 text-muted-foreground" />
                   ) : (
                     <ImageIcon className="w-6 h-6 text-muted-foreground" />
@@ -231,23 +235,23 @@ export const VisualContentDisplay: React.FC<VisualContentDisplayProps> = ({
       <Dialog open={isFullscreen} onOpenChange={setIsFullscreen}>
         <DialogContent className="max-w-7xl max-h-[95vh] p-0">
           <div className="relative w-full h-[95vh] bg-black">
-            {currentItem.type === 'image' && (
+            {currentItem.type === "image" && (
               <img
                 src={currentItem.url}
-                alt={currentItem.title || 'Visual content'}
+                alt={currentItem.title || "Visual content"}
                 className="w-full h-full object-contain"
               />
             )}
 
-            {currentItem.type === 'gif' && (
+            {currentItem.type === "gif" && (
               <img
                 src={currentItem.url}
-                alt={currentItem.title || 'GIF'}
+                alt={currentItem.title || "GIF"}
                 className="w-full h-full object-contain"
               />
             )}
 
-            {currentItem.type === 'video' && (
+            {currentItem.type === "video" && (
               <video
                 ref={setVideoRef}
                 src={currentItem.url}
@@ -256,7 +260,15 @@ export const VisualContentDisplay: React.FC<VisualContentDisplayProps> = ({
                 muted={isMuted}
                 autoPlay={autoPlay}
                 controls
-              />
+              >
+                <track
+                  kind="captions"
+                  srcLang="en"
+                  label="English"
+                  src={"data:text/vtt,WEBVTT%0A%0A"}
+                  default
+                />
+              </video>
             )}
 
             {/* Controls */}
@@ -305,4 +317,3 @@ export const VisualContentDisplay: React.FC<VisualContentDisplayProps> = ({
     </div>
   );
 };
-

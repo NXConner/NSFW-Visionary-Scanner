@@ -3,14 +3,20 @@
  * UI component for managing mobile widgets, app shortcuts, haptic feedback, and wearable devices
  */
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   getMobileWidgets,
   createMobileWidget,
@@ -23,65 +29,65 @@ import {
   type MobileWidgetConfiguration,
   type AppShortcut,
   type HapticFeedbackPreferences,
-  type WearableDevice
-} from '@/lib/mobileWearableFeatures'
-import { Smartphone, Watch, Zap, Layout, Loader2, Plus, CheckCircle2, X } from 'lucide-react'
-import { toast } from 'sonner'
+  type WearableDevice,
+} from "@/lib/mobileWearableFeatures";
+import { Smartphone, Watch, Zap, Layout, Loader2, Plus, CheckCircle2, X } from "lucide-react";
+import { toast } from "sonner";
 
 export const MobileWearableFeatures = () => {
-  const [activeTab, setActiveTab] = useState('widgets')
-  const [loading, setLoading] = useState(false)
-  const [widgets, setWidgets] = useState<MobileWidgetConfiguration[]>([])
-  const [shortcuts, setShortcuts] = useState<AppShortcut[]>([])
-  const [hapticPrefs, setHapticPrefs] = useState<HapticFeedbackPreferences | null>(null)
-  const [wearableDevices, setWearableDevices] = useState<WearableDevice[]>([])
+  const [activeTab, setActiveTab] = useState("widgets");
+  const [loading, setLoading] = useState(false);
+  const [widgets, setWidgets] = useState<MobileWidgetConfiguration[]>([]);
+  const [shortcuts, setShortcuts] = useState<AppShortcut[]>([]);
+  const [hapticPrefs, setHapticPrefs] = useState<HapticFeedbackPreferences | null>(null);
+  const [wearableDevices, setWearableDevices] = useState<WearableDevice[]>([]);
 
-  useEffect(() => {
-    loadData()
-  }, [activeTab])
-
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
       switch (activeTab) {
-        case 'widgets': {
-          const widgetsData = await getMobileWidgets()
-          setWidgets(widgetsData)
-          break
+        case "widgets": {
+          const widgetsData = await getMobileWidgets();
+          setWidgets(widgetsData);
+          break;
         }
-        case 'shortcuts': {
-          const shortcutsData = await getAppShortcuts()
-          setShortcuts(shortcutsData)
-          break
+        case "shortcuts": {
+          const shortcutsData = await getAppShortcuts();
+          setShortcuts(shortcutsData);
+          break;
         }
-        case 'haptics': {
-          const prefs = await getHapticPreferences()
-          setHapticPrefs(prefs)
-          break
+        case "haptics": {
+          const prefs = await getHapticPreferences();
+          setHapticPrefs(prefs);
+          break;
         }
-        case 'wearables': {
-          const devices = await getWearableDevices()
-          setWearableDevices(devices)
-          break
+        case "wearables": {
+          const devices = await getWearableDevices();
+          setWearableDevices(devices);
+          break;
         }
       }
     } catch (error) {
-      toast.error('Failed to load data')
+      toast.error("Failed to load data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [activeTab]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const handleUpdateHaptic = async (updates: Partial<HapticFeedbackPreferences>) => {
     try {
-      const success = await updateHapticPreferences(updates)
+      const success = await updateHapticPreferences(updates);
       if (success) {
-        await loadData()
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to update preferences')
+      toast.error("Failed to update preferences");
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -93,7 +99,7 @@ export const MobileWearableFeatures = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -168,7 +174,9 @@ export const MobileWearableFeatures = () => {
                         <div className="flex items-center justify-between">
                           <div>
                             <h4 className="font-semibold">{shortcut.shortcut_name}</h4>
-                            <p className="text-sm text-muted-foreground">{shortcut.shortcut_type}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {shortcut.shortcut_type}
+                            </p>
                             <p className="text-xs text-muted-foreground">
                               Used {shortcut.usage_count} times
                             </p>
@@ -194,14 +202,21 @@ export const MobileWearableFeatures = () => {
                         <Label>Enable Haptic Feedback</Label>
                         <Switch
                           checked={hapticPrefs.haptic_enabled}
-                          onCheckedChange={(checked) => handleUpdateHaptic({ haptic_enabled: checked })}
+                          onCheckedChange={checked =>
+                            handleUpdateHaptic({ haptic_enabled: checked })
+                          }
                         />
                       </div>
                       <div>
                         <Label>Haptic Intensity</Label>
                         <Select
                           value={hapticPrefs.haptic_intensity}
-                          onValueChange={(value) => handleUpdateHaptic({ haptic_intensity: value as any })}
+                          onValueChange={value =>
+                            handleUpdateHaptic({
+                              haptic_intensity:
+                                value as HapticFeedbackPreferences["haptic_intensity"],
+                            })
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -217,7 +232,9 @@ export const MobileWearableFeatures = () => {
                         <Label>Disable on Low Battery</Label>
                         <Switch
                           checked={hapticPrefs.disable_on_low_battery}
-                          onCheckedChange={(checked) => handleUpdateHaptic({ disable_on_low_battery: checked })}
+                          onCheckedChange={checked =>
+                            handleUpdateHaptic({ disable_on_low_battery: checked })
+                          }
                         />
                       </div>
                     </>
@@ -274,6 +291,5 @@ export const MobileWearableFeatures = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
+  );
+};

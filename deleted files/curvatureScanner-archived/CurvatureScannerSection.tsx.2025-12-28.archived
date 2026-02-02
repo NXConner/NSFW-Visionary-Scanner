@@ -1,0 +1,558 @@
+import * as React from "react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
+import { useCamera } from "@/hooks/useCamera";
+import { CalibrationWizard } from "@/components/CalibrationWizard";
+import type { CalibrationData } from "@/components/calibrationWizard/types";
+import { CurvatureScanOverlay } from "@/components/ScannerOverlays";
+import { measureImage } from "@/scanner/measurement";
+import type { CurvatureCaptureView } from "@/components/scannerOverlays/CurvatureScanOverlay";
+import type { CurvatureScanSession } from "@/scanner/curvature/types";
+import { loadCurvatureSettings, saveCurvatureSettings } from "@/scanner/curvature/settings";
+import { Ruler, Camera, RotateCcw, Save, ArrowRight, ArrowLeft, History, Crosshair } from "lucide-react";
+import { useCurvatureSessions } from "./hooks/useCurvatureSessions";
+import { CurvatureHistoryList } from "./history/CurvatureHistoryList";
+import { CurvatureHistoryDetail } from "./history/CurvatureHistoryDetail";
+import { CurvatureTrends } from "./history/CurvatureTrends";
+import { BaseAnchorPicker } from "./refine/BaseAnchorPicker";
+import { computeBaseAnchoredAngleDeg } from "./refine/baseAngle";
+import { computeCurvatureDirectionFromCenterline } from "./refine/direction";
+
+function viewLabel(view: CurvatureCaptureView) {
+  return view === "dorsal" ? "Dorsal (top-down)" : "Lateral (side)";
+}
+
+function computeOverallConfidence(dorsal?: number, lateral?: number) {
+  const xs = [dorsal, lateral].filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  if (!xs.length) return 0;
+  return Math.round(xs.reduce((a, b) => a + b, 0) / xs.length);
+}
+
+type CapturedViewState = {
+  rawImageDataUrl: string;
+  annotatedImageDataUrl: string;
+  angleDeg: number;
+  confidence: number;
+  lengthCm?: number;
+  centerlinePx?: Array<{ x: number; y: number }>;
+  baseAnchorPx?: { x: number; y: number };
+  curvatureDirection?: "dorsal" | "ventral" | "lateral-left" | "lateral-right" | "unknown";
+  warnings?: string[];
+};
+
+export function CurvatureScannerSection() {
+  const { videoRef, canvasRef, isActive, error, startCamera, stopCamera, captureImageAsync } = useCamera();
+
+  const [activeTab, setActiveTab] = React.useState<"scan" | "history">("scan");
+  const { sessions, addSession, deleteSession } = useCurvatureSessions();
+  const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null);
+  const selectedSession = React.useMemo(
+    () => sessions.find(s => s.id === selectedSessionId) ?? null,
+    [sessions, selectedSessionId],
+  );
+
+  const [view, setView] = React.useState<CurvatureCaptureView>("dorsal");
+  const [showCalibration, setShowCalibration] = React.useState(false);
+  const [calibrationData, setCalibrationData] = React.useState<CalibrationData | null>(null);
+  const [processing, setProcessing] = React.useState(false);
+
+  const [dorsal, setDorsal] = React.useState<CapturedViewState | null>(null);
+  const [lateral, setLateral] = React.useState<CapturedViewState | null>(null);
+  const [lengthCm, setLengthCm] = React.useState<number>(0);
+
+  const [refinePicking, setRefinePicking] = React.useState<CurvatureCaptureView | null>(null);
+  const [storeAnnotatedImages, setStoreAnnotatedImages] = React.useState(false);
+
+  React.useEffect(() => {
+    (async () => {
+      const s = await loadCurvatureSettings();
+      setStoreAnnotatedImages(Boolean(s.storeAnnotatedImages));
+    })();
+  }, []);
+
+  const totalSteps = 2;
+  const step = view === "dorsal" ? 1 : 2;
+  const canGoNext = view === "dorsal" ? Boolean(dorsal) : false;
+  const canSave = Boolean(dorsal) && Boolean(lateral);
+
+  const quality = React.useMemo(() => {
+    const issues: string[] = [];
+    const blockers: string[] = [];
+
+    if (dorsal && dorsal.confidence < 35) issues.push("Dorsal confidence is low.");
+    if (lateral && lateral.confidence < 35) issues.push("Lateral confidence is low.");
+
+    if (dorsal?.warnings?.length) issues.push("Dorsal capture has processing warnings.");
+    if (lateral?.warnings?.length) issues.push("Lateral capture has processing warnings.");
+
+    if (dorsal && (!dorsal.centerlinePx || dorsal.centerlinePx.length < 10)) blockers.push("Dorsal centerline not found.");
+    if (lateral && (!lateral.centerlinePx || lateral.centerlinePx.length < 10)) blockers.push("Lateral centerline not found.");
+
+    if (dorsal && dorsal.confidence < 20) blockers.push("Dorsal confidence too low.");
+    if (lateral && lateral.confidence < 20) blockers.push("Lateral confidence too low.");
+
+    return { issues, blockers, hardBlocked: blockers.length > 0 };
+  }, [dorsal, lateral]);
+
+  React.useEffect(() => {
+    return () => stopCamera();
+  }, [stopCamera]);
+
+  const currentPreview = React.useMemo(() => {
+    if (refinePicking) {
+      const v = refinePicking === "dorsal" ? dorsal : lateral;
+      return v?.rawImageDataUrl ?? null;
+    }
+    const v = view === "dorsal" ? dorsal : lateral;
+    if (!v) return null;
+    return v.annotatedImageDataUrl || v.rawImageDataUrl;
+  }, [dorsal, lateral, refinePicking, view]);
+
+  const handleStart = async () => {
+    await startCamera();
+    toast.success("Camera active", { description: `Capture ${viewLabel(view)} photo.` });
+  };
+
+  const handleCapture = async () => {
+    setProcessing(true);
+    try {
+      const img = await captureImageAsync({ maxWidth: 1600, maxHeight: 1600, quality: 0.9 });
+      if (!img) {
+        toast.error("Failed to capture image");
+        return;
+      }
+
+      const calibration = calibrationData?.pixelsPerMm
+        ? {
+            pixelsPerMm: calibrationData.pixelsPerMm,
+            source: "reference-object" as const,
+            referenceLabel: String(calibrationData.referenceType ?? "reference"),
+          }
+        : { source: "none" as const };
+
+      const det = await measureImage({ imageDataUrl: img, calibration, requestedUnits: "cm" }, { maxDim: 1024, polyDegree: 3 });
+
+      const nextState: CapturedViewState = {
+        rawImageDataUrl: img,
+        annotatedImageDataUrl: det.annotatedImageDataUrl,
+        angleDeg: Math.round(det.curvatureAngleDeg),
+        confidence: det.confidence,
+        lengthCm: det.lengthCm ? Number(det.lengthCm.toFixed(1)) : undefined,
+        centerlinePx: det.centerlinePx,
+        warnings: det.export.debug?.warnings ?? [],
+      };
+
+      if (view === "dorsal") {
+        setDorsal(nextState);
+        if (nextState.lengthCm) setLengthCm(nextState.lengthCm);
+        setView("lateral");
+        toast.success("Dorsal captured", { description: "Now capture the lateral (side) view." });
+      } else {
+        setLateral(nextState);
+        if (!lengthCm && nextState.lengthCm) setLengthCm(nextState.lengthCm);
+        stopCamera();
+        toast.success("Lateral captured", { description: "Review and save your session." });
+      }
+    } catch {
+      toast.error("Local analysis failed", { description: "Try better lighting and reframe." });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleRetake = async () => {
+    setRefinePicking(null);
+    if (view === "dorsal") {
+      setDorsal(null);
+      setView("dorsal");
+    } else {
+      setLateral(null);
+      setView("lateral");
+    }
+    if (!isActive) {
+      try {
+        await startCamera();
+      } catch {
+        // ignore (permission / device error already surfaced elsewhere)
+      }
+    }
+    toast.message("Retake ready", { description: `Capture ${viewLabel(view)} again.` });
+  };
+
+  const handleReset = () => {
+    stopCamera();
+    setView("dorsal");
+    setDorsal(null);
+    setLateral(null);
+    setLengthCm(0);
+    setRefinePicking(null);
+    toast.message("Session reset");
+  };
+
+  const handleSaveSession = async (force?: boolean) => {
+    if (!canSave || !dorsal || !lateral) return;
+    if (!force && quality.hardBlocked) {
+      toast.error("Quality too low to save", { description: "Retake with better lighting and framing, or use Save anyway." });
+      return;
+    }
+
+    try {
+      const overall = computeOverallConfidence(dorsal.confidence, lateral.confidence);
+      const session: CurvatureScanSession = {
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+        dorsal: {
+          view: "dorsal",
+          curvatureAngleDeg: dorsal.angleDeg,
+          curvatureDirection: dorsal.curvatureDirection ?? "unknown",
+          lengthCm: lengthCm || dorsal.lengthCm || undefined,
+          confidence: dorsal.confidence,
+        },
+        lateral: {
+          view: "lateral",
+          curvatureAngleDeg: lateral.angleDeg,
+          curvatureDirection: lateral.curvatureDirection ?? "unknown",
+          lengthCm: lengthCm || lateral.lengthCm || undefined,
+          confidence: lateral.confidence,
+        },
+        estimatedLengthCm: lengthCm || dorsal.lengthCm || lateral.lengthCm || undefined,
+        overallConfidence: overall || undefined,
+        calibration: calibrationData?.pixelsPerMm
+          ? {
+              pixelsPerMm: calibrationData.pixelsPerMm,
+              source: "reference-object",
+              referenceLabel: String(calibrationData.referenceType ?? "reference"),
+            }
+          : { source: "none" },
+        refined: {
+          dorsal: Boolean(dorsal.baseAnchorPx),
+          lateral: Boolean(lateral.baseAnchorPx),
+        },
+        warnings: {
+          dorsal: dorsal.warnings?.slice(0, 25) ?? [],
+          lateral: lateral.warnings?.slice(0, 25) ?? [],
+        },
+        images: storeAnnotatedImages
+          ? {
+              dorsalAnnotated: dorsal.annotatedImageDataUrl,
+              lateralAnnotated: lateral.annotatedImageDataUrl,
+            }
+          : undefined,
+      };
+
+      await addSession(session);
+      toast.success("Curvature session saved", { description: "Stored locally (encrypted)." });
+      setActiveTab("history");
+      setSelectedSessionId(session.id);
+    } catch {
+      toast.error("Failed to save session");
+    }
+  };
+
+  const handleRefinePick = (targetView: CurvatureCaptureView) => {
+    const v = targetView === "dorsal" ? dorsal : lateral;
+    if (!v?.rawImageDataUrl || !v.centerlinePx?.length) {
+      toast.message("Refine unavailable", { description: "No centerline found; retake with better framing." });
+      return;
+    }
+    setRefinePicking(targetView);
+  };
+
+  const applyBasePick = (pt: { xPx: number; yPx: number; xPct: number; yPct: number }) => {
+    const targetView = refinePicking;
+    if (!targetView) return;
+    const v = targetView === "dorsal" ? dorsal : lateral;
+    if (!v?.centerlinePx?.length) {
+      setRefinePicking(null);
+      return;
+    }
+
+    const basePointPx = { x: pt.xPx, y: pt.yPx };
+
+    const anchored = computeBaseAnchoredAngleDeg(v.centerlinePx, basePointPx);
+    if (anchored == null) {
+      toast.error("Refine failed", { description: "Could not compute base-anchored angle." });
+      setRefinePicking(null);
+      return;
+    }
+
+    const dir = computeCurvatureDirectionFromCenterline({
+      view: targetView,
+      centerlinePx: v.centerlinePx,
+      basePointPx,
+    });
+
+    const next = {
+      ...v,
+      angleDeg: Math.round(anchored),
+      baseAnchorPx: basePointPx,
+      curvatureDirection: dir,
+    };
+    if (targetView === "dorsal") setDorsal(next);
+    else setLateral(next);
+
+    toast.success("Angle refined", { description: `Base-anchored angle: ${Math.round(anchored)}°` });
+    setRefinePicking(null);
+  };
+
+  return (
+    <section className="min-h-screen px-4 py-20 relative">
+      <canvas ref={canvasRef} className="hidden" />
+
+      <div className="container mx-auto max-w-6xl">
+        <div className="mb-6 text-center">
+          <h1 className="text-3xl font-bold gradient-text">Curvature Scan</h1>
+          <p className="text-muted-foreground mt-1">Local-only dorsal + lateral capture for Peyronie’s self-assessment.</p>
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <Badge variant="outline" className="bg-background/60">
+              Privacy: on-device only
+            </Badge>
+            {calibrationData?.pixelsPerMm ? (
+              <Badge variant="outline" className="bg-background/60">
+                Calibrated
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-background/60">
+                Not calibrated
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={v => setActiveTab(v as "scan" | "history")}>
+          <div className="flex items-center justify-center mb-6">
+            <TabsList>
+              <TabsTrigger value="scan" className="gap-2">
+                <Camera className="w-4 h-4" />
+                Scan
+              </TabsTrigger>
+              <TabsTrigger value="history" className="gap-2">
+                <History className="w-4 h-4" />
+                History
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="scan">
+            <div className="grid gap-8 grid-cols-1 lg:grid-cols-[3fr_2fr]">
+              <Card variant="glass" className="overflow-hidden">
+                <CardHeader className="border-b border-border/50">
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Camera className="w-5 h-5 text-primary" />
+                      {viewLabel(view)}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-mono">
+                      Step {step}/{totalSteps}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="relative aspect-[4/3] bg-black/30">
+                    {refinePicking && currentPreview ? (
+                      <BaseAnchorPicker imageDataUrl={currentPreview} onPick={applyBasePick} onCancel={() => setRefinePicking(null)} />
+                    ) : currentPreview ? (
+                      <img src={currentPreview} alt={`${view} capture`} className="w-full h-full object-contain" />
+                    ) : (
+                      <div className="absolute inset-0">
+                        <video ref={videoRef} className="w-full h-full object-cover" playsInline muted autoPlay />
+                        <CurvatureScanOverlay view={view} step={step} totalSteps={totalSteps} />
+                        {!isActive && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="rounded-xl border border-border/50 bg-background/60 backdrop-blur px-4 py-3">
+                              <div className="text-sm font-medium">Camera not started</div>
+                              <div className="text-xs text-muted-foreground mt-1">Tap “Start Camera” to begin.</div>
+                            </div>
+                          </div>
+                        )}
+                        {error && (
+                          <div className="absolute bottom-3 left-3 right-3">
+                            <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm">
+                              {error}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-4 flex flex-wrap gap-2">
+                    <Button variant="scan" onClick={handleStart} disabled={isActive || processing} className="gap-2">
+                      <Camera className="w-4 h-4" />
+                      Start Camera
+                    </Button>
+                    <Button variant="hero" onClick={handleCapture} disabled={!isActive || processing} className="gap-2">
+                      Capture
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowCalibration(true)} className="gap-2">
+                      <Ruler className="w-4 h-4" />
+                      Calibrate
+                    </Button>
+                    <Button variant="outline" onClick={handleRetake} disabled={processing} className="gap-2">
+                      <RotateCcw className="w-4 h-4" />
+                      Retake {view === "dorsal" ? "Dorsal" : "Lateral"}
+                    </Button>
+                    <Button variant="ghost" onClick={handleReset} disabled={processing}>
+                      Reset
+                    </Button>
+
+                    {view === "lateral" && dorsal && !lateral && (
+                      <Button variant="ghost" onClick={() => setView("dorsal")} className="gap-2">
+                        <ArrowLeft className="w-4 h-4" />
+                        Back to Dorsal
+                      </Button>
+                    )}
+                    {view === "dorsal" && canGoNext && (
+                      <Button variant="ghost" onClick={() => setView("lateral")} className="gap-2">
+                        Next
+                        <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-6">
+                <Card variant="glow">
+                  <CardHeader className="border-b border-border/50">
+                    <CardTitle className="text-lg">Results</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-4">
+                    <div className="p-4 rounded-xl bg-secondary/20 border border-border/50">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <div className="text-sm font-medium">Store annotated images in history</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Optional. Saved locally (encrypted). Can increase storage usage.
+                          </div>
+                        </div>
+                        <Switch
+                          checked={storeAnnotatedImages}
+                          onCheckedChange={async checked => {
+                            setStoreAnnotatedImages(Boolean(checked));
+                            await saveCurvatureSettings({ storeAnnotatedImages: Boolean(checked) });
+                          }}
+                          aria-label="Store annotated images in history"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-4 rounded-xl bg-secondary/20 border border-border/50">
+                        <div className="text-xs text-muted-foreground">Dorsal angle</div>
+                        <div className="text-2xl font-bold">{dorsal?.angleDeg ? `${dorsal.angleDeg}°` : "—"}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Confidence: {dorsal?.confidence ? `${dorsal.confidence}%` : "—"}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="mt-2 gap-2"
+                          onClick={() => handleRefinePick("dorsal")}
+                          disabled={!dorsal?.centerlinePx?.length}
+                        >
+                          <Crosshair className="w-4 h-4" />
+                          Refine (base)
+                        </Button>
+                      </div>
+                      <div className="p-4 rounded-xl bg-secondary/20 border border-border/50">
+                        <div className="text-xs text-muted-foreground">Lateral angle</div>
+                        <div className="text-2xl font-bold">{lateral?.angleDeg ? `${lateral.angleDeg}°` : "—"}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Confidence: {lateral?.confidence ? `${lateral.confidence}%` : "—"}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="mt-2 gap-2"
+                          onClick={() => handleRefinePick("lateral")}
+                          disabled={!lateral?.centerlinePx?.length}
+                        >
+                          <Crosshair className="w-4 h-4" />
+                          Refine (base)
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-secondary/20 border border-border/50">
+                      <div className="text-xs text-muted-foreground">Estimated length</div>
+                      <div className="text-2xl font-bold">{lengthCm ? `${lengthCm.toFixed(1)} cm` : "—"}</div>
+                      <div className="text-xs text-muted-foreground mt-1">Best accuracy requires calibration.</div>
+                    </div>
+
+                    <Button
+                      variant="gradient"
+                      className="w-full gap-2"
+                      onClick={() => handleSaveSession(false)}
+                      disabled={!canSave || processing}
+                    >
+                      <Save className="w-4 h-4" />
+                      Save Session (Local)
+                    </Button>
+
+                    {canSave && quality.hardBlocked ? (
+                      <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4">
+                        <div className="text-sm font-medium">Retake recommended</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {quality.blockers.slice(0, 2).join(" ")}
+                        </div>
+                        <div className="mt-3">
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => handleSaveSession(true)}
+                            disabled={processing}
+                          >
+                            Save anyway
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <div className="grid gap-8 grid-cols-1 lg:grid-cols-[2fr_3fr]">
+              <div>
+                <CurvatureHistoryList
+                  sessions={sessions}
+                  selectedId={selectedSessionId}
+                  onSelect={setSelectedSessionId}
+                  onDelete={async id => {
+                    await deleteSession(id);
+                    if (selectedSessionId === id) setSelectedSessionId(null);
+                    toast.message("Session deleted");
+                  }}
+                />
+              </div>
+              <div>
+                <div className="space-y-6">
+                  <CurvatureTrends sessions={sessions} />
+                  <CurvatureHistoryDetail session={selectedSession} />
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      <CalibrationWizard
+        isOpen={showCalibration}
+        onClose={() => setShowCalibration(false)}
+        onCalibrationComplete={data => {
+          setCalibrationData(data);
+          toast.success("Calibration saved", { description: "Length estimates will use real units." });
+        }}
+        videoRef={videoRef}
+      />
+    </section>
+  );
+}
+

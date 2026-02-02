@@ -1,37 +1,34 @@
-import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useData, ScanEntry, DiaryEntry } from '@/contexts/DataContext';
-import { 
-  format, 
-  startOfMonth, 
-  endOfMonth, 
-  eachDayOfInterval, 
-  isSameDay, 
+import { useState, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useData, ScanEntry, DiaryEntry } from "@/contexts/DataContext";
+import { useSettings } from "@/contexts/SettingsContext";
+import { formatLength } from "@/lib/measurementsComparison";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameDay,
   isSameMonth,
   addMonths,
   subMonths,
   startOfWeek,
   endOfWeek,
-  isToday
-} from 'date-fns';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Calendar as CalendarIcon, 
-  Scan, 
+  isToday,
+} from "date-fns";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Calendar as CalendarIcon,
+  Scan,
   BookOpen,
   Activity,
   Target,
-  Ruler
-} from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Ruler,
+} from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface DayData {
   scans: ScanEntry[];
@@ -40,6 +37,7 @@ interface DayData {
 
 export const CalendarView = () => {
   const { scans, diaryEntries } = useData();
+  const { measurementUnits } = useSettings();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedDayData, setSelectedDayData] = useState<DayData | null>(null);
@@ -47,16 +45,16 @@ export const CalendarView = () => {
   // Build a map of dates to entries
   const dateMap = useMemo(() => {
     const map = new Map<string, DayData>();
-    
+
     scans.forEach(scan => {
-      const dateKey = format(new Date(scan.created_at), 'yyyy-MM-dd');
+      const dateKey = format(new Date(scan.created_at), "yyyy-MM-dd");
       const existing = map.get(dateKey) || { scans: [], diary: [] };
       existing.scans.push(scan);
       map.set(dateKey, existing);
     });
 
     diaryEntries.forEach(entry => {
-      const dateKey = format(new Date(entry.entry_date), 'yyyy-MM-dd');
+      const dateKey = format(new Date(entry.entry_date), "yyyy-MM-dd");
       const existing = map.get(dateKey) || { scans: [], diary: [] };
       existing.diary.push(entry);
       map.set(dateKey, existing);
@@ -71,14 +69,14 @@ export const CalendarView = () => {
     const monthEnd = endOfMonth(currentMonth);
     const calStart = startOfWeek(monthStart);
     const calEnd = endOfWeek(monthEnd);
-    
+
     return eachDayOfInterval({ start: calStart, end: calEnd });
   }, [currentMonth]);
 
   const handleDayClick = (date: Date) => {
-    const dateKey = format(date, 'yyyy-MM-dd');
+    const dateKey = format(date, "yyyy-MM-dd");
     const dayData = dateMap.get(dateKey);
-    
+
     if (dayData && (dayData.scans.length > 0 || dayData.diary.length > 0)) {
       setSelectedDate(date);
       setSelectedDayData(dayData);
@@ -86,11 +84,11 @@ export const CalendarView = () => {
   };
 
   const getDayIndicators = (date: Date) => {
-    const dateKey = format(date, 'yyyy-MM-dd');
+    const dateKey = format(date, "yyyy-MM-dd");
     const dayData = dateMap.get(dateKey);
-    
+
     if (!dayData) return null;
-    
+
     return {
       hasScans: dayData.scans.length > 0,
       hasDiary: dayData.diary.length > 0,
@@ -99,7 +97,7 @@ export const CalendarView = () => {
     };
   };
 
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
     <div className="space-y-6">
@@ -111,18 +109,18 @@ export const CalendarView = () => {
               Health Calendar
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="icon"
                 onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
               >
                 <ChevronLeft className="w-5 h-5" />
               </Button>
               <span className="font-semibold min-w-[140px] text-center">
-                {format(currentMonth, 'MMMM yyyy')}
+                {format(currentMonth, "MMMM yyyy")}
               </span>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="icon"
                 onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
               >
@@ -143,32 +141,35 @@ export const CalendarView = () => {
 
           {/* Calendar grid */}
           <div className="grid grid-cols-7 gap-1">
-            {calendarDays.map((day, index) => {
+            {calendarDays.map((day) => {
               const indicators = getDayIndicators(day);
               const isCurrentMonth = isSameMonth(day, currentMonth);
               const isCurrentDay = isToday(day);
               const hasEntries = indicators && (indicators.hasScans || indicators.hasDiary);
+              const dateKey = format(day, "yyyy-MM-dd");
 
               return (
                 <button
-                  key={index}
+                  key={dateKey}
                   onClick={() => handleDayClick(day)}
                   disabled={!hasEntries}
                   className={`
                     relative aspect-square p-1 rounded-lg transition-all text-sm
-                    ${!isCurrentMonth ? 'text-muted-foreground/30' : ''}
-                    ${isCurrentDay ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}
-                    ${hasEntries ? 'cursor-pointer hover:bg-secondary/50' : 'cursor-default'}
-                    ${hasEntries ? 'bg-secondary/30' : ''}
+                    ${!isCurrentMonth ? "text-muted-foreground/30" : ""}
+                    ${isCurrentDay ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}
+                    ${hasEntries ? "cursor-pointer hover:bg-secondary/50" : "cursor-default"}
+                    ${hasEntries ? "bg-secondary/30" : ""}
                   `}
                 >
-                  <span className={`
-                    ${isCurrentDay ? 'font-bold text-primary' : ''}
-                    ${hasEntries && !isCurrentDay ? 'font-medium' : ''}
-                  `}>
-                    {format(day, 'd')}
+                  <span
+                    className={`
+                    ${isCurrentDay ? "font-bold text-primary" : ""}
+                    ${hasEntries && !isCurrentDay ? "font-medium" : ""}
+                  `}
+                  >
+                    {format(day, "d")}
                   </span>
-                  
+
                   {/* Entry indicators */}
                   {indicators && (
                     <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
@@ -228,10 +229,10 @@ export const CalendarView = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarIcon className="w-5 h-5 text-primary" />
-              {selectedDate && format(selectedDate, 'EEEE, MMMM d, yyyy')}
+              {selectedDate && format(selectedDate, "EEEE, MMMM d, yyyy")}
             </DialogTitle>
           </DialogHeader>
-          
+
           {selectedDayData && (
             <div className="space-y-4">
               {/* Scans */}
@@ -247,9 +248,9 @@ export const CalendarView = () => {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             {scan.image_data ? (
-                              <img 
-                                src={scan.image_data} 
-                                alt="Scan" 
+                              <img
+                                src={scan.image_data}
+                                alt="Scan"
                                 className="w-12 h-12 rounded-lg object-cover"
                               />
                             ) : (
@@ -258,9 +259,11 @@ export const CalendarView = () => {
                               </div>
                             )}
                             <div>
-                              <p className="font-medium text-sm">{scan.scan_type.toUpperCase()} Scan</p>
+                              <p className="font-medium text-sm">
+                                {scan.scan_type.toUpperCase()} Scan
+                              </p>
                               <p className="text-xs text-muted-foreground">
-                                {format(new Date(scan.created_at), 'h:mm a')}
+                                {format(new Date(scan.created_at), "h:mm a")}
                               </p>
                             </div>
                           </div>
@@ -271,7 +274,8 @@ export const CalendarView = () => {
                             </div>
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Ruler className="w-3 h-3" />
-                              {scan.length}cm × {scan.circumference}cm
+                              {formatLength(scan.length, measurementUnits)} ×{" "}
+                              {formatLength(scan.circumference, measurementUnits)}
                             </div>
                           </div>
                         </div>
@@ -294,7 +298,7 @@ export const CalendarView = () => {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <p className="text-xs text-muted-foreground">
-                              {format(new Date(entry.created_at), 'h:mm a')}
+                              {format(new Date(entry.created_at), "h:mm a")}
                             </p>
                             {entry.pain_level !== null && (
                               <Badge variant="outline" className="text-xs">
@@ -316,9 +320,17 @@ export const CalendarView = () => {
                           )}
                           {(entry.length || entry.circumference || entry.curvature_angle) && (
                             <div className="flex gap-4 text-xs text-muted-foreground pt-2 border-t border-border/50">
-                              {entry.length && <span>Length: {entry.length}cm</span>}
-                              {entry.circumference && <span>Circ: {entry.circumference}cm</span>}
-                              {entry.curvature_angle && <span>Angle: {entry.curvature_angle}°</span>}
+                              {entry.length && (
+                                <span>Length: {formatLength(entry.length, measurementUnits)}</span>
+                              )}
+                              {entry.circumference && (
+                                <span>
+                                  Circ: {formatLength(entry.circumference, measurementUnits)}
+                                </span>
+                              )}
+                              {entry.curvature_angle && (
+                                <span>Angle: {entry.curvature_angle}°</span>
+                              )}
                             </div>
                           )}
                         </div>

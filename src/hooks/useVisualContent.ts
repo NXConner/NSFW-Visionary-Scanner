@@ -2,9 +2,18 @@
  * Hook for managing visual content (images, GIFs, videos, animations)
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { fetchVisualContentFromGitHub, type VisualContent, VISUAL_CONTENT_CATEGORIES, REPOSITORY_CONFIGS } from '@/lib/visualContentManager';
-import { preloadInvertedImages } from '@/lib/imageProcessor';
+import { useState, useEffect, useCallback } from "react";
+import {
+  fetchVisualContentFromGitHub,
+  type VisualContent,
+  VISUAL_CONTENT_CATEGORIES,
+  REPOSITORY_CONFIGS,
+} from "@/lib/visualContentManager";
+import { preloadInvertedImages } from "@/lib/imageProcessor";
+
+// Re-export for convenience
+export { VISUAL_CONTENT_CATEGORIES } from "@/lib/visualContentManager";
+export type { VisualContent } from "@/lib/visualContentManager";
 
 interface UseVisualContentOptions {
   featureId?: string;
@@ -22,21 +31,17 @@ interface UseVisualContentReturn {
   refresh: () => Promise<void>;
 }
 
-export function useVisualContent(
-  options: UseVisualContentOptions = {}
-): UseVisualContentReturn {
-  const {
-    featureId,
-    categories = [],
-    autoLoad = true,
-    autoInvert = true,
-    limit,
-  } = options;
+export function useVisualContent(options: UseVisualContentOptions = {}): UseVisualContentReturn {
+  const { featureId, categories = [], autoLoad = true, autoInvert = true, limit } = options;
 
   const [content, setContent] = useState<VisualContent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+
+  // Memoize categories to prevent infinite re-render loop
+  // (arrays passed as props create new references each render)
+  const categoriesKey = categories.join(",");
 
   const loadContent = useCallback(async () => {
     setIsLoading(true);
@@ -49,30 +54,33 @@ export function useVisualContent(
         fetchVisualContentFromGitHub(
           REPOSITORY_CONFIGS.RANDOM_SEX_POSITION.owner,
           REPOSITORY_CONFIGS.RANDOM_SEX_POSITION.repo,
-          '',
-          REPOSITORY_CONFIGS.RANDOM_SEX_POSITION.branch || 'main'
+          "",
+          REPOSITORY_CONFIGS.RANDOM_SEX_POSITION.branch || "main",
         ),
         fetchVisualContentFromGitHub(
           REPOSITORY_CONFIGS.SEX_POSITIONS.owner,
           REPOSITORY_CONFIGS.SEX_POSITIONS.repo,
-          '',
-          REPOSITORY_CONFIGS.SEX_POSITIONS.branch || 'main'
+          "",
+          REPOSITORY_CONFIGS.SEX_POSITIONS.branch || "main",
         ),
       ]);
 
       let allContent: VisualContent[] = [];
 
-      if (repo1Content.status === 'fulfilled') {
+      if (repo1Content.status === "fulfilled") {
         allContent.push(...repo1Content.value);
       }
-      if (repo2Content.status === 'fulfilled') {
+      if (repo2Content.status === "fulfilled") {
         allContent.push(...repo2Content.value);
       }
 
       // Filter by categories if provided
-      if (categories.length > 0) {
+      const cats = categoriesKey ? categoriesKey.split(",") : [];
+      if (cats.length > 0) {
         allContent = allContent.filter(item =>
-          categories.some(cat => item.category.includes(cat) || item.tags.some(tag => tag.includes(cat)))
+          cats.some(
+            cat => item.category.includes(cat) || item.tags.some(tag => tag.includes(cat)),
+          ),
         );
       }
 
@@ -86,19 +94,17 @@ export function useVisualContent(
 
       // Invert images if requested
       if (autoInvert) {
-        const imageUrls = allContent
-          .filter(item => item.type === 'image')
-          .map(item => item.url);
+        const imageUrls = allContent.filter(item => item.type === "image").map(item => item.url);
 
         if (imageUrls.length > 0) {
-          const invertedImages = await preloadInvertedImages(imageUrls, (prog) => {
-            setProgress(50 + (prog / 2));
+          const invertedImages = await preloadInvertedImages(imageUrls, prog => {
+            setProgress(50 + prog / 2);
           });
 
           // Update content with inverted URLs
           setContent(prevContent =>
             prevContent.map(item => {
-              if (item.type === 'image' && invertedImages[item.url]) {
+              if (item.type === "image" && invertedImages[item.url]) {
                 return {
                   ...item,
                   url: invertedImages[item.url],
@@ -106,20 +112,19 @@ export function useVisualContent(
                 };
               }
               return item;
-            })
+            }),
           );
         }
       }
 
       setProgress(100);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load visual content';
+      const errorMessage = err instanceof Error ? err.message : "Failed to load visual content";
       setError(errorMessage);
-      console.error('Error loading visual content:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [categories, autoInvert, limit]);
+  }, [categoriesKey, autoInvert, limit]);
 
   useEffect(() => {
     if (autoLoad) {
@@ -135,4 +140,3 @@ export function useVisualContent(
     refresh: loadContent,
   };
 }
-

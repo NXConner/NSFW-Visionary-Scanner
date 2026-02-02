@@ -1,0 +1,152 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@13.0.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+type ReqBody = {
+  contentId: string;
+  successUrl: string;
+  cancelUrl: string;
+};
+
+serve(async req => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const body = (await req.json()) as ReqBody;
+    const contentId = String(body.contentId || "");
+    const successUrl = String(body.successUrl || "");
+    const cancelUrl = String(body.cancelUrl || "");
+
+    if (!contentId || !successUrl || !cancelUrl) {
+      return new Response(JSON.stringify({ error: "Missing required fields" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("Unauthorized");
+    const token = authHeader.replace("Bearer ", "");
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data: userRes, error: authError } = await supabase.auth.getUser(token);
+    const user = userRes?.user;
+    if (authError || !user) throw new Error("Invalid authentication");
+
+    const { data: item, error: itemError } = await supabase
+      .from("premium_content_items")
+      .select(
+        "id, title, description, price, currency, is_subscription, subscription_duration_days, is_active, is_approved",
+      )
+      .eq("id", contentId)
+      .maybeSingle();
+
+    if (itemError || !item) {
+      return new Response(JSON.stringify({ error: "Content not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!item.is_active || !item.is_approved) {
+      return new Response(JSON.stringify({ error: "Content not available" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const priceValue = Number(item.price ?? 0);
+    if (!Number.isFinite(priceValue) || priceValue <= 0) {
+      return new Response(JSON.stringify({ error: "Free content does not require checkout" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
+    if (!stripeSecretKey) throw new Error("Stripe not configured");
+    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
+
+    // Shared customer mapping
+    let { data: subscriptionRow } = await supabase
+      .from("user_subscriptions")
+      .select("stripe_customer_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    let customerId = (subscriptionRow as any)?.stripe_customer_id as string | undefined;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email ?? undefined,
+        metadata: { supabase_user_id: user.id },
+      });
+      customerId = customer.id;
+      await supabase.from("user_subscriptions").upsert({
+        user_id: user.id,
+        stripe_customer_id: customerId,
+        status: "incomplete",
+      });
+    }
+
+    const mode = item.is_subscription ? "subscription" : "payment";
+
+    const currency = String(item.currency || "USD").toLowerCase();
+    const unitAmount = Math.round(priceValue * 100);
+
+    const recurring =
+      mode === "subscription"
+        ? {
+            interval: Number(item.subscription_duration_days ?? 30) >= 365 ? "year" : "month",
+          }
+        : undefined;
+
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      line_items: [
+        {
+          price_data: {
+            currency,
+            unit_amount: unitAmount,
+            product_data: {
+              name: String(item.title),
+              description: String(item.description || ""),
+              metadata: { premium_content_id: String(item.id) },
+            },
+            recurring: recurring as any,
+          },
+          quantity: 1,
+        } as any,
+      ],
+      mode: mode as any,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      metadata: {
+        purchase_type: "premium_content",
+        premium_content_id: String(item.id),
+        supabase_user_id: user.id,
+      },
+    });
+
+    return new Response(JSON.stringify({ url: session.url }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("create-premium-content-checkout-session error:", error);
+    return new Response(JSON.stringify({ error: message }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});

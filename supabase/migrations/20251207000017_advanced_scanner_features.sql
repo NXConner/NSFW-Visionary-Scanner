@@ -64,8 +64,8 @@ CREATE TABLE IF NOT EXISTS time_lapse_comparisons (
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   
   comparison_name TEXT,
-  start_scan_id UUID REFERENCES scans(id) ON DELETE SET NULL,
-  end_scan_id UUID REFERENCES scans(id) ON DELETE SET NULL,
+  start_scan_id UUID,
+  end_scan_id UUID,
   
   -- Comparison metrics
   length_change DECIMAL(10, 2), -- cm
@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS batch_scan_sessions (
 CREATE TABLE IF NOT EXISTS batch_scan_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   batch_session_id UUID NOT NULL REFERENCES batch_scan_sessions(id) ON DELETE CASCADE,
-  scan_id UUID REFERENCES scans(id) ON DELETE SET NULL,
+  scan_id UUID,
   
   entry_index INTEGER NOT NULL, -- Order in batch
   captured_at TIMESTAMPTZ NOT NULL,

@@ -4,3 +4,10 @@ dist
 coverage
 .husky
 supabase/.temp
+
+# Archived / manual-review content (may contain intentionally invalid TS/JSX combos)
+deleted files
+DontNeed
+
+# Android embedded web build artifacts (generated)
+android/app/src/main/assets/public

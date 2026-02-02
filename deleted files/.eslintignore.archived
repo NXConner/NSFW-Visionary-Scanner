@@ -1,0 +1,16 @@
+node_modules
+dist
+build
+coverage
+playwright-report
+test-results
+
+# Generated artifacts
+android/app/src/main/assets/public
+supabase/.temp
+
+# Archived / external content
+deleted files
+DontNeed
+external-repos
+

@@ -1,9 +1,201 @@
 project_id = "thajylrvfzjmerqqkmjv"
 
+[functions.admin-dlc-catalog]
+enabled = true
+verify_jwt = true
+
+[functions.admin-beta-access]
+enabled = true
+verify_jwt = true
+
+[functions.admin-import-dlc-content]
+enabled = true
+verify_jwt = true
+
+[functions.admin-rotate-dlc-key]
+enabled = true
+verify_jwt = true
+
 [functions.ai-health-chat]
 enabled = true
-verify_jwt = false
+verify_jwt = true
+
+[functions.ai-progress-analysis]
+enabled = true
+verify_jwt = true
+
+[functions.ai-routine-recommendations]
+enabled = true
+verify_jwt = true
 
 [functions.ai-scan-analysis]
 enabled = true
+verify_jwt = true
+
+[functions.scan-upload]
+enabled = true
+verify_jwt = true
+
+[functions.scan-analyze]
+enabled = true
+verify_jwt = true
+
+[functions.scan-history]
+enabled = true
+verify_jwt = true
+
+[functions.analyze-health-patterns]
+enabled = true
+verify_jwt = true
+
+[functions.apply-referral-code]
+enabled = true
+verify_jwt = true
+
+[functions.cancel-addon-subscription]
+enabled = true
+verify_jwt = true
+
+[functions.cancel-subscription]
+enabled = true
+verify_jwt = true
+
+[functions.check-dlc-updates]
+enabled = true
+verify_jwt = true
+
+[functions.conversational-ai-chat]
+enabled = true
+verify_jwt = true
+
+[functions.create-addon-checkout-session]
+enabled = true
+verify_jwt = true
+
+[functions.create-billing-portal-session]
+enabled = true
+verify_jwt = true
+
+[functions.create-checkout-session]
+enabled = true
+verify_jwt = true
+
+[functions.create-dlc-checkout-session]
+enabled = true
+verify_jwt = true
+
+[functions.create-marketplace-checkout-session]
+enabled = true
+verify_jwt = true
+
+[functions.create-portal-session]
+enabled = true
+verify_jwt = true
+
+[functions.create-premium-content-checkout-session]
+enabled = true
+verify_jwt = true
+
+[functions.create-routine-marketplace-checkout-session]
+enabled = true
+verify_jwt = true
+
+[functions.create-subscription]
+enabled = true
+verify_jwt = true
+
+# Scheduled/automation endpoint (service role used inside)
+[functions.data-retention-cleanup]
+enabled = true
 verify_jwt = false
+
+[functions.delete-user-account]
+enabled = true
+verify_jwt = true
+
+[functions.dlc-device-management]
+enabled = true
+verify_jwt = true
+
+[functions.generate-health-insights]
+enabled = true
+verify_jwt = true
+
+[functions.generate-referral-code]
+enabled = true
+verify_jwt = true
+
+[functions.get-dlc-content]
+enabled = true
+verify_jwt = true
+
+[functions.get-dlc-key]
+enabled = true
+verify_jwt = true
+
+[functions.get-dlc-signed-upload-url]
+enabled = true
+verify_jwt = true
+
+[functions.get-dlc-signed-url]
+enabled = true
+verify_jwt = true
+
+[functions.merge-video-chunks]
+enabled = true
+verify_jwt = true
+
+[functions.predict-health-trends]
+enabled = true
+verify_jwt = true
+
+[functions.rate-limit-middleware]
+enabled = true
+verify_jwt = false
+
+[functions.reactivate-subscription]
+enabled = true
+verify_jwt = true
+
+[functions.register-device-token]
+enabled = true
+verify_jwt = true
+
+[functions.seductive-ai-chat]
+enabled = true
+verify_jwt = true
+
+[functions.send-email]
+enabled = true
+verify_jwt = true
+
+# Scheduled/automation endpoint (service role used inside)
+[functions.send-health-reminder]
+enabled = true
+verify_jwt = false
+
+[functions.send-push-notification]
+enabled = true
+verify_jwt = true
+
+# Public webhook endpoint (Stripe calls this; signature verified inside)
+[functions.stripe-webhook]
+enabled = true
+verify_jwt = false
+
+[functions.update-subscription]
+enabled = true
+verify_jwt = true
+
+[functions.verify-dlc-license]
+enabled = true
+verify_jwt = true
+
+# Public webhook endpoint (signature verified inside)
+[functions.verify-webhook]
+enabled = true
+verify_jwt = false
+
+[functions.video-editing]
+enabled = true
+verify_jwt = true

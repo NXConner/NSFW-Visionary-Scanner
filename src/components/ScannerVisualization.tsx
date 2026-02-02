@@ -5,7 +5,7 @@ export const ScannerVisualization = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setScanProgress((prev) => (prev >= 100 ? 0 : prev + 1));
+      setScanProgress(prev => (prev >= 100 ? 0 : prev + 1));
     }, 50);
     return () => clearInterval(interval);
   }, []);
@@ -14,24 +14,24 @@ export const ScannerVisualization = () => {
     <div className="relative w-80 h-80 md:w-96 md:h-96">
       {/* Outer rotating ring */}
       <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-rotate-slow" />
-      
+
       {/* Pulsing rings */}
-      {[0, 1, 2].map((i) => (
+      {[0, 1, 2].map(i => (
         <div
           key={i}
           className="absolute inset-4 rounded-full border border-primary/30 animate-pulse-ring"
           style={{ animationDelay: `${i * 0.5}s` }}
         />
       ))}
-      
+
       {/* Center scanner area */}
       <div className="absolute inset-8 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 backdrop-blur-sm border border-primary/20 overflow-hidden">
         {/* Scan line */}
-        <div 
+        <div
           className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-scan-line"
-          style={{ top: '0%' }}
+          style={{ top: "0%" }}
         />
-        
+
         {/* Grid pattern */}
         <div className="absolute inset-0 opacity-20">
           {[...Array(8)].map((_, i) => (
@@ -49,30 +49,30 @@ export const ScannerVisualization = () => {
             />
           ))}
         </div>
-        
+
         {/* Center icon */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative">
             <div className="w-20 h-20 rounded-full gradient-primary opacity-20 animate-pulse-ring" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <svg 
-                className="w-10 h-10 text-primary" 
-                fill="none" 
-                viewBox="0 0 24 24" 
+              <svg
+                className="w-10 h-10 text-primary"
+                fill="none"
+                viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={1.5} 
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" 
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
                 />
               </svg>
             </div>
           </div>
         </div>
       </div>
-      
+
       {/* Corner brackets */}
       <div className="absolute top-0 left-0 w-12 h-12">
         <div className="absolute top-0 left-0 w-full h-0.5 bg-primary" />
@@ -90,7 +90,7 @@ export const ScannerVisualization = () => {
         <div className="absolute bottom-0 right-0 w-full h-0.5 bg-primary" />
         <div className="absolute bottom-0 right-0 h-full w-0.5 bg-primary" />
       </div>
-      
+
       {/* Data points */}
       {[...Array(12)].map((_, i) => {
         const angle = (i * 30 * Math.PI) / 180;
@@ -109,7 +109,7 @@ export const ScannerVisualization = () => {
           />
         );
       })}
-      
+
       {/* Progress indicator */}
       <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2">
         <span className="text-xs font-mono text-muted-foreground">SCANNING</span>

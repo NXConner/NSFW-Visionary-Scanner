@@ -4,15 +4,17 @@
 	"webDir": "dist",
 	"bundledWebRuntime": false,
 	"android": {
-		"allowMixedContent": true,
+		"allowMixedContent": false,
 		"captureInput": true,
-		"webContentsDebuggingEnabled": true
+		"webContentsDebuggingEnabled": false,
+		"backgroundColor": "#0a0a0a"
 	},
 	"ios": {
 		"contentInset": "automatic",
 		"allowsLinkPreview": true,
 		"scrollEnabled": true,
-		"limitsNavigationsToAppBoundDomains": false
+		"limitsNavigationsToAppBoundDomains": false,
+		"backgroundColor": "#0a0a0a"
 	},
 	"plugins": {
 		"SplashScreen": {

@@ -16,9 +16,24 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Shield, Lock, Cloud, CloudOff, Database, Download, Trash2,
-  Eye, EyeOff, CheckCircle, AlertTriangle, HardDrive, FileText,
-  Image, Calendar, Activity, Sparkles, RefreshCw
+  Shield,
+  Lock,
+  Cloud,
+  CloudOff,
+  Database,
+  Download,
+  Trash2,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  AlertTriangle,
+  HardDrive,
+  FileText,
+  Image,
+  Calendar,
+  Activity,
+  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
 import { toast } from "sonner";
@@ -44,12 +59,12 @@ export const PrivacyDashboard = () => {
 
       // Check localStorage items
       const storageKeys: { key: string; label: string; icon: React.ElementType }[] = [
-        { key: 'morphoscan_scans', label: 'Scan History', icon: Activity },
-        { key: 'morphoscan_diary', label: 'Health Diary', icon: Calendar },
-        { key: 'morphoscan_settings', label: 'Settings', icon: FileText },
-        { key: 'morphoscan_audit_log', label: 'Activity Log', icon: FileText },
-        { key: 'morphoscan_goals', label: 'Goals', icon: Sparkles },
-        { key: 'morphoscan_encryption_key', label: 'Encryption Key', icon: Lock },
+        { key: "morphoscan_scans", label: "Scan History", icon: Activity },
+        { key: "morphoscan_diary", label: "Health Diary", icon: Calendar },
+        { key: "morphoscan_settings", label: "Settings", icon: FileText },
+        { key: "morphoscan_audit_log", label: "Activity Log", icon: FileText },
+        { key: "morphoscan_goals", label: "Goals", icon: Sparkles },
+        { key: "morphoscan_encryption_key", label: "Encryption Key", icon: Lock },
       ];
 
       storageKeys.forEach(({ key, label, icon }) => {
@@ -62,11 +77,11 @@ export const PrivacyDashboard = () => {
       });
 
       // Add image data size estimation
-      const imageData = localStorage.getItem('morphoscan_images');
+      const imageData = localStorage.getItem("morphoscan_images");
       if (imageData) {
         const size = new Blob([imageData]).size;
         total += size;
-        items.push({ key: 'morphoscan_images', label: 'Stored Images', icon: Image, size });
+        items.push({ key: "morphoscan_images", label: "Stored Images", icon: Image, size });
       }
 
       setStorageUsed(total);
@@ -77,11 +92,11 @@ export const PrivacyDashboard = () => {
   }, [scans, diaryEntries]);
 
   const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) return "0 B";
     const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const sizes = ["B", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   // Estimate max storage (5MB is typical localStorage limit)
@@ -89,28 +104,30 @@ export const PrivacyDashboard = () => {
   const storagePercentage = (storageUsed / maxStorage) * 100;
 
   const handleExportAllData = () => {
-    const exportData: Record<string, any> = {};
-    
+    const exportData: Record<string, unknown> = {};
+
     storageItems.forEach(item => {
       const data = localStorage.getItem(item.key);
       if (data) {
         try {
-          exportData[item.key] = JSON.parse(data);
+          exportData[item.key] = JSON.parse(data) as unknown;
         } catch {
           exportData[item.key] = data;
         }
       }
     });
 
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `growthtracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `growthtracker-backup-${new Date().toISOString().split("T")[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    
-    toast.success("Data exported successfully", { description: "Your backup file has been downloaded" });
+
+    toast.success("Data exported successfully", {
+      description: "Your backup file has been downloaded",
+    });
   };
 
   const handleDeleteCategory = (key: string, label: string) => {
@@ -122,9 +139,9 @@ export const PrivacyDashboard = () => {
 
   const handleNuclearOption = () => {
     // Clear everything
-    const keysToKeep = ['morphoscan_encryption_key']; // Keep encryption key
-    const allKeys = Object.keys(localStorage).filter(k => k.startsWith('morphoscan_'));
-    
+    const keysToKeep = ["morphoscan_encryption_key"]; // Keep encryption key
+    const allKeys = Object.keys(localStorage).filter(k => k.startsWith("morphoscan_"));
+
     allKeys.forEach(key => {
       if (!keysToKeep.includes(key)) {
         localStorage.removeItem(key);
@@ -132,7 +149,9 @@ export const PrivacyDashboard = () => {
     });
 
     clearAllData();
-    toast.success("All data cleared", { description: "Your app has been reset to factory settings" });
+    toast.success("All data cleared", {
+      description: "Your app has been reset to factory settings",
+    });
     setTimeout(() => window.location.reload(), 1000);
   };
 
@@ -155,9 +174,9 @@ export const PrivacyDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-4">
-            {privacyGuarantees.map((item, index) => (
-              <div 
-                key={index}
+            {privacyGuarantees.map((item) => (
+              <div
+                key={item.label}
                 className="flex items-start gap-3 p-3 rounded-lg bg-success/5 border border-success/20"
               >
                 <div className="p-2 rounded-lg bg-success/20">
@@ -184,7 +203,9 @@ export const PrivacyDashboard = () => {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-muted-foreground">Storage Used</span>
-            <span className="font-bold">{formatBytes(storageUsed)} / {formatBytes(maxStorage)}</span>
+            <span className="font-bold">
+              {formatBytes(storageUsed)} / {formatBytes(maxStorage)}
+            </span>
           </div>
           <Progress value={storagePercentage} className="h-3" />
           <p className="text-xs text-muted-foreground">
@@ -237,7 +258,7 @@ export const PrivacyDashboard = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {storageItems.map((item) => {
+              {storageItems.map(item => {
                 const Icon = item.icon;
                 return (
                   <div
@@ -255,7 +276,11 @@ export const PrivacyDashboard = () => {
                     </div>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -263,12 +288,13 @@ export const PrivacyDashboard = () => {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete {item.label}?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will permanently delete all data in {item.label}. This action cannot be undone.
+                            This will permanently delete all data in {item.label}. This action
+                            cannot be undone.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction 
+                          <AlertDialogAction
                             onClick={() => handleDeleteCategory(item.key, item.label)}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           >
@@ -294,8 +320,8 @@ export const PrivacyDashboard = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full justify-start gap-2"
             onClick={handleExportAllData}
           >
@@ -324,14 +350,14 @@ export const PrivacyDashboard = () => {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete ALL Data?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will permanently delete ALL your data including scans, diary entries, 
-                        settings, and activity logs. Your encryption key will be preserved. 
-                        This action CANNOT be undone. Consider exporting a backup first.
+                        This will permanently delete ALL your data including scans, diary entries,
+                        settings, and activity logs. Your encryption key will be preserved. This
+                        action CANNOT be undone. Consider exporting a backup first.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction 
+                      <AlertDialogAction
                         onClick={handleNuclearOption}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
@@ -354,7 +380,7 @@ export const PrivacyDashboard = () => {
             <div>
               <p className="text-sm font-medium text-success mb-1">Your Privacy is Protected</p>
               <p className="text-xs text-muted-foreground">
-                All data is encrypted and stored locally on your device. We have no access to your 
+                All data is encrypted and stored locally on your device. We have no access to your
                 personal health information. No data is ever transmitted to external servers.
               </p>
             </div>

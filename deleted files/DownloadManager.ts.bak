@@ -1,0 +1,508 @@
+/**
+ * DLC Download Manager
+ * Orchestrates DLC downloads, installation, and storage
+ */
+
+import { logger } from '@/lib/logger';
+import { dlcManager } from './DLCManager';
+import { dlcRegistry } from './DLCRegistry';
+import { secureDownloader } from '../security/SecureDownloader';
+import { contentEncryption, integrityChecker } from '../security/ContentEncryption';
+import type {
+  DLCPackage,
+  DLCDownload,
+  DownloadProgress,
+  DownloadStatus,
+  DLCInstallation,
+  DevicePlatform,
+} from './types';
+
+// ============================================
+// Types
+// ============================================
+
+interface DownloadQueueItem {
+  packageId: string;
+  priority: number;
+  status: DownloadStatus;
+  addedAt: Date;
+}
+
+interface InstallResult {
+  success: boolean;
+  error?: string;
+  packageId: string;
+  installedVersion: string;
+}
+
+// ============================================
+// Constants
+// ============================================
+
+const MAX_CONCURRENT_DOWNLOADS = 2;
+const STORAGE_KEY = 'dlc_downloads';
+const CONTENT_CACHE_KEY_PREFIX = 'dlc_content_';
+
+// ============================================
+// Download Manager Class
+// ============================================
+
+class DownloadManager {
+  private downloadQueue: Map<string, DownloadQueueItem> = new Map();
+  private listeners: Set<(downloads: DownloadProgress[]) => void> = new Set();
+  private isProcessing: boolean = false;
+  
+  constructor() {
+    this.loadQueueFromStorage();
+  }
+  
+  /**
+   * Subscribe to download progress updates
+   */
+  subscribe(listener: (downloads: DownloadProgress[]) => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+  
+  /**
+   * Notify listeners of progress changes
+   */
+  private notifyListeners(): void {
+    const downloads = this.getAllDownloads();
+    this.listeners.forEach(listener => listener(downloads));
+  }
+  
+  /**
+   * Queue a package for download
+   */
+  async queueDownload(packageId: string, priority: number = 0): Promise<void> {
+    // Check if already in queue
+    if (this.downloadQueue.has(packageId)) {
+      logger.debug('DownloadManager: Package already in queue', { packageId });
+      return;
+    }
+    
+    // Check if user owns the package
+    if (!dlcManager.ownsPackage(packageId)) {
+      throw new Error('License required to download');
+    }
+    
+    // Validate license
+    const validation = await dlcManager.validateLicense(packageId);
+    if (!validation.isValid) {
+      throw new Error(validation.error || 'Invalid license');
+    }
+    
+    // Add to queue
+    this.downloadQueue.set(packageId, {
+      packageId,
+      priority,
+      status: 'pending',
+      addedAt: new Date(),
+    });
+    
+    this.saveQueueToStorage();
+    
+    logger.info('DownloadManager: Package queued for download', { packageId });
+    
+    // Start processing queue
+    this.processQueue();
+  }
+  
+  /**
+   * Process the download queue
+   */
+  private async processQueue(): Promise<void> {
+    if (this.isProcessing) return;
+    
+    this.isProcessing = true;
+    
+    try {
+      while (true) {
+        // Get active downloads
+        const activeDownloads = Array.from(this.downloadQueue.values())
+          .filter(item => item.status === 'downloading');
+        
+        // Check if we can start more downloads
+        if (activeDownloads.length >= MAX_CONCURRENT_DOWNLOADS) {
+          break;
+        }
+        
+        // Get next pending download
+        const pendingDownloads = Array.from(this.downloadQueue.values())
+          .filter(item => item.status === 'pending')
+          .sort((a, b) => b.priority - a.priority);
+        
+        const next = pendingDownloads[0];
+        if (!next) break;
+        
+        // Start download
+        await this.startDownload(next.packageId);
+      }
+    } finally {
+      this.isProcessing = false;
+    }
+  }
+  
+  /**
+   * Start downloading a package
+   */
+  private async startDownload(packageId: string): Promise<void> {
+    const pkg = dlcRegistry.getPackage(packageId);
+    if (!pkg) {
+      throw new Error('Package not found');
+    }
+    
+    // Update status
+    const queueItem = this.downloadQueue.get(packageId);
+    if (queueItem) {
+      queueItem.status = 'downloading';
+      this.saveQueueToStorage();
+    }
+    
+    logger.info('DownloadManager: Starting download', { packageId });
+    
+    try {
+      // Download the package
+      const result = await secureDownloader.download({
+        packageId,
+        url: pkg.downloadUrl || `https://dlc.example.com/packages/${packageId}/latest`,
+        expectedChecksum: pkg.checksumSha256,
+        onProgress: (progress) => {
+          this.notifyListeners();
+        },
+      });
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Download failed');
+      }
+      
+      // Store the downloaded content
+      await this.storeContent(packageId, result.data!);
+      
+      // Install the package
+      await this.installPackage(packageId);
+      
+      // Remove from queue
+      this.downloadQueue.delete(packageId);
+      this.saveQueueToStorage();
+      
+      logger.info('DownloadManager: Download and install completed', { packageId });
+      
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Download failed';
+      
+      // Mark as failed in queue
+      const queueItem = this.downloadQueue.get(packageId);
+      if (queueItem) {
+        queueItem.status = 'failed';
+        this.saveQueueToStorage();
+      }
+      
+      logger.error('DownloadManager: Download failed', { packageId, error: message });
+      throw error;
+    }
+    
+    this.notifyListeners();
+    
+    // Continue processing queue
+    this.processQueue();
+  }
+  
+  /**
+   * Store downloaded content
+   */
+  private async storeContent(packageId: string, data: ArrayBuffer): Promise<void> {
+    // Store in IndexedDB
+    const db = await this.openDatabase();
+    const tx = db.transaction(['content'], 'readwrite');
+    const store = tx.objectStore('content');
+    
+    await new Promise<void>((resolve, reject) => {
+      const request = store.put({
+        packageId,
+        data: new Uint8Array(data),
+        downloadedAt: new Date().toISOString(),
+        size: data.byteLength,
+      });
+      
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    
+    logger.debug('DownloadManager: Content stored', { packageId, size: data.byteLength });
+  }
+  
+  /**
+   * Install a downloaded package
+   */
+  private async installPackage(packageId: string): Promise<InstallResult> {
+    const pkg = dlcRegistry.getPackage(packageId);
+    if (!pkg) {
+      return { success: false, error: 'Package not found', packageId, installedVersion: '' };
+    }
+    
+    // Use DLC Manager to install
+    const result = await dlcManager.installPackage(packageId);
+    
+    return {
+      success: result.success,
+      error: result.error,
+      packageId,
+      installedVersion: pkg.version,
+    };
+  }
+  
+  /**
+   * Cancel a download
+   */
+  cancelDownload(packageId: string): void {
+    secureDownloader.cancelDownload(packageId);
+    
+    this.downloadQueue.delete(packageId);
+    this.saveQueueToStorage();
+    
+    this.notifyListeners();
+    
+    logger.info('DownloadManager: Download cancelled', { packageId });
+  }
+  
+  /**
+   * Pause a download
+   */
+  pauseDownload(packageId: string): void {
+    secureDownloader.pauseDownload(packageId);
+    
+    const queueItem = this.downloadQueue.get(packageId);
+    if (queueItem) {
+      queueItem.status = 'paused';
+      this.saveQueueToStorage();
+    }
+    
+    this.notifyListeners();
+  }
+  
+  /**
+   * Resume a paused download
+   */
+  async resumeDownload(packageId: string): Promise<void> {
+    const queueItem = this.downloadQueue.get(packageId);
+    if (queueItem && queueItem.status === 'paused') {
+      queueItem.status = 'pending';
+      this.saveQueueToStorage();
+      this.processQueue();
+    }
+  }
+  
+  /**
+   * Retry a failed download
+   */
+  async retryDownload(packageId: string): Promise<void> {
+    const queueItem = this.downloadQueue.get(packageId);
+    if (queueItem && queueItem.status === 'failed') {
+      queueItem.status = 'pending';
+      this.saveQueueToStorage();
+      this.processQueue();
+    }
+  }
+  
+  /**
+   * Get download progress for a package
+   */
+  getDownloadProgress(packageId: string): DownloadProgress | undefined {
+    return secureDownloader.getProgress(packageId);
+  }
+  
+  /**
+   * Get all downloads
+   */
+  getAllDownloads(): DownloadProgress[] {
+    return Array.from(this.downloadQueue.keys()).map(packageId => {
+      const progress = secureDownloader.getProgress(packageId);
+      const queueItem = this.downloadQueue.get(packageId)!;
+      
+      return progress || {
+        packageId,
+        status: queueItem.status,
+        progress: 0,
+        downloadedBytes: 0,
+        totalBytes: 0,
+        speedBps: 0,
+        estimatedTimeRemaining: 0,
+      };
+    });
+  }
+  
+  /**
+   * Get queued downloads
+   */
+  getQueuedDownloads(): DownloadQueueItem[] {
+    return Array.from(this.downloadQueue.values())
+      .filter(item => item.status === 'pending');
+  }
+  
+  /**
+   * Get active downloads
+   */
+  getActiveDownloads(): DownloadProgress[] {
+    return this.getAllDownloads()
+      .filter(d => d.status === 'downloading');
+  }
+  
+  /**
+   * Clear download history
+   */
+  clearCompletedDownloads(): void {
+    for (const [packageId, item] of this.downloadQueue) {
+      if (item.status === 'completed') {
+        this.downloadQueue.delete(packageId);
+      }
+    }
+    this.saveQueueToStorage();
+    this.notifyListeners();
+  }
+  
+  /**
+   * Check if content is cached
+   */
+  async isContentCached(packageId: string): Promise<boolean> {
+    try {
+      const db = await this.openDatabase();
+      const tx = db.transaction(['content'], 'readonly');
+      const store = tx.objectStore('content');
+      
+      return new Promise<boolean>((resolve) => {
+        const request = store.get(packageId);
+        request.onsuccess = () => resolve(!!request.result);
+        request.onerror = () => resolve(false);
+      });
+    } catch {
+      return false;
+    }
+  }
+  
+  /**
+   * Get cached content
+   */
+  async getCachedContent(packageId: string): Promise<ArrayBuffer | null> {
+    try {
+      const db = await this.openDatabase();
+      const tx = db.transaction(['content'], 'readonly');
+      const store = tx.objectStore('content');
+      
+      return new Promise<ArrayBuffer | null>((resolve) => {
+        const request = store.get(packageId);
+        request.onsuccess = () => {
+          if (request.result) {
+            resolve(request.result.data.buffer);
+          } else {
+            resolve(null);
+          }
+        };
+        request.onerror = () => resolve(null);
+      });
+    } catch {
+      return null;
+    }
+  }
+  
+  /**
+   * Delete cached content
+   */
+  async deleteCachedContent(packageId: string): Promise<void> {
+    const db = await this.openDatabase();
+    const tx = db.transaction(['content'], 'readwrite');
+    const store = tx.objectStore('content');
+    
+    await new Promise<void>((resolve, reject) => {
+      const request = store.delete(packageId);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    
+    logger.debug('DownloadManager: Cached content deleted', { packageId });
+  }
+  
+  /**
+   * Get total cached content size
+   */
+  async getCacheSize(): Promise<number> {
+    try {
+      const db = await this.openDatabase();
+      const tx = db.transaction(['content'], 'readonly');
+      const store = tx.objectStore('content');
+      
+      return new Promise<number>((resolve) => {
+        let totalSize = 0;
+        const request = store.openCursor();
+        
+        request.onsuccess = (event) => {
+          const cursor = (event.target as IDBRequest).result;
+          if (cursor) {
+            totalSize += cursor.value.size || 0;
+            cursor.continue();
+          } else {
+            resolve(totalSize);
+          }
+        };
+        
+        request.onerror = () => resolve(0);
+      });
+    } catch {
+      return 0;
+    }
+  }
+  
+  // ==========================================
+  // Storage Methods
+  // ==========================================
+  
+  private saveQueueToStorage(): void {
+    const data = Array.from(this.downloadQueue.entries());
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+  
+  private loadQueueFromStorage(): void {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const data = JSON.parse(stored) as [string, DownloadQueueItem][];
+        data.forEach(([key, value]) => {
+          // Revive dates
+          value.addedAt = new Date(value.addedAt);
+          // Reset active downloads to pending
+          if (value.status === 'downloading') {
+            value.status = 'pending';
+          }
+          this.downloadQueue.set(key, value);
+        });
+      }
+    } catch (error) {
+      logger.warn('DownloadManager: Failed to load queue from storage', error);
+    }
+  }
+  
+  private async openDatabase(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('dlc_download_manager', 1);
+      
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+      
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        
+        if (!db.objectStoreNames.contains('content')) {
+          db.createObjectStore('content', { keyPath: 'packageId' });
+        }
+        
+        if (!db.objectStoreNames.contains('metadata')) {
+          db.createObjectStore('metadata', { keyPath: 'packageId' });
+        }
+      };
+    });
+  }
+}
+
+// Export singleton instance
+export const downloadManager = new DownloadManager();

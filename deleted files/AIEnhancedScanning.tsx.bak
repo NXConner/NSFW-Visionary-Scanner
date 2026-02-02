@@ -1,0 +1,521 @@
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import {
+  analyzeScanWithAI,
+  getRealTimeScanFeedback,
+  getMeasurementSuggestions,
+  applyMeasurementSuggestion,
+  assessScanQuality,
+  detectAnomalies,
+  getAnomalies,
+  generateHealthTrendVisualization,
+  type AIScanAnalysis,
+  type MeasurementSuggestion,
+  type QualityAssessment,
+  type AnomalyDetection,
+  type HealthTrendVisualization
+} from '@/lib/aiEnhancedScanning'
+import { Brain, AlertTriangle, TrendingUp, CheckCircle, Lightbulb, BarChart3, Eye } from 'lucide-react'
+import { toast } from 'sonner'
+import { useAuth } from '@/contexts/AuthContext'
+
+export const AIEnhancedScanning = () => {
+  const { user } = useAuth()
+  const [activeTab, setActiveTab] = useState('analysis')
+  const [loading, setLoading] = useState(false)
+  const [selectedScanId, setSelectedScanId] = useState<string | null>(null)
+
+  // AI Analysis
+  const [analyses, setAnalyses] = useState<AIScanAnalysis[]>([])
+  
+  // Measurement Suggestions
+  const [suggestions, setSuggestions] = useState<MeasurementSuggestion[]>([])
+  
+  // Quality Assessment
+  const [qualityAssessment, setQualityAssessment] = useState<QualityAssessment | null>(null)
+  
+  // Anomalies
+  const [anomalies, setAnomalies] = useState<AnomalyDetection[]>([])
+  
+  // Trend Visualizations
+  const [visualizations, setVisualizations] = useState<HealthTrendVisualization[]>([])
+
+  useEffect(() => {
+    if (selectedScanId) {
+      loadScanData()
+    }
+  }, [selectedScanId])
+
+  const loadScanData = async () => {
+    if (!selectedScanId) return
+
+    setLoading(true)
+    try {
+      const [suggestionsData, anomaliesData] = await Promise.all([
+        getMeasurementSuggestions(selectedScanId),
+        getAnomalies(selectedScanId)
+      ])
+      setSuggestions(suggestionsData)
+      setAnomalies(anomaliesData)
+    } catch (error) {
+      toast.error('Failed to load scan data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAnalyzeScan = async () => {
+    if (!selectedScanId) {
+      toast.error('Please select a scan')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const analysisTypes: AIScanAnalysis['analysis_type'][] = [
+        'health_detection',
+        'measurement_suggestion',
+        'quality_assessment',
+        'anomaly_detection'
+      ]
+      const results = await analyzeScanWithAI(selectedScanId, analysisTypes)
+      setAnalyses(results)
+      toast.success('Scan analyzed!')
+    } catch (error) {
+      toast.error('Failed to analyze scan')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAssessQuality = async () => {
+    if (!selectedScanId) {
+      toast.error('Please select a scan')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const assessment = await assessScanQuality(selectedScanId)
+      if (assessment) {
+        setQualityAssessment(assessment)
+        toast.success('Quality assessed!')
+      }
+    } catch (error) {
+      toast.error('Failed to assess quality')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDetectAnomalies = async () => {
+    if (!selectedScanId) {
+      toast.error('Please select a scan')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const detected = await detectAnomalies(selectedScanId)
+      setAnomalies(detected)
+      if (detected.length > 0) {
+        toast.success(`Found ${detected.length} anomaly(ies)`)
+      } else {
+        toast.success('No anomalies detected')
+      }
+    } catch (error) {
+      toast.error('Failed to detect anomalies')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApplySuggestion = async (suggestionId: string) => {
+    setLoading(true)
+    try {
+      const success = await applyMeasurementSuggestion(suggestionId)
+      if (success) {
+        await loadScanData()
+      }
+    } catch (error) {
+      toast.error('Failed to apply suggestion')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGenerateTrend = async (type: HealthTrendVisualization['visualization_type']) => {
+    setLoading(true)
+    try {
+      const viz = await generateHealthTrendVisualization(type)
+      if (viz) {
+        setVisualizations([viz, ...visualizations])
+        toast.success('Trend visualization generated!')
+      }
+    } catch (error) {
+      toast.error('Failed to generate visualization')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getSeverityBadge = (severity: string) => {
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+      low: 'outline',
+      medium: 'default',
+      high: 'destructive',
+      critical: 'destructive'
+    }
+    return <Badge variant={variants[severity] || 'default'}>{severity.toUpperCase()}</Badge>
+  }
+
+  return (
+    <div className="container mx-auto p-4 max-w-7xl">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">AI-Enhanced Scanning</h1>
+        <p className="text-muted-foreground">Real-time health detection, measurement suggestions, quality assessment, and anomaly detection</p>
+      </div>
+
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <div className="flex gap-4 items-center">
+            <Input
+              placeholder="Enter Scan ID"
+              value={selectedScanId || ''}
+              onChange={(e) => setSelectedScanId(e.target.value)}
+              className="flex-1"
+            />
+            <Button onClick={handleAnalyzeScan} disabled={loading || !selectedScanId}>
+              <Brain className="w-4 h-4 mr-2" />
+              Analyze Scan
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="analysis">
+            <Brain className="w-4 h-4 mr-2" />
+            AI Analysis
+          </TabsTrigger>
+          <TabsTrigger value="suggestions">
+            <Lightbulb className="w-4 h-4 mr-2" />
+            Suggestions
+          </TabsTrigger>
+          <TabsTrigger value="quality">
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Quality
+          </TabsTrigger>
+          <TabsTrigger value="anomalies">
+            <AlertTriangle className="w-4 h-4 mr-2" />
+            Anomalies
+          </TabsTrigger>
+          <TabsTrigger value="trends">
+            <TrendingUp className="w-4 h-4 mr-2" />
+            Trends
+          </TabsTrigger>
+        </TabsList>
+
+        {/* AI Analysis */}
+        <TabsContent value="analysis" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>AI Scan Analysis</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {analyses.map((analysis) => (
+                  <Card key={analysis.id}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold capitalize">{analysis.analysis_type.replace('_', ' ')}</h4>
+                        {analysis.ai_model_confidence && (
+                          <Badge variant="outline">
+                            {Math.round(analysis.ai_model_confidence * 100)}% confidence
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {analysis.detected_conditions && analysis.detected_conditions.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-sm font-medium mb-1">Detected Conditions:</p>
+                          <ul className="list-disc list-inside text-sm text-muted-foreground">
+                            {analysis.detected_conditions.map((condition: any, idx: number) => (
+                              <li key={idx}>{condition.condition} ({Math.round(condition.confidence * 100)}%)</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {analysis.suggested_measurements && (
+                        <div className="mt-2">
+                          <p className="text-sm font-medium mb-1">Suggested Measurements:</p>
+                          <pre className="text-xs bg-muted p-2 rounded">
+                            {JSON.stringify(analysis.suggested_measurements, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+
+                      {analysis.health_alerts && analysis.health_alerts.length > 0 && (
+                        <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                          <p className="text-sm font-medium text-yellow-900">Health Alerts:</p>
+                          <ul className="list-disc list-inside text-sm text-yellow-800">
+                            {analysis.health_alerts.map((alert: any, idx: number) => (
+                              <li key={idx}>{alert.message}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Measurement Suggestions */}
+        <TabsContent value="suggestions" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Measurement Suggestions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {suggestions.map((suggestion) => (
+                  <Card key={suggestion.id}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-semibold capitalize">{suggestion.suggestion_type.replace('_', ' ')}</h4>
+                            <Badge variant={suggestion.priority === 'high' ? 'destructive' : 'default'}>
+                              {suggestion.priority}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">{suggestion.reasoning}</p>
+                          {suggestion.current_value !== null && (
+                            <p className="text-sm">
+                              Current: {suggestion.current_value} → Suggested: {suggestion.suggested_value}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Expected improvement: {Math.round(suggestion.improvement_expected * 100)}%
+                          </p>
+                        </div>
+                        {!suggestion.is_applied && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleApplySuggestion(suggestion.id)}
+                            disabled={loading}
+                          >
+                            Apply
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Quality Assessment */}
+        <TabsContent value="quality" className="mt-4">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Quality Assessment</CardTitle>
+                <Button onClick={handleAssessQuality} disabled={loading || !selectedScanId}>
+                  <Eye className="w-4 h-4 mr-2" />
+                  Assess Quality
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {qualityAssessment ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium">Overall Quality Score</span>
+                      <Badge variant="outline" className="text-lg">
+                        {Math.round(qualityAssessment.overall_score * 100)}%
+                      </Badge>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {qualityAssessment.lighting_score !== null && (
+                        <div className="flex justify-between text-sm">
+                          <span>Lighting:</span>
+                          <span>{Math.round(qualityAssessment.lighting_score * 100)}%</span>
+                        </div>
+                      )}
+                      {qualityAssessment.focus_score !== null && (
+                        <div className="flex justify-between text-sm">
+                          <span>Focus:</span>
+                          <span>{Math.round(qualityAssessment.focus_score * 100)}%</span>
+                        </div>
+                      )}
+                      {qualityAssessment.angle_score !== null && (
+                        <div className="flex justify-between text-sm">
+                          <span>Angle:</span>
+                          <span>{Math.round(qualityAssessment.angle_score * 100)}%</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {qualityAssessment.recommendations && qualityAssessment.recommendations.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium mb-2">Recommendations:</p>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground">
+                        {qualityAssessment.recommendations.map((rec, idx) => (
+                          <li key={idx}>{rec}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {qualityAssessment.critical_issues && qualityAssessment.critical_issues.length > 0 && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded">
+                      <p className="text-sm font-medium text-red-900 mb-1">Critical Issues:</p>
+                      <ul className="list-disc list-inside text-sm text-red-800">
+                        {qualityAssessment.critical_issues.map((issue, idx) => (
+                          <li key={idx}>{issue}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  Click "Assess Quality" to analyze scan quality
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Anomalies */}
+        <TabsContent value="anomalies" className="mt-4">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Anomaly Detection</CardTitle>
+                <Button onClick={handleDetectAnomalies} disabled={loading || !selectedScanId}>
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  Detect Anomalies
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {anomalies.map((anomaly) => (
+                  <Card key={anomaly.id}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-semibold capitalize">{anomaly.anomaly_type.replace('_', ' ')}</h4>
+                            {getSeverityBadge(anomaly.severity)}
+                            <Badge variant="outline">
+                              {Math.round(anomaly.confidence * 100)}% confidence
+                            </Badge>
+                          </div>
+                          <p className="text-sm mb-2">{anomaly.description}</p>
+                          {anomaly.recommendation && (
+                            <p className="text-sm text-muted-foreground">
+                              <strong>Recommendation:</strong> {anomaly.recommendation}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Trends */}
+        <TabsContent value="trends" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Health Trend Visualizations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <Button
+                  onClick={() => handleGenerateTrend('growth_trend')}
+                  disabled={loading}
+                  variant="outline"
+                >
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Growth Trend
+                </Button>
+                <Button
+                  onClick={() => handleGenerateTrend('measurement_trend')}
+                  disabled={loading}
+                  variant="outline"
+                >
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Measurement Trend
+                </Button>
+                <Button
+                  onClick={() => handleGenerateTrend('health_score_trend')}
+                  disabled={loading}
+                  variant="outline"
+                >
+                  <Brain className="w-4 h-4 mr-2" />
+                  Health Score Trend
+                </Button>
+                <Button
+                  onClick={() => handleGenerateTrend('comparison_trend')}
+                  disabled={loading}
+                  variant="outline"
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Comparison Trend
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {visualizations.map((viz) => (
+                  <Card key={viz.id}>
+                    <CardContent className="p-4">
+                      <h4 className="font-semibold mb-2 capitalize">{viz.visualization_type.replace('_', ' ')}</h4>
+                      {viz.chart_image_url && (
+                        <img
+                          src={viz.chart_image_url}
+                          alt="Trend visualization"
+                          className="w-full rounded"
+                        />
+                      )}
+                      {viz.insights && viz.insights.length > 0 && (
+                        <div className="mt-4">
+                          <p className="text-sm font-medium mb-1">Insights:</p>
+                          <ul className="list-disc list-inside text-sm text-muted-foreground">
+                            {viz.insights.map((insight, idx) => (
+                              <li key={idx}>{insight}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
+

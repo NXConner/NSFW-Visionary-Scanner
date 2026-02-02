@@ -3,14 +3,14 @@
  * Professional portal for healthcare providers with patient data access, reporting, treatment planning, and HIPAA compliance
  */
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   getHealthcareProvider,
   createHealthcareProvider,
@@ -21,64 +21,74 @@ import {
   type HealthcareProvider,
   type PatientProviderRelationship,
   type ProviderProfessionalReport,
-  type TreatmentPlan
-} from '@/lib/healthcareProviderPortal'
-import { Stethoscope, Users, FileText, Calendar, Shield, Loader2, Plus, CheckCircle2 } from 'lucide-react'
-import { toast } from 'sonner'
+  type TreatmentPlan,
+} from "@/lib/healthcareProviderPortal";
+import {
+  Stethoscope,
+  Users,
+  FileText,
+  Calendar,
+  Shield,
+  Loader2,
+  Plus,
+  CheckCircle2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { SUPPORT_CONTACT_EMAIL } from "@/config/brand";
 
 export const HealthcareProviderPortal = () => {
-  const [activeTab, setActiveTab] = useState('dashboard')
-  const [loading, setLoading] = useState(false)
-  const [provider, setProvider] = useState<HealthcareProvider | null>(null)
-  const [relationships, setRelationships] = useState<PatientProviderRelationship[]>([])
-  const [showProviderForm, setShowProviderForm] = useState(false)
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [loading, setLoading] = useState(false);
+  const [provider, setProvider] = useState<HealthcareProvider | null>(null);
+  const [relationships, setRelationships] = useState<PatientProviderRelationship[]>([]);
+  const [showProviderForm, setShowProviderForm] = useState(false);
 
   const [providerForm, setProviderForm] = useState({
-    provider_name: '',
-    provider_type: 'doctor' as 'doctor' | 'clinic' | 'hospital' | 'organization',
+    provider_name: "",
+    provider_type: "doctor" as "doctor" | "clinic" | "hospital" | "organization",
     specialty: [] as string[],
-    email: '',
-    phone: '',
-    license_number: ''
-  })
+    email: "",
+    phone: "",
+    license_number: "",
+  });
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData();
+  }, []);
 
   const loadData = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const [providerData, relationshipsData] = await Promise.all([
         getHealthcareProvider(),
-        getPatientRelationships()
-      ])
-      setProvider(providerData)
-      setRelationships(relationshipsData)
+        getPatientRelationships(),
+      ]);
+      setProvider(providerData);
+      setRelationships(relationshipsData);
       if (providerData) {
-        setShowProviderForm(false)
+        setShowProviderForm(false);
       } else {
-        setShowProviderForm(true)
+        setShowProviderForm(true);
       }
     } catch (error) {
-      toast.error('Failed to load provider data')
+      toast.error("Failed to load provider data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleCreateProvider = async () => {
     try {
-      const newProvider = await createHealthcareProvider(providerForm)
+      const newProvider = await createHealthcareProvider(providerForm);
       if (newProvider) {
-        setProvider(newProvider)
-        setShowProviderForm(false)
-        await loadData()
+        setProvider(newProvider);
+        setShowProviderForm(false);
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to create provider profile')
+      toast.error("Failed to create provider profile");
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -90,7 +100,7 @@ export const HealthcareProviderPortal = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (!provider && showProviderForm) {
@@ -111,7 +121,7 @@ export const HealthcareProviderPortal = () => {
               <Label>Provider Name</Label>
               <Input
                 value={providerForm.provider_name}
-                onChange={(e) => setProviderForm({ ...providerForm, provider_name: e.target.value })}
+                onChange={e => setProviderForm({ ...providerForm, provider_name: e.target.value })}
                 placeholder="Dr. John Smith"
               />
             </div>
@@ -120,7 +130,12 @@ export const HealthcareProviderPortal = () => {
               <select
                 className="w-full p-2 border rounded"
                 value={providerForm.provider_type}
-                onChange={(e) => setProviderForm({ ...providerForm, provider_type: e.target.value as any })}
+                onChange={e =>
+                  setProviderForm({
+                    ...providerForm,
+                    provider_type: e.target.value as typeof providerForm.provider_type,
+                  })
+                }
               >
                 <option value="doctor">Doctor</option>
                 <option value="clinic">Clinic</option>
@@ -133,15 +148,15 @@ export const HealthcareProviderPortal = () => {
               <Input
                 type="email"
                 value={providerForm.email}
-                onChange={(e) => setProviderForm({ ...providerForm, email: e.target.value })}
-                placeholder="provider@example.com"
+                onChange={e => setProviderForm({ ...providerForm, email: e.target.value })}
+                placeholder={SUPPORT_CONTACT_EMAIL}
               />
             </div>
             <div>
               <Label>Phone</Label>
               <Input
                 value={providerForm.phone}
-                onChange={(e) => setProviderForm({ ...providerForm, phone: e.target.value })}
+                onChange={e => setProviderForm({ ...providerForm, phone: e.target.value })}
                 placeholder="+1 (555) 123-4567"
               />
             </div>
@@ -149,7 +164,7 @@ export const HealthcareProviderPortal = () => {
               <Label>License Number</Label>
               <Input
                 value={providerForm.license_number}
-                onChange={(e) => setProviderForm({ ...providerForm, license_number: e.target.value })}
+                onChange={e => setProviderForm({ ...providerForm, license_number: e.target.value })}
                 placeholder="License number"
               />
             </div>
@@ -159,11 +174,11 @@ export const HealthcareProviderPortal = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (!provider) {
-    return null
+    return null;
   }
 
   return (
@@ -187,7 +202,7 @@ export const HealthcareProviderPortal = () => {
                   HIPAA Compliant
                 </Badge>
               )}
-              <Badge variant={provider.subscription_status === 'active' ? 'default' : 'secondary'}>
+              <Badge variant={provider.subscription_status === "active" ? "default" : "secondary"}>
                 {provider.subscription_status}
               </Badge>
             </div>
@@ -241,12 +256,16 @@ export const HealthcareProviderPortal = () => {
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium">Patient ID: {relationship.patient_id.substring(0, 8)}</p>
+                            <p className="font-medium">
+                              Patient ID: {relationship.patient_id.substring(0, 8)}
+                            </p>
                             <p className="text-sm text-muted-foreground">
                               {relationship.relationship_type} • {relationship.access_level}
                             </p>
                           </div>
-                          <Badge variant={relationship.status === 'active' ? 'default' : 'secondary'}>
+                          <Badge
+                            variant={relationship.status === "active" ? "default" : "secondary"}
+                          >
                             {relationship.status}
                           </Badge>
                         </div>
@@ -260,27 +279,55 @@ export const HealthcareProviderPortal = () => {
             <TabsContent value="reports" className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Professional Reports</h3>
-                <Button size="sm">
+                <Button
+                  size="sm"
+                  onClick={() => toast.info("Select a patient first to create a report")}
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   New Report
                 </Button>
               </div>
-              <div className="text-center py-12 text-muted-foreground">
-                Reports management coming soon
-              </div>
+              {relationships.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No reports yet</p>
+                  <p className="text-sm mt-2">
+                    Connect with patients to create professional reports
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Select a patient from the Patients tab to view or create reports
+                  </p>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="treatment-plans" className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Treatment Plans</h3>
-                <Button size="sm">
+                <Button
+                  size="sm"
+                  onClick={() => toast.info("Select a patient first to create a treatment plan")}
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   New Plan
                 </Button>
               </div>
-              <div className="text-center py-12 text-muted-foreground">
-                Treatment plans management coming soon
-              </div>
+              {relationships.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No treatment plans yet</p>
+                  <p className="text-sm mt-2">Connect with patients to create treatment plans</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Select a patient from the Patients tab to manage treatment plans
+                  </p>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="settings" className="space-y-4">
@@ -308,6 +355,5 @@ export const HealthcareProviderPortal = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
+  );
+};

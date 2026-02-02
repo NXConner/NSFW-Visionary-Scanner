@@ -51,8 +51,8 @@ interface MedicationLog {
   notes: string;
 }
 
-const MEDICATIONS_KEY = 'morphoscan_medications';
-const MEDICATION_LOGS_KEY = 'morphoscan_medication_logs';
+const MEDICATIONS_KEY = "morphoscan_medications";
+const MEDICATION_LOGS_KEY = "morphoscan_medication_logs";
 
 export const MedicationTracker = () => {
   const [medications, setMedications] = useState<Medication[]>(() => {
@@ -97,15 +97,13 @@ export const MedicationTracker = () => {
   const handleSave = () => {
     if (!name || !dosage) {
       toast.error("Please fill in medication name and dosage");
-      triggerHaptic('error');
+      triggerHaptic("error");
       return;
     }
 
     if (editingMed) {
       const updated = medications.map(m =>
-        m.id === editingMed.id
-          ? { ...m, name, dosage, frequency, time, notes }
-          : m
+        m.id === editingMed.id ? { ...m, name, dosage, frequency, time, notes } : m,
       );
       saveMedications(updated);
       toast.success("Medication updated");
@@ -124,7 +122,7 @@ export const MedicationTracker = () => {
       toast.success("Medication added");
     }
 
-    triggerHaptic('success');
+    triggerHaptic("success");
     resetForm();
     setIsAddOpen(false);
   };
@@ -132,16 +130,12 @@ export const MedicationTracker = () => {
   const handleDelete = (id: string) => {
     saveMedications(medications.filter(m => m.id !== id));
     toast.success("Medication removed");
-    triggerHaptic('light');
+    triggerHaptic("light");
   };
 
   const toggleActive = (id: string) => {
-    saveMedications(
-      medications.map(m =>
-        m.id === id ? { ...m, active: !m.active } : m
-      )
-    );
-    triggerHaptic('selection');
+    saveMedications(medications.map(m => (m.id === id ? { ...m, active: !m.active } : m)));
+    triggerHaptic("selection");
   };
 
   const logDose = (medicationId: string) => {
@@ -153,14 +147,13 @@ export const MedicationTracker = () => {
     };
     saveLogs([newLog, ...logs]);
     toast.success("Dose logged!");
-    triggerHaptic('success');
+    triggerHaptic("success");
   };
 
   const getTodayLogs = (medicationId: string) => {
     const today = new Date().toDateString();
     return logs.filter(
-      l => l.medicationId === medicationId &&
-        new Date(l.takenAt).toDateString() === today
+      l => l.medicationId === medicationId && new Date(l.takenAt).toDateString() === today,
     );
   };
 
@@ -181,10 +174,13 @@ export const MedicationTracker = () => {
           <Pill className="w-5 h-5 text-primary" />
           Medication Tracker
         </CardTitle>
-        <Dialog open={isAddOpen} onOpenChange={(open) => {
-          setIsAddOpen(open);
-          if (!open) resetForm();
-        }}>
+        <Dialog
+          open={isAddOpen}
+          onOpenChange={open => {
+            setIsAddOpen(open);
+            if (!open) resetForm();
+          }}
+        >
           <DialogTrigger asChild>
             <Button variant="outline" size="sm">
               <Plus className="w-4 h-4 mr-1" />
@@ -193,16 +189,14 @@ export const MedicationTracker = () => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>
-                {editingMed ? "Edit Medication" : "Add Medication"}
-              </DialogTitle>
+              <DialogTitle>{editingMed ? "Edit Medication" : "Add Medication"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-4">
               <div>
                 <Label>Medication Name</Label>
                 <Input
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={e => setName(e.target.value)}
                   placeholder="e.g., Pentoxifylline"
                   className="mt-1"
                 />
@@ -211,7 +205,7 @@ export const MedicationTracker = () => {
                 <Label>Dosage</Label>
                 <Input
                   value={dosage}
-                  onChange={(e) => setDosage(e.target.value)}
+                  onChange={e => setDosage(e.target.value)}
                   placeholder="e.g., 400mg"
                   className="mt-1"
                 />
@@ -237,7 +231,7 @@ export const MedicationTracker = () => {
                   <Input
                     type="time"
                     value={time}
-                    onChange={(e) => setTime(e.target.value)}
+                    onChange={e => setTime(e.target.value)}
                     className="mt-1"
                   />
                 </div>
@@ -246,7 +240,7 @@ export const MedicationTracker = () => {
                 <Label>Notes (optional)</Label>
                 <Textarea
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  onChange={e => setNotes(e.target.value)}
                   placeholder="Take with food, etc."
                   className="mt-1"
                   rows={2}
@@ -256,10 +250,13 @@ export const MedicationTracker = () => {
                 <Button variant="gradient" className="flex-1" onClick={handleSave}>
                   {editingMed ? "Update" : "Add"} Medication
                 </Button>
-                <Button variant="outline" onClick={() => {
-                  setIsAddOpen(false);
-                  resetForm();
-                }}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsAddOpen(false);
+                    resetForm();
+                  }}
+                >
                   Cancel
                 </Button>
               </div>
@@ -276,10 +273,10 @@ export const MedicationTracker = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {medications.map((med) => {
+            {medications.map(med => {
               const todayLogs = getTodayLogs(med.id);
-              const expectedDoses = med.frequency === 'twice' ? 2 :
-                med.frequency === 'three' ? 3 : 1;
+              const expectedDoses =
+                med.frequency === "twice" ? 2 : med.frequency === "three" ? 3 : 1;
               const completed = todayLogs.length >= expectedDoses;
 
               return (
@@ -287,28 +284,30 @@ export const MedicationTracker = () => {
                   key={med.id}
                   className={`p-4 rounded-xl border transition-all ${
                     med.active
-                      ? 'bg-secondary/50 border-border'
-                      : 'bg-muted/30 border-muted opacity-60'
+                      ? "bg-secondary/50 border-border"
+                      : "bg-muted/30 border-muted opacity-60"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h4 className="font-semibold">{med.name}</h4>
-                        {completed && (
-                          <CheckCircle2 className="w-4 h-4 text-success" />
-                        )}
+                        {completed && <CheckCircle2 className="w-4 h-4 text-success" />}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {med.dosage} • {med.frequency === 'once' ? 'Once daily' :
-                          med.frequency === 'twice' ? 'Twice daily' :
-                          med.frequency === 'three' ? '3x daily' :
-                          med.frequency === 'weekly' ? 'Weekly' : 'As needed'}
+                        {med.dosage} •{" "}
+                        {med.frequency === "once"
+                          ? "Once daily"
+                          : med.frequency === "twice"
+                            ? "Twice daily"
+                            : med.frequency === "three"
+                              ? "3x daily"
+                              : med.frequency === "weekly"
+                                ? "Weekly"
+                                : "As needed"}
                       </p>
                       {med.notes && (
-                        <p className="text-xs text-muted-foreground mt-1 italic">
-                          {med.notes}
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 italic">{med.notes}</p>
                       )}
                       <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                         <Clock className="w-3 h-3" />
@@ -321,22 +320,11 @@ export const MedicationTracker = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Switch
-                        checked={med.active}
-                        onCheckedChange={() => toggleActive(med.id)}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEdit(med)}
-                      >
+                      <Switch checked={med.active} onCheckedChange={() => toggleActive(med.id)} />
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(med)}>
                         <Edit2 className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(med.id)}
-                      >
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(med.id)}>
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
                     </div>

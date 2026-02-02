@@ -199,7 +199,7 @@ CREATE POLICY "Users can update own health alerts" ON health_alerts
   FOR UPDATE USING (auth.uid() = user_id);
 
 CREATE POLICY "Service role can create health alerts" ON health_alerts
-  FOR INSERT USING (auth.jwt() ->> 'role' = 'service_role');
+  FOR INSERT WITH CHECK (auth.jwt() ->> 'role' = 'service_role');
 
 -- Function to update updated_at
 CREATE OR REPLACE FUNCTION update_health_updated_at()

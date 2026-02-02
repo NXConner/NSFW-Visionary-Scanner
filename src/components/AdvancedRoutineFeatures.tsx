@@ -1,17 +1,19 @@
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import {
   getRoutineTemplates,
   createRoutineTemplate,
   createAdaptiveRoutine,
+  getAdaptiveRoutines,
   adaptRoutine,
   shareRoutine,
   getMarketplaceRoutines,
+  purchaseRoutine,
   getRestDayRecommendations,
   createMultiWeekProgram,
   getMultiWeekPrograms,
@@ -20,118 +22,134 @@ import {
   type SharedRoutine,
   type RoutineMarketplaceItem,
   type RestDayRecommendation,
-  type MultiWeekProgram
-} from '@/lib/advancedRoutineFeatures'
-import { Calendar, Sparkles, Share2, ShoppingCart, TrendingUp, Target, Play, Pause } from 'lucide-react'
-import { toast } from 'sonner'
-import { useAuth } from '@/contexts/AuthContext'
+  type MultiWeekProgram,
+} from "@/lib/advancedRoutineFeatures";
+import {
+  Calendar,
+  Sparkles,
+  Share2,
+  ShoppingCart,
+  TrendingUp,
+  Target,
+  Play,
+  Pause,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const AdvancedRoutineFeatures = () => {
-  const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState('templates')
-  const [loading, setLoading] = useState(false)
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("templates");
+  const [loading, setLoading] = useState(false);
 
   // Templates
-  const [templates, setTemplates] = useState<RoutineTemplate[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [templates, setTemplates] = useState<RoutineTemplate[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
 
   // Adaptive Routines
-  const [adaptiveRoutines, setAdaptiveRoutines] = useState<AdaptiveRoutine[]>([])
+  const [adaptiveRoutines, setAdaptiveRoutines] = useState<AdaptiveRoutine[]>([]);
 
   // Marketplace
-  const [marketplaceItems, setMarketplaceItems] = useState<RoutineMarketplaceItem[]>([])
+  const [marketplaceItems, setMarketplaceItems] = useState<RoutineMarketplaceItem[]>([]);
 
   // Rest Day Recommendations
-  const [restDayRecommendations, setRestDayRecommendations] = useState<RestDayRecommendation[]>([])
+  const [restDayRecommendations, setRestDayRecommendations] = useState<RestDayRecommendation[]>([]);
 
   // Multi-Week Programs
-  const [programs, setPrograms] = useState<MultiWeekProgram[]>([])
+  const [programs, setPrograms] = useState<MultiWeekProgram[]>([]);
 
-  useEffect(() => {
-    if (user) {
-      loadData()
-    }
-  }, [user, activeTab, selectedCategory])
-
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
     try {
       switch (activeTab) {
-        case 'templates': {
+        case "templates": {
           const templatesData = await getRoutineTemplates(
-            selectedCategory as RoutineTemplate['category'] || undefined
-          )
-          setTemplates(templatesData)
-          break
+            (selectedCategory as RoutineTemplate["category"]) || undefined,
+          );
+          setTemplates(templatesData);
+          break;
         }
-        case 'adaptive': {
-          // Load adaptive routines would go here
-          break
+        case "adaptive": {
+          const routinesData = await getAdaptiveRoutines();
+          setAdaptiveRoutines(routinesData);
+          break;
         }
-        case 'marketplace': {
-          const marketplaceData = await getMarketplaceRoutines()
-          setMarketplaceItems(marketplaceData)
-          break
+        case "marketplace": {
+          const marketplaceData = await getMarketplaceRoutines();
+          setMarketplaceItems(marketplaceData);
+          break;
         }
-        case 'rest-days': {
-          const restDaysData = await getRestDayRecommendations()
-          setRestDayRecommendations(restDaysData)
-          break
+        case "rest-days": {
+          const restDaysData = await getRestDayRecommendations();
+          setRestDayRecommendations(restDaysData);
+          break;
         }
-        case 'programs': {
-          const programsData = await getMultiWeekPrograms()
-          setPrograms(programsData)
-          break
+        case "programs": {
+          const programsData = await getMultiWeekPrograms();
+          setPrograms(programsData);
+          break;
         }
       }
     } catch (error) {
-      toast.error('Failed to load data')
+      toast.error("Failed to load data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [activeTab, selectedCategory, user]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const handleCreateAdaptiveRoutine = async (templateId: string | null) => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const routine = await createAdaptiveRoutine(templateId, 'My Adaptive Routine')
+      const routine = await createAdaptiveRoutine(templateId, "My Adaptive Routine");
       if (routine) {
-        setAdaptiveRoutines([routine, ...adaptiveRoutines])
-        toast.success('Adaptive routine created!')
+        setAdaptiveRoutines([routine, ...adaptiveRoutines]);
+        toast.success("Adaptive routine created!");
       }
     } catch (error) {
-      toast.error('Failed to create routine')
+      toast.error("Failed to create routine");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleAdaptRoutine = async (routineId: string) => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const success = await adaptRoutine(routineId)
+      const success = await adaptRoutine(routineId);
       if (success) {
-        await loadData()
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to adapt routine')
+      toast.error("Failed to adapt routine");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const getDifficultyBadge = (level: number | null) => {
-    if (level === null) return null
-    const colors = ['green', 'yellow', 'orange', 'red']
-    const color = colors[Math.min(Math.floor(level / 3), 3)]
-    return <Badge variant="outline" className={`border-${color}-500 text-${color}-700`}>Level {level}</Badge>
-  }
+    if (level === null) return null;
+    const colors = ["green", "yellow", "orange", "red"];
+    const color = colors[Math.min(Math.floor(level / 3), 3)];
+    return (
+      <Badge variant="outline" className={`border-${color}-500 text-${color}-700`}>
+        Level {level}
+      </Badge>
+    );
+  };
 
   return (
     <div className="container mx-auto p-4 max-w-7xl">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Advanced Routine Features</h1>
-        <p className="text-muted-foreground">Routine templates, adaptive routines, sharing, marketplace, video-guided sessions, and multi-week programs</p>
+        <p className="text-muted-foreground">
+          Routine templates, adaptive routines, sharing, marketplace, video-guided sessions, and
+          multi-week programs
+        </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -167,7 +185,7 @@ export const AdvancedRoutineFeatures = () => {
                 <select
                   className="p-2 border rounded"
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={e => setSelectedCategory(e.target.value)}
                 >
                   <option value="">All Categories</option>
                   <option value="beginner">Beginner</option>
@@ -180,7 +198,7 @@ export const AdvancedRoutineFeatures = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {templates.map((template) => (
+                {templates.map(template => (
                   <Card key={template.id}>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
@@ -192,13 +210,17 @@ export const AdvancedRoutineFeatures = () => {
                             {template.is_verified && <Badge variant="outline">Verified</Badge>}
                             {getDifficultyBadge(template.difficulty_level)}
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">{template.description}</p>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {template.description}
+                          </p>
                           <div className="flex gap-2 flex-wrap">
                             {template.duration_weeks && (
                               <Badge variant="secondary">{template.duration_weeks} weeks</Badge>
                             )}
                             {template.sessions_per_week && (
-                              <Badge variant="secondary">{template.sessions_per_week} sessions/week</Badge>
+                              <Badge variant="secondary">
+                                {template.sessions_per_week} sessions/week
+                              </Badge>
                             )}
                             {template.average_rating && (
                               <Badge variant="outline">
@@ -232,14 +254,14 @@ export const AdvancedRoutineFeatures = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {adaptiveRoutines.map((routine) => (
+                {adaptiveRoutines.map(routine => (
                   <Card key={routine.id}>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             <h4 className="font-semibold">{routine.routine_name}</h4>
-                            <Badge variant={routine.status === 'active' ? 'default' : 'secondary'}>
+                            <Badge variant={routine.status === "active" ? "default" : "secondary"}>
                               {routine.status}
                             </Badge>
                             {routine.adaptation_confidence && (
@@ -249,7 +271,9 @@ export const AdvancedRoutineFeatures = () => {
                             )}
                           </div>
                           {routine.adaptation_reason && (
-                            <p className="text-sm text-muted-foreground mb-2">{routine.adaptation_reason}</p>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {routine.adaptation_reason}
+                            </p>
                           )}
                           <div className="flex gap-2">
                             <Badge variant="secondary">
@@ -257,7 +281,8 @@ export const AdvancedRoutineFeatures = () => {
                             </Badge>
                             {routine.last_adapted_at && (
                               <Badge variant="outline">
-                                Last adapted: {new Date(routine.last_adapted_at).toLocaleDateString()}
+                                Last adapted:{" "}
+                                {new Date(routine.last_adapted_at).toLocaleDateString()}
                               </Badge>
                             )}
                           </div>
@@ -287,7 +312,7 @@ export const AdvancedRoutineFeatures = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {marketplaceItems.map((item) => (
+                {marketplaceItems.map(item => (
                   <Card key={item.id}>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
@@ -296,9 +321,7 @@ export const AdvancedRoutineFeatures = () => {
                             <h4 className="font-semibold">Routine #{item.id.slice(0, 8)}</h4>
                             {item.is_featured && <Badge variant="default">Featured</Badge>}
                             {item.average_rating && (
-                              <Badge variant="outline">
-                                ⭐ {item.average_rating.toFixed(1)}
-                              </Badge>
+                              <Badge variant="outline">⭐ {item.average_rating.toFixed(1)}</Badge>
                             )}
                           </div>
                           <div className="flex items-center gap-4">
@@ -306,7 +329,19 @@ export const AdvancedRoutineFeatures = () => {
                             <Badge variant="secondary">{item.sales_count} sales</Badge>
                           </div>
                         </div>
-                        <Button size="sm">
+                        <Button
+                          size="sm"
+                          onClick={async () => {
+                            setLoading(true);
+                            try {
+                              const ok = await purchaseRoutine(item.id);
+                              if (ok) toast.info("Opening checkout…");
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
+                          disabled={loading}
+                        >
                           <ShoppingCart className="w-4 h-4 mr-2" />
                           Purchase
                         </Button>
@@ -327,7 +362,7 @@ export const AdvancedRoutineFeatures = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {restDayRecommendations.map((rec) => (
+                {restDayRecommendations.map(rec => (
                   <Card key={rec.id}>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
@@ -338,7 +373,7 @@ export const AdvancedRoutineFeatures = () => {
                             </h4>
                             {rec.recommendation_type && (
                               <Badge variant="outline" className="capitalize">
-                                {rec.recommendation_type.replace('_', ' ')}
+                                {rec.recommendation_type.replace("_", " ")}
                               </Badge>
                             )}
                             {rec.confidence && (
@@ -366,24 +401,23 @@ export const AdvancedRoutineFeatures = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {programs.map((program) => (
+                {programs.map(program => (
                   <Card key={program.id}>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             <h4 className="font-semibold">{program.program_name}</h4>
-                            <Badge variant={program.status === 'active' ? 'default' : 'secondary'}>
+                            <Badge variant={program.status === "active" ? "default" : "secondary"}>
                               {program.status}
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">{program.description}</p>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {program.description}
+                          </p>
                           <div className="flex gap-2">
-                            <Badge variant="secondary">
-                              Week {program.current_week} / {program.total_weeks}
-                            </Badge>
                             <Badge variant="outline">
-                              {program.completion_percentage.toFixed(0)}% complete
+                              Week {program.current_week} / {program.total_weeks}
                             </Badge>
                             {program.start_date && (
                               <Badge variant="outline">
@@ -406,6 +440,5 @@ export const AdvancedRoutineFeatures = () => {
         </TabsContent>
       </Tabs>
     </div>
-  )
-}
-
+  );
+};

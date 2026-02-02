@@ -1,0 +1,1 @@
+import{j as n,H as r}from"./index-MGDVbeSQ.js";function l({className:e,premium:s=!1,glow:o=!1,...m}){return n.jsx("div",{className:r("rounded-md",s?"skeleton-premium":"skeleton-shimmer",o&&"pulse-glow",e),...m})}export{l as S};

@@ -22,15 +22,20 @@ const jsxA11yWarnRules = Object.entries(jsxA11y.configs.recommended.rules ?? {})
 );
 
 export default tseslint.config(
-  { 
+  {
     ignores: [
       "dist",
+      "deleted files/**",
+      "external-repos/**",
       "supabase/functions/**",
       ".github/workflows/**",
       "node_modules/**",
       "*.config.js",
-      "*.config.ts"
-    ] 
+      "*.config.ts",
+      "android/app/build/**",
+      "android/.gradle/**",
+      "android/build/**",
+    ],
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -49,9 +54,24 @@ export default tseslint.config(
       ...jsxA11yWarnRules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-explicit-any": "warn",
+      // This codebase is intentionally not in TS strict mode yet (see tsconfig.*),
+      // and many integrations (Supabase, Stripe, 3D/ML libs) surface values as `unknown`/untyped.
+      // We enforce correctness via typecheck + tests; treat `any` cleanup as a gradual hardening task.
+      "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-empty-object-type": "off",
       "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+  {
+    files: [
+      "src/components/ui/**/*.{ts,tsx}",
+      "src/contexts/**/*.{ts,tsx}",
+      "src/dlc/**/*.{ts,tsx}",
+    ],
+    rules: {
+      // These modules intentionally export helpers, context, and variants alongside components.
+      // Fast refresh still works fine in practice; keep lint signal focused on app code.
+      "react-refresh/only-export-components": "off",
     },
   },
 );

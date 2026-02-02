@@ -1,0 +1,750 @@
+/**
+ * Habit Tracker System - Full Database Implementation
+ * Daily habit tracking, streaks, reminders, analytics, and integration with PE routines
+ */
+
+import { supabase } from '@/integrations/supabase/client'
+import { toast } from 'sonner'
+import { logger } from './logger'
+
+export interface HabitDefinition {
+  id?: string
+  user_id?: string
+  name: string
+  description?: string
+  category?: string
+  frequency: string
+  target_value?: number
+  unit?: string
+  reminder_enabled?: boolean
+  reminder_times?: string[]
+  reminder_days?: number[]
+  linked_routine_id?: string
+  linked_feature?: string
+  color?: string
+  icon?: string
+  order_index?: number
+  is_active?: boolean
+  is_template?: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+export interface UserHabit {
+  id?: string
+  user_id?: string
+  habit_definition_id: string
+  custom_name?: string
+  custom_target_value?: number
+  is_active?: boolean
+  started_at?: string
+  paused_at?: string
+  archived_at?: string
+  current_streak?: number
+  longest_streak?: number
+  total_completions?: number
+  completion_rate?: number
+  created_at?: string
+  updated_at?: string
+  habit_definition?: HabitDefinition
+}
+
+export interface HabitEntry {
+  id?: string
+  user_habit_id: string
+  entry_date: string
+  completed_value?: number
+  target_value?: number
+  notes?: string
+  mood?: string
+  difficulty_rating?: number
+  duration_minutes?: number
+  completed_at?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface HabitStreak {
+  id?: string
+  user_habit_id: string
+  streak_start_date: string
+  streak_end_date?: string
+  streak_length?: number
+  is_active?: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+export interface HabitTemplate {
+  id?: string
+  name: string
+  description?: string
+  category?: string
+  frequency: string
+  target_value?: number
+  unit?: string
+  icon?: string
+  color?: string
+  is_featured?: boolean
+  usage_count?: number
+  created_at?: string
+}
+
+export interface HabitAnalytics {
+  completionRate: number
+  totalEntries: number
+  completedEntries: number
+  currentStreak: number
+  longestStreak: number
+  averageValue: number
+  weeklyTrend: number[]
+  monthlyTrend: number[]
+  moodDistribution: Record<string, number>
+  bestDay: string | null
+  worstDay: string | null
+}
+
+// Get habit templates from database
+export async function getHabitTemplates(): Promise<HabitTemplate[]> {
+  try {
+    const { data, error } = await supabase
+      .from('habit_definitions')
+      .select('*')
+      .eq('is_template', true)
+      .order('name')
+
+    if (error) {
+      logger.error('Failed to get habit templates', { error: error.message })
+      return getDefaultTemplates()
+    }
+
+    return data?.map(d => ({
+      id: d.id,
+      name: d.name,
+      description: d.description || undefined,
+      category: d.category || undefined,
+      frequency: d.frequency,
+      target_value: d.target_value ? Number(d.target_value) : undefined,
+      unit: d.unit || undefined,
+      icon: d.icon || undefined,
+      color: d.color || undefined,
+      is_featured: false,
+    })) || getDefaultTemplates()
+  } catch (err) {
+    logger.error('Error getting templates', { error: err })
+    return getDefaultTemplates()
+  }
+}
+
+// Get default templates (fallback)
+function getDefaultTemplates(): HabitTemplate[] {
+  return [
+    {
+      id: 'template-1',
+      name: 'Daily PE Routine',
+      description: 'Complete your daily PE exercises',
+      category: 'pe_routine',
+      frequency: 'daily',
+      target_value: 1,
+      unit: 'session',
+      icon: '💪',
+      color: '#4CAF50',
+      is_featured: true,
+    },
+    {
+      id: 'template-2',
+      name: 'Jelqing Session',
+      description: 'Complete jelqing exercises',
+      category: 'pe_routine',
+      frequency: 'daily',
+      target_value: 20,
+      unit: 'minutes',
+      icon: '🎯',
+      color: '#2196F3',
+      is_featured: true,
+    },
+    {
+      id: 'template-3',
+      name: 'Stretching Routine',
+      description: 'Complete stretching exercises',
+      category: 'pe_routine',
+      frequency: 'daily',
+      target_value: 15,
+      unit: 'minutes',
+      icon: '🧘',
+      color: '#9C27B0',
+      is_featured: false,
+    },
+    {
+      id: 'template-4',
+      name: 'Kegel Exercises',
+      description: 'Complete kegel exercises',
+      category: 'health',
+      frequency: 'daily',
+      target_value: 50,
+      unit: 'reps',
+      icon: '💎',
+      color: '#FF9800',
+      is_featured: true,
+    },
+  ]
+}
+
+// Create a new habit from scratch
+export async function createHabit(habitData: Partial<HabitDefinition>): Promise<UserHabit | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      toast.error('Please sign in')
+      return null
+    }
+
+    // First create the habit definition
+    const { data: definition, error: defError } = await supabase
+      .from('habit_definitions')
+      .insert({
+        user_id: user.id,
+        name: habitData.name || 'New Habit',
+        description: habitData.description,
+        category: habitData.category || 'custom',
+        frequency: habitData.frequency || 'daily',
+        target_value: habitData.target_value || 1,
+        unit: habitData.unit || 'times',
+        color: habitData.color || '#4CAF50',
+        icon: habitData.icon || '💪',
+        is_template: false,
+        is_active: true,
+      })
+      .select()
+      .single()
+
+    if (defError) {
+      logger.error('Failed to create habit definition', { error: defError.message })
+      toast.error('Failed to create habit')
+      return null
+    }
+
+    // Then create the user habit
+    const { data: userHabit, error: habitError } = await supabase
+      .from('user_habits')
+      .insert({
+        user_id: user.id,
+        habit_definition_id: definition.id,
+        custom_name: habitData.name,
+        is_active: true,
+        current_streak: 0,
+        longest_streak: 0,
+        total_completions: 0,
+        completion_rate: 0,
+      })
+      .select(`
+        *,
+        habit_definition:habit_definitions(*)
+      `)
+      .single()
+
+    if (habitError) {
+      logger.error('Failed to create user habit', { error: habitError.message })
+      toast.error('Failed to create habit')
+      return null
+    }
+
+    toast.success('Habit created!')
+    return userHabit as UserHabit
+  } catch (err) {
+    logger.error('Error creating habit', { error: err })
+    toast.error('Failed to create habit')
+    return null
+  }
+}
+
+// Create a habit from a template
+export async function createHabitFromTemplate(templateId: string): Promise<UserHabit | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      toast.error('Please sign in')
+      return null
+    }
+
+    // Get the template
+    const { data: template, error: templateError } = await supabase
+      .from('habit_definitions')
+      .select('*')
+      .eq('id', templateId)
+      .single()
+
+    if (templateError || !template) {
+      // Use default templates
+      const defaults = getDefaultTemplates()
+      const defaultTemplate = defaults.find(t => t.id === templateId)
+      if (defaultTemplate) {
+        return createHabit({
+          name: defaultTemplate.name,
+          description: defaultTemplate.description,
+          category: defaultTemplate.category,
+          frequency: defaultTemplate.frequency,
+          target_value: defaultTemplate.target_value,
+          unit: defaultTemplate.unit,
+          icon: defaultTemplate.icon,
+          color: defaultTemplate.color,
+        })
+      }
+      toast.error('Template not found')
+      return null
+    }
+
+    // Create user habit from template
+    const { data: userHabit, error: habitError } = await supabase
+      .from('user_habits')
+      .insert({
+        user_id: user.id,
+        habit_definition_id: template.id,
+        custom_name: template.name,
+        is_active: true,
+        current_streak: 0,
+        longest_streak: 0,
+        total_completions: 0,
+        completion_rate: 0,
+      })
+      .select(`
+        *,
+        habit_definition:habit_definitions(*)
+      `)
+      .single()
+
+    if (habitError) {
+      logger.error('Failed to create habit from template', { error: habitError.message })
+      toast.error('Failed to create habit')
+      return null
+    }
+
+    toast.success('Habit created from template!')
+    return userHabit as UserHabit
+  } catch (err) {
+    logger.error('Error creating habit from template', { error: err })
+    toast.error('Failed to create habit')
+    return null
+  }
+}
+
+// Get user's habits
+export async function getUserHabits(activeOnly = true): Promise<UserHabit[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+
+    let query = supabase
+      .from('user_habits')
+      .select(`
+        *,
+        habit_definition:habit_definitions(*)
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (activeOnly) {
+      query = query.eq('is_active', true)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      logger.error('Failed to get user habits', { error: error.message })
+      return []
+    }
+
+    return (data || []) as UserHabit[]
+  } catch (err) {
+    logger.error('Error getting user habits', { error: err })
+    return []
+  }
+}
+
+// Get habit by ID
+export async function getHabitById(habitId: string): Promise<UserHabit | null> {
+  try {
+    const { data, error } = await supabase
+      .from('user_habits')
+      .select(`
+        *,
+        habit_definition:habit_definitions(*)
+      `)
+      .eq('id', habitId)
+      .single()
+
+    if (error) {
+      logger.error('Failed to get habit', { error: error.message })
+      return null
+    }
+
+    return data as UserHabit
+  } catch (err) {
+    logger.error('Error getting habit', { error: err })
+    return null
+  }
+}
+
+// Log a habit entry
+export async function logHabitEntry(
+  userHabitId: string,
+  entryDate: string,
+  completedValue: number,
+  notes?: string,
+  mood?: string
+): Promise<HabitEntry | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      toast.error('Please sign in')
+      return null
+    }
+
+    // Check if entry already exists for this date
+    const { data: existing } = await supabase
+      .from('habit_entries')
+      .select('id')
+      .eq('user_habit_id', userHabitId)
+      .eq('entry_date', entryDate)
+      .single()
+
+    if (existing) {
+      // Update existing entry
+      const { data, error } = await supabase
+        .from('habit_entries')
+        .update({
+          completed_value: completedValue,
+          notes,
+          mood,
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+        .select()
+        .single()
+
+      if (error) {
+        logger.error('Failed to update habit entry', { error: error.message })
+        toast.error('Failed to log entry')
+        return null
+      }
+
+      toast.success('Entry updated!')
+      return data as HabitEntry
+    }
+
+    // Create new entry
+    const { data, error } = await supabase
+      .from('habit_entries')
+      .insert({
+        user_habit_id: userHabitId,
+        entry_date: entryDate,
+        completed_value: completedValue,
+        notes,
+        mood,
+        completed_at: new Date().toISOString(),
+      })
+      .select()
+      .single()
+
+    if (error) {
+      logger.error('Failed to create habit entry', { error: error.message })
+      toast.error('Failed to log entry')
+      return null
+    }
+
+    // Update habit stats
+    await updateHabitStats(userHabitId)
+
+    toast.success('Entry logged!')
+    return data as HabitEntry
+  } catch (err) {
+    logger.error('Error logging habit entry', { error: err })
+    toast.error('Failed to log entry')
+    return null
+  }
+}
+
+// Update habit statistics
+async function updateHabitStats(userHabitId: string): Promise<void> {
+  try {
+    // Get all entries for this habit
+    const { data: entries } = await supabase
+      .from('habit_entries')
+      .select('*')
+      .eq('user_habit_id', userHabitId)
+      .order('entry_date', { ascending: false })
+
+    if (!entries || entries.length === 0) return
+
+    const totalCompletions = entries.filter(e => (e.completed_value || 0) > 0).length
+    
+    // Calculate streak
+    let currentStreak = 0
+    const today = new Date().toISOString().split('T')[0]
+    const sortedDates = entries
+      .filter(e => (e.completed_value || 0) > 0)
+      .map(e => e.entry_date)
+      .sort((a, b) => b.localeCompare(a))
+
+    if (sortedDates.length > 0) {
+      let checkDate = new Date(today)
+      for (const dateStr of sortedDates) {
+        const entryDate = new Date(dateStr)
+        const checkDateStr = checkDate.toISOString().split('T')[0]
+        
+        if (dateStr === checkDateStr || dateStr === new Date(checkDate.getTime() - 86400000).toISOString().split('T')[0]) {
+          currentStreak++
+          checkDate = new Date(entryDate.getTime() - 86400000)
+        } else {
+          break
+        }
+      }
+    }
+
+    // Get current longest streak
+    const { data: habit } = await supabase
+      .from('user_habits')
+      .select('longest_streak')
+      .eq('id', userHabitId)
+      .single()
+
+    const longestStreak = Math.max(currentStreak, habit?.longest_streak || 0)
+
+    // Update habit
+    await supabase
+      .from('user_habits')
+      .update({
+        total_completions: totalCompletions,
+        current_streak: currentStreak,
+        longest_streak: longestStreak,
+        completion_rate: entries.length > 0 ? (totalCompletions / entries.length) * 100 : 0,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userHabitId)
+  } catch (err) {
+    logger.error('Error updating habit stats', { error: err })
+  }
+}
+
+// Get habit entries
+export async function getHabitEntries(
+  userHabitId: string,
+  startDate?: string,
+  endDate?: string
+): Promise<HabitEntry[]> {
+  try {
+    let query = supabase
+      .from('habit_entries')
+      .select('*')
+      .eq('user_habit_id', userHabitId)
+      .order('entry_date', { ascending: false })
+
+    if (startDate) {
+      query = query.gte('entry_date', startDate)
+    }
+    if (endDate) {
+      query = query.lte('entry_date', endDate)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      logger.error('Failed to get habit entries', { error: error.message })
+      return []
+    }
+
+    return (data || []) as HabitEntry[]
+  } catch (err) {
+    logger.error('Error getting habit entries', { error: err })
+    return []
+  }
+}
+
+// Get habit streaks
+export async function getHabitStreaks(userHabitId: string): Promise<HabitStreak[]> {
+  try {
+    const { data, error } = await supabase
+      .from('habit_streaks')
+      .select('*')
+      .eq('user_habit_id', userHabitId)
+      .order('streak_start_date', { ascending: false })
+
+    if (error) {
+      logger.error('Failed to get habit streaks', { error: error.message })
+      return []
+    }
+
+    return (data || []) as HabitStreak[]
+  } catch (err) {
+    logger.error('Error getting habit streaks', { error: err })
+    return []
+  }
+}
+
+// Get habit analytics
+export async function getHabitAnalytics(userHabitId: string): Promise<HabitAnalytics> {
+  try {
+    const entries = await getHabitEntries(userHabitId)
+    const habit = await getHabitById(userHabitId)
+
+    const completedEntries = entries.filter(e => (e.completed_value || 0) > 0)
+    const totalValue = completedEntries.reduce((sum, e) => sum + (e.completed_value || 0), 0)
+
+    // Calculate weekly trend (last 7 days)
+    const weeklyTrend: number[] = []
+    const today = new Date()
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today)
+      date.setDate(date.getDate() - i)
+      const dateStr = date.toISOString().split('T')[0]
+      const entry = entries.find(e => e.entry_date === dateStr)
+      weeklyTrend.push(entry?.completed_value || 0)
+    }
+
+    // Calculate monthly trend (last 30 days)
+    const monthlyTrend: number[] = []
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today)
+      date.setDate(date.getDate() - i)
+      const dateStr = date.toISOString().split('T')[0]
+      const entry = entries.find(e => e.entry_date === dateStr)
+      monthlyTrend.push(entry?.completed_value || 0)
+    }
+
+    // Mood distribution
+    const moodDistribution: Record<string, number> = {}
+    for (const entry of entries) {
+      if (entry.mood) {
+        moodDistribution[entry.mood] = (moodDistribution[entry.mood] || 0) + 1
+      }
+    }
+
+    return {
+      completionRate: habit?.completion_rate || 0,
+      totalEntries: entries.length,
+      completedEntries: completedEntries.length,
+      currentStreak: habit?.current_streak || 0,
+      longestStreak: habit?.longest_streak || 0,
+      averageValue: completedEntries.length > 0 ? totalValue / completedEntries.length : 0,
+      weeklyTrend,
+      monthlyTrend,
+      moodDistribution,
+      bestDay: null, // Could calculate based on mood/completion data
+      worstDay: null,
+    }
+  } catch (err) {
+    logger.error('Error getting habit analytics', { error: err })
+    return {
+      completionRate: 0,
+      totalEntries: 0,
+      completedEntries: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+      averageValue: 0,
+      weeklyTrend: [0, 0, 0, 0, 0, 0, 0],
+      monthlyTrend: Array(30).fill(0),
+      moodDistribution: {},
+      bestDay: null,
+      worstDay: null,
+    }
+  }
+}
+
+// Get today's habit status
+export async function getTodayHabitStatus(): Promise<{
+  habits: UserHabit[]
+  completed: string[]
+  pending: string[]
+}> {
+  try {
+    const habits = await getUserHabits(true)
+    const today = new Date().toISOString().split('T')[0]
+    
+    const completed: string[] = []
+    const pending: string[] = []
+
+    for (const habit of habits) {
+      if (!habit.id) continue
+      
+      const entries = await getHabitEntries(habit.id, today, today)
+      if (entries.length > 0 && (entries[0].completed_value || 0) > 0) {
+        completed.push(habit.id)
+      } else {
+        pending.push(habit.id)
+      }
+    }
+
+    return { habits, completed, pending }
+  } catch (err) {
+    logger.error('Error getting today status', { error: err })
+    return { habits: [], completed: [], pending: [] }
+  }
+}
+
+// Update a habit
+export async function updateHabit(
+  habitId: string,
+  updates: Partial<UserHabit>
+): Promise<UserHabit | null> {
+  try {
+    const { data, error } = await supabase
+      .from('user_habits')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', habitId)
+      .select(`
+        *,
+        habit_definition:habit_definitions(*)
+      `)
+      .single()
+
+    if (error) {
+      logger.error('Failed to update habit', { error: error.message })
+      toast.error('Failed to update habit')
+      return null
+    }
+
+    toast.success('Habit updated')
+    return data as UserHabit
+  } catch (err) {
+    logger.error('Error updating habit', { error: err })
+    toast.error('Failed to update habit')
+    return null
+  }
+}
+
+// Delete a habit
+export async function deleteHabit(habitId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('user_habits')
+      .delete()
+      .eq('id', habitId)
+
+    if (error) {
+      logger.error('Failed to delete habit', { error: error.message })
+      toast.error('Failed to delete habit')
+      return false
+    }
+
+    toast.success('Habit deleted')
+    return true
+  } catch (err) {
+    logger.error('Error deleting habit', { error: err })
+    toast.error('Failed to delete habit')
+    return false
+  }
+}
+
+// Get today's progress
+export async function getTodayProgress(): Promise<{ completed: number; total: number; habits: UserHabit[] }> {
+  const status = await getTodayHabitStatus()
+  return {
+    completed: status.completed.length,
+    total: status.habits.length,
+    habits: status.habits,
+  }
+}

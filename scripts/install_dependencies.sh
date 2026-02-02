@@ -16,7 +16,11 @@ if ! command -v npm >/dev/null 2>&1; then
   exit 1
 fi
 
-npm install
+if [ -f "package-lock.json" ] && [ ! -d "node_modules" ]; then
+  npm ci
+else
+  npm install
+fi
 
 printf "\n✅ Dependencies installed. Recommended next steps:\n"
 printf "  1. cp .env.example .env && update secrets.\n"

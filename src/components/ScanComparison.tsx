@@ -1,26 +1,34 @@
-import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useData } from '@/contexts/DataContext';
-import { 
-  Layers, ArrowLeftRight, TrendingUp, TrendingDown, Minus,
-  ChevronLeft, ChevronRight, ZoomIn, X, Calendar
-} from 'lucide-react';
+import { useState, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useData } from "@/contexts/DataContext";
+import {
+  Layers,
+  ArrowLeftRight,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  X,
+  Calendar,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 
 interface MeasurementDiff {
   label: string;
@@ -36,66 +44,71 @@ export const ScanComparison = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scan1Index, setScan1Index] = useState(1);
   const [scan2Index, setScan2Index] = useState(0);
-  const [viewMode, setViewMode] = useState<'side-by-side' | 'overlay' | 'slider'>('side-by-side');
+  const [viewMode, setViewMode] = useState<"side-by-side" | "overlay" | "slider">("side-by-side");
   const [sliderPosition, setSliderPosition] = useState(50);
 
-  const scansWithImages = useMemo(() => 
-    scans.filter(s => s.image_data), 
-    [scans]
-  );
+  const scansWithImages = useMemo(() => scans.filter(s => s.image_data), [scans]);
 
   const scan1 = scansWithImages[scan1Index];
   const scan2 = scansWithImages[scan2Index];
 
   const measurements: MeasurementDiff[] = useMemo(() => {
     if (!scan1 || !scan2) return [];
-    
+
     return [
       {
-        label: 'Length',
+        label: "Length",
         before: scan1.length,
         after: scan2.length,
         diff: (scan2.length || 0) - (scan1.length || 0),
-        unit: 'cm',
-        improved: scan2.length && scan1.length ? scan2.length > scan1.length : null
+        unit: "cm",
+        improved: scan2.length && scan1.length ? scan2.length > scan1.length : null,
       },
       {
-        label: 'Circumference',
+        label: "Circumference",
         before: scan1.circumference,
         after: scan2.circumference,
         diff: (scan2.circumference || 0) - (scan1.circumference || 0),
-        unit: 'cm',
-        improved: scan2.circumference && scan1.circumference ? scan2.circumference > scan1.circumference : null
+        unit: "cm",
+        improved:
+          scan2.circumference && scan1.circumference
+            ? scan2.circumference > scan1.circumference
+            : null,
       },
       {
-        label: 'Curvature',
+        label: "Curvature",
         before: scan1.curvature_angle,
         after: scan2.curvature_angle,
         diff: (scan2.curvature_angle || 0) - (scan1.curvature_angle || 0),
-        unit: '°',
-        improved: scan2.curvature_angle !== null && scan1.curvature_angle !== null 
-          ? scan2.curvature_angle < scan1.curvature_angle 
-          : null
-      }
+        unit: "°",
+        improved:
+          scan2.curvature_angle !== null && scan1.curvature_angle !== null
+            ? scan2.curvature_angle < scan1.curvature_angle
+            : null,
+      },
     ];
   }, [scan1, scan2]);
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en', { 
-      month: 'short', day: 'numeric', year: 'numeric' 
+    return new Date(dateStr).toLocaleDateString("en", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
   const getDiffIcon = (improved: boolean | null) => {
     if (improved === null) return <Minus className="w-4 h-4 text-muted-foreground" />;
-    return improved 
-      ? <TrendingUp className="w-4 h-4 text-success" />
-      : <TrendingDown className="w-4 h-4 text-destructive" />;
+    return improved ? (
+      <TrendingUp className="w-4 h-4 text-success" />
+    ) : (
+      <TrendingDown className="w-4 h-4 text-destructive" />
+    );
   };
 
   const getDiffColor = (improved: boolean | null) => {
-    if (improved === null) return 'text-muted-foreground';
-    return improved ? 'text-success' : 'text-destructive';
+    if (improved === null) return "text-muted-foreground";
+    return improved ? "text-success" : "text-destructive";
   };
 
   if (scansWithImages.length < 2) {
@@ -103,9 +116,7 @@ export const ScanComparison = () => {
       <Card variant="glass">
         <CardContent className="p-6 text-center">
           <Layers className="w-12 h-12 mx-auto text-muted-foreground mb-4 opacity-50" />
-          <p className="text-muted-foreground">
-            Need at least 2 scans with images to compare
-          </p>
+          <p className="text-muted-foreground">Need at least 2 scans with images to compare</p>
           <p className="text-sm text-muted-foreground mt-2">
             {2 - scansWithImages.length} more scan(s) with images required
           </p>
@@ -117,7 +128,10 @@ export const ScanComparison = () => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Card variant="interactive" className="cursor-pointer hover:border-primary/50 transition-colors">
+        <Card
+          variant="interactive"
+          className="cursor-pointer hover:border-primary/50 transition-colors"
+        >
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -147,12 +161,14 @@ export const ScanComparison = () => {
           {/* Scan Selection */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Before (Older)</label>
-              <Select 
-                value={scan1Index.toString()} 
-                onValueChange={(v) => setScan1Index(parseInt(v))}
+              <label
+                className="text-sm text-muted-foreground mb-2 block"
+                htmlFor="scan-compare-before"
               >
-                <SelectTrigger>
+                Before (Older)
+              </label>
+              <Select value={scan1Index.toString()} onValueChange={v => setScan1Index(parseInt(v))}>
+                <SelectTrigger id="scan-compare-before">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -165,12 +181,14 @@ export const ScanComparison = () => {
               </Select>
             </div>
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">After (Newer)</label>
-              <Select 
-                value={scan2Index.toString()} 
-                onValueChange={(v) => setScan2Index(parseInt(v))}
+              <label
+                className="text-sm text-muted-foreground mb-2 block"
+                htmlFor="scan-compare-after"
               >
-                <SelectTrigger>
+                After (Newer)
+              </label>
+              <Select value={scan2Index.toString()} onValueChange={v => setScan2Index(parseInt(v))}>
+                <SelectTrigger id="scan-compare-after">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -186,24 +204,24 @@ export const ScanComparison = () => {
 
           {/* View Mode Toggle */}
           <div className="flex items-center justify-center gap-2">
-            <Button 
-              variant={viewMode === 'side-by-side' ? 'default' : 'outline'} 
+            <Button
+              variant={viewMode === "side-by-side" ? "default" : "outline"}
               size="sm"
-              onClick={() => setViewMode('side-by-side')}
+              onClick={() => setViewMode("side-by-side")}
             >
               Side by Side
             </Button>
-            <Button 
-              variant={viewMode === 'overlay' ? 'default' : 'outline'} 
+            <Button
+              variant={viewMode === "overlay" ? "default" : "outline"}
               size="sm"
-              onClick={() => setViewMode('overlay')}
+              onClick={() => setViewMode("overlay")}
             >
               Overlay
             </Button>
-            <Button 
-              variant={viewMode === 'slider' ? 'default' : 'outline'} 
+            <Button
+              variant={viewMode === "slider" ? "default" : "outline"}
               size="sm"
-              onClick={() => setViewMode('slider')}
+              onClick={() => setViewMode("slider")}
             >
               Slider
             </Button>
@@ -212,12 +230,12 @@ export const ScanComparison = () => {
           {/* Image Comparison */}
           {scan1 && scan2 && (
             <div className="relative rounded-xl overflow-hidden bg-secondary/30 border border-border/50">
-              {viewMode === 'side-by-side' && (
+              {viewMode === "side-by-side" && (
                 <div className="grid grid-cols-2 gap-1">
                   <div className="relative">
-                    <img 
-                      src={scan1.image_data!} 
-                      alt="Before" 
+                    <img
+                      src={scan1.image_data!}
+                      alt="Before"
                       className="w-full aspect-[4/3] object-cover"
                     />
                     <Badge className="absolute top-2 left-2 bg-background/80">
@@ -226,9 +244,9 @@ export const ScanComparison = () => {
                     </Badge>
                   </div>
                   <div className="relative">
-                    <img 
-                      src={scan2.image_data!} 
-                      alt="After" 
+                    <img
+                      src={scan2.image_data!}
+                      alt="After"
                       className="w-full aspect-[4/3] object-cover"
                     />
                     <Badge className="absolute top-2 right-2 bg-background/80">
@@ -239,16 +257,16 @@ export const ScanComparison = () => {
                 </div>
               )}
 
-              {viewMode === 'overlay' && (
+              {viewMode === "overlay" && (
                 <div className="relative aspect-[4/3]">
-                  <img 
-                    src={scan1.image_data!} 
-                    alt="Before" 
+                  <img
+                    src={scan1.image_data!}
+                    alt="Before"
                     className="absolute inset-0 w-full h-full object-cover"
                   />
-                  <img 
-                    src={scan2.image_data!} 
-                    alt="After" 
+                  <img
+                    src={scan2.image_data!}
+                    alt="After"
                     className="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-difference"
                   />
                   <div className="absolute bottom-2 left-2 right-2 text-center">
@@ -259,49 +277,61 @@ export const ScanComparison = () => {
                 </div>
               )}
 
-              {viewMode === 'slider' && (
+              {viewMode === "slider" && (
                 <div className="relative aspect-[4/3] select-none">
-                  <img 
-                    src={scan2.image_data!} 
-                    alt="After" 
+                  <img
+                    src={scan2.image_data!}
+                    alt="After"
                     className="absolute inset-0 w-full h-full object-cover"
                   />
-                  <div 
+                  <div
                     className="absolute inset-0 overflow-hidden"
                     style={{ width: `${sliderPosition}%` }}
                   >
-                    <img 
-                      src={scan1.image_data!} 
-                      alt="Before" 
+                    <img
+                      src={scan1.image_data!}
+                      alt="Before"
                       className="absolute inset-0 w-full h-full object-cover"
-                      style={{ width: `${100 / (sliderPosition / 100)}%`, maxWidth: 'none' }}
+                      style={{ width: `${100 / (sliderPosition / 100)}%`, maxWidth: "none" }}
                     />
                   </div>
-                  <div 
+                  <button
+                    type="button"
                     className="absolute top-0 bottom-0 w-1 bg-primary cursor-ew-resize"
                     style={{ left: `${sliderPosition}%` }}
-                    onMouseDown={(e) => {
+                    onMouseDown={e => {
                       const startX = e.clientX;
                       const startPos = sliderPosition;
                       const rect = e.currentTarget.parentElement?.getBoundingClientRect();
                       if (!rect) return;
-                      
+
                       const onMove = (moveE: MouseEvent) => {
                         const delta = ((moveE.clientX - startX) / rect.width) * 100;
                         setSliderPosition(Math.max(5, Math.min(95, startPos + delta)));
                       };
                       const onUp = () => {
-                        document.removeEventListener('mousemove', onMove);
-                        document.removeEventListener('mouseup', onUp);
+                        document.removeEventListener("mousemove", onMove);
+                        document.removeEventListener("mouseup", onUp);
                       };
-                      document.addEventListener('mousemove', onMove);
-                      document.addEventListener('mouseup', onUp);
+                      document.addEventListener("mousemove", onMove);
+                      document.addEventListener("mouseup", onUp);
                     }}
+                    onKeyDown={e => {
+                      if (e.key === "ArrowLeft") {
+                        e.preventDefault();
+                        setSliderPosition(p => Math.max(5, p - 2));
+                      }
+                      if (e.key === "ArrowRight") {
+                        e.preventDefault();
+                        setSliderPosition(p => Math.min(95, p + 2));
+                      }
+                    }}
+                    aria-label="Adjust comparison slider"
                   >
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg">
                       <ArrowLeftRight className="w-4 h-4 text-primary-foreground" />
                     </div>
-                  </div>
+                  </button>
                   <Badge className="absolute top-2 left-2 bg-background/80">Before</Badge>
                   <Badge className="absolute top-2 right-2 bg-background/80">After</Badge>
                 </div>
@@ -311,18 +341,21 @@ export const ScanComparison = () => {
 
           {/* Measurement Differences */}
           <div className="grid grid-cols-3 gap-4">
-            {measurements.map((m) => (
+            {measurements.map(m => (
               <Card key={m.label} variant="stat">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-muted-foreground">{m.label}</span>
                   {getDiffIcon(m.improved)}
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold">{m.after ?? '-'}</span>
+                  <span className="text-2xl font-bold">{m.after ?? "-"}</span>
                   <span className="text-sm text-muted-foreground">{m.unit}</span>
                 </div>
                 <div className={`text-sm mt-1 ${getDiffColor(m.improved)}`}>
-                  {m.diff > 0 ? '+' : ''}{m.diff.toFixed(1)}{m.unit} from {m.before ?? '-'}{m.unit}
+                  {m.diff > 0 ? "+" : ""}
+                  {m.diff.toFixed(1)}
+                  {m.unit} from {m.before ?? "-"}
+                  {m.unit}
                 </div>
               </Card>
             ))}
@@ -332,8 +365,13 @@ export const ScanComparison = () => {
           {scan1 && scan2 && (
             <div className="text-center p-4 rounded-xl bg-secondary/30 border border-border/50">
               <p className="text-sm text-muted-foreground">
-                Time between scans: <span className="font-semibold text-foreground">
-                  {Math.round((new Date(scan2.created_at).getTime() - new Date(scan1.created_at).getTime()) / (1000 * 60 * 60 * 24))} days
+                Time between scans:{" "}
+                <span className="font-semibold text-foreground">
+                  {Math.round(
+                    (new Date(scan2.created_at).getTime() - new Date(scan1.created_at).getTime()) /
+                      (1000 * 60 * 60 * 24),
+                  )}{" "}
+                  days
                 </span>
               </p>
             </div>

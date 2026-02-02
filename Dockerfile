@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1.7
-FROM node:22-alpine AS base
+# Keep Node aligned with CI (see .github/workflows/ci.yml)
+FROM node:18-alpine AS base
 ENV NODE_ENV=production
 WORKDIR /app
 
@@ -11,7 +12,7 @@ FROM deps AS build
 COPY . .
 RUN npm run build
 
-FROM node:22-alpine AS runner
+FROM node:18-alpine AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 
@@ -20,7 +21,6 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY --from=build /app/dist ./dist
-COPY --from=deps /app/node_modules ./node_modules
 
 EXPOSE 4173
 CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4173"]

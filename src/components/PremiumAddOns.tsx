@@ -3,121 +3,142 @@
  * UI component for viewing and subscribing to premium add-ons
  */
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Check, Loader2, BarChart3, Cloud, Headphones, Database, Code, Building2, Palette } from 'lucide-react'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Check,
+  Loader2,
+  BarChart3,
+  Cloud,
+  Headphones,
+  Database,
+  Code,
+  Building2,
+  Palette,
+} from "lucide-react";
 import {
   getPremiumAddOns,
   getUserAddOns,
   subscribeToAddOn,
   cancelAddOn,
   type PremiumAddOn,
-  type UserAddOn
-} from '@/lib/premiumAddOns'
-import { toast } from 'sonner'
+  type UserAddOn,
+} from "@/lib/premiumAddOns";
+import { toast } from "sonner";
 
 export const PremiumAddOns = () => {
-  const [loading, setLoading] = useState(false)
-  const [addOns, setAddOns] = useState<PremiumAddOn[]>([])
-  const [userAddOns, setUserAddOns] = useState<UserAddOn[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const [selectedPlanType, setSelectedPlanType] = useState<'monthly' | 'annual' | 'lifetime'>('monthly')
+  const [loading, setLoading] = useState(false);
+  const [addOns, setAddOns] = useState<PremiumAddOn[]>([]);
+  const [userAddOns, setUserAddOns] = useState<UserAddOn[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedPlanType, setSelectedPlanType] = useState<"monthly" | "annual" | "lifetime">(
+    "monthly",
+  );
 
   const categories = [
-    { id: 'all', label: 'All Add-Ons' },
-    { id: 'analytics', label: 'Analytics' },
-    { id: 'storage', label: 'Storage' },
-    { id: 'support', label: 'Support' },
-    { id: 'api', label: 'API' },
-    { id: 'clinic', label: 'Clinic' }
-  ]
+    { id: "all", label: "All Add-Ons" },
+    { id: "analytics", label: "Analytics" },
+    { id: "storage", label: "Storage" },
+    { id: "support", label: "Support" },
+    { id: "api", label: "API" },
+    { id: "clinic", label: "Clinic" },
+  ];
 
-  useEffect(() => {
-    loadData()
-  }, [selectedCategory])
-
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
       const [addOnsData, userAddOnsData] = await Promise.all([
-        getPremiumAddOns(selectedCategory === 'all' ? undefined : selectedCategory),
-        getUserAddOns()
-      ])
-      setAddOns(addOnsData)
-      setUserAddOns(userAddOnsData)
-    } catch (error) {
-      toast.error('Failed to load add-ons')
+        getPremiumAddOns(selectedCategory === "all" ? undefined : selectedCategory),
+        getUserAddOns(),
+      ]);
+      setAddOns(addOnsData);
+      setUserAddOns(userAddOnsData);
+    } catch {
+      toast.error("Failed to load add-ons");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const handleSubscribe = async (addonId: string) => {
     try {
-      const success = await subscribeToAddOn(addonId, selectedPlanType)
+      const success = await subscribeToAddOn(addonId, selectedPlanType);
       if (success) {
-        await loadData()
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to start subscription')
+      toast.error("Failed to start subscription");
     }
-  }
+  };
 
   const handleCancel = async (addonId: string) => {
     try {
-      const success = await cancelAddOn(addonId)
+      const success = await cancelAddOn(addonId);
       if (success) {
-        await loadData()
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to cancel add-on')
+      toast.error("Failed to cancel add-on");
     }
-  }
+  };
 
   const getAddOnIcon = (category: string | null) => {
     switch (category) {
-      case 'analytics': return <BarChart3 className="w-5 h-5" />
-      case 'storage': return <Cloud className="w-5 h-5" />
-      case 'support': return <Headphones className="w-5 h-5" />
-      case 'api': return <Code className="w-5 h-5" />
-      case 'clinic': return <Building2 className="w-5 h-5" />
-      default: return <Check className="w-5 h-5" />
+      case "analytics":
+        return <BarChart3 className="w-5 h-5" />;
+      case "storage":
+        return <Cloud className="w-5 h-5" />;
+      case "support":
+        return <Headphones className="w-5 h-5" />;
+      case "api":
+        return <Code className="w-5 h-5" />;
+      case "clinic":
+        return <Building2 className="w-5 h-5" />;
+      default:
+        return <Check className="w-5 h-5" />;
     }
-  }
+  };
 
   const getPrice = (addon: PremiumAddOn) => {
     switch (selectedPlanType) {
-      case 'monthly':
-        return addon.monthly_price
-      case 'annual':
-        return addon.annual_price || addon.monthly_price * 12
-      case 'lifetime':
-        return addon.lifetime_price || addon.monthly_price * 60
+      case "monthly":
+        return addon.monthly_price;
+      case "annual":
+        return addon.annual_price || addon.monthly_price * 12;
+      case "lifetime":
+        return addon.lifetime_price || addon.monthly_price * 60;
     }
-  }
+  };
 
   const formatPrice = (price: number) => {
-    return `$${price.toFixed(2)}`
-  }
+    return `$${price.toFixed(2)}`;
+  };
 
   const getBillingPeriod = () => {
     switch (selectedPlanType) {
-      case 'monthly': return '/month'
-      case 'annual': return '/year'
-      case 'lifetime': return ' (one-time)'
+      case "monthly":
+        return "/month";
+      case "annual":
+        return "/year";
+      case "lifetime":
+        return " (one-time)";
     }
-  }
+  };
 
   const isUserSubscribed = (addonId: string) => {
-    return userAddOns.some(addon => addon.addon_id === addonId && addon.status === 'active')
-  }
+    return userAddOns.some(addon => addon.addon_id === addonId && addon.status === "active");
+  };
 
   const getUserAddOn = (addonId: string) => {
-    return userAddOns.find(addon => addon.addon_id === addonId && addon.status === 'active')
-  }
+    return userAddOns.find(addon => addon.addon_id === addonId && addon.status === "active");
+  };
 
   if (loading) {
     return (
@@ -129,41 +150,42 @@ export const PremiumAddOns = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <Card className="glass-card border-border/50">
         <CardHeader>
-          <CardTitle className="text-3xl font-bold text-center mb-2">
-            Premium Add-Ons
-          </CardTitle>
+          <CardTitle className="text-3xl font-bold text-center mb-2">Premium Add-Ons</CardTitle>
           <CardDescription className="text-center">
-            Enhance your subscription with powerful add-ons. Mix and match to create your perfect plan.
+            Enhance your subscription with powerful add-ons. Mix and match to create your perfect
+            plan.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Plan Type Selector */}
           <div className="flex justify-center gap-2 mb-4">
             <Button
-              variant={selectedPlanType === 'monthly' ? 'default' : 'outline'}
-              onClick={() => setSelectedPlanType('monthly')}
+              variant={selectedPlanType === "monthly" ? "default" : "outline"}
+              onClick={() => setSelectedPlanType("monthly")}
             >
               Monthly
             </Button>
             <Button
-              variant={selectedPlanType === 'annual' ? 'default' : 'outline'}
-              onClick={() => setSelectedPlanType('annual')}
+              variant={selectedPlanType === "annual" ? "default" : "outline"}
+              onClick={() => setSelectedPlanType("annual")}
             >
               Annual
-              {selectedPlanType === 'annual' && (
-                <Badge variant="secondary" className="ml-2">Save 20%</Badge>
+              {selectedPlanType === "annual" && (
+                <Badge variant="secondary" className="ml-2">
+                  Save 20%
+                </Badge>
               )}
             </Button>
             <Button
-              variant={selectedPlanType === 'lifetime' ? 'default' : 'outline'}
-              onClick={() => setSelectedPlanType('lifetime')}
+              variant={selectedPlanType === "lifetime" ? "default" : "outline"}
+              onClick={() => setSelectedPlanType("lifetime")}
             >
               Lifetime
             </Button>
@@ -174,7 +196,7 @@ export const PremiumAddOns = () => {
             {categories.map(cat => (
               <Button
                 key={cat.id}
-                variant={selectedCategory === cat.id ? 'default' : 'outline'}
+                variant={selectedCategory === cat.id ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCategory(cat.id)}
               >
@@ -189,8 +211,8 @@ export const PremiumAddOns = () => {
               <h3 className="text-xl font-semibold mb-4">My Active Add-Ons</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {userAddOns.map(userAddon => {
-                  const addon = addOns.find(a => a.addon_id === userAddon.addon_id)
-                  if (!addon) return null
+                  const addon = addOns.find(a => a.addon_id === userAddon.addon_id);
+                  if (!addon) return null;
 
                   return (
                     <Card key={userAddon.id} className="glass-card border-green-500/50">
@@ -204,7 +226,9 @@ export const PremiumAddOns = () => {
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">{addon.addon_description}</p>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          {addon.addon_description}
+                        </p>
                         <Button
                           variant="outline"
                           size="sm"
@@ -215,7 +239,7 @@ export const PremiumAddOns = () => {
                         </Button>
                       </CardContent>
                     </Card>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -226,16 +250,16 @@ export const PremiumAddOns = () => {
             <h3 className="text-xl font-semibold mb-4">Available Add-Ons</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {addOns.map(addon => {
-                const price = getPrice(addon)
-                const subscribed = isUserSubscribed(addon.addon_id)
-                const Icon = getAddOnIcon(addon.category)
+                const price = getPrice(addon);
+                const subscribed = isUserSubscribed(addon.addon_id);
+                const Icon = getAddOnIcon(addon.category);
 
                 return (
                   <Card
                     key={addon.id}
                     className={`glass-card border-border/50 ${
-                      addon.is_popular ? 'border-primary ring-2 ring-primary/20' : ''
-                    } ${subscribed ? 'border-green-500' : ''}`}
+                      addon.is_popular ? "border-primary ring-2 ring-primary/20" : ""
+                    } ${subscribed ? "border-green-500" : ""}`}
                   >
                     {addon.is_popular && (
                       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -267,7 +291,7 @@ export const PremiumAddOns = () => {
                             </span>
                           )}
                         </div>
-                        {selectedPlanType === 'annual' && addon.annual_discount_percentage > 0 && (
+                        {selectedPlanType === "annual" && addon.annual_discount_percentage > 0 && (
                           <div className="text-sm text-muted-foreground mt-1">
                             Save {addon.annual_discount_percentage}% vs monthly
                           </div>
@@ -276,8 +300,8 @@ export const PremiumAddOns = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <ul className="space-y-2">
-                        {addon.features.map((feature, index) => (
-                          <li key={index} className="flex items-start gap-2">
+                        {addon.features.map((feature) => (
+                          <li key={feature} className="flex items-start gap-2">
                             <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
                             <span className="text-sm">{feature}</span>
                           </li>
@@ -297,21 +321,20 @@ export const PremiumAddOns = () => {
                       )}
                       <Button
                         className="w-full"
-                        variant={addon.is_popular ? 'default' : 'outline'}
+                        variant={addon.is_popular ? "default" : "outline"}
                         onClick={() => handleSubscribe(addon.addon_id)}
                         disabled={subscribed}
                       >
-                        {subscribed ? 'Active' : 'Subscribe'}
+                        {subscribed ? "Active" : "Subscribe"}
                       </Button>
                     </CardContent>
                   </Card>
-                )
+                );
               })}
             </div>
           </div>
         </CardContent>
       </Card>
     </div>
-  )
-}
-
+  );
+};

@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   getVideos,
   getVideo,
@@ -17,124 +17,131 @@ import {
   bookmarkVideo,
   getBookmarkedVideos,
   rateVideo,
-  getUserVideoRating,
+  getVideoRating,
   type Video,
   type VideoPlaylist,
-  type VideoProgress
-} from '@/lib/videoLibrary'
-import { Play, Bookmark, BookmarkCheck, Star, Download, List, Clock, Eye, Search, Plus } from 'lucide-react'
-import { toast } from 'sonner'
+  type VideoProgress,
+} from "@/lib/videoLibrary";
+import {
+  Play,
+  Bookmark,
+  BookmarkCheck,
+  Star,
+  Download,
+  List,
+  Clock,
+  Eye,
+  Search,
+  Plus,
+} from "lucide-react";
+import { toast } from "sonner";
 
 export const VideoLibrary = () => {
-  const [activeTab, setActiveTab] = useState('browse')
-  const [loading, setLoading] = useState(false)
-  const [videos, setVideos] = useState<Video[]>([])
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
-  const [videoProgress, setVideoProgress] = useState<VideoProgress[]>([])
-  const [playlists, setPlaylists] = useState<VideoPlaylist[]>([])
-  const [bookmarkedVideos, setBookmarkedVideos] = useState<Video[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const [searchQuery, setSearchQuery] = useState('')
+  const [activeTab, setActiveTab] = useState("browse");
+  const [loading, setLoading] = useState(false);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [videoProgress, setVideoProgress] = useState<VideoProgress[]>([]);
+  const [playlists, setPlaylists] = useState<VideoPlaylist[]>([]);
+  const [bookmarkedVideos, setBookmarkedVideos] = useState<Video[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const categories = [
-    { id: 'all', label: 'All Videos' },
-    { id: 'education', label: 'Education' },
-    { id: 'exercise', label: 'Exercise' },
-    { id: 'technique', label: 'Technique' },
-    { id: 'expert_interview', label: 'Expert Interviews' },
-    { id: 'webinar', label: 'Webinars' },
-    { id: 'tutorial', label: 'Tutorials' },
-  ]
+    { id: "all", label: "All Videos" },
+    { id: "education", label: "Education" },
+    { id: "exercise", label: "Exercise" },
+    { id: "technique", label: "Technique" },
+    { id: "expert_interview", label: "Expert Interviews" },
+    { id: "webinar", label: "Webinars" },
+    { id: "tutorial", label: "Tutorials" },
+  ];
 
-  useEffect(() => {
-    loadData()
-  }, [activeTab, selectedCategory])
-
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
       switch (activeTab) {
-        case 'browse': {
+        case "browse": {
           const videosData = await getVideos(
-            selectedCategory === 'all' ? undefined : selectedCategory,
+            selectedCategory === "all" ? undefined : selectedCategory,
             false,
-            false
-          )
-          setVideos(videosData)
-          const progressData = await getUserVideoProgress()
-          setVideoProgress(progressData)
-          break
+            false,
+          );
+          setVideos(videosData);
+          const progressData = await getUserVideoProgress();
+          setVideoProgress(progressData);
+          break;
         }
-        case 'playlists': {
-          const playlistsData = await getPlaylists()
-          setPlaylists(playlistsData)
-          break
+        case "playlists": {
+          const playlistsData = await getPlaylists();
+          setPlaylists(playlistsData);
+          break;
         }
-        case 'bookmarks': {
-          const bookmarkedData = await getBookmarkedVideos()
-          setBookmarkedVideos(bookmarkedData)
-          break
+        case "bookmarks": {
+          const bookmarkedData = await getBookmarkedVideos();
+          setBookmarkedVideos(bookmarkedData);
+          break;
         }
       }
     } catch (error) {
-      toast.error('Failed to load videos')
+      toast.error("Failed to load videos");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [activeTab, selectedCategory]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const handleVideoClick = async (video: Video) => {
     try {
-      const videoData = await getVideo(video.id!)
+      const videoData = await getVideo(video.id!);
       if (videoData) {
-        setSelectedVideo(videoData)
+        setSelectedVideo(videoData);
       }
     } catch (error) {
-      toast.error('Failed to load video')
+      toast.error("Failed to load video");
     }
-  }
+  };
 
   const handleVideoProgress = async (progressSeconds: number) => {
-    if (!selectedVideo) return
+    if (!selectedVideo) return;
 
     try {
-      await updateVideoProgress(
-        selectedVideo.id!,
-        progressSeconds,
-        selectedVideo.duration_seconds
-      )
-      await loadData()
+      await updateVideoProgress(selectedVideo.id!, progressSeconds, selectedVideo.duration_seconds);
+      await loadData();
     } catch (error) {
       // Silent fail for progress updates
     }
-  }
+  };
 
   const handleBookmark = async (videoId: string) => {
     try {
-      await bookmarkVideo(videoId)
-      toast.success('Video bookmarked!')
-      await loadData()
+      await bookmarkVideo(videoId);
+      toast.success("Video bookmarked!");
+      await loadData();
     } catch (error) {
-      toast.error('Failed to bookmark video')
+      toast.error("Failed to bookmark video");
     }
-  }
+  };
 
   const formatDuration = (seconds?: number): string => {
-    if (!seconds) return 'N/A'
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
+    if (!seconds) return "N/A";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   const getVideoProgress = (videoId: string): number => {
-    const progress = videoProgress.find(p => p.video_id === videoId)
-    return progress?.progress_percentage || 0
-  }
+    const progress = videoProgress.find(p => p.video_id === videoId);
+    return progress?.progress_percentage || 0;
+  };
 
   const isVideoCompleted = (videoId: string): boolean => {
-    const progress = videoProgress.find(p => p.video_id === videoId)
-    return progress?.is_completed || false
-  }
+    const progress = videoProgress.find(p => p.video_id === videoId);
+    return progress?.is_completed || false;
+  };
 
   if (selectedVideo) {
     return (
@@ -154,9 +161,7 @@ export const VideoLibrary = () => {
                   {selectedVideo.difficulty_level && (
                     <Badge variant="outline">{selectedVideo.difficulty_level}</Badge>
                   )}
-                  {selectedVideo.is_premium && (
-                    <Badge className="bg-yellow-500">Premium</Badge>
-                  )}
+                  {selectedVideo.is_premium && <Badge className="bg-yellow-500">Premium</Badge>}
                   {selectedVideo.rating_average && (
                     <Badge variant="outline">
                       <Star className="w-3 h-3 mr-1 fill-yellow-500 text-yellow-500" />
@@ -165,11 +170,7 @@ export const VideoLibrary = () => {
                   )}
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleBookmark(selectedVideo.id!)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => handleBookmark(selectedVideo.id!)}>
                 <Bookmark className="w-4 h-4" />
               </Button>
             </div>
@@ -180,19 +181,29 @@ export const VideoLibrary = () => {
                 src={selectedVideo.video_url}
                 controls
                 className="w-full h-full"
-                onTimeUpdate={(e) => {
-                  const currentTime = e.currentTarget.currentTime
-                  handleVideoProgress(currentTime)
+                onTimeUpdate={e => {
+                  const currentTime = e.currentTarget.currentTime;
+                  handleVideoProgress(currentTime);
                 }}
-              />
+              >
+                <track
+                  kind="captions"
+                  srcLang="en"
+                  label="English"
+                  src={"data:text/vtt,WEBVTT%0A%0A"}
+                  default
+                />
+              </video>
             </div>
-            
+
             {selectedVideo.instructor_name && (
               <div className="mb-4">
                 <p className="text-sm text-muted-foreground">Instructor</p>
                 <p className="font-semibold">{selectedVideo.instructor_name}</p>
                 {selectedVideo.instructor_credentials && (
-                  <p className="text-sm text-muted-foreground">{selectedVideo.instructor_credentials}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedVideo.instructor_credentials}
+                  </p>
                 )}
               </div>
             )}
@@ -210,7 +221,7 @@ export const VideoLibrary = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -241,7 +252,7 @@ export const VideoLibrary = () => {
             {categories.map(cat => (
               <Button
                 key={cat.id}
-                variant={selectedCategory === cat.id ? 'default' : 'outline'}
+                variant={selectedCategory === cat.id ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCategory(cat.id)}
               >
@@ -255,7 +266,7 @@ export const VideoLibrary = () => {
             <Input
               placeholder="Search videos..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -265,9 +276,9 @@ export const VideoLibrary = () => {
           ) : videos.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {videos.map(video => {
-                const progress = getVideoProgress(video.id!)
-                const isCompleted = isVideoCompleted(video.id!)
-                
+                const progress = getVideoProgress(video.id!);
+                const isCompleted = isVideoCompleted(video.id!);
+
                 return (
                   <Card
                     key={video.id}
@@ -289,10 +300,7 @@ export const VideoLibrary = () => {
                       )}
                       {progress > 0 && (
                         <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary/50">
-                          <div
-                            className="h-full bg-primary"
-                            style={{ width: `${progress}%` }}
-                          />
+                          <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
                         </div>
                       )}
                       {isCompleted && (
@@ -320,7 +328,7 @@ export const VideoLibrary = () => {
                       </div>
                     </CardContent>
                   </Card>
-                )
+                );
               })}
             </div>
           ) : (
@@ -356,7 +364,9 @@ export const VideoLibrary = () => {
                         <List className="w-4 h-4" />
                         {playlist.video_count || 0} videos
                       </div>
-                      <Button variant="outline" size="sm">View</Button>
+                      <Button variant="outline" size="sm">
+                        View
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -411,7 +421,5 @@ export const VideoLibrary = () => {
         </TabsContent>
       </Tabs>
     </div>
-  )
-}
-
-
+  );
+};

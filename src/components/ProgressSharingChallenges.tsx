@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   shareProgress,
   getProgressShares,
@@ -20,103 +20,120 @@ import {
   type Challenge,
   type ChallengeParticipant,
   type Leaderboard,
-  type LeaderboardEntry
-} from '@/lib/progressSharing'
-import { Share2, Trophy, Target, TrendingUp, Users, Calendar, ThumbsUp, MessageSquare, Plus, Award } from 'lucide-react'
-import { toast } from 'sonner'
+  type LeaderboardEntry,
+} from "@/lib/progressSharing";
+import {
+  Share2,
+  Trophy,
+  Target,
+  TrendingUp,
+  Users,
+  Calendar,
+  ThumbsUp,
+  MessageSquare,
+  Plus,
+  Award,
+} from "lucide-react";
+import { toast } from "sonner";
 
 export const ProgressSharingChallenges = () => {
-  const [activeTab, setActiveTab] = useState('shares')
-  const [loading, setLoading] = useState(false)
-  const [shares, setShares] = useState<ProgressShare[]>([])
-  const [challenges, setChallenges] = useState<Challenge[]>([])
-  const [userChallenges, setUserChallenges] = useState<ChallengeParticipant[]>([])
-  const [leaderboards, setLeaderboards] = useState<Leaderboard[]>([])
-  const [selectedLeaderboard, setSelectedLeaderboard] = useState<Leaderboard | null>(null)
-  const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([])
-  
+  const [activeTab, setActiveTab] = useState("shares");
+  const [loading, setLoading] = useState(false);
+  const [shares, setShares] = useState<ProgressShare[]>([]);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [userChallenges, setUserChallenges] = useState<ChallengeParticipant[]>([]);
+  const [leaderboards, setLeaderboards] = useState<Leaderboard[]>([]);
+  const [selectedLeaderboard, setSelectedLeaderboard] = useState<Leaderboard | null>(null);
+  const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
+
   const [newShare, setNewShare] = useState({
-    share_type: 'general' as const,
-    content_type: 'text' as const,
-    title: '',
-    description: '',
+    share_type: "general" as const,
+    content_type: "text" as const,
+    title: "",
+    description: "",
     is_anonymous: true,
-  })
+  });
 
-  useEffect(() => {
-    loadData()
-  }, [activeTab])
-
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
       switch (activeTab) {
-        case 'shares': {
-          const sharesData = await getProgressShares()
-          setShares(sharesData)
-          break
+        case "shares": {
+          const sharesData = await getProgressShares();
+          setShares(sharesData);
+          break;
         }
-        case 'challenges': {
-          const challengesData = await getActiveChallenges()
-          setChallenges(challengesData)
-          const userChallengesData = await getUserChallenges()
-          setUserChallenges(userChallengesData)
-          break
+        case "challenges": {
+          const challengesData = await getActiveChallenges();
+          setChallenges(challengesData);
+          const userChallengesData = await getUserChallenges();
+          setUserChallenges(userChallengesData);
+          break;
         }
-        case 'leaderboards': {
-          const leaderboardsData = await getLeaderboards()
-          setLeaderboards(leaderboardsData)
-          break
+        case "leaderboards": {
+          const leaderboardsData = await getLeaderboards();
+          setLeaderboards(leaderboardsData);
+          break;
         }
       }
     } catch (error) {
-      toast.error('Failed to load data')
+      toast.error("Failed to load data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [activeTab]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const handleShareProgress = async () => {
     if (!newShare.title && !newShare.description) {
-      toast.error('Please enter a title or description')
-      return
+      toast.error("Please enter a title or description");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
-      await shareProgress(newShare)
-      toast.success('Progress shared!')
-      setNewShare({ share_type: 'general', content_type: 'text', title: '', description: '', is_anonymous: true })
-      await loadData()
+      await shareProgress(newShare);
+      toast.success("Progress shared!");
+      setNewShare({
+        share_type: "general",
+        content_type: "text",
+        title: "",
+        description: "",
+        is_anonymous: true,
+      });
+      await loadData();
     } catch (error) {
-      toast.error('Failed to share progress')
+      toast.error("Failed to share progress");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleJoinChallenge = async (challengeId: string) => {
-    setLoading(true)
+    setLoading(true);
     try {
-      await joinChallenge(challengeId)
-      toast.success('Challenge joined!')
-      await loadData()
+      await joinChallenge(challengeId);
+      toast.success("Challenge joined!");
+      await loadData();
     } catch (error) {
-      toast.error('Failed to join challenge')
+      toast.error("Failed to join challenge");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleViewLeaderboard = async (leaderboard: Leaderboard) => {
-    setSelectedLeaderboard(leaderboard)
+    setSelectedLeaderboard(leaderboard);
     try {
-      const entries = await getLeaderboardEntries(leaderboard.id!)
-      setLeaderboardEntries(entries)
+      const entries = await getLeaderboardEntries(leaderboard.id!);
+      setLeaderboardEntries(entries);
     } catch (error) {
-      toast.error('Failed to load leaderboard')
+      toast.error("Failed to load leaderboard");
     }
-  }
+  };
 
   if (selectedLeaderboard) {
     return (
@@ -124,7 +141,7 @@ export const ProgressSharingChallenges = () => {
         <Button variant="ghost" onClick={() => setSelectedLeaderboard(null)}>
           ← Back to Leaderboards
         </Button>
-        
+
         <Card variant="glass">
           <CardHeader>
             <CardTitle>{selectedLeaderboard.name}</CardTitle>
@@ -132,14 +149,21 @@ export const ProgressSharingChallenges = () => {
           <CardContent>
             <div className="space-y-4">
               {leaderboardEntries.map((entry, index) => (
-                <div key={entry.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
+                <div
+                  key={entry.id}
+                  className="flex items-center justify-between p-4 rounded-lg bg-secondary/50"
+                >
                   <div className="flex items-center gap-4">
                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center font-bold">
                       {entry.rank || index + 1}
                     </div>
                     <div>
-                      <p className="font-semibold">{entry.is_anonymous ? entry.display_name || 'Anonymous' : 'User'}</p>
-                      <p className="text-sm text-muted-foreground">{selectedLeaderboard.metric_type}</p>
+                      <p className="font-semibold">
+                        {entry.is_anonymous ? entry.display_name || "Anonymous" : "User"}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedLeaderboard.metric_type}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -151,7 +175,7 @@ export const ProgressSharingChallenges = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -186,12 +210,12 @@ export const ProgressSharingChallenges = () => {
               <Input
                 placeholder="Title (optional)"
                 value={newShare.title}
-                onChange={(e) => setNewShare({ ...newShare, title: e.target.value })}
+                onChange={e => setNewShare({ ...newShare, title: e.target.value })}
               />
               <Textarea
                 placeholder="Share your progress, milestone, or achievement..."
                 value={newShare.description}
-                onChange={(e) => setNewShare({ ...newShare, description: e.target.value })}
+                onChange={e => setNewShare({ ...newShare, description: e.target.value })}
                 rows={4}
               />
               <div className="flex items-center justify-between">
@@ -199,12 +223,12 @@ export const ProgressSharingChallenges = () => {
                   <input
                     type="checkbox"
                     checked={newShare.is_anonymous}
-                    onChange={(e) => setNewShare({ ...newShare, is_anonymous: e.target.checked })}
+                    onChange={e => setNewShare({ ...newShare, is_anonymous: e.target.checked })}
                   />
                   Share anonymously
                 </label>
                 <Button onClick={handleShareProgress} disabled={loading} variant="gradient">
-                  {loading ? 'Sharing...' : 'Share'}
+                  {loading ? "Sharing..." : "Share"}
                 </Button>
               </div>
             </CardContent>
@@ -219,16 +243,12 @@ export const ProgressSharingChallenges = () => {
                 <Card key={share.id} variant="glass">
                   <CardContent className="p-6">
                     <div className="space-y-4">
-                      {share.title && (
-                        <h4 className="font-semibold text-lg">{share.title}</h4>
-                      )}
+                      {share.title && <h4 className="font-semibold text-lg">{share.title}</h4>}
                       <p className="text-muted-foreground">{share.description}</p>
                       <div className="flex items-center justify-between pt-4 border-t">
                         <div className="flex gap-2">
                           <Badge variant="outline">{share.share_type}</Badge>
-                          {share.is_featured && (
-                            <Badge className="bg-yellow-500">Featured</Badge>
-                          )}
+                          {share.is_featured && <Badge className="bg-yellow-500">Featured</Badge>}
                         </div>
                         <div className="flex gap-4 text-sm text-muted-foreground">
                           <Button variant="ghost" size="sm">
@@ -261,8 +281,8 @@ export const ProgressSharingChallenges = () => {
               <div className="text-center py-12 text-muted-foreground">Loading...</div>
             ) : challenges.length > 0 ? (
               challenges.map(challenge => {
-                const userParticipation = userChallenges.find(p => p.challenge_id === challenge.id)
-                
+                const userParticipation = userChallenges.find(p => p.challenge_id === challenge.id);
+
                 return (
                   <Card key={challenge.id} variant="glass">
                     <CardHeader>
@@ -270,7 +290,9 @@ export const ProgressSharingChallenges = () => {
                         <div>
                           <CardTitle className="text-lg mb-2">{challenge.name}</CardTitle>
                           <CardContent className="p-0">
-                            <p className="text-sm text-muted-foreground mb-4">{challenge.description}</p>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              {challenge.description}
+                            </p>
                             <div className="flex gap-2 mb-4">
                               <Badge variant="outline">
                                 <Calendar className="w-3 h-3 mr-1" />
@@ -285,7 +307,9 @@ export const ProgressSharingChallenges = () => {
                               <div className="space-y-2">
                                 <div className="flex items-center justify-between text-sm">
                                   <span>Your Progress</span>
-                                  <span className="font-semibold">{userParticipation.progress_percentage?.toFixed(0) || 0}%</span>
+                                  <span className="font-semibold">
+                                    {userParticipation.progress_percentage?.toFixed(0) || 0}%
+                                  </span>
                                 </div>
                                 <Progress value={userParticipation.progress_percentage || 0} />
                                 <Badge variant="outline" className="capitalize">
@@ -295,9 +319,7 @@ export const ProgressSharingChallenges = () => {
                             )}
                           </CardContent>
                         </div>
-                        {challenge.is_featured && (
-                          <Badge className="bg-yellow-500">Featured</Badge>
-                        )}
+                        {challenge.is_featured && <Badge className="bg-yellow-500">Featured</Badge>}
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -318,7 +340,7 @@ export const ProgressSharingChallenges = () => {
                       )}
                     </CardContent>
                   </Card>
-                )
+                );
               })
             ) : (
               <div className="text-center py-12 text-muted-foreground col-span-2">
@@ -357,7 +379,7 @@ export const ProgressSharingChallenges = () => {
                         {leaderboard.leaderboard_type}
                       </Badge>
                       <Badge variant="outline" className="capitalize">
-                        {leaderboard.metric_type.replace('_', ' ')}
+                        {leaderboard.metric_type.replace("_", " ")}
                       </Badge>
                     </div>
                   </CardContent>
@@ -373,7 +395,5 @@ export const ProgressSharingChallenges = () => {
         </TabsContent>
       </Tabs>
     </div>
-  )
-}
-
-
+  );
+};

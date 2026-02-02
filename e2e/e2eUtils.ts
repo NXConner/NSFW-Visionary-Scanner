@@ -1,0 +1,26 @@
+import type { Page } from "@playwright/test";
+
+export async function primeLocalStorageForE2E(page: Page): Promise<void> {
+  // Bypass first-run modals that can block UI interactions in E2E.
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem("morphoscan_disclaimer_accepted", "true");
+      localStorage.setItem("morphoscan_disclaimer_date", new Date().toISOString());
+      localStorage.setItem("morphoscan_onboarding_complete", "true");
+    } catch {
+      // ignore
+    }
+  });
+}
+
+export async function waitForAppReady(page: Page, timeoutMs = 90_000): Promise<void> {
+  // Prefer the app-provided readiness flag (set in AppContent after mount).
+  // Fallback to "root has children" for robustness.
+  await page.waitForFunction(
+    () =>
+      (window as any).__APP_INTERACTIVE__ === true ||
+      (document.getElementById("root")?.childElementCount || 0) > 0,
+    undefined,
+    { timeout: timeoutMs },
+  );
+}

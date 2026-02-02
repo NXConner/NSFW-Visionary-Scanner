@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Search, 
-  User, 
-  Phone, 
-  Mail, 
-  MapPin, 
+import {
+  Search,
+  User,
+  Phone,
+  Mail,
+  MapPin,
   Building2,
   Users,
   FileText,
@@ -15,7 +15,7 @@ import {
   Loader2,
   ChevronRight,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react";
 
 interface SearchResult {
@@ -31,36 +31,43 @@ interface SearchResult {
 }
 
 export const SearchSection = () => {
+  type SearchType = "name" | "phone" | "email";
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchType, setSearchType] = useState<'name' | 'phone' | 'email'>('name');
+  const [searchType, setSearchType] = useState<SearchType>("name");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult | null>(null);
 
   const handleSearch = () => {
     if (!searchQuery.trim()) return;
-    
+
     setIsSearching(true);
     // Simulate search
     setTimeout(() => {
       setResults({
-        id: '1',
-        name: 'John Michael Smith',
+        id: "1",
+        name: "John Michael Smith",
         age: 34,
-        location: 'Los Angeles, CA',
-        email: 'j***@email.com',
-        phone: '(310) ***-**42',
-        occupation: 'Software Engineer',
-        relatives: ['Mary Smith', 'Robert Smith', 'Sarah Johnson'],
+        location: "Los Angeles, CA",
+        email: "j***@email.com",
+        phone: "(310) ***-**42",
+        occupation: "Software Engineer",
+        relatives: ["Mary Smith", "Robert Smith", "Sarah Johnson"],
         riskScore: 15,
       });
       setIsSearching(false);
     }, 2000);
   };
 
-  const searchTypes = [
-    { id: 'name', label: 'Name', icon: User, placeholder: 'Enter full name...' },
-    { id: 'phone', label: 'Phone', icon: Phone, placeholder: 'Enter phone number...' },
-    { id: 'email', label: 'Email', icon: Mail, placeholder: 'Enter email address...' },
+  const searchTypes: ReadonlyArray<{
+    id: SearchType;
+    label: string;
+    icon: typeof User;
+    placeholder: string;
+  }> = [
+    { id: "name", label: "Name", icon: User, placeholder: "Enter full name..." },
+    { id: "phone", label: "Phone", icon: Phone, placeholder: "Enter phone number..." },
+    { id: "email", label: "Email", icon: Mail, placeholder: "Enter email address..." },
   ];
 
   return (
@@ -75,22 +82,26 @@ export const SearchSection = () => {
             <span className="gradient-text">Background</span> Check
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Access comprehensive background information including public records, 
-            social profiles, and verification data.
+            Access comprehensive background information including public records, social profiles,
+            and verification data.
           </p>
         </div>
 
         {/* Search Interface */}
-        <Card variant="glass" className="mb-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+        <Card
+          variant="glass"
+          className="mb-8 animate-fade-in-up"
+          style={{ animationDelay: "0.1s" }}
+        >
           <CardContent className="p-6">
             {/* Search Type Tabs */}
             <div className="flex gap-2 mb-6">
-              {searchTypes.map((type) => (
+              {searchTypes.map(type => (
                 <Button
                   key={type.id}
                   variant={searchType === type.id ? "scan" : "ghost"}
                   size="sm"
-                  onClick={() => setSearchType(type.id as any)}
+                  onClick={() => setSearchType(type.id)}
                   className="gap-2"
                 >
                   <type.icon className="w-4 h-4" />
@@ -106,13 +117,13 @@ export const SearchSection = () => {
                 <Input
                   placeholder={searchTypes.find(t => t.id === searchType)?.placeholder}
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   className="pl-12 h-14 text-lg bg-secondary/50 border-border/50 focus:border-primary"
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  onKeyDown={e => e.key === "Enter" && handleSearch()}
                 />
               </div>
-              <Button 
-                variant="hero" 
+              <Button
+                variant="hero"
                 onClick={handleSearch}
                 disabled={isSearching || !searchQuery.trim()}
                 className="h-14 px-8"
@@ -161,7 +172,7 @@ export const SearchSection = () => {
                 </div>
                 <h3 className="text-xl font-bold mb-1">{results.name}</h3>
                 <p className="text-muted-foreground mb-4">{results.age} years old</p>
-                
+
                 <div className="space-y-3 text-left">
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
                     <MapPin className="w-5 h-5 text-primary" />
@@ -197,18 +208,20 @@ export const SearchSection = () => {
                   <div className="flex items-center gap-4 mb-4">
                     <div className="flex-1">
                       <div className="h-3 rounded-full bg-secondary overflow-hidden">
-                        <div 
+                        <div
                           className="h-full rounded-full bg-success transition-all duration-1000"
                           style={{ width: `${100 - results.riskScore}%` }}
                         />
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-success">{100 - results.riskScore}%</div>
+                      <div className="text-2xl font-bold text-success">
+                        {100 - results.riskScore}%
+                      </div>
                       <div className="text-xs text-muted-foreground">Safe Score</div>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="w-4 h-4 text-success" />
@@ -240,9 +253,9 @@ export const SearchSection = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {results.relatives.map((relative, index) => (
-                      <div 
-                        key={index}
+                    {results.relatives.map((relative) => (
+                      <div
+                        key={relative}
                         className="px-4 py-2 rounded-full bg-secondary/50 border border-border/50 text-sm hover:border-primary/50 cursor-pointer transition-colors"
                       >
                         {relative}
@@ -269,13 +282,14 @@ export const SearchSection = () => {
 
         {/* Empty State */}
         {!results && !isSearching && (
-          <div className="text-center py-16 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <div className="text-center py-16 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
             <div className="w-24 h-24 mx-auto rounded-full bg-secondary/50 flex items-center justify-center mb-6">
               <Search className="w-12 h-12 text-muted-foreground" />
             </div>
             <h3 className="text-xl font-semibold mb-2">Start Your Search</h3>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Enter a name, phone number, or email address to access comprehensive background information.
+              Enter a name, phone number, or email address to access comprehensive background
+              information.
             </p>
           </div>
         )}

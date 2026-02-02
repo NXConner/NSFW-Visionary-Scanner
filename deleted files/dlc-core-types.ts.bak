@@ -1,0 +1,555 @@
+/**
+ * DLC Core Types
+ * Type definitions for the DLC system
+ */
+
+// ============================================
+// Package Types
+// ============================================
+
+export type DLCPackageType = 'individual' | 'bundle' | 'subscription';
+export type DLCPriceType = 'one_time' | 'subscription';
+export type SubscriptionInterval = 'monthly' | 'yearly';
+export type ContentRating = '18+' | 'adult' | 'mature';
+
+export interface DLCPackage {
+  id: string;
+  packageId: string;
+  packageName: string;
+  packageType: DLCPackageType;
+  
+  // Descriptions
+  safeDescription: string;
+  fullDescription?: string;
+  marketingTagline?: string;
+  
+  // Pricing
+  priceUsd: number;
+  priceType: DLCPriceType;
+  subscriptionInterval?: SubscriptionInterval;
+  regionalPricing?: Record<string, number>;
+  
+  // Features
+  features: DLCFeature[];
+  includedPackages?: string[];
+  
+  // Distribution
+  downloadUrl?: string;
+  downloadSizeBytes?: number;
+  checksumSha256?: string;
+  encryptionKeyId?: string;
+  
+  // Versioning
+  version: string;
+  contentVersion: string;
+  minAppVersion?: string;
+  maxAppVersion?: string;
+  contentChangelog?: ContentChangelogEntry[];
+  
+  // Status
+  isActive: boolean;
+  isFeatured: boolean;
+  displayOrder: number;
+  
+  // Metadata
+  contentRating: ContentRating;
+  previewImages?: string[];
+  previewVideoUrl?: string;
+  
+  // Localization
+  localizedNames?: Record<string, string>;
+  localizedDescriptions?: Record<string, string>;
+  
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DLCFeature {
+  id: string;
+  name: string;
+  description: string;
+  icon?: string;
+  category: DLCFeatureCategory;
+}
+
+export type DLCFeatureCategory = 
+  | 'positions'
+  | 'videos'
+  | 'analytics'
+  | 'community'
+  | 'advanced'
+  | 'marketplace';
+
+export interface ContentChangelogEntry {
+  version: string;
+  date: string;
+  changes: string[];
+}
+
+// ============================================
+// License Types
+// ============================================
+
+export type LicenseType = 'one_time' | 'subscription' | 'gift' | 'promo';
+export type SubscriptionStatus = 'active' | 'cancelled' | 'expired' | 'paused';
+
+export interface DLCLicense {
+  id: string;
+  userId: string;
+  packageId: string;
+  
+  // License Info
+  licenseKey: string;
+  licenseType: LicenseType;
+  
+  // Purchase Info
+  purchaseDate: Date;
+  purchasePrice?: number;
+  purchaseCurrency: string;
+  paymentProvider?: string;
+  paymentId?: string;
+  
+  // Subscription Info
+  subscriptionStatus?: SubscriptionStatus;
+  subscriptionStart?: Date;
+  subscriptionEnd?: Date;
+  subscriptionPauseUntil?: Date;
+  autoRenew: boolean;
+  
+  // Activation
+  isActive: boolean;
+  activatedAt?: Date;
+  deactivatedAt?: Date;
+  
+  // Device Binding
+  maxDevices: number;
+  
+  // Offline Support
+  offlineCacheExpiresAt?: Date;
+  lastOnlineValidation?: Date;
+  gracePeriodUntil?: Date;
+  
+  // Refund
+  refundedAt?: Date;
+  refundReason?: string;
+  
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface LicenseDevice {
+  id: string;
+  licenseId: string;
+  deviceId: string;
+  deviceFingerprint?: string;
+  deviceName?: string;
+  devicePlatform: DevicePlatform;
+  deviceModel?: string;
+  isPrimary: boolean;
+  isActive: boolean;
+  registeredAt: Date;
+  lastUsedAt?: Date;
+  lastValidationAt?: Date;
+}
+
+export type DevicePlatform = 'android' | 'ios' | 'web';
+
+export interface LicenseValidationResult {
+  isValid: boolean;
+  license?: DLCLicense;
+  error?: LicenseValidationError;
+  expiresAt?: Date;
+  deviceAuthorized: boolean;
+  contentKey?: string;
+  checkAgainAt?: Date;
+  offlineValidUntil?: Date;
+}
+
+export type LicenseValidationError = 
+  | 'license_not_found'
+  | 'license_expired'
+  | 'license_revoked'
+  | 'device_not_authorized'
+  | 'max_devices_reached'
+  | 'subscription_expired'
+  | 'subscription_cancelled'
+  | 'network_error'
+  | 'validation_failed';
+
+// ============================================
+// Installation Types
+// ============================================
+
+export type InstallSource = 'manual' | 'auto_update' | 'restore';
+export type InstallStatus = 'not_installed' | 'downloading' | 'installing' | 'installed' | 'failed' | 'corrupted';
+
+export interface DLCInstallation {
+  id: string;
+  userId: string;
+  licenseId: string;
+  packageId: string;
+  deviceId: string;
+  
+  // Installation Info
+  installedVersion: string;
+  contentVersion?: string;
+  installDate: Date;
+  installSource: InstallSource;
+  
+  // Device Info
+  devicePlatform?: DevicePlatform;
+  deviceModel?: string;
+  appVersion?: string;
+  
+  // Storage
+  storageUsedBytes?: number;
+  cachedContentBytes?: number;
+  
+  // Status
+  isInstalled: boolean;
+  isCorrupted: boolean;
+  lastIntegrityCheck?: Date;
+  lastUsedAt?: Date;
+  
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ============================================
+// Download Types
+// ============================================
+
+export type DownloadStatus = 'pending' | 'downloading' | 'paused' | 'completed' | 'failed' | 'cancelled';
+export type DownloadType = 'full' | 'delta' | 'content_update';
+
+export interface DLCDownload {
+  id: string;
+  userId: string;
+  packageId: string;
+  licenseId?: string;
+  deviceId: string;
+  
+  // Download Info
+  downloadUrl: string;
+  downloadType: DownloadType;
+  
+  // Progress
+  downloadStatus: DownloadStatus;
+  downloadProgress: number; // 0-100
+  downloadSpeedBps?: number;
+  
+  // Timing
+  downloadStartedAt?: Date;
+  downloadCompletedAt?: Date;
+  estimatedTimeRemaining?: number; // seconds
+  
+  // File Info
+  fileSizeBytes?: number;
+  downloadedBytes: number;
+  checksumExpected?: string;
+  checksumVerified?: boolean;
+  
+  // Error Handling
+  errorMessage?: string;
+  errorCode?: string;
+  retryCount: number;
+  maxRetries: number;
+  
+  createdAt: Date;
+}
+
+export interface DownloadProgress {
+  packageId: string;
+  status: DownloadStatus;
+  progress: number;
+  downloadedBytes: number;
+  totalBytes: number;
+  speedBps: number;
+  estimatedTimeRemaining: number;
+  error?: string;
+}
+
+// ============================================
+// Update Types
+// ============================================
+
+export type UpdateType = 'patch' | 'minor' | 'major' | 'content_add';
+export type UpdatePolicy = 'auto' | 'notify' | 'manual';
+
+export interface DLCUpdate {
+  packageId: string;
+  currentVersion: string;
+  latestVersion: string;
+  updateType: UpdateType;
+  updatePolicy: UpdatePolicy;
+  changelog: string[];
+  downloadSizeBytes: number;
+  isRequired: boolean;
+  releaseDate: Date;
+}
+
+export type UpdateSource = 'store' | 'website';
+
+export interface AppUpdateSource {
+  userId: string;
+  deviceId: string;
+  originalInstallSource: 'google_play' | 'app_store' | 'website' | 'direct';
+  currentUpdateSource: UpdateSource;
+  sourceChangedAt?: Date;
+  sourceChangeReason?: string;
+  currentAppVersion?: string;
+  lastUpdateCheck?: Date;
+  lastUpdateInstalled?: Date;
+  availableUpdateVersion?: string;
+  updateSourceAcknowledged: boolean;
+  acknowledgedAt?: Date;
+}
+
+// ============================================
+// Promo & Gift Types
+// ============================================
+
+export type DiscountType = 'percentage' | 'fixed' | 'free';
+
+export interface PromoCode {
+  id: string;
+  code: string;
+  discountType: DiscountType;
+  discountValue: number;
+  appliesTo: string[]; // package IDs or ['all']
+  maxRedemptions?: number;
+  currentRedemptions: number;
+  maxPerUser: number;
+  validFrom: Date;
+  validUntil?: Date;
+  affiliateId?: string;
+  affiliateCommission?: number;
+  isActive: boolean;
+  campaignName?: string;
+  createdAt: Date;
+}
+
+export interface GiftCode {
+  id: string;
+  code: string;
+  packageId: string;
+  purchasedBy?: string;
+  purchasePrice?: number;
+  purchasedAt: Date;
+  redeemedBy?: string;
+  redeemedAt?: Date;
+  giftMessage?: string;
+  recipientEmail?: string;
+  expiresAt?: Date;
+  isActive: boolean;
+}
+
+export interface PromoRedemption {
+  id: string;
+  promoCodeId: string;
+  userId: string;
+  packageId: string;
+  originalPrice: number;
+  discountApplied: number;
+  finalPrice: number;
+  redeemedAt: Date;
+}
+
+// ============================================
+// Age Verification Types
+// ============================================
+
+export type AgeVerificationMethod = 'self_declared' | 'id_check' | 'credit_card';
+
+export interface AgeVerification {
+  id: string;
+  userId: string;
+  verifiedAt: Date;
+  verificationMethod: AgeVerificationMethod;
+  declaredAge?: number;
+  dateOfBirth?: Date;
+  isVerified: boolean;
+  termsAccepted: boolean;
+  termsAcceptedAt?: Date;
+  termsVersion?: string;
+  adultContentConsent: boolean;
+  ipAddress?: string;
+  userAgent?: string;
+  countryCode?: string;
+}
+
+// ============================================
+// Module Types
+// ============================================
+
+export interface DLCModule {
+  id: string;
+  name: string;
+  version: string;
+  packageId: string;
+  
+  // Components
+  components: Record<string, React.ComponentType<unknown>>;
+  
+  // Routes
+  routes: DLCRoute[];
+  
+  // Navigation
+  navigationItems: DLCNavigationItem[];
+  
+  // Features
+  features: string[];
+  
+  // Lifecycle
+  onLoad?: () => Promise<void>;
+  onUnload?: () => Promise<void>;
+}
+
+export interface DLCRoute {
+  path: string;
+  component: string;
+  exact?: boolean;
+  protected?: boolean;
+}
+
+export interface DLCNavigationItem {
+  id: string;
+  label: string;
+  icon: string;
+  path: string;
+  order: number;
+  badge?: string;
+}
+
+// ============================================
+// Bundle Manifest Types
+// ============================================
+
+export interface DLCBundleManifest {
+  id: string;
+  name: string;
+  version: string;
+  contentVersion: string;
+  
+  description: {
+    safe: string;
+    full?: string;
+  };
+  
+  includes: DLCBundleModule[];
+  
+  dependencies: string[]; // Should always be empty for self-contained bundles
+  
+  pricing: {
+    type: DLCPriceType;
+    price: number;
+    currency: string;
+  };
+  
+  requirements: {
+    minAppVersion: string;
+    maxAppVersion?: string;
+    ageVerification: boolean;
+  };
+  
+  distribution: {
+    downloadSize: string;
+    installSize: string;
+    checksum: string;
+  };
+}
+
+export interface DLCBundleModule {
+  module: string;
+  features: string[];
+}
+
+// ============================================
+// Store Types
+// ============================================
+
+export interface DLCStoreState {
+  packages: DLCPackage[];
+  ownedPackages: string[];
+  installedPackages: string[];
+  downloads: Record<string, DownloadProgress>;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export interface DLCPurchaseRequest {
+  packageId: string;
+  promoCode?: string;
+  giftCode?: string;
+  paymentMethod: 'stripe' | 'paypal';
+}
+
+export interface DLCPurchaseResult {
+  success: boolean;
+  licenseKey?: string;
+  error?: string;
+  redirectUrl?: string;
+}
+
+// ============================================
+// Analytics Types
+// ============================================
+
+export type DLCAnalyticsEvent = 
+  | 'dlc_store_viewed'
+  | 'dlc_package_viewed'
+  | 'dlc_package_details_opened'
+  | 'dlc_preview_started'
+  | 'dlc_purchase_started'
+  | 'dlc_purchase_completed'
+  | 'dlc_purchase_failed'
+  | 'dlc_download_started'
+  | 'dlc_download_completed'
+  | 'dlc_download_failed'
+  | 'dlc_install_started'
+  | 'dlc_install_completed'
+  | 'dlc_install_failed'
+  | 'dlc_feature_first_use'
+  | 'dlc_upgrade_offered'
+  | 'dlc_upgrade_accepted'
+  | 'dlc_promo_applied'
+  | 'dlc_gift_redeemed';
+
+export interface DLCAnalyticsEventData {
+  eventType: DLCAnalyticsEvent;
+  packageId?: string;
+  data?: Record<string, unknown>;
+  timestamp: Date;
+}
+
+// ============================================
+// Error Types
+// ============================================
+
+export class DLCError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public details?: Record<string, unknown>
+  ) {
+    super(message);
+    this.name = 'DLCError';
+  }
+}
+
+export type DLCErrorCode = 
+  | 'PACKAGE_NOT_FOUND'
+  | 'LICENSE_INVALID'
+  | 'LICENSE_EXPIRED'
+  | 'DEVICE_NOT_AUTHORIZED'
+  | 'DOWNLOAD_FAILED'
+  | 'INSTALL_FAILED'
+  | 'INTEGRITY_CHECK_FAILED'
+  | 'DECRYPTION_FAILED'
+  | 'NETWORK_ERROR'
+  | 'STORAGE_FULL'
+  | 'VERSION_INCOMPATIBLE'
+  | 'AGE_VERIFICATION_REQUIRED'
+  | 'PURCHASE_FAILED'
+  | 'PROMO_CODE_INVALID'
+  | 'GIFT_CODE_INVALID';

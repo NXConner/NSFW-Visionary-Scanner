@@ -1,0 +1,581 @@
+/**
+ * Secure Downloader
+ * Handles secure downloading of DLC content with integrity checking
+ */
+
+import { logger } from '@/lib/logger';
+import { contentEncryption, integrityChecker } from './ContentEncryption';
+import type { DLCPackage, DownloadProgress, DownloadStatus } from '../core/types';
+
+// ============================================
+// Types
+// ============================================
+
+interface DownloadOptions {
+  packageId: string;
+  url: string;
+  expectedChecksum?: string;
+  encryptionKeyId?: string;
+  onProgress?: (progress: DownloadProgress) => void;
+  signal?: AbortSignal;
+}
+
+interface DownloadResult {
+  success: boolean;
+  data?: ArrayBuffer;
+  error?: string;
+  checksum?: string;
+  downloadedBytes: number;
+  durationMs: number;
+}
+
+interface ChunkDownloadOptions extends DownloadOptions {
+  startByte: number;
+  endByte: number;
+  chunkIndex: number;
+}
+
+// ============================================
+// Constants
+// ============================================
+
+const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1000;
+const TIMEOUT_MS = 30000;
+
+// Resume storage (IndexedDB)
+const RESUME_DB_NAME = 'dlc_download_resume';
+const RESUME_DB_VERSION = 1;
+const RESUME_META_STORE = 'meta';
+const RESUME_CHUNKS_STORE = 'chunks';
+
+// ============================================
+// Secure Downloader Class
+// ============================================
+
+class SecureDownloader {
+  private activeDownloads: Map<string, AbortController> = new Map();
+  private downloadProgress: Map<string, DownloadProgress> = new Map();
+
+  private async openResumeDb(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(RESUME_DB_NAME, RESUME_DB_VERSION);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains(RESUME_META_STORE)) {
+          db.createObjectStore(RESUME_META_STORE, { keyPath: 'packageId' });
+        }
+        if (!db.objectStoreNames.contains(RESUME_CHUNKS_STORE)) {
+          db.createObjectStore(RESUME_CHUNKS_STORE, { keyPath: 'key' });
+        }
+      };
+    });
+  }
+
+  private async loadResumeMeta(packageId: string): Promise<any | null> {
+    try {
+      const db = await this.openResumeDb();
+      const tx = db.transaction([RESUME_META_STORE], 'readonly');
+      const store = tx.objectStore(RESUME_META_STORE);
+      return await new Promise((resolve) => {
+        const req = store.get(packageId);
+        req.onsuccess = () => resolve(req.result ?? null);
+        req.onerror = () => resolve(null);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  private async saveResumeMeta(meta: any): Promise<void> {
+    const db = await this.openResumeDb();
+    const tx = db.transaction([RESUME_META_STORE], 'readwrite');
+    const store = tx.objectStore(RESUME_META_STORE);
+    await new Promise<void>((resolve, reject) => {
+      const req = store.put(meta);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  private async saveChunk(packageId: string, chunkIndex: number, bytes: Uint8Array): Promise<void> {
+    const db = await this.openResumeDb();
+    const tx = db.transaction([RESUME_CHUNKS_STORE], 'readwrite');
+    const store = tx.objectStore(RESUME_CHUNKS_STORE);
+    const key = `${packageId}:${chunkIndex}`;
+    await new Promise<void>((resolve, reject) => {
+      const req = store.put({ key, packageId, chunkIndex, bytes, size: bytes.byteLength, savedAt: Date.now() });
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  private async loadChunk(packageId: string, chunkIndex: number): Promise<Uint8Array | null> {
+    try {
+      const db = await this.openResumeDb();
+      const tx = db.transaction([RESUME_CHUNKS_STORE], 'readonly');
+      const store = tx.objectStore(RESUME_CHUNKS_STORE);
+      const key = `${packageId}:${chunkIndex}`;
+      return await new Promise((resolve) => {
+        const req = store.get(key);
+        req.onsuccess = () => resolve(req.result?.bytes ?? null);
+        req.onerror = () => resolve(null);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  private async clearResume(packageId: string): Promise<void> {
+    try {
+      const db = await this.openResumeDb();
+      const tx = db.transaction([RESUME_META_STORE, RESUME_CHUNKS_STORE], 'readwrite');
+      const metaStore = tx.objectStore(RESUME_META_STORE);
+      const chunkStore = tx.objectStore(RESUME_CHUNKS_STORE);
+
+      metaStore.delete(packageId);
+
+      // iterate chunks and delete by prefix match
+      await new Promise<void>((resolve) => {
+        const req = chunkStore.openCursor();
+        req.onsuccess = (event) => {
+          const cursor = (event.target as IDBRequest).result;
+          if (!cursor) return resolve();
+          const key = String(cursor.value?.key ?? '');
+          if (key.startsWith(`${packageId}:`)) {
+            cursor.delete();
+          }
+          cursor.continue();
+        };
+        req.onerror = () => resolve();
+      });
+    } catch {
+      // ignore
+    }
+  }
+  
+  /**
+   * Download DLC content securely
+   */
+  async download(options: DownloadOptions): Promise<DownloadResult> {
+    const { packageId, url, expectedChecksum, onProgress, signal } = options;
+    const startTime = Date.now();
+    
+    logger.info('SecureDownloader: Starting download', { packageId, url });
+    
+    // Create abort controller for this download
+    const controller = new AbortController();
+    this.activeDownloads.set(packageId, controller);
+    
+    // Combine with external signal if provided
+    const combinedSignal = signal
+      ? this.combineSignals(controller.signal, signal)
+      : controller.signal;
+    
+    try {
+      // Initialize progress
+      this.updateProgress(packageId, {
+        packageId,
+        status: 'pending',
+        progress: 0,
+        downloadedBytes: 0,
+        totalBytes: 0,
+        speedBps: 0,
+        estimatedTimeRemaining: 0,
+      });
+      onProgress?.(this.downloadProgress.get(packageId)!);
+      
+      // Get content info
+      const headResponse = await fetch(url, {
+        method: 'HEAD',
+        signal: combinedSignal,
+      });
+      
+      if (!headResponse.ok) {
+        throw new Error(`Failed to get content info: ${headResponse.status}`);
+      }
+      
+      const totalBytes = parseInt(headResponse.headers.get('Content-Length') || '0', 10);
+      const supportsRanges = headResponse.headers.get('Accept-Ranges') === 'bytes';
+      
+      // Update progress with total size
+      this.updateProgress(packageId, {
+        status: 'downloading',
+        totalBytes,
+      });
+      onProgress?.(this.downloadProgress.get(packageId)!);
+      
+      let data: ArrayBuffer;
+      
+      // Use chunked download if content is large and server supports ranges
+      if (supportsRanges && totalBytes > CHUNK_SIZE * 2) {
+        data = await this.downloadChunked(packageId, url, totalBytes, combinedSignal, onProgress);
+      } else {
+        data = await this.downloadSingle(packageId, url, combinedSignal, onProgress);
+      }
+      
+      // Verify integrity
+      if (expectedChecksum) {
+        const actualChecksum = await integrityChecker.calculateHash(data);
+        
+        if (!await integrityChecker.verify(data, expectedChecksum)) {
+          throw new Error('Checksum verification failed');
+        }
+        
+        logger.info('SecureDownloader: Checksum verified', { packageId });
+      }
+      
+      // Update progress to completed
+      this.updateProgress(packageId, {
+        status: 'completed',
+        progress: 100,
+        downloadedBytes: data.byteLength,
+      });
+      onProgress?.(this.downloadProgress.get(packageId)!);
+      
+      const durationMs = Date.now() - startTime;
+      
+      logger.info('SecureDownloader: Download completed', {
+        packageId,
+        bytes: data.byteLength,
+        durationMs,
+      });
+      
+      return {
+        success: true,
+        data,
+        checksum: expectedChecksum ? await integrityChecker.calculateHash(data) : undefined,
+        downloadedBytes: data.byteLength,
+        durationMs,
+      };
+      
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Download failed';
+      
+      // Update progress to failed
+      this.updateProgress(packageId, {
+        status: 'failed',
+        error: message,
+      });
+      onProgress?.(this.downloadProgress.get(packageId)!);
+      
+      logger.error('SecureDownloader: Download failed', { packageId, error: message });
+      
+      return {
+        success: false,
+        error: message,
+        downloadedBytes: this.downloadProgress.get(packageId)?.downloadedBytes || 0,
+        durationMs: Date.now() - startTime,
+      };
+      
+    } finally {
+      this.activeDownloads.delete(packageId);
+    }
+  }
+  
+  /**
+   * Download content in a single request
+   */
+  private async downloadSingle(
+    packageId: string,
+    url: string,
+    signal: AbortSignal,
+    onProgress?: (progress: DownloadProgress) => void
+  ): Promise<ArrayBuffer> {
+    const response = await fetch(url, { signal });
+    
+    if (!response.ok) {
+      throw new Error(`Download failed: ${response.status}`);
+    }
+    
+    const totalBytes = parseInt(response.headers.get('Content-Length') || '0', 10);
+    const reader = response.body?.getReader();
+    
+    if (!reader) {
+      throw new Error('Response body not readable');
+    }
+    
+    const chunks: Uint8Array[] = [];
+    let downloadedBytes = 0;
+    const startTime = Date.now();
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) break;
+      
+      chunks.push(value);
+      downloadedBytes += value.length;
+      
+      // Calculate speed and ETA
+      const elapsedMs = Date.now() - startTime;
+      const speedBps = downloadedBytes / (elapsedMs / 1000);
+      const remainingBytes = totalBytes - downloadedBytes;
+      const estimatedTimeRemaining = remainingBytes / speedBps;
+      
+      // Update progress
+      this.updateProgress(packageId, {
+        downloadedBytes,
+        progress: totalBytes > 0 ? Math.round((downloadedBytes / totalBytes) * 100) : 0,
+        speedBps,
+        estimatedTimeRemaining: Math.round(estimatedTimeRemaining),
+      });
+      onProgress?.(this.downloadProgress.get(packageId)!);
+    }
+    
+    // Combine chunks
+    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+    const result = new Uint8Array(totalLength);
+    let offset = 0;
+    
+    for (const chunk of chunks) {
+      result.set(chunk, offset);
+      offset += chunk.length;
+    }
+    
+    return result.buffer;
+  }
+  
+  /**
+   * Download content in chunks with parallel requests
+   */
+  private async downloadChunked(
+    packageId: string,
+    url: string,
+    totalBytes: number,
+    signal: AbortSignal,
+    onProgress?: (progress: DownloadProgress) => void
+  ): Promise<ArrayBuffer> {
+    // Resume support: if we have chunks saved for this package+url+size, reuse them
+    const resumeMeta = await this.loadResumeMeta(packageId);
+    const canResume =
+      resumeMeta &&
+      resumeMeta.url === url &&
+      resumeMeta.totalBytes === totalBytes &&
+      resumeMeta.chunkSize === CHUNK_SIZE;
+
+    if (!canResume) {
+      // New download or mismatched resume state: reset any stale resume data
+      await this.clearResume(packageId);
+      await this.saveResumeMeta({
+        packageId,
+        url,
+        totalBytes,
+        chunkSize: CHUNK_SIZE,
+        createdAt: Date.now(),
+      });
+    }
+
+    // Calculate chunks
+    const chunks: { start: number; end: number }[] = [];
+    for (let start = 0; start < totalBytes; start += CHUNK_SIZE) {
+      const end = Math.min(start + CHUNK_SIZE - 1, totalBytes - 1);
+      chunks.push({ start, end });
+    }
+    
+    // Download chunks (max 4 parallel)
+    const parallelLimit = 4;
+    const downloadedChunks: (Uint8Array | null)[] = new Array(chunks.length).fill(null);
+    let downloadedBytes = 0;
+    const startTime = Date.now();
+
+    // Preload any saved chunks
+    for (let i = 0; i < chunks.length; i++) {
+      const cached = await this.loadChunk(packageId, i);
+      if (cached) {
+        downloadedChunks[i] = cached;
+        downloadedBytes += cached.byteLength;
+      }
+    }
+
+    if (downloadedBytes > 0) {
+      const elapsedMs = Date.now() - startTime || 1;
+      const speedBps = downloadedBytes / (elapsedMs / 1000);
+      const remainingBytes = totalBytes - downloadedBytes;
+      const estimatedTimeRemaining = remainingBytes / (speedBps || 1);
+      this.updateProgress(packageId, {
+        downloadedBytes,
+        progress: Math.round((downloadedBytes / totalBytes) * 100),
+        speedBps,
+        estimatedTimeRemaining: Math.round(estimatedTimeRemaining),
+      });
+      onProgress?.(this.downloadProgress.get(packageId)!);
+    }
+    
+    const downloadChunk = async (index: number): Promise<void> => {
+      // Skip already downloaded chunks (resume)
+      if (downloadedChunks[index]) return;
+      const { start, end } = chunks[index];
+      
+      for (let retry = 0; retry < MAX_RETRIES; retry++) {
+        try {
+          const response = await fetch(url, {
+            headers: { Range: `bytes=${start}-${end}` },
+            signal,
+          });
+          
+          if (!response.ok && response.status !== 206) {
+            throw new Error(`Chunk download failed: ${response.status}`);
+          }
+          
+          const data = await response.arrayBuffer();
+          const bytes = new Uint8Array(data);
+          downloadedChunks[index] = bytes;
+          downloadedBytes += bytes.byteLength;
+
+          // Persist chunk for resume
+          await this.saveChunk(packageId, index, bytes);
+          
+          // Update progress
+          const elapsedMs = Date.now() - startTime;
+          const speedBps = downloadedBytes / (elapsedMs / 1000);
+          const remainingBytes = totalBytes - downloadedBytes;
+          const estimatedTimeRemaining = remainingBytes / speedBps;
+          
+          this.updateProgress(packageId, {
+            downloadedBytes,
+            progress: Math.round((downloadedBytes / totalBytes) * 100),
+            speedBps,
+            estimatedTimeRemaining: Math.round(estimatedTimeRemaining),
+          });
+          onProgress?.(this.downloadProgress.get(packageId)!);
+          
+          return;
+        } catch (error) {
+          if (retry === MAX_RETRIES - 1) throw error;
+          await this.delay(RETRY_DELAY_MS * (retry + 1));
+        }
+      }
+    };
+    
+    // Download chunks in parallel with limit
+    const queue = [...Array(chunks.length).keys()];
+    const active: Promise<void>[] = [];
+    
+    while (queue.length > 0 || active.length > 0) {
+      // Start new downloads up to parallel limit
+      while (active.length < parallelLimit && queue.length > 0) {
+        const index = queue.shift()!;
+        const promise = downloadChunk(index).then(() => {
+          const i = active.indexOf(promise);
+          if (i > -1) active.splice(i, 1);
+        });
+        active.push(promise);
+      }
+      
+      // Wait for at least one to complete
+      if (active.length > 0) {
+        await Promise.race(active);
+      }
+    }
+    
+    // Combine chunks
+    const result = new Uint8Array(totalBytes);
+    let offset = 0;
+    
+    for (const chunk of downloadedChunks) {
+      if (chunk) {
+        result.set(chunk, offset);
+        offset += chunk.length;
+      }
+    }
+
+    // Clean resume state after successful assembly
+    await this.clearResume(packageId);
+    
+    return result.buffer;
+  }
+  
+  /**
+   * Cancel an active download
+   */
+  cancelDownload(packageId: string): void {
+    const controller = this.activeDownloads.get(packageId);
+    if (controller) {
+      controller.abort();
+      
+      this.updateProgress(packageId, {
+        status: 'cancelled',
+      });
+      
+      logger.info('SecureDownloader: Download cancelled', { packageId });
+    }
+
+    // Cancel means discard resumable state
+    void this.clearResume(packageId);
+  }
+  
+  /**
+   * Pause a download (not fully implemented - would need resumable state)
+   */
+  pauseDownload(packageId: string): void {
+    // Pause: abort the active request but keep resumable chunk state (if any).
+    const controller = this.activeDownloads.get(packageId);
+    if (controller) {
+      controller.abort();
+    }
+    
+    this.updateProgress(packageId, {
+      status: 'paused',
+    });
+  }
+  
+  /**
+   * Get download progress
+   */
+  getProgress(packageId: string): DownloadProgress | undefined {
+    return this.downloadProgress.get(packageId);
+  }
+  
+  /**
+   * Get all active downloads
+   */
+  getActiveDownloads(): DownloadProgress[] {
+    return Array.from(this.downloadProgress.values())
+      .filter(p => p.status === 'downloading' || p.status === 'pending');
+  }
+  
+  // ==========================================
+  // Helper Methods
+  // ==========================================
+  
+  private updateProgress(packageId: string, updates: Partial<DownloadProgress>): void {
+    const current = this.downloadProgress.get(packageId) || {
+      packageId,
+      status: 'pending' as DownloadStatus,
+      progress: 0,
+      downloadedBytes: 0,
+      totalBytes: 0,
+      speedBps: 0,
+      estimatedTimeRemaining: 0,
+    };
+    
+    this.downloadProgress.set(packageId, { ...current, ...updates });
+  }
+  
+  private combineSignals(...signals: AbortSignal[]): AbortSignal {
+    const controller = new AbortController();
+    
+    for (const signal of signals) {
+      if (signal.aborted) {
+        controller.abort();
+        break;
+      }
+      
+      signal.addEventListener('abort', () => controller.abort());
+    }
+    
+    return controller.signal;
+  }
+  
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+}
+
+// Export singleton instance
+export const secureDownloader = new SecureDownloader();

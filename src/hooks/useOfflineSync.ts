@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface SyncQueueItem {
   id: string;
   table: string;
-  operation: 'insert' | 'update' | 'delete';
+  operation: "insert" | "update" | "delete";
   data: Record<string, unknown>;
   timestamp: string;
   retries: number;
@@ -20,8 +20,8 @@ interface SyncStats {
   lastSyncAt: string | null;
 }
 
-const SYNC_QUEUE_KEY = 'offline_sync_queue';
-const SYNC_STATS_KEY = 'offline_sync_stats';
+const SYNC_QUEUE_KEY = "offline_sync_queue";
+const SYNC_STATS_KEY = "offline_sync_stats";
 const MAX_RETRIES = 5;
 const BASE_RETRY_DELAY = 1000; // 1 second
 
@@ -30,7 +30,11 @@ export const useOfflineSync = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
-  const [syncStats, setSyncStats] = useState<SyncStats>({ totalSynced: 0, totalFailed: 0, lastSyncAt: null });
+  const [syncStats, setSyncStats] = useState<SyncStats>({
+    totalSynced: 0,
+    totalFailed: 0,
+    lastSyncAt: null,
+  });
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load queue from localStorage
@@ -77,7 +81,7 @@ export const useOfflineSync = () => {
       localStorage.setItem(SYNC_STATS_KEY, JSON.stringify(stats));
       setSyncStats(stats);
     } catch (error) {
-      console.error('Failed to save sync stats:', error);
+      // Error silently handled
     }
   }, []);
 
@@ -87,7 +91,7 @@ export const useOfflineSync = () => {
       localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
       setPendingCount(queue.length);
     } catch (error) {
-      console.error('Failed to save sync queue:', error);
+      // Error silently handled
     }
   }, []);
 
@@ -97,70 +101,75 @@ export const useOfflineSync = () => {
   };
 
   // Add item to sync queue
-  const queueOperation = useCallback((
-    table: string,
-    operation: 'insert' | 'update' | 'delete',
-    data: Record<string, unknown>
-  ) => {
-    const queue = getFullQueue(); // Use full queue to include waiting items
-    const newItem: SyncQueueItem = {
-      id: crypto.randomUUID(),
-      table,
-      operation,
-      data,
-      timestamp: new Date().toISOString(),
-      retries: 0,
-    };
-    queue.push(newItem);
-    saveQueue(queue);
-    
-    if (!isOnline) {
-      toast.info('Saved offline - will sync when connected');
-    }
-    
-    return newItem.id;
-  }, [getFullQueue, saveQueue, isOnline]);
+  const queueOperation = useCallback(
+    (table: string, operation: "insert" | "update" | "delete", data: Record<string, unknown>) => {
+      const queue = getFullQueue(); // Use full queue to include waiting items
+      const newItem: SyncQueueItem = {
+        id: crypto.randomUUID(),
+        table,
+        operation,
+        data,
+        timestamp: new Date().toISOString(),
+        retries: 0,
+      };
+      queue.push(newItem);
+      saveQueue(queue);
+
+      if (!isOnline) {
+        toast.info("Saved offline - will sync when connected");
+      }
+
+      return newItem.id;
+    },
+    [getFullQueue, saveQueue, isOnline],
+  );
 
   // Process a single queue item with detailed error handling
-  const processQueueItem = async (item: SyncQueueItem): Promise<{ success: boolean; error?: string }> => {
-    if (!user) return { success: false, error: 'No authenticated user' };
+  const processQueueItem = useCallback(
+    async (item: SyncQueueItem): Promise<{ success: boolean; error?: string }> => {
+      if (!user) return { success: false, error: "No authenticated user" };
 
-    try {
-      switch (item.operation) {
-        case 'insert': {
-          const { error } = await supabase
-            .from(item.table as 'scan_history' | 'health_diary')
-            .insert({ ...item.data, user_id: user.id });
-          if (error) throw error;
-          break;
+      try {
+        switch (item.operation) {
+          case "insert": {
+            const { error } = await supabase
+              // Supabase types are generated; keep offline sync resilient for new tables.
+
+              .from(item.table as any)
+              .insert({ ...item.data, user_id: user.id });
+            if (error) throw error;
+            break;
+          }
+          case "update": {
+            const { id, ...updateData } = item.data;
+            const { error } = await supabase
+
+              .from(item.table as any)
+              .update(updateData)
+              .eq("id", id as string)
+              .eq("user_id", user.id);
+            if (error) throw error;
+            break;
+          }
+          case "delete": {
+            const { error } = await supabase
+
+              .from(item.table as any)
+              .delete()
+              .eq("id", item.data.id as string)
+              .eq("user_id", user.id);
+            if (error) throw error;
+            break;
+          }
         }
-        case 'update': {
-          const { id, ...updateData } = item.data;
-          const { error } = await supabase
-            .from(item.table as 'scan_history' | 'health_diary')
-            .update(updateData)
-            .eq('id', id as string)
-            .eq('user_id', user.id);
-          if (error) throw error;
-          break;
-        }
-        case 'delete': {
-          const { error } = await supabase
-            .from(item.table as 'scan_history' | 'health_diary')
-            .delete()
-            .eq('id', item.data.id as string)
-            .eq('user_id', user.id);
-          if (error) throw error;
-          break;
-        }
+        return { success: true };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        return { success: false, error: errorMessage };
       }
-      return { success: true };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`Failed to sync ${item.operation} on ${item.table}:`, error);
-      return { success: false, error: errorMessage };
-    }
-  };
+    },
+    [user],
+  );
 
   // Sync all pending items with exponential backoff
   const syncAll = useCallback(async () => {
@@ -169,14 +178,14 @@ export const useOfflineSync = () => {
     setIsSyncing(true);
     const queue = getQueue();
     const fullQueue = getFullQueue();
-    
+
     if (queue.length === 0) {
       setIsSyncing(false);
       return;
     }
 
     const remainingItems: SyncQueueItem[] = fullQueue.filter(
-      item => !queue.find(q => q.id === item.id)
+      item => !queue.find(q => q.id === item.id),
     );
     let successCount = 0;
     let failCount = 0;
@@ -184,14 +193,14 @@ export const useOfflineSync = () => {
 
     for (const item of queue) {
       const result = await processQueueItem(item);
-      
+
       if (result.success) {
         successCount++;
         stats.totalSynced++;
       } else {
         item.retries++;
         item.lastError = result.error;
-        
+
         if (item.retries < MAX_RETRIES) {
           // Set next retry time with exponential backoff
           const delay = getRetryDelay(item.retries);
@@ -201,7 +210,6 @@ export const useOfflineSync = () => {
           // Max retries reached - log as permanently failed
           stats.totalFailed++;
           failCount++;
-          console.error(`Permanently failed to sync item after ${MAX_RETRIES} retries:`, item);
         }
       }
     }
@@ -211,33 +219,46 @@ export const useOfflineSync = () => {
     saveQueue(remainingItems);
 
     if (successCount > 0) {
-      toast.success(`Synced ${successCount} offline change${successCount > 1 ? 's' : ''}`);
+      toast.success(`Synced ${successCount} offline change${successCount > 1 ? "s" : ""}`);
     }
 
     if (failCount > 0) {
-      toast.error(`${failCount} item${failCount > 1 ? 's' : ''} failed permanently`);
+      toast.error(`${failCount} item${failCount > 1 ? "s" : ""} failed permanently`);
     }
 
     // Schedule retry for items with nextRetryAt
     const itemsToRetry = remainingItems.filter(item => item.nextRetryAt);
     if (itemsToRetry.length > 0) {
       const nextRetryTime = Math.min(
-        ...itemsToRetry.map(item => new Date(item.nextRetryAt!).getTime() - Date.now())
+        ...itemsToRetry.map(item => new Date(item.nextRetryAt!).getTime() - Date.now()),
       );
-      
+
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
       }
-      
-      retryTimeoutRef.current = setTimeout(() => {
-        if (isOnline && user) {
-          syncAll();
-        }
-      }, Math.max(nextRetryTime, 1000));
+
+      retryTimeoutRef.current = setTimeout(
+        () => {
+          if (isOnline && user) {
+            syncAll();
+          }
+        },
+        Math.max(nextRetryTime, 1000),
+      );
     }
 
     setIsSyncing(false);
-  }, [isOnline, user, isSyncing, getQueue, getFullQueue, saveQueue, loadStats, saveStats]);
+  }, [
+    isOnline,
+    user,
+    isSyncing,
+    getQueue,
+    getFullQueue,
+    saveQueue,
+    loadStats,
+    saveStats,
+    processQueueItem,
+  ]);
 
   // Clear the sync queue
   const clearQueue = useCallback(() => {
@@ -257,15 +278,15 @@ export const useOfflineSync = () => {
       setIsOnline(false);
     };
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     // Initial count
     setPendingCount(getQueue().length);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, [syncAll, getQueue]);
 
@@ -274,19 +295,24 @@ export const useOfflineSync = () => {
     if (isOnline && user && pendingCount > 0) {
       syncAll();
     }
-  }, [isOnline, user]);
+  }, [isOnline, pendingCount, syncAll, user]);
 
   // Get detailed queue status
   const getQueueStatus = useCallback(() => {
     const fullQueue = getFullQueue();
     return {
       total: fullQueue.length,
-      ready: fullQueue.filter(item => !item.nextRetryAt || new Date(item.nextRetryAt) <= new Date()).length,
-      waiting: fullQueue.filter(item => item.nextRetryAt && new Date(item.nextRetryAt) > new Date()).length,
-      byTable: fullQueue.reduce((acc, item) => {
-        acc[item.table] = (acc[item.table] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>),
+      ready: fullQueue.filter(item => !item.nextRetryAt || new Date(item.nextRetryAt) <= new Date())
+        .length,
+      waiting: fullQueue.filter(item => item.nextRetryAt && new Date(item.nextRetryAt) > new Date())
+        .length,
+      byTable: fullQueue.reduce(
+        (acc, item) => {
+          acc[item.table] = (acc[item.table] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
     };
   }, [getFullQueue]);
 

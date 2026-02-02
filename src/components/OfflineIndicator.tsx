@@ -20,8 +20,11 @@ export const OfflineIndicator = () => {
   // Show banner if offline OR has pending items
   if (!showBanner && isOnline && pendingCount === 0) return null;
 
+  const isClickable = isOnline && pendingCount > 0 && !isSyncing;
+  const Wrapper = isClickable ? "button" : "div";
+
   return (
-    <div
+    <Wrapper
       className={cn(
         "fixed top-16 left-1/2 z-50 -translate-x-1/2 rounded-full border px-4 py-2 text-sm shadow-lg transition-all",
         isOnline
@@ -32,7 +35,8 @@ export const OfflineIndicator = () => {
       )}
       role="status"
       aria-live="polite"
-      onClick={() => isOnline && pendingCount > 0 && syncAll()}
+      type={isClickable ? "button" : undefined}
+      onClick={isClickable ? () => syncAll() : undefined}
     >
       <div className="flex items-center gap-2">
         {isSyncing ? (
@@ -50,12 +54,12 @@ export const OfflineIndicator = () => {
           {isSyncing
             ? "Syncing..."
             : isOnline
-            ? pendingCount > 0
-              ? `${pendingCount} pending - tap to sync`
-              : "Back online"
-            : "Offline mode"}
+              ? pendingCount > 0
+                ? `${pendingCount} pending - tap to sync`
+                : "Back online"
+              : "Offline mode"}
         </span>
       </div>
-    </div>
+    </Wrapper>
   );
 };

@@ -2,9 +2,15 @@ plugins {
     id 'com.android.application'
 }
 
+// Enable Google Services plugin only when a real google-services.json is present.
+// This avoids breaking local builds/CI when the file is intentionally not committed.
+if (file('google-services.json').exists()) {
+    apply plugin: 'com.google.gms.google-services'
+}
+
 android {
     namespace 'com.morphoscan.pro'
-    compileSdk 36
+    compileSdk 35
 
     buildFeatures {
         buildConfig true
@@ -12,8 +18,8 @@ android {
 
     defaultConfig {
         applicationId "com.morphoscan.pro"
-        minSdk 24
-        targetSdk 36
+        minSdk 22
+        targetSdk 34
         versionCode 1
         versionName "1.0.0"
 
@@ -29,10 +35,13 @@ android {
 
     signingConfigs {
         debug {
-            storeFile file('debug.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
+            def debugKeystore = file('debug.keystore')
+            if (debugKeystore.exists()) {
+                storeFile debugKeystore
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
+            }
         }
 
         release {
@@ -47,35 +56,63 @@ android {
                 keyAlias MORPHOSCAN_KEY_ALIAS
                 keyPassword MORPHOSCAN_KEY_PASSWORD
             }
+            // Allow unsigned release builds if no keystore is configured
         }
     }
 
-    def hasReleaseSigning = project.hasProperty('RELEASE_STORE_FILE') || project.hasProperty('MORPHOSCAN_STORE_FILE')
-
     buildTypes {
         debug {
-            signingConfig signingConfigs.debug
+            if (signingConfigs.debug.storeFile != null && signingConfigs.debug.storeFile.exists()) {
+                signingConfig signingConfigs.debug
+            }
             buildConfigField "String", "CODEPUSH_KEY", "\"\""
+            // Debug builds keep logging
+            minifyEnabled false
+            shrinkResources false
         }
 
         release {
-            signingConfig hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
+            // Only use release signing if keystore is configured
+            if (signingConfigs.release.storeFile != null && signingConfigs.release.storeFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+            
+            // Security: Enable code obfuscation and shrinking
             minifyEnabled true
+            shrinkResources true
+            
+            // ProGuard/R8 configuration files
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            
             buildConfigField "String", "CODEPUSH_KEY", "\"\""
 
-            // Optimize APK size
-            shrinkResources true
+            // Optimize APK
             zipAlignEnabled true
 
             // Enable multidex for large apps
             multiDexEnabled true
+            
+            // Disable debugging for release
+            debuggable false
+            
+            // Additional security: disable backup for sensitive builds
+            // (handled via backup_rules.xml for granular control)
         }
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_21
-        targetCompatibility JavaVersion.VERSION_21
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // Override Capacitor's Java 21 setting to use Java 17 for Kotlin compatibility
+    afterEvaluate {
+        android {
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+        }
     }
 
     sourceSets {
@@ -89,12 +126,16 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation 'androidx.appcompat:appcompat:1.7.1'
-    implementation 'androidx.core:core-ktx:1.17.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'com.google.android.material:material:1.11.0'
 
     // Capacitor dependencies
     implementation project(':capacitor-android')
+
+    // Firebase Messaging (required for FCM on Android; safe even if google-services.json is absent)
+    implementation platform('com.google.firebase:firebase-bom:32.7.0')
+    implementation 'com.google.firebase:firebase-messaging'
 
     // Additional dependencies for enhanced functionality
     implementation 'androidx.browser:browser:1.8.0'

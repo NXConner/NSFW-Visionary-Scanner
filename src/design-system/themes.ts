@@ -1,6 +1,16 @@
 import type { ThemeCSSVariables } from "./tokens";
 
-export type ThemePresetId = "obsidian" | "lumina" | "nebula" | "aurora" | "dusk" | "midnight" | "crimson" | "velvet" | "noir" | "cyberpunk";
+export type ThemePresetId =
+  | "obsidian"
+  | "lumina"
+  | "nebula"
+  | "aurora"
+  | "dusk"
+  | "midnight"
+  | "crimson"
+  | "velvet"
+  | "noir"
+  | "cyberpunk";
 
 export interface ThemeDefinition {
   id: ThemePresetId;
@@ -268,7 +278,7 @@ export interface WallpaperPreset {
   value: string;
   description: string;
   animated?: boolean;
-  category?: 'gradient' | 'animated' | 'seasonal';
+  category?: "gradient" | "animated" | "seasonal";
 }
 
 export const wallpaperPresets: WallpaperPreset[] = [
@@ -403,15 +413,15 @@ export const wallpaperPresets: WallpaperPreset[] = [
 
 export const isMediaUrl = (url: string): boolean => {
   if (!url) return false;
-  if (url.startsWith('data:image/') || url.startsWith('data:video/')) return true;
-  const mediaExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.webm', '.mov'];
+  if (url.startsWith("data:image/") || url.startsWith("data:video/")) return true;
+  const mediaExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".mp4", ".webm", ".mov"];
   return mediaExtensions.some(ext => url.toLowerCase().includes(ext));
 };
 
 export const isVideoUrl = (url: string): boolean => {
   if (!url) return false;
-  if (url.startsWith('data:video/')) return true;
-  const videoExtensions = ['.mp4', '.webm', '.mov'];
+  if (url.startsWith("data:video/")) return true;
+  const videoExtensions = [".mp4", ".webm", ".mov"];
   return videoExtensions.some(ext => url.toLowerCase().includes(ext));
 };
 
@@ -436,37 +446,45 @@ export const applyThemeToDocument = (
   });
 
   const wallpaper = customWallpaper ?? preset.wallpaper.fallback;
-  
+  const wallpaperForRender = wallpaper.split("#", 1)[0] ?? wallpaper;
+
   const isMedia = isMediaUrl(wallpaper);
   const isVideo = isVideoUrl(wallpaper);
-  
+
   // Check if it's an animated gradient preset
   const animatedPreset = wallpaperPresets.find(p => p.value === wallpaper && p.animated);
-  
-  root.dataset.wallpaperType = isVideo ? 'video' : (isMedia ? 'image' : (animatedPreset ? 'animated' : 'gradient'));
-  
+
+  root.dataset.wallpaperType = isVideo
+    ? "video"
+    : isMedia
+      ? "image"
+      : animatedPreset
+        ? "animated"
+        : "gradient";
+
   if (isMedia && !isVideo) {
-    root.style.setProperty("--app-wallpaper-image", `url(${wallpaper})`);
+    const safe = wallpaperForRender.split('"').join("%22");
+    root.style.setProperty("--app-wallpaper-image", `url("${safe}")`);
   } else if (!isVideo) {
     root.style.setProperty("--app-wallpaper-image", wallpaper);
   }
-  
-  root.style.setProperty("--app-wallpaper-url", wallpaper);
-  
+
+  root.style.setProperty("--app-wallpaper-url", wallpaperForRender);
+
   // Apply custom or default blur/opacity
   const blur = customBlur !== undefined ? `${customBlur}px` : preset.wallpaper.blur;
   const opacity = customOpacity !== undefined ? customOpacity.toString() : preset.wallpaper.opacity;
-  
+
   root.style.setProperty("--app-wallpaper-blur", blur);
   root.style.setProperty("--app-wallpaper-opacity", opacity);
-  
+
   // Handle video wallpaper
-  let videoEl = document.getElementById('video-wallpaper') as HTMLVideoElement | null;
-  
+  let videoEl = document.getElementById("video-wallpaper") as HTMLVideoElement | null;
+
   if (isVideo) {
     if (!videoEl) {
-      videoEl = document.createElement('video');
-      videoEl.id = 'video-wallpaper';
+      videoEl = document.createElement("video");
+      videoEl.id = "video-wallpaper";
       videoEl.autoplay = true;
       videoEl.loop = true;
       videoEl.muted = true;
@@ -484,10 +502,10 @@ export const applyThemeToDocument = (
       `;
       document.body.prepend(videoEl);
     }
-    videoEl.src = wallpaper;
-    videoEl.style.display = 'block';
+    videoEl.src = wallpaperForRender;
+    videoEl.style.display = "block";
   } else if (videoEl) {
-    videoEl.style.display = 'none';
-    videoEl.src = '';
+    videoEl.style.display = "none";
+    videoEl.src = "";
   }
 };

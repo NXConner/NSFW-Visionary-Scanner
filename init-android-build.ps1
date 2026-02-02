@@ -13,8 +13,8 @@ if (-not (Test-Path "android")) {
 
 # Step 2: Check if dist exists
 if (-not (Test-Path "dist")) {
-    Write-Host "Building web app..." -ForegroundColor Yellow
-    npm run build
+    Write-Host "Building web app (NSFW direct)..." -ForegroundColor Yellow
+    npm run build:nsfw:direct
 }
 
 # Step 3: Sync Capacitor

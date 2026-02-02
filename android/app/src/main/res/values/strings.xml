@@ -2,5 +2,8 @@
 <resources>
     <string name="app_name">MorphoScan Pro</string>
     <string name="title_activity_main">MorphoScan Pro</string>
-    <string name="asset_statements"><![CDATA[[{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"web","site":"https://morphoscanpro.com"}}]]]></string>
+
+    <!-- App Links verification placeholder (optional) -->
+    <string name="asset_statements"></string>
 </resources>
+

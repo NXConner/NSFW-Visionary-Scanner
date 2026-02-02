@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import {
   createEnhancedDiaryEntry,
   getEnhancedDiaryEntries,
@@ -16,142 +16,154 @@ import {
   type EnhancedDiaryEntry,
   type DiaryTemplate,
   type MedicationSchedule,
-  type DiaryAnalytics
-} from '@/lib/enhancedDiaryFeatures'
-import { BookOpen, Search, Pill, Moon, Utensils, Activity, Camera, Mic, TrendingUp } from 'lucide-react'
-import { toast } from 'sonner'
-import { useAuth } from '@/contexts/AuthContext'
+  type DiaryAnalytics,
+} from "@/lib/enhancedDiaryFeatures";
+import {
+  BookOpen,
+  Search,
+  Pill,
+  Moon,
+  Utensils,
+  Activity,
+  Camera,
+  Mic,
+  TrendingUp,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const EnhancedDiaryFeatures = () => {
-  const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState('entries')
-  const [loading, setLoading] = useState(false)
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("entries");
+  const [loading, setLoading] = useState(false);
 
   // Diary Entries
-  const [entries, setEntries] = useState<EnhancedDiaryEntry[]>([])
-  const [templates, setTemplates] = useState<DiaryTemplate[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
+  const [entries, setEntries] = useState<EnhancedDiaryEntry[]>([]);
+  const [templates, setTemplates] = useState<DiaryTemplate[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [newEntry, setNewEntry] = useState({
-    entry_date: new Date().toISOString().split('T')[0],
+    entry_date: new Date().toISOString().split("T")[0],
     mood_score: 5,
     energy_level: 5,
     sleep_hours: 8,
-    notes: ''
-  })
+    notes: "",
+  });
 
   // Medications
-  const [medicationSchedules, setMedicationSchedules] = useState<MedicationSchedule[]>([])
+  const [medicationSchedules, setMedicationSchedules] = useState<MedicationSchedule[]>([]);
 
   // Analytics
-  const [analytics, setAnalytics] = useState<DiaryAnalytics | null>(null)
+  const [analytics, setAnalytics] = useState<DiaryAnalytics | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      loadData()
-    }
-  }, [user, activeTab])
-
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
       switch (activeTab) {
-        case 'entries': {
-          const entriesData = await getEnhancedDiaryEntries()
-          setEntries(entriesData)
-          break
+        case "entries": {
+          const entriesData = await getEnhancedDiaryEntries();
+          setEntries(entriesData);
+          break;
         }
-        case 'templates': {
-          const templatesData = await getDiaryTemplates()
-          setTemplates(templatesData)
-          break
+        case "templates": {
+          const templatesData = await getDiaryTemplates();
+          setTemplates(templatesData);
+          break;
         }
       }
     } catch (error) {
-      toast.error('Failed to load data')
+      toast.error("Failed to load data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!user) return;
+    void loadData();
+  }, [user, loadData]);
 
   const handleCreateEntry = async () => {
     if (!newEntry.entry_date) {
-      toast.error('Please select a date')
-      return
+      toast.error("Please select a date");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
       const entry = await createEnhancedDiaryEntry(newEntry.entry_date, {
         mood_score: newEntry.mood_score,
         energy_level: newEntry.energy_level,
         sleep_hours: newEntry.sleep_hours,
-        notes: newEntry.notes
-      })
+        notes: newEntry.notes,
+      });
       if (entry) {
-        setEntries([entry, ...entries])
+        setEntries([entry, ...entries]);
         setNewEntry({
-          entry_date: new Date().toISOString().split('T')[0],
+          entry_date: new Date().toISOString().split("T")[0],
           mood_score: 5,
           energy_level: 5,
           sleep_hours: 8,
-          notes: ''
-        })
+          notes: "",
+        });
       }
     } catch (error) {
-      toast.error('Failed to create entry')
+      toast.error("Failed to create entry");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
-      await loadData()
-      return
+      await loadData();
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
-      const results = await searchDiaryEntries(searchQuery)
-      setEntries(results)
+      const results = await searchDiaryEntries(searchQuery);
+      setEntries(results);
     } catch (error) {
-      toast.error('Failed to search')
+      toast.error("Failed to search");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleGenerateAnalytics = async () => {
-    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    const endDate = new Date().toISOString().split('T')[0]
+    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const endDate = new Date().toISOString().split("T")[0];
 
-    setLoading(true)
+    setLoading(true);
     try {
-      const analyticsData = await generateDiaryAnalytics(startDate, endDate)
+      const analyticsData = await generateDiaryAnalytics(startDate, endDate);
       if (analyticsData) {
-        setAnalytics(analyticsData)
+        setAnalytics(analyticsData);
       }
     } catch (error) {
-      toast.error('Failed to generate analytics')
+      toast.error("Failed to generate analytics");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const getMoodLabel = (score: number | null) => {
-    if (score === null) return 'Not set'
-    if (score >= 9) return 'Excellent'
-    if (score >= 7) return 'Good'
-    if (score >= 5) return 'Okay'
-    if (score >= 3) return 'Poor'
-    return 'Terrible'
-  }
+    if (score === null) return "Not set";
+    if (score >= 9) return "Excellent";
+    if (score >= 7) return "Good";
+    if (score >= 5) return "Okay";
+    if (score >= 3) return "Poor";
+    return "Terrible";
+  };
 
   return (
     <div className="container mx-auto p-4 max-w-7xl">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Enhanced Diary Features</h1>
-        <p className="text-muted-foreground">Symptom tracking, medication tracking, mood, energy, sleep, diet, exercise, photos, and voice notes</p>
+        <p className="text-muted-foreground">
+          Symptom tracking, medication tracking, mood, energy, sleep, diet, exercise, photos, and
+          voice notes
+        </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -189,46 +201,63 @@ export const EnhancedDiaryFeatures = () => {
                 <Input
                   type="date"
                   value={newEntry.entry_date}
-                  onChange={(e) => setNewEntry({ ...newEntry, entry_date: e.target.value })}
+                  onChange={e => setNewEntry({ ...newEntry, entry_date: e.target.value })}
                 />
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Mood (1-10)</label>
+                    <label className="text-sm font-medium mb-1 block" htmlFor="diary-mood-score">
+                      Mood (1-10)
+                    </label>
                     <Input
+                      id="diary-mood-score"
                       type="number"
                       min="1"
                       max="10"
                       value={newEntry.mood_score}
-                      onChange={(e) => setNewEntry({ ...newEntry, mood_score: parseInt(e.target.value) || 5 })}
+                      onChange={e =>
+                        setNewEntry({ ...newEntry, mood_score: parseInt(e.target.value) || 5 })
+                      }
                     />
-                    <p className="text-xs text-muted-foreground mt-1">{getMoodLabel(newEntry.mood_score)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {getMoodLabel(newEntry.mood_score)}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Energy (1-10)</label>
+                    <label className="text-sm font-medium mb-1 block" htmlFor="diary-energy-level">
+                      Energy (1-10)
+                    </label>
                     <Input
+                      id="diary-energy-level"
                       type="number"
                       min="1"
                       max="10"
                       value={newEntry.energy_level}
-                      onChange={(e) => setNewEntry({ ...newEntry, energy_level: parseInt(e.target.value) || 5 })}
+                      onChange={e =>
+                        setNewEntry({ ...newEntry, energy_level: parseInt(e.target.value) || 5 })
+                      }
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Sleep (hours)</label>
+                    <label className="text-sm font-medium mb-1 block" htmlFor="diary-sleep-hours">
+                      Sleep (hours)
+                    </label>
                     <Input
+                      id="diary-sleep-hours"
                       type="number"
                       min="0"
                       max="24"
                       step="0.5"
                       value={newEntry.sleep_hours}
-                      onChange={(e) => setNewEntry({ ...newEntry, sleep_hours: parseFloat(e.target.value) || 8 })}
+                      onChange={e =>
+                        setNewEntry({ ...newEntry, sleep_hours: parseFloat(e.target.value) || 8 })
+                      }
                     />
                   </div>
                 </div>
                 <Textarea
                   placeholder="Notes..."
                   value={newEntry.notes}
-                  onChange={(e) => setNewEntry({ ...newEntry, notes: e.target.value })}
+                  onChange={e => setNewEntry({ ...newEntry, notes: e.target.value })}
                   rows={3}
                 />
                 <Button onClick={handleCreateEntry} className="w-full" disabled={loading}>
@@ -237,13 +266,15 @@ export const EnhancedDiaryFeatures = () => {
               </div>
 
               <div className="space-y-2">
-                {entries.map((entry) => (
+                {entries.map(entry => (
                   <Card key={entry.id}>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
                         <div>
                           <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-semibold">{new Date(entry.entry_date).toLocaleDateString()}</h4>
+                            <h4 className="font-semibold">
+                              {new Date(entry.entry_date).toLocaleDateString()}
+                            </h4>
                             {entry.mood_score && (
                               <Badge variant="outline">
                                 Mood: {entry.mood_score}/10 ({getMoodLabel(entry.mood_score)})
@@ -259,13 +290,17 @@ export const EnhancedDiaryFeatures = () => {
                               </Badge>
                             )}
                           </div>
-                          {entry.notes && <p className="text-sm text-muted-foreground">{entry.notes}</p>}
+                          {entry.notes && (
+                            <p className="text-sm text-muted-foreground">{entry.notes}</p>
+                          )}
                           <div className="flex gap-2 mt-2">
                             {entry.symptom_count > 0 && (
                               <Badge variant="secondary">{entry.symptom_count} symptoms</Badge>
                             )}
                             {entry.medication_count > 0 && (
-                              <Badge variant="secondary">{entry.medication_count} medications</Badge>
+                              <Badge variant="secondary">
+                                {entry.medication_count} medications
+                              </Badge>
                             )}
                             {entry.photo_count > 0 && (
                               <Badge variant="secondary">
@@ -298,7 +333,7 @@ export const EnhancedDiaryFeatures = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {templates.map((template) => (
+                {templates.map(template => (
                   <Card key={template.id}>
                     <CardContent className="p-4">
                       <h4 className="font-semibold">{template.template_name}</h4>
@@ -351,19 +386,25 @@ export const EnhancedDiaryFeatures = () => {
                     <div className="p-4 bg-muted rounded-lg">
                       <p className="text-sm text-muted-foreground">Avg Mood</p>
                       <p className="text-2xl font-bold">
-                        {analytics.average_mood_score ? analytics.average_mood_score.toFixed(1) : 'N/A'}
+                        {analytics.average_mood_score
+                          ? analytics.average_mood_score.toFixed(1)
+                          : "N/A"}
                       </p>
                     </div>
                     <div className="p-4 bg-muted rounded-lg">
                       <p className="text-sm text-muted-foreground">Avg Energy</p>
                       <p className="text-2xl font-bold">
-                        {analytics.average_energy_level ? analytics.average_energy_level.toFixed(1) : 'N/A'}
+                        {analytics.average_energy_level
+                          ? analytics.average_energy_level.toFixed(1)
+                          : "N/A"}
                       </p>
                     </div>
                     <div className="p-4 bg-muted rounded-lg">
                       <p className="text-sm text-muted-foreground">Avg Sleep</p>
                       <p className="text-2xl font-bold">
-                        {analytics.average_sleep_hours ? `${analytics.average_sleep_hours.toFixed(1)}h` : 'N/A'}
+                        {analytics.average_sleep_hours
+                          ? `${analytics.average_sleep_hours.toFixed(1)}h`
+                          : "N/A"}
                       </p>
                     </div>
                   </div>
@@ -399,19 +440,23 @@ export const EnhancedDiaryFeatures = () => {
                 <Input
                   placeholder="Search entries..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSearch()}
                 />
                 <Button onClick={handleSearch} disabled={loading}>
                   <Search className="w-4 h-4" />
                 </Button>
               </div>
               <div className="space-y-2">
-                {entries.map((entry) => (
+                {entries.map(entry => (
                   <Card key={entry.id}>
                     <CardContent className="p-4">
-                      <h4 className="font-semibold">{new Date(entry.entry_date).toLocaleDateString()}</h4>
-                      {entry.notes && <p className="text-sm text-muted-foreground mt-1">{entry.notes}</p>}
+                      <h4 className="font-semibold">
+                        {new Date(entry.entry_date).toLocaleDateString()}
+                      </h4>
+                      {entry.notes && (
+                        <p className="text-sm text-muted-foreground mt-1">{entry.notes}</p>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -421,6 +466,5 @@ export const EnhancedDiaryFeatures = () => {
         </TabsContent>
       </Tabs>
     </div>
-  )
-}
-
+  );
+};

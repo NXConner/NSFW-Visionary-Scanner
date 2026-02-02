@@ -1,6 +1,21 @@
 -- Migration: In-App Messaging System
 -- Creates tables for direct messaging, support tickets, expert consultations, and group chats
 
+-- Ensure support_staff role exists in app_role enum for policies
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_type WHERE typname = 'app_role'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM pg_enum
+    WHERE enumlabel = 'support_staff'
+      AND enumtypid = 'app_role'::regtype
+  ) THEN
+    ALTER TYPE app_role ADD VALUE 'support_staff';
+  END IF;
+END $$;
+
 -- Support Tickets
 CREATE TABLE IF NOT EXISTS support_tickets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -185,13 +200,35 @@ ALTER TABLE group_chat_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE group_chat_message_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE message_attachments ENABLE ROW LEVEL SECURITY;
 
+-- Ensure policies are idempotent if rerun
+DROP POLICY IF EXISTS "Users can view own support tickets" ON support_tickets;
+DROP POLICY IF EXISTS "Users can create own support tickets" ON support_tickets;
+DROP POLICY IF EXISTS "Users can update own tickets, staff can update all" ON support_tickets;
+DROP POLICY IF EXISTS "Users can view messages in own tickets" ON support_ticket_messages;
+DROP POLICY IF EXISTS "Users can create messages in own tickets" ON support_ticket_messages;
+DROP POLICY IF EXISTS "Users can view own consultations" ON expert_consultations;
+DROP POLICY IF EXISTS "Users can create consultations" ON expert_consultations;
+DROP POLICY IF EXISTS "Users can update own consultations" ON expert_consultations;
+DROP POLICY IF EXISTS "Members can view their groups" ON group_chats;
+DROP POLICY IF EXISTS "Users can create groups" ON group_chats;
+DROP POLICY IF EXISTS "Admins can update their groups" ON group_chats;
+DROP POLICY IF EXISTS "Members can view group members" ON group_chat_members;
+DROP POLICY IF EXISTS "Users can join public groups or be added to private groups" ON group_chat_members;
+DROP POLICY IF EXISTS "Members can view group messages" ON group_chat_messages;
+DROP POLICY IF EXISTS "Members can send group messages" ON group_chat_messages;
+DROP POLICY IF EXISTS "Users can update own messages" ON group_chat_messages;
+DROP POLICY IF EXISTS "Members can view reactions" ON group_chat_message_reactions;
+DROP POLICY IF EXISTS "Members can add reactions" ON group_chat_message_reactions;
+DROP POLICY IF EXISTS "Users can view message attachments" ON message_attachments;
+DROP POLICY IF EXISTS "Users can upload attachments" ON message_attachments;
+
 -- Support Tickets: Users can view their own tickets, staff can view all
 CREATE POLICY "Users can view own support tickets"
   ON support_tickets FOR SELECT
   USING (auth.uid() = user_id OR EXISTS (
     SELECT 1 FROM user_roles ur 
     WHERE ur.user_id = auth.uid() 
-    AND ur.role IN ('admin', 'support_staff')
+    AND ur.role::text IN ('admin', 'support_staff')
   ));
 
 CREATE POLICY "Users can create own support tickets"
@@ -203,7 +240,7 @@ CREATE POLICY "Users can update own tickets, staff can update all"
   USING (auth.uid() = user_id OR EXISTS (
     SELECT 1 FROM user_roles ur 
     WHERE ur.user_id = auth.uid() 
-    AND ur.role IN ('admin', 'support_staff')
+    AND ur.role::text IN ('admin', 'support_staff')
   ));
 
 -- Support Ticket Messages: Users can view messages in their tickets, staff can view all
@@ -216,7 +253,7 @@ CREATE POLICY "Users can view messages in own tickets"
       AND (st.user_id = auth.uid() OR EXISTS (
         SELECT 1 FROM user_roles ur 
         WHERE ur.user_id = auth.uid() 
-        AND ur.role IN ('admin', 'support_staff')
+        AND ur.role::text IN ('admin', 'support_staff')
       ))
     )
   );
@@ -230,7 +267,7 @@ CREATE POLICY "Users can create messages in own tickets"
       AND (st.user_id = auth.uid() OR EXISTS (
         SELECT 1 FROM user_roles ur 
         WHERE ur.user_id = auth.uid() 
-        AND ur.role IN ('admin', 'support_staff')
+        AND ur.role::text IN ('admin', 'support_staff')
       ))
     )
   );

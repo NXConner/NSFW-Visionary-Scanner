@@ -3,14 +3,15 @@
  * Enhanced AI chatbot with voice interaction, multi-modal AI, contextual memory, and emotional intelligence
  */
 
-import { useState, useEffect, useRef } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Label } from '@/components/ui/label'
+import { useState, useEffect, useRef } from "react";
+import { useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
 import {
   createAIConversationSession,
   getAIConversationSessions,
@@ -20,108 +21,109 @@ import {
   acceptAISuggestion,
   type AIConversationSession,
   type AIConversationMessage,
-  type AIProactiveSuggestion
-} from '@/lib/conversationalAIEnhancement'
-import { Bot, Mic, Image, MessageSquare, Loader2, Send, Sparkles, Brain } from 'lucide-react'
-import { toast } from 'sonner'
+  type AIProactiveSuggestion,
+} from "@/lib/conversationalAIEnhancement";
+import { Bot, Mic, Image, MessageSquare, Loader2, Send, Sparkles, Brain } from "lucide-react";
+import { toast } from "sonner";
+
+const conversationModes = ["casual", "expert", "medical", "support"] as const;
+type ConversationMode = (typeof conversationModes)[number];
 
 export const ConversationalAIEnhancement = () => {
-  const [activeTab, setActiveTab] = useState('chat')
-  const [loading, setLoading] = useState(false)
-  const [sessions, setSessions] = useState<AIConversationSession[]>([])
-  const [currentSession, setCurrentSession] = useState<AIConversationSession | null>(null)
-  const [messages, setMessages] = useState<AIConversationMessage[]>([])
-  const [suggestions, setSuggestions] = useState<AIProactiveSuggestion[]>([])
-  const [messageInput, setMessageInput] = useState('')
-  const [conversationMode, setConversationMode] = useState<'casual' | 'expert' | 'medical' | 'support'>('casual')
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [activeTab, setActiveTab] = useState("chat");
+  const [loading, setLoading] = useState(false);
+  const [sessions, setSessions] = useState<AIConversationSession[]>([]);
+  const [currentSession, setCurrentSession] = useState<AIConversationSession | null>(null);
+  const [messages, setMessages] = useState<AIConversationMessage[]>([]);
+  const [suggestions, setSuggestions] = useState<AIProactiveSuggestion[]>([]);
+  const [messageInput, setMessageInput] = useState("");
+  const [conversationMode, setConversationMode] = useState<ConversationMode>("casual");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    loadData()
-  }, [])
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
 
-  useEffect(() => {
-    if (currentSession) {
-      loadMessages()
-    }
-  }, [currentSession])
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
       const [sessionsData, suggestionsData] = await Promise.all([
         getAIConversationSessions(),
-        getAIProactiveSuggestions()
-      ])
-      setSessions(sessionsData)
-      setSuggestions(suggestionsData)
+        getAIProactiveSuggestions(),
+      ]);
+      setSessions(sessionsData);
+      setSuggestions(suggestionsData);
       if (sessionsData.length > 0 && !currentSession) {
-        setCurrentSession(sessionsData[0])
+        setCurrentSession(sessionsData[0]);
       }
-    } catch (error) {
-      toast.error('Failed to load AI data')
+    } catch {
+      toast.error("Failed to load AI data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [currentSession]);
 
-  const loadMessages = async () => {
-    if (!currentSession) return
+  const loadMessages = useCallback(async () => {
+    if (!currentSession) return;
 
     try {
-      const messagesData = await getAIConversationMessages(currentSession.id)
-      setMessages(messagesData)
-    } catch (error) {
-      toast.error('Failed to load messages')
+      const messagesData = await getAIConversationMessages(currentSession.id);
+      setMessages(messagesData);
+    } catch {
+      toast.error("Failed to load messages");
     }
-  }
+  }, [currentSession]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    void loadMessages();
+  }, [loadMessages]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   const handleStartNewSession = async () => {
     try {
-      const newSession = await createAIConversationSession(undefined, conversationMode)
+      const newSession = await createAIConversationSession(undefined, conversationMode);
       if (newSession) {
-        setCurrentSession(newSession)
-        setMessages([])
-        await loadData()
+        setCurrentSession(newSession);
+        setMessages([]);
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to start new session')
+      toast.error("Failed to start new session");
     }
-  }
+  };
 
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !currentSession) return
+    if (!messageInput.trim() || !currentSession) return;
 
     try {
-      const message = await sendAIMessage(currentSession.id, messageInput)
+      const message = await sendAIMessage(currentSession.id, messageInput);
       if (message) {
-        setMessageInput('')
-        await loadMessages()
-        await loadData() // Refresh suggestions
+        setMessageInput("");
+        await loadMessages();
+        await loadData(); // Refresh suggestions
       }
     } catch (error) {
-      toast.error('Failed to send message')
+      toast.error("Failed to send message");
     }
-  }
+  };
 
   const handleAcceptSuggestion = async (suggestionId: string) => {
     try {
-      const success = await acceptAISuggestion(suggestionId)
+      const success = await acceptAISuggestion(suggestionId);
       if (success) {
-        await loadData()
+        await loadData();
       }
-    } catch (error) {
-      toast.error('Failed to accept suggestion')
+    } catch {
+      toast.error("Failed to accept suggestion");
     }
-  }
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  };
 
   if (loading && !currentSession) {
     return (
@@ -133,7 +135,7 @@ export const ConversationalAIEnhancement = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (!currentSession) {
@@ -145,9 +147,7 @@ export const ConversationalAIEnhancement = () => {
               <Bot className="w-6 h-6" />
               Enhanced AI Chat
             </CardTitle>
-            <CardDescription>
-              Start a conversation with our enhanced AI assistant
-            </CardDescription>
+            <CardDescription>Start a conversation with our enhanced AI assistant</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -155,7 +155,10 @@ export const ConversationalAIEnhancement = () => {
               <select
                 className="w-full p-2 border rounded"
                 value={conversationMode}
-                onChange={(e) => setConversationMode(e.target.value as any)}
+                onChange={e => {
+                  const v = e.target.value as ConversationMode;
+                  if (conversationModes.includes(v)) setConversationMode(v);
+                }}
               >
                 <option value="casual">Casual</option>
                 <option value="expert">Expert</option>
@@ -169,7 +172,7 @@ export const ConversationalAIEnhancement = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -204,13 +207,13 @@ export const ConversationalAIEnhancement = () => {
                   {messages.map(message => (
                     <div
                       key={message.id}
-                      className={`flex ${message.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${message.sender_type === "user" ? "justify-end" : "justify-start"}`}
                     >
                       <div
                         className={`max-w-[80%] rounded-lg p-3 ${
-                          message.sender_type === 'user'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
+                          message.sender_type === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted"
                         }`}
                       >
                         <p className="text-sm">{message.content_text}</p>
@@ -228,8 +231,8 @@ export const ConversationalAIEnhancement = () => {
               <div className="flex gap-2">
                 <Input
                   value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  onChange={e => setMessageInput(e.target.value)}
+                  onKeyPress={e => e.key === "Enter" && handleSendMessage()}
                   placeholder="Type your message..."
                   className="flex-1"
                 />
@@ -255,12 +258,11 @@ export const ConversationalAIEnhancement = () => {
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">{suggestion.suggestion_content}</p>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          {suggestion.suggestion_content}
+                        </p>
                         <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleAcceptSuggestion(suggestion.id)}
-                          >
+                          <Button size="sm" onClick={() => handleAcceptSuggestion(suggestion.id)}>
                             Accept
                           </Button>
                           <Button size="sm" variant="outline">
@@ -277,6 +279,5 @@ export const ConversationalAIEnhancement = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
+  );
+};

@@ -3,16 +3,23 @@
  * Educational content, assessments, guides, and screening reminders
  */
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  BookOpen, ClipboardList, Calendar, AlertCircle, Video,
-  FileText, Loader2, CheckCircle2, Play
-} from 'lucide-react'
+  BookOpen,
+  ClipboardList,
+  Calendar,
+  AlertCircle,
+  Video,
+  FileText,
+  Loader2,
+  CheckCircle2,
+  Play,
+} from "lucide-react";
 import {
   getEducationContent,
   getFeaturedEducationContent,
@@ -26,46 +33,59 @@ import {
   type HealthAssessment,
   type SelfExamGuide,
   type ScreeningReminder,
-  type AssessmentResult
-} from '@/lib/prostateTesticularHealth'
-import { toast } from 'sonner'
-import { format } from 'date-fns'
+  type AssessmentResult,
+} from "@/lib/prostateTesticularHealth";
+import { AssessmentDialog } from "@/components/prostateTesticularHealth/AssessmentDialog";
+import { toast } from "sonner";
+import { format } from "date-fns";
 
 export const ProstateTesticularHealth = () => {
-  const [activeTab, setActiveTab] = useState('education')
-  const [educationContent, setEducationContent] = useState<EducationContent[]>([])
-  const [assessments, setAssessments] = useState<HealthAssessment[]>([])
-  const [examGuides, setExamGuides] = useState<SelfExamGuide[]>([])
-  const [reminders, setReminders] = useState<ScreeningReminder[]>([])
-  const [assessmentResults, setAssessmentResults] = useState<AssessmentResult[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState<'prostate' | 'testicular'>('prostate')
+  const [activeTab, setActiveTab] = useState("education");
+  const [educationContent, setEducationContent] = useState<EducationContent[]>([]);
+  const [assessments, setAssessments] = useState<HealthAssessment[]>([]);
+  const [examGuides, setExamGuides] = useState<SelfExamGuide[]>([]);
+  const [reminders, setReminders] = useState<ScreeningReminder[]>([]);
+  const [assessmentResults, setAssessmentResults] = useState<AssessmentResult[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<"prostate" | "testicular">("prostate");
+  const [activeAssessment, setActiveAssessment] = useState<HealthAssessment | null>(null);
+  const [showAssessment, setShowAssessment] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [content, assessmentsData, guides, remindersData, results] = await Promise.all([
+        getEducationContent(selectedCategory, 20),
+        getHealthAssessments(selectedCategory),
+        getSelfExamGuides(selectedCategory === "prostate" ? "prostate" : "testicular"),
+        getScreeningReminders(),
+        getUserAssessmentResults(),
+      ]);
+      setEducationContent(content);
+      setAssessments(assessmentsData);
+      setExamGuides(guides);
+      setReminders(remindersData);
+      setAssessmentResults(results);
+    } catch {
+      toast.error("Failed to load health content");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedCategory]);
 
   useEffect(() => {
-    loadData()
-  }, [selectedCategory])
-
-  const loadData = async () => {
-    setIsLoading(true)
-    const [content, assessmentsData, guides, remindersData, results] = await Promise.all([
-      getEducationContent(selectedCategory, 20),
-      getHealthAssessments(selectedCategory),
-      getSelfExamGuides(selectedCategory === 'prostate' ? 'prostate' : 'testicular'),
-      getScreeningReminders(),
-      getUserAssessmentResults()
-    ])
-    setEducationContent(content)
-    setAssessments(assessmentsData)
-    setExamGuides(guides)
-    setReminders(remindersData)
-    setAssessmentResults(results)
-    setIsLoading(false)
-  }
+    void loadData();
+  }, [loadData]);
 
   const handleStartAssessment = async (assessmentId: string) => {
-    // This would open an assessment modal/component
-    toast.info('Assessment feature coming soon')
-  }
+    const assessment = assessments.find(a => a.id === assessmentId) ?? null;
+    if (!assessment) {
+      toast.error("Assessment not found");
+      return;
+    }
+    setActiveAssessment(assessment);
+    setShowAssessment(true);
+  };
 
   if (isLoading) {
     return (
@@ -74,11 +94,20 @@ export const ProstateTesticularHealth = () => {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
+      <AssessmentDialog
+        open={showAssessment}
+        onOpenChange={setShowAssessment}
+        assessment={activeAssessment}
+        onSubmitted={async () => {
+          const results = await getUserAssessmentResults();
+          setAssessmentResults(results);
+        }}
+      />
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <div className="flex items-center justify-between">
           <TabsList>
@@ -89,16 +118,16 @@ export const ProstateTesticularHealth = () => {
           </TabsList>
           <div className="flex gap-2">
             <Button
-              variant={selectedCategory === 'prostate' ? 'default' : 'outline'}
+              variant={selectedCategory === "prostate" ? "default" : "outline"}
               size="sm"
-              onClick={() => setSelectedCategory('prostate')}
+              onClick={() => setSelectedCategory("prostate")}
             >
               Prostate
             </Button>
             <Button
-              variant={selectedCategory === 'testicular' ? 'default' : 'outline'}
+              variant={selectedCategory === "testicular" ? "default" : "outline"}
               size="sm"
-              onClick={() => setSelectedCategory('testicular')}
+              onClick={() => setSelectedCategory("testicular")}
             >
               Testicular
             </Button>
@@ -110,11 +139,9 @@ export const ProstateTesticularHealth = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="w-5 h-5" />
-                {selectedCategory === 'prostate' ? 'Prostate' : 'Testicular'} Health Education
+                {selectedCategory === "prostate" ? "Prostate" : "Testicular"} Health Education
               </CardTitle>
-              <CardDescription>
-                Comprehensive educational content
-              </CardDescription>
+              <CardDescription>Comprehensive educational content</CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[500px]">
@@ -125,7 +152,7 @@ export const ProstateTesticularHealth = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {educationContent.map((content) => (
+                    {educationContent.map(content => (
                       <Card key={content.id} className="border">
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-2">
@@ -144,7 +171,9 @@ export const ProstateTesticularHealth = () => {
                                 )}
                               </div>
                               {content.summary && (
-                                <p className="text-sm text-muted-foreground mb-2">{content.summary}</p>
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  {content.summary}
+                                </p>
                               )}
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <Badge variant="outline">{content.content_type}</Badge>
@@ -179,9 +208,7 @@ export const ProstateTesticularHealth = () => {
                 <ClipboardList className="w-5 h-5" />
                 Health Assessments
               </CardTitle>
-              <CardDescription>
-                Take assessments to evaluate your health
-              </CardDescription>
+              <CardDescription>Take assessments to evaluate your health</CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[500px]">
@@ -192,14 +219,16 @@ export const ProstateTesticularHealth = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {assessments.map((assessment) => (
+                    {assessments.map(assessment => (
                       <Card key={assessment.id} className="border">
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex-1">
                               <h3 className="font-semibold mb-1">{assessment.title}</h3>
                               {assessment.description && (
-                                <p className="text-sm text-muted-foreground mb-2">{assessment.description}</p>
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  {assessment.description}
+                                </p>
                               )}
                               <div className="flex items-center gap-2">
                                 <Badge variant="outline">{assessment.category}</Badge>
@@ -233,9 +262,7 @@ export const ProstateTesticularHealth = () => {
                 <FileText className="w-5 h-5" />
                 Self-Examination Guides
               </CardTitle>
-              <CardDescription>
-                Step-by-step guides for self-examinations
-              </CardDescription>
+              <CardDescription>Step-by-step guides for self-examinations</CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[500px]">
@@ -246,7 +273,7 @@ export const ProstateTesticularHealth = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {examGuides.map((guide) => (
+                    {examGuides.map(guide => (
                       <Card key={guide.id} className="border">
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-3">
@@ -292,8 +319,10 @@ export const ProstateTesticularHealth = () => {
                           {guide.when_to_see_doctor && (
                             <div className="mt-3 pt-3 border-t">
                               <div className="text-sm">
-                                <span className="font-medium">When to see a doctor:</span>{' '}
-                                <span className="text-muted-foreground">{guide.when_to_see_doctor}</span>
+                                <span className="font-medium">When to see a doctor:</span>{" "}
+                                <span className="text-muted-foreground">
+                                  {guide.when_to_see_doctor}
+                                </span>
                               </div>
                             </div>
                           )}
@@ -314,9 +343,7 @@ export const ProstateTesticularHealth = () => {
                 <Calendar className="w-5 h-5" />
                 Screening Reminders
               </CardTitle>
-              <CardDescription>
-                Manage your health screening reminders
-              </CardDescription>
+              <CardDescription>Manage your health screening reminders</CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px]">
@@ -327,15 +354,17 @@ export const ProstateTesticularHealth = () => {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {reminders.map((reminder) => (
+                    {reminders.map(reminder => (
                       <div
                         key={reminder.id}
                         className="flex items-center justify-between p-3 rounded-lg border"
                       >
                         <div className="flex-1">
-                          <div className="font-medium capitalize">{reminder.reminder_type.replace('_', ' ')}</div>
+                          <div className="font-medium capitalize">
+                            {reminder.reminder_type.replace("_", " ")}
+                          </div>
                           <div className="text-sm text-muted-foreground">
-                            Next: {format(new Date(reminder.next_reminder_date), 'MMM d, yyyy')}
+                            Next: {format(new Date(reminder.next_reminder_date), "MMM d, yyyy")}
                           </div>
                           {reminder.frequency_months && (
                             <div className="text-xs text-muted-foreground">
@@ -343,8 +372,8 @@ export const ProstateTesticularHealth = () => {
                             </div>
                           )}
                         </div>
-                        <Badge variant={reminder.is_active ? 'default' : 'secondary'}>
-                          {reminder.is_active ? 'Active' : 'Inactive'}
+                        <Badge variant={reminder.is_active ? "default" : "secondary"}>
+                          {reminder.is_active ? "Active" : "Inactive"}
                         </Badge>
                       </div>
                     ))}
@@ -356,6 +385,5 @@ export const ProstateTesticularHealth = () => {
         </TabsContent>
       </Tabs>
     </div>
-  )
-}
-
+  );
+};

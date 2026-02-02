@@ -3,17 +3,25 @@
  * Advanced privacy settings including content locking, hidden mode, and privacy dashboard
  */
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import {
-  Lock, Eye, EyeOff, Shield, Fingerprint, Key,
-  Database, BarChart3, Loader2, CheckCircle2
-} from 'lucide-react'
+  Lock,
+  Eye,
+  EyeOff,
+  Shield,
+  Fingerprint,
+  Key,
+  Database,
+  BarChart3,
+  Loader2,
+  CheckCircle2,
+} from "lucide-react";
 import {
   getPrivacySettings,
   updatePrivacySettings,
@@ -24,40 +32,51 @@ import {
   enablePrivateBrowsing,
   enableIncognitoMode,
   getPrivacyDashboardData,
-  type PrivacySettings
-} from '@/lib/enhancedPrivacy'
-import { toast } from 'sonner'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+  type PrivacySettings,
+} from "@/lib/enhancedPrivacy";
+import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+type PrivacyDashboardData = Awaited<ReturnType<typeof getPrivacyDashboardData>>;
 
 export const EnhancedPrivacyControls = () => {
-  const [settings, setSettings] = useState<PrivacySettings | null>(null)
-  const [dashboardData, setDashboardData] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
+  const [settings, setSettings] = useState<PrivacySettings | null>(null);
+  const [dashboardData, setDashboardData] = useState<PrivacyDashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData();
+  }, []);
 
   const loadData = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     const [settingsData, dashboard] = await Promise.all([
       getPrivacySettings(),
-      getPrivacyDashboardData()
-    ])
-    setSettings(settingsData)
-    setDashboardData(dashboard)
-    setIsLoading(false)
-  }
+      getPrivacyDashboardData(),
+    ]);
+    setSettings(settingsData);
+    setDashboardData(dashboard);
+    setIsLoading(false);
+  };
 
-  const handleToggle = async (key: keyof PrivacySettings, value: any) => {
-    setIsSaving(true)
-    const success = await updatePrivacySettings({ [key]: value })
+  const handleToggle = async <K extends keyof PrivacySettings>(
+    key: K,
+    value: PrivacySettings[K],
+  ) => {
+    setIsSaving(true);
+    const success = await updatePrivacySettings({ [key]: value });
     if (success) {
-      setSettings(prev => prev ? { ...prev, [key]: value } : null)
+      setSettings(prev => (prev ? { ...prev, [key]: value } : null));
     }
-    setIsSaving(false)
-  }
+    setIsSaving(false);
+  };
 
   if (isLoading) {
     return (
@@ -66,7 +85,7 @@ export const EnhancedPrivacyControls = () => {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (!settings) {
@@ -76,7 +95,7 @@ export const EnhancedPrivacyControls = () => {
           <p className="text-muted-foreground">Failed to load privacy settings</p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -96,9 +115,7 @@ export const EnhancedPrivacyControls = () => {
                 <Lock className="w-5 h-5" />
                 App Lock Settings
               </CardTitle>
-              <CardDescription>
-                Secure your app with PIN, biometric, or both
-              </CardDescription>
+              <CardDescription>Secure your app with PIN, biometric, or both</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
@@ -110,7 +127,7 @@ export const EnhancedPrivacyControls = () => {
                 </div>
                 <Switch
                   checked={settings.app_lock_enabled}
-                  onCheckedChange={(checked) => handleToggle('app_lock_enabled', checked)}
+                  onCheckedChange={checked => handleToggle("app_lock_enabled", checked)}
                   disabled={isSaving}
                 />
               </div>
@@ -120,7 +137,9 @@ export const EnhancedPrivacyControls = () => {
                   <Label>Lock Method</Label>
                   <Select
                     value={settings.app_lock_method}
-                    onValueChange={(value) => handleToggle('app_lock_method', value)}
+                    onValueChange={value =>
+                      handleToggle("app_lock_method", value as "pin" | "biometric" | "both")
+                    }
                     disabled={isSaving}
                   >
                     <SelectTrigger>
@@ -174,7 +193,7 @@ export const EnhancedPrivacyControls = () => {
                 </div>
                 <Switch
                   checked={settings.content_lock_enabled}
-                  onCheckedChange={(checked) => handleToggle('content_lock_enabled', checked)}
+                  onCheckedChange={checked => handleToggle("content_lock_enabled", checked)}
                   disabled={isSaving}
                 />
               </div>
@@ -200,9 +219,7 @@ export const EnhancedPrivacyControls = () => {
                 <EyeOff className="w-5 h-5" />
                 Privacy Modes
               </CardTitle>
-              <CardDescription>
-                Advanced privacy options for maximum protection
-              </CardDescription>
+              <CardDescription>Advanced privacy options for maximum protection</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
@@ -214,9 +231,7 @@ export const EnhancedPrivacyControls = () => {
                 </div>
                 <Switch
                   checked={settings.hidden_mode_enabled}
-                  onCheckedChange={(checked) => 
-                    checked ? enableHiddenMode() : disableHiddenMode()
-                  }
+                  onCheckedChange={checked => (checked ? enableHiddenMode() : disableHiddenMode())}
                   disabled={isSaving}
                 />
               </div>
@@ -224,13 +239,11 @@ export const EnhancedPrivacyControls = () => {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Private Browsing</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Don't save browsing history
-                  </p>
+                  <p className="text-sm text-muted-foreground">Don't save browsing history</p>
                 </div>
                 <Switch
                   checked={settings.private_browsing_enabled}
-                  onCheckedChange={(checked) => handleToggle('private_browsing_enabled', checked)}
+                  onCheckedChange={checked => handleToggle("private_browsing_enabled", checked)}
                   disabled={isSaving}
                 />
               </div>
@@ -244,7 +257,7 @@ export const EnhancedPrivacyControls = () => {
                 </div>
                 <Switch
                   checked={settings.incognito_mode_enabled}
-                  onCheckedChange={(checked) => handleToggle('incognito_mode_enabled', checked)}
+                  onCheckedChange={checked => handleToggle("incognito_mode_enabled", checked)}
                   disabled={isSaving}
                 />
               </div>
@@ -252,13 +265,11 @@ export const EnhancedPrivacyControls = () => {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Data Anonymization</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Anonymize your data for analytics
-                  </p>
+                  <p className="text-sm text-muted-foreground">Anonymize your data for analytics</p>
                 </div>
                 <Switch
                   checked={settings.data_anonymization_enabled}
-                  onCheckedChange={(checked) => handleToggle('data_anonymization_enabled', checked)}
+                  onCheckedChange={checked => handleToggle("data_anonymization_enabled", checked)}
                   disabled={isSaving}
                 />
               </div>
@@ -273,9 +284,7 @@ export const EnhancedPrivacyControls = () => {
                 <BarChart3 className="w-5 h-5" />
                 Privacy Dashboard
               </CardTitle>
-              <CardDescription>
-                View your privacy data and settings
-              </CardDescription>
+              <CardDescription>View your privacy data and settings</CardDescription>
             </CardHeader>
             <CardContent>
               {dashboardData && (
@@ -293,8 +302,8 @@ export const EnhancedPrivacyControls = () => {
                       <p className="text-sm text-muted-foreground">No data collection tracked</p>
                     ) : (
                       <div className="space-y-2">
-                        {dashboardData.data_collected.map((item: any, index: number) => (
-                          <div key={index} className="flex justify-between text-sm">
+                        {dashboardData.data_collected.map((item) => (
+                          <div key={item.type} className="flex justify-between text-sm">
                             <span>{item.type}</span>
                             <span className="text-muted-foreground">{item.amount} items</span>
                           </div>
@@ -310,7 +319,8 @@ export const EnhancedPrivacyControls = () => {
                     </p>
                     {dashboardData.data_retention.expiration && (
                       <p className="text-sm text-muted-foreground">
-                        Expires: {new Date(dashboardData.data_retention.expiration).toLocaleDateString()}
+                        Expires:{" "}
+                        {new Date(dashboardData.data_retention.expiration).toLocaleDateString()}
                       </p>
                     )}
                   </div>
@@ -321,6 +331,5 @@ export const EnhancedPrivacyControls = () => {
         </TabsContent>
       </Tabs>
     </div>
-  )
-}
-
+  );
+};

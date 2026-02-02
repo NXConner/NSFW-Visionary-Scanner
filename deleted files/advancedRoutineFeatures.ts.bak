@@ -1,0 +1,639 @@
+/**
+ * Advanced Routine Features - Full Implementation
+ * Interval timers, audio cues, customizable rest periods
+ */
+
+import { toast } from 'sonner'
+import { logger } from './logger'
+
+// ==================== Types ====================
+
+export interface RoutineTemplate {
+  id: string
+  template_name: string
+  description: string
+  category: 'beginner' | 'intermediate' | 'advanced' | 'recovery' | 'maintenance' | 'intensive' | 'custom' | null
+  exercises: RoutineExercise[]
+  duration_weeks: number | null
+  sessions_per_week: number | null
+  estimated_time_per_session_minutes: number | null
+  difficulty_level: number | null
+  intensity_level: 'low' | 'moderate' | 'high' | 'very_high' | null
+  target_goals: string[] | null
+  expected_outcomes: string | null
+  has_video_guidance: boolean
+  video_urls: any
+  equipment_required: string[] | null
+  experience_required: string | null
+  time_commitment: string | null
+  created_by: string | null
+  is_system_template: boolean
+  is_premium: boolean
+  is_featured: boolean
+  is_verified: boolean
+  usage_count: number
+  success_rate: number | null
+  average_rating: number | null
+  rating_count: number
+  review_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface RoutineExercise {
+  id: string
+  name: string
+  description?: string
+  sets: number
+  reps?: number
+  duration_seconds?: number
+  rest_seconds: number
+  intensity?: 'low' | 'medium' | 'high'
+  order: number
+}
+
+export interface IntervalTimer {
+  id: string
+  name: string
+  type: 'work' | 'rest' | 'prepare' | 'cooldown'
+  duration_seconds: number
+  is_active: boolean
+  audio_cue?: string
+}
+
+export interface ActiveSession {
+  id: string
+  template_id?: string
+  routine_name: string
+  exercises: RoutineExercise[]
+  current_exercise_index: number
+  current_set: number
+  is_resting: boolean
+  elapsed_seconds: number
+  started_at: Date
+  paused_at?: Date
+}
+
+// ==================== Local Storage ====================
+
+const TEMPLATES_KEY = 'routine_templates'
+const SESSION_KEY = 'active_routine_session'
+const PREFERENCES_KEY = 'routine_preferences'
+
+export interface RoutinePreferences {
+  defaultRestSeconds: number
+  audioEnabled: boolean
+  audioCueVolume: number
+  vibrationEnabled: boolean
+  countdownBeeps: boolean
+  autoAdvance: boolean
+}
+
+const DEFAULT_PREFERENCES: RoutinePreferences = {
+  defaultRestSeconds: 60,
+  audioEnabled: true,
+  audioCueVolume: 0.7,
+  vibrationEnabled: true,
+  countdownBeeps: true,
+  autoAdvance: true
+}
+
+function getPreferences(): RoutinePreferences {
+  try {
+    const stored = localStorage.getItem(PREFERENCES_KEY)
+    return stored ? { ...DEFAULT_PREFERENCES, ...JSON.parse(stored) } : DEFAULT_PREFERENCES
+  } catch {
+    return DEFAULT_PREFERENCES
+  }
+}
+
+function savePreferences(prefs: Partial<RoutinePreferences>): void {
+  try {
+    const current = getPreferences()
+    localStorage.setItem(PREFERENCES_KEY, JSON.stringify({ ...current, ...prefs }))
+  } catch (error) {
+    logger.error('Failed to save routine preferences', { error })
+  }
+}
+
+// ==================== Audio Cues ====================
+
+const audioContext = typeof window !== 'undefined' ? new (window.AudioContext || (window as any).webkitAudioContext)() : null
+
+export function playBeep(frequency: number = 800, duration: number = 200): void {
+  if (!audioContext) return
+  
+  const prefs = getPreferences()
+  if (!prefs.audioEnabled) return
+
+  try {
+    const oscillator = audioContext.createOscillator()
+    const gainNode = audioContext.createGain()
+    
+    oscillator.connect(gainNode)
+    gainNode.connect(audioContext.destination)
+    
+    oscillator.frequency.value = frequency
+    oscillator.type = 'sine'
+    gainNode.gain.value = prefs.audioCueVolume
+    
+    oscillator.start()
+    oscillator.stop(audioContext.currentTime + duration / 1000)
+  } catch (error) {
+    // Audio might not be available
+  }
+}
+
+export function playStartCue(): void {
+  playBeep(880, 300)
+}
+
+export function playRestCue(): void {
+  playBeep(440, 200)
+}
+
+export function playEndCue(): void {
+  playBeep(660, 150)
+  setTimeout(() => playBeep(880, 150), 200)
+  setTimeout(() => playBeep(1100, 300), 400)
+}
+
+export function playCountdownBeep(): void {
+  playBeep(1000, 100)
+}
+
+// ==================== Vibration ====================
+
+export function vibrate(pattern: number | number[] = 200): void {
+  const prefs = getPreferences()
+  if (!prefs.vibrationEnabled) return
+  
+  try {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(pattern)
+    }
+  } catch {
+    // Vibration might not be available
+  }
+}
+
+// ==================== Routine Templates ====================
+
+const SAMPLE_TEMPLATES: RoutineTemplate[] = [
+  {
+    id: 'template-beginner-1',
+    template_name: 'Beginner Stretching Routine',
+    description: 'A gentle introduction to stretching exercises for beginners',
+    category: 'beginner',
+    exercises: [
+      { id: 'ex-1', name: 'Basic Stretch', sets: 3, duration_seconds: 30, rest_seconds: 30, order: 0 },
+      { id: 'ex-2', name: 'Hold Exercise', sets: 3, duration_seconds: 45, rest_seconds: 45, order: 1 },
+      { id: 'ex-3', name: 'Gentle Jelq', sets: 2, reps: 20, rest_seconds: 60, order: 2 },
+    ],
+    duration_weeks: 4,
+    sessions_per_week: 3,
+    estimated_time_per_session_minutes: 15,
+    difficulty_level: 1,
+    intensity_level: 'low',
+    target_goals: ['flexibility', 'circulation'],
+    expected_outcomes: 'Improved flexibility and blood flow',
+    has_video_guidance: false,
+    video_urls: null,
+    equipment_required: null,
+    experience_required: 'none',
+    time_commitment: '15 minutes, 3x/week',
+    created_by: null,
+    is_system_template: true,
+    is_premium: false,
+    is_featured: true,
+    is_verified: true,
+    usage_count: 1500,
+    success_rate: 85,
+    average_rating: 4.5,
+    rating_count: 120,
+    review_count: 45,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'template-intermediate-1',
+    template_name: 'Intermediate Growth Routine',
+    description: 'A balanced routine for intermediate users focusing on consistent growth',
+    category: 'intermediate',
+    exercises: [
+      { id: 'ex-4', name: 'Warm-up Stretch', sets: 2, duration_seconds: 60, rest_seconds: 30, order: 0 },
+      { id: 'ex-5', name: 'Intense Stretch', sets: 4, duration_seconds: 45, rest_seconds: 45, intensity: 'medium', order: 1 },
+      { id: 'ex-6', name: 'Jelqing Session', sets: 3, reps: 50, rest_seconds: 60, intensity: 'medium', order: 2 },
+      { id: 'ex-7', name: 'Cool-down', sets: 1, duration_seconds: 120, rest_seconds: 0, order: 3 },
+    ],
+    duration_weeks: 8,
+    sessions_per_week: 4,
+    estimated_time_per_session_minutes: 25,
+    difficulty_level: 3,
+    intensity_level: 'moderate',
+    target_goals: ['length', 'girth'],
+    expected_outcomes: 'Measurable growth over 8 weeks',
+    has_video_guidance: true,
+    video_urls: null,
+    equipment_required: null,
+    experience_required: '3+ months',
+    time_commitment: '25 minutes, 4x/week',
+    created_by: null,
+    is_system_template: true,
+    is_premium: false,
+    is_featured: true,
+    is_verified: true,
+    usage_count: 2300,
+    success_rate: 78,
+    average_rating: 4.7,
+    rating_count: 210,
+    review_count: 89,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+]
+
+export async function getRoutineTemplates(
+  category?: RoutineTemplate['category'],
+  difficultyLevel?: number
+): Promise<RoutineTemplate[]> {
+  let templates = [...SAMPLE_TEMPLATES]
+  
+  // Load custom templates from storage
+  try {
+    const stored = localStorage.getItem(TEMPLATES_KEY)
+    if (stored) {
+      const custom = JSON.parse(stored) as RoutineTemplate[]
+      templates = [...templates, ...custom]
+    }
+  } catch {
+    // Ignore storage errors
+  }
+
+  if (category) {
+    templates = templates.filter(t => t.category === category)
+  }
+  if (difficultyLevel !== undefined) {
+    templates = templates.filter(t => t.difficulty_level === difficultyLevel)
+  }
+
+  return templates
+}
+
+export async function createRoutineTemplate(
+  templateName: string,
+  description: string,
+  exercises: RoutineExercise[],
+  category: RoutineTemplate['category'],
+  difficultyLevel: number
+): Promise<RoutineTemplate | null> {
+  try {
+    const template: RoutineTemplate = {
+      id: `custom-${Date.now()}`,
+      template_name: templateName,
+      description,
+      category,
+      exercises,
+      duration_weeks: null,
+      sessions_per_week: null,
+      estimated_time_per_session_minutes: exercises.reduce((acc, ex) => {
+        const exerciseTime = ex.duration_seconds ? ex.duration_seconds * ex.sets : (ex.reps || 10) * ex.sets * 3
+        return acc + exerciseTime / 60 + (ex.rest_seconds * (ex.sets - 1)) / 60
+      }, 0),
+      difficulty_level: difficultyLevel,
+      intensity_level: difficultyLevel <= 2 ? 'low' : difficultyLevel <= 4 ? 'moderate' : 'high',
+      target_goals: null,
+      expected_outcomes: null,
+      has_video_guidance: false,
+      video_urls: null,
+      equipment_required: null,
+      experience_required: null,
+      time_commitment: null,
+      created_by: 'user',
+      is_system_template: false,
+      is_premium: false,
+      is_featured: false,
+      is_verified: false,
+      usage_count: 0,
+      success_rate: null,
+      average_rating: null,
+      rating_count: 0,
+      review_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+
+    // Save to local storage
+    const stored = localStorage.getItem(TEMPLATES_KEY)
+    const templates = stored ? JSON.parse(stored) : []
+    templates.push(template)
+    localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates))
+
+    toast.success('Routine template created!')
+    return template
+  } catch (error) {
+    logger.error('Failed to create routine template', { error })
+    toast.error('Failed to create template')
+    return null
+  }
+}
+
+// ==================== Active Sessions ====================
+
+export function startSession(template?: RoutineTemplate, customExercises?: RoutineExercise[]): ActiveSession {
+  const exercises = template?.exercises || customExercises || []
+  
+  const session: ActiveSession = {
+    id: `session-${Date.now()}`,
+    template_id: template?.id,
+    routine_name: template?.template_name || 'Custom Session',
+    exercises,
+    current_exercise_index: 0,
+    current_set: 1,
+    is_resting: false,
+    elapsed_seconds: 0,
+    started_at: new Date(),
+  }
+
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  playStartCue()
+  vibrate([100, 50, 100])
+  
+  toast.success('Session started!')
+  return session
+}
+
+export function getActiveSession(): ActiveSession | null {
+  try {
+    const stored = localStorage.getItem(SESSION_KEY)
+    if (!stored) return null
+    const session = JSON.parse(stored)
+    session.started_at = new Date(session.started_at)
+    if (session.paused_at) session.paused_at = new Date(session.paused_at)
+    return session
+  } catch {
+    return null
+  }
+}
+
+export function updateSession(updates: Partial<ActiveSession>): ActiveSession | null {
+  const session = getActiveSession()
+  if (!session) return null
+
+  const updated = { ...session, ...updates }
+  localStorage.setItem(SESSION_KEY, JSON.stringify(updated))
+  return updated
+}
+
+export function nextSet(): ActiveSession | null {
+  const session = getActiveSession()
+  if (!session) return null
+
+  const currentExercise = session.exercises[session.current_exercise_index]
+  
+  if (session.current_set < currentExercise.sets) {
+    // Start rest period
+    playRestCue()
+    vibrate(200)
+    return updateSession({ 
+      current_set: session.current_set + 1,
+      is_resting: true 
+    })
+  } else {
+    // Move to next exercise
+    return nextExercise()
+  }
+}
+
+export function nextExercise(): ActiveSession | null {
+  const session = getActiveSession()
+  if (!session) return null
+
+  if (session.current_exercise_index < session.exercises.length - 1) {
+    playStartCue()
+    vibrate([100, 50, 100])
+    return updateSession({
+      current_exercise_index: session.current_exercise_index + 1,
+      current_set: 1,
+      is_resting: false
+    })
+  } else {
+    // Session complete
+    return endSession()
+  }
+}
+
+export function endRest(): ActiveSession | null {
+  playStartCue()
+  vibrate(100)
+  return updateSession({ is_resting: false })
+}
+
+export function pauseSession(): ActiveSession | null {
+  return updateSession({ paused_at: new Date() })
+}
+
+export function resumeSession(): ActiveSession | null {
+  return updateSession({ paused_at: undefined })
+}
+
+export function endSession(): ActiveSession | null {
+  const session = getActiveSession()
+  localStorage.removeItem(SESSION_KEY)
+  
+  playEndCue()
+  vibrate([100, 100, 100, 100, 300])
+  
+  toast.success('Session complete! Great job! 💪')
+  return session
+}
+
+// ==================== Preferences ====================
+
+export { getPreferences as getRoutinePreferences }
+export { savePreferences as updateRoutinePreferences }
+
+// ==================== Adaptive Routines (Stub) ====================
+
+export interface AdaptiveRoutine {
+  id: string
+  user_id: string
+  base_template_id: string | null
+  routine_name: string
+  adaptation_reason: string | null
+  user_profile: any
+  adaptation_history: any
+  current_exercises: any
+  current_schedule: any
+  difficulty_adjustment: number
+  ai_model_version: string | null
+  adaptation_confidence: number | null
+  last_adapted_at: string | null
+  adaptation_count: number
+  status: 'active' | 'paused' | 'completed' | 'abandoned'
+  start_date: string | null
+  target_end_date: string | null
+  created_at: string
+  updated_at: string
+}
+
+export async function createAdaptiveRoutine(
+  baseTemplateId: string | null,
+  routineName: string
+): Promise<AdaptiveRoutine | null> {
+  toast.info('Adaptive routines coming in a future update')
+  return null
+}
+
+export async function adaptRoutine(routineId: string): Promise<boolean> {
+  return false
+}
+
+// ==================== Shared Routines (Stub) ====================
+
+export interface SharedRoutine {
+  id: string
+  routine_id: string | null
+  user_id: string
+  share_name: string
+  description: string | null
+  is_public: boolean
+  share_token: string | null
+  shared_with_users: string[] | null
+  routine_data: any
+  view_count: number
+  copy_count: number
+  rating_average: number | null
+  rating_count: number
+  created_at: string
+  updated_at: string
+}
+
+export async function shareRoutine(
+  routineId: string,
+  shareName: string,
+  description?: string,
+  isPublic: boolean = false
+): Promise<SharedRoutine | null> {
+  toast.info('Routine sharing coming soon')
+  return null
+}
+
+// ==================== Marketplace (Stub) ====================
+
+export interface RoutineMarketplaceItem {
+  id: string
+  template_id: string | null
+  creator_id: string
+  price: number
+  currency: string
+  is_subscription: boolean
+  subscription_duration_days: number | null
+  marketplace_category: string | null
+  tags: string[] | null
+  featured_image_url: string | null
+  preview_video_url: string | null
+  sales_count: number
+  revenue_total: number
+  average_rating: number | null
+  is_active: boolean
+  is_featured: boolean
+  created_at: string
+  updated_at: string
+}
+
+export async function getMarketplaceRoutines(
+  category?: string,
+  maxPrice?: number
+): Promise<RoutineMarketplaceItem[]> {
+  return []
+}
+
+export async function purchaseRoutine(marketplaceId: string): Promise<boolean> {
+  toast.info('Routine marketplace coming soon')
+  return false
+}
+
+// ==================== Other Stubs ====================
+
+export interface RestDayRecommendation {
+  id: string
+  user_id: string
+  routine_id: string | null
+  recommended_date: string
+  recommendation_type: 'scheduled' | 'recovery' | 'injury_prevention' | 'overtraining' | 'fatigue' | null
+  reason: string
+  factors_considered: any
+  confidence: number | null
+  was_followed: boolean | null
+  user_feedback: string | null
+  recommended_at: string
+  created_at: string
+}
+
+export async function getRestDayRecommendations(routineId?: string): Promise<RestDayRecommendation[]> {
+  return []
+}
+
+export interface MultiWeekProgram {
+  id: string
+  user_id: string
+  base_template_id: string | null
+  program_name: string
+  description: string | null
+  total_weeks: number
+  current_week: number
+  weekly_schedules: any
+  progress_milestones: any
+  status: 'active' | 'paused' | 'completed' | 'abandoned'
+  start_date: string | null
+  target_end_date: string | null
+  created_at: string
+  updated_at: string
+}
+
+export async function getMultiWeekPrograms(): Promise<MultiWeekProgram[]> {
+  return []
+}
+
+export async function createMultiWeekProgram(
+  programName: string,
+  totalWeeks: number,
+  baseTemplateId?: string
+): Promise<MultiWeekProgram | null> {
+  toast.info('Multi-week programs coming soon')
+  return null
+}
+
+export interface VideoGuidedRoutine {
+  id: string
+  routine_id: string | null
+  video_url: string
+  thumbnail_url: string | null
+  duration_seconds: number | null
+  instructor_name: string | null
+  difficulty_level: string | null
+  is_premium: boolean
+  view_count: number
+  created_at: string
+}
+
+export async function getVideoGuidedRoutines(): Promise<VideoGuidedRoutine[]> {
+  return []
+}
+
+export interface RoutineAnalytics {
+  routine_id: string
+  total_sessions: number
+  completed_sessions: number
+  completion_rate: number
+  average_session_duration: number
+  total_time_spent: number
+  streak_current: number
+  streak_longest: number
+  last_session_at: string | null
+}
+
+export async function getRoutineAnalytics(routineId: string): Promise<RoutineAnalytics | null> {
+  return null
+}

@@ -384,7 +384,7 @@ CREATE POLICY "Users can view own audit logs"
     EXISTS (
       SELECT 1 FROM user_roles ur
       WHERE ur.user_id = auth.uid()
-      AND ur.role IN ('admin', 'super_admin')
+      AND ur.role::text IN ('admin', 'super_admin')
     )
   );
 

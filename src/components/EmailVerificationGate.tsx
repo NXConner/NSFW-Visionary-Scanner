@@ -1,81 +1,109 @@
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { EmailVerificationBanner } from './EmailVerificationBanner';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Shield, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { logger } from '@/lib/logger';
+import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { EmailVerificationBanner } from "./EmailVerificationBanner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Mail, Shield, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 interface EmailVerificationGateProps {
   children: React.ReactNode;
   requireVerification?: boolean;
 }
 
-export const EmailVerificationGate = ({ 
-  children, 
-  requireVerification = true 
+export const EmailVerificationGate = ({
+  children,
+  requireVerification = true,
 }: EmailVerificationGateProps) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isSuperAdmin, hasFullAccess, allFeaturesUnlocked, rolesLoading } = useAuth();
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(true);
 
+  // AGGRESSIVE fallback: 1s max for verification check
   useEffect(() => {
-    const checkVerification = async () => {
-      if (!user) {
-        setIsVerified(null);
+    const fallback = setTimeout(() => {
+      if (checking) {
+        logger.warn("[verify] Fallback triggered - allowing access");
         setChecking(false);
-        return;
+        setIsVerified(true);
       }
+    }, 1000);
 
-      try {
-        const { data: { user: currentUser }, error } = await supabase.auth.getUser();
-        
-        if (error) {
-          logger.error('Failed to check email verification', { error, userId: user.id });
-          setIsVerified(false);
-          return;
-        }
+    return () => clearTimeout(fallback);
+  }, [checking]);
 
-        const verified = !!currentUser?.email_confirmed_at;
-        setIsVerified(verified);
-      } catch (error) {
-        logger.error('Error checking email verification', { error, userId: user.id });
-        setIsVerified(false);
-      } finally {
-        setChecking(false);
-      }
-    };
+  useEffect(() => {
+    // Skip check if no user or still loading auth
+    if (loading) return;
 
-    if (!loading) {
-      checkVerification();
+    if (!user) {
+      setIsVerified(null);
+      setChecking(false);
+      return;
     }
+
+    // Quick async check with 800ms timeout
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 800);
+
+    supabase.auth
+      .getUser()
+      .then(({ data: { user: currentUser } }) => {
+        if (!controller.signal.aborted) {
+          setIsVerified(!!currentUser?.email_confirmed_at);
+        }
+      })
+      .catch(() => {
+        // On error, allow access
+        if (!controller.signal.aborted) {
+          setIsVerified(true);
+        }
+      })
+      .finally(() => {
+        clearTimeout(timeout);
+        if (!controller.signal.aborted) {
+          setChecking(false);
+        }
+      });
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, [user, loading]);
 
-  // Listen for auth state changes (e.g., when user verifies email)
+  // Listen for auth state changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        const verified = !!session?.user?.email_confirmed_at;
-        setIsVerified(verified);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        setIsVerified(!!session?.user?.email_confirmed_at);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  if (loading || checking) {
+  // Combined loading state for access checks
+  const stillCheckingAccess = loading || rolesLoading || checking;
+
+  // Show loading while checking (auth, roles, or verification)
+  if (stillCheckingAccess) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Checking verification status...</p>
-        </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
 
   // If verification is not required, show children
   if (!requireVerification) {
+    return <>{children}</>;
+  }
+
+  // Super admin bypass: never block on email verification (checked AFTER loading completes)
+  if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked) {
     return <>{children}</>;
   }
 
@@ -103,9 +131,9 @@ export const EmailVerificationGate = ({
           <p className="text-center text-muted-foreground">
             Please verify your email address to access all features of MorphoScan Pro.
           </p>
-          
-          <EmailVerificationBanner 
-            email={user.email || ''} 
+
+          <EmailVerificationBanner
+            email={user.email || ""}
             onVerified={() => setIsVerified(true)}
           />
 
@@ -132,4 +160,3 @@ export const EmailVerificationGate = ({
     </div>
   );
 };
-

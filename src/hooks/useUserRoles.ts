@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { clearSuperAdminCache } from "@/lib/superAdmin";
 
-type AppRole = 'admin' | 'pro' | 'user';
+type AppRole = "admin" | "super_admin" | "pro" | "user";
 
 interface UseUserRolesReturn {
   user: any;
   roles: AppRole[];
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   isPro: boolean;
   isPremium: boolean;
   isLoading: boolean;
@@ -14,68 +16,136 @@ interface UseUserRolesReturn {
   refetch: () => Promise<void>;
 }
 
+// Cache for roles to prevent excessive DB calls on re-renders
+let cachedRoles: { userId: string; roles: AppRole[]; timestamp: number } | null = null;
+const CACHE_TTL = 30000; // 30 seconds
+
 export const useUserRoles = (): UseUserRolesReturn => {
   const [user, setUser] = useState<any>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
 
   const fetchRoles = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      // Race against a 2-second timeout to prevent UI blocking
+      const userResult = await Promise.race([
+        supabase.auth.getUser(),
+        new Promise<{ data: { user: null }; error: null }>((resolve) =>
+          setTimeout(() => resolve({ data: { user: null }, error: null }), 2000)
+        ),
+      ]);
+
+      const { data: { user }, error: userError } = userResult;
 
       if (userError) {
         throw userError;
       }
 
+      if (!mountedRef.current) return;
       setUser(user);
-      
+
       if (!user) {
         setRoles([]);
+        clearSuperAdminCache();
         return;
       }
 
-      const { data, error: fetchError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id);
+      // Check cache first
+      const now = Date.now();
+      if (
+        cachedRoles &&
+        cachedRoles.userId === user.id &&
+        now - cachedRoles.timestamp < CACHE_TTL
+      ) {
+        setRoles(cachedRoles.roles);
+        return;
+      }
+
+      // Database-driven role check with 2s timeout
+      const roleResult = await Promise.race([
+        supabase.from("user_roles").select("role").eq("user_id", user.id),
+        new Promise<{ data: null; error: { message: string } }>((resolve) =>
+          setTimeout(() => resolve({ data: null, error: { message: "Role check timeout" } }), 2000)
+        ),
+      ]);
+
+      if (!mountedRef.current) return;
+
+      const { data, error: fetchError } = roleResult;
 
       if (fetchError) {
-        console.error('Error fetching roles:', fetchError);
+        console.warn("[useUserRoles] Role fetch failed:", fetchError.message);
+        // On timeout/error, use cached roles if available
+        if (cachedRoles && cachedRoles.userId === user.id) {
+          setRoles(cachedRoles.roles);
+        }
         setError(fetchError.message);
         return;
       }
 
-      const userRoles = data?.map(r => r.role as AppRole) || [];
-      setRoles(userRoles);
+      const dbRoles = (data?.map((r) => r.role as AppRole) || []).filter(Boolean);
+      
+      // Update cache
+      cachedRoles = { userId: user.id, roles: dbRoles, timestamp: now };
+      
+      setRoles(dbRoles);
     } catch (err) {
-      console.error('Error in useUserRoles:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch roles');
+      if (!mountedRef.current) return;
+      setError(err instanceof Error ? err.message : "Failed to fetch roles");
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
+    mountedRef.current = true;
+
+    // Aggressive 1.5s fallback to prevent infinite loading
+    const fallback = setTimeout(() => {
+      if (mountedRef.current) {
+        setIsLoading(false);
+      }
+    }, 1500);
+
     fetchRoles();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        clearSuperAdminCache();
+        cachedRoles = null;
+      }
       fetchRoles();
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mountedRef.current = false;
+      clearTimeout(fallback);
+      subscription.unsubscribe();
+    };
   }, []);
+
+  // SUPER ADMIN EARLY CHECK: Use cached value for immediate access if available
+  // This prevents locked flash during initial load
+  const isSuperAdminCachedValue = roles.includes("super_admin") || 
+    (cachedRoles?.userId === user?.id && cachedRoles?.roles.includes("super_admin"));
 
   return {
     user,
     roles,
-    isAdmin: roles.includes('admin'),
-    isPro: roles.includes('pro'),
-    isPremium: roles.includes('admin') || roles.includes('pro'), // Premium access for admin/pro users
+    isAdmin: roles.includes("admin") || roles.includes("super_admin") || isSuperAdminCachedValue,
+    isSuperAdmin: roles.includes("super_admin") || isSuperAdminCachedValue,
+    isPro: roles.includes("pro"),
+    isPremium: roles.includes("admin") || roles.includes("super_admin") || roles.includes("pro") || isSuperAdminCachedValue,
     isLoading,
     error,
     refetch: fetchRoles,
