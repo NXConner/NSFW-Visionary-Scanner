@@ -3,7 +3,7 @@ buildscript {
     ext {
         compileSdkVersion = 36
         targetSdkVersion = 36
-        minSdkVersion = 22
+        minSdkVersion = 24
         kotlinVersion = '2.2.20'
         kotlin_version = kotlinVersion
         newArchEnabled = false
