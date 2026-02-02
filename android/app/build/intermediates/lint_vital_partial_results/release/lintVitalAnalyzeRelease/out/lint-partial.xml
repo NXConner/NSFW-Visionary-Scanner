@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.9.1" type="partial_results">
+    <map id="AppLinkSplitToWebAndCustom">
+            <map id="0">
+                <entry
+                    name="SPLIT_TO_WEB_AND_CUSTOM_HOSTS"
+                    string="morphoscanpro.com"/>
+                <location id="SPLIT_TO_WEB_AND_CUSTOM_NAME_LOCATION"
+                    file="${:app*release*MAIN*sourceProvider*0*manifest*0}"
+                    line="61"
+                    column="14"
+                    startOffset="2699"
+                    endLine="61"
+                    endColumn="27"
+                    endOffset="2712"/>
+                <location id="SPLIT_TO_WEB_AND_CUSTOM_RANGE"
+                    file="${:app*release*MAIN*sourceProvider*0*manifest*0}"
+                    line="61"
+                    column="13"
+                    startOffset="2698"
+                    endLine="68"
+                    endColumn="29"
+                    endOffset="3147"/>
+                <entry
+                    name="SPLIT_TO_WEB_AND_CUSTOM_REPLACEMENT_TEXT"
+                    string="&lt;intent-filter android:autoVerify=&quot;true&quot;>&#xA;                &lt;action android:name=&quot;android.intent.action.VIEW&quot; />&#xA;                &lt;category android:name=&quot;android.intent.category.DEFAULT&quot; />&#xA;                &lt;category android:name=&quot;android.intent.category.BROWSABLE&quot; />&#xA;                &lt;data android:scheme=&quot;https&quot; />&#xA;                &lt;data android:host=&quot;morphoscanpro.com&quot; />&#xA;            &lt;/intent-filter>&#xA;            &lt;intent-filter>&#xA;                &lt;action android:name=&quot;android.intent.action.VIEW&quot; />&#xA;                &lt;category android:name=&quot;android.intent.category.DEFAULT&quot; />&#xA;                &lt;category android:name=&quot;android.intent.category.BROWSABLE&quot; />&#xA;                &lt;data android:scheme=&quot;morphoscan&quot; />&#xA;                &lt;data android:host=&quot;morphoscanpro.com&quot; />&#xA;            &lt;/intent-filter>"/>
+            </map>
+    </map>
+
+</incidents>

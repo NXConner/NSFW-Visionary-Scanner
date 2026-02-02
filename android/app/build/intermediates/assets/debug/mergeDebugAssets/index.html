@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>MorphoScan - Medical-Grade Health Monitor</title>
+    <meta name="description" content="Medical-grade morphology scanner for Peyronie's Disease self-assessment. Track measurements, monitor curvature progression, and export PDF reports. Works completely offline." />
+    <meta name="author" content="MorphoScan" />
+    <meta name="keywords" content="morphology scanner, Peyronie's disease, health monitoring, curvature measurement, health tracking, medical self-assessment" />
+    
+    <meta property="og:title" content="MorphoScan - Medical-Grade Health Monitor" />
+    <meta property="og:description" content="Track health measurements, monitor progression, and export reports. Privacy-first, works offline." />
+    <meta property="og:type" content="website" />
+    
+    <!-- Mobile App Meta Tags -->
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MorphoScan" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    
+    <!-- Android/Capacitor specific -->
+    <meta name="color-scheme" content="dark" />
+    
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+    <link rel="icon" type="image/png" href="/pwa-192x192.png" />
+    <script type="module" crossorigin src="/assets/index-Be-10Rjl.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/ui-vendor-BQCqNqg0.js">
+    <link rel="modulepreload" crossorigin href="/assets/utils-vendor-CYomQqj3.js">
+    <link rel="modulepreload" crossorigin href="/assets/api-vendor-Cn8_olIv.js">
+    <link rel="modulepreload" crossorigin href="/assets/ai-features-Dl0prdV8.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-D2fzrn1F.js">
+    <link rel="modulepreload" crossorigin href="/assets/react-vendor-DZKlh5vL.js">
+    <link rel="modulepreload" crossorigin href="/assets/chart-vendor-ZOcanGrW.js">
+    <link rel="modulepreload" crossorigin href="/assets/charts-D2u9umaN.js">
+    <link rel="modulepreload" crossorigin href="/assets/scanner-BUMRnXil.js">
+    <link rel="modulepreload" crossorigin href="/assets/engagement-OnHSghgW.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-DxxRsJIN.css">
+  <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
+
+  <body>
+    <!-- Color Blind Mode SVG Filters -->
+    <svg style="display: none;">
+      <defs>
+        <!-- Protanopia (Red-Blind) Filter -->
+        <filter id="protanopia-filter">
+          <feColorMatrix type="matrix" values="
+            0.567, 0.433, 0,     0, 0
+            0.558, 0.442, 0,     0, 0
+            0,     0.242, 0.758, 0, 0
+            0,     0,     0,     1, 0
+          "/>
+        </filter>
+        <!-- Deuteranopia (Green-Blind) Filter -->
+        <filter id="deuteranopia-filter">
+          <feColorMatrix type="matrix" values="
+            0.625, 0.375, 0,     0, 0
+            0.7,   0.3,   0,     0, 0
+            0,     0.3,   0.7,   0, 0
+            0,     0,     0,     1, 0
+          "/>
+        </filter>
+        <!-- Tritanopia (Blue-Blind) Filter -->
+        <filter id="tritanopia-filter">
+          <feColorMatrix type="matrix" values="
+            0.95, 0.05,  0,     0, 0
+            0,    0.433, 0.567, 0, 0
+            0,    0.475, 0.525, 0, 0
+            0,    0,     0,     1, 0
+          "/>
+        </filter>
+      </defs>
+    </svg>
+    <div id="root"></div>
+  </body>
+</html>

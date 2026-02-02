@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorBackground">#0A0A0A</color>
+    <color name="colorOnPrimary">#FFFFFF</color>
+    <color name="colorOnSecondary">#FFFFFF</color>
+    <color name="colorPrimary">#0A0A0A</color>
+    <color name="colorPrimaryVariant">#111827</color>
+    <color name="colorSecondary">#8B5CF6</color>
+    <color name="colorSurface">#111827</color>
+    <string name="app_name">MorphoScan Pro</string>
+    <string name="asset_statements"><![CDATA[[{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"web","site":"https://morphoscanpro.com"}}]]]></string>
+    <string name="title_activity_main">MorphoScan Pro</string>
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryVariant">@color/colorPrimaryVariant</item>
+        <item name="colorSecondary">@color/colorSecondary</item>
+        <item name="android:colorBackground">@color/colorBackground</item>
+        <item name="android:statusBarColor">@color/colorPrimary</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+    <style name="AppTheme.NoActionBarLaunch" parent="AppTheme">
+        <item name="android:windowBackground">@color/colorBackground</item>
+        <item name="android:windowIsTranslucent">true</item>
+    </style>
+</resources>
