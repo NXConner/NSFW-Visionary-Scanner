@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DLCContentImport } from "@/components/dlc/admin/DLCContentImport";
 import { listAddonStates } from "@/addons";
+import { evaluateAddonCompatibility, getAppRuntimeInfo } from "@/addons/compatibility";
 import { RouteTopNav } from "@/components/navigation/RouteTopNav";
 import { BUILD_ALLOW_ADULT_BUNDLE } from "@/lib/buildFlags";
 
@@ -33,6 +34,7 @@ export default function AdminDLC(): React.ReactElement {
     () => rows.filter(r => r.isActive && !r.stripePriceId).length,
     [rows],
   );
+  const runtimeInfo = useMemo(() => getAppRuntimeInfo(), []);
 
   const AdminAdultToggles = useMemo(() => {
     if (!BUILD_ALLOW_ADULT_BUNDLE) return null;
@@ -239,7 +241,15 @@ export default function AdminDLC(): React.ReactElement {
               <div className="text-sm text-muted-foreground">No add-ons registered.</div>
             ) : (
               <div className="space-y-2">
-                {listAddonStates().map(a => (
+                {listAddonStates().map(a => {
+                  const compatibility = evaluateAddonCompatibility(a.manifest, runtimeInfo);
+                  const compatibilityVariant =
+                    compatibility.status === "compatible"
+                      ? "secondary"
+                      : compatibility.status === "warning"
+                        ? "outline"
+                        : "destructive";
+                  return (
                   <div
                     key={a.manifest.id}
                     className="rounded-xl border border-border/50 p-4 bg-background/40"
@@ -253,6 +263,9 @@ export default function AdminDLC(): React.ReactElement {
                         <div className="text-sm text-muted-foreground">
                           v{a.manifest.version}
                           {a.manifest.minAppVersion ? ` • minApp ${a.manifest.minAppVersion}` : ""}
+                          {a.manifest.manifestVersion
+                            ? ` • manifest ${a.manifest.manifestVersion}`
+                            : ""}
                           {a.hasContributions ? " • contributes UI" : ""}
                         </div>
                       </div>
@@ -261,23 +274,43 @@ export default function AdminDLC(): React.ReactElement {
                           variant={
                             a.runtime.status === "ready"
                               ? "secondary"
-                              : a.runtime.status === "failed"
+                              : a.runtime.status === "failed" || a.runtime.status === "blocked"
                                 ? "destructive"
                                 : "outline"
                           }
                         >
                           {a.runtime.status}
                         </Badge>
+                        <Badge variant={compatibilityVariant}>
+                          compat {compatibility.label}
+                        </Badge>
                         <Badge variant="outline" className="text-[10px]">
                           {new Date(a.runtime.updatedAt).toLocaleString()}
                         </Badge>
                       </div>
                     </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span>app {runtimeInfo.appVersion}</span>
+                      <span>
+                        build {runtimeInfo.build.appVersion}/{runtimeInfo.build.distribution}
+                      </span>
+                      <span>
+                        adult bundle {runtimeInfo.build.allowAdultBundle ? "enabled" : "off"}
+                      </span>
+                    </div>
                     {a.runtime.lastError ? (
                       <div className="mt-2 text-xs text-destructive">{a.runtime.lastError}</div>
                     ) : null}
+                    {compatibility.reasons.length > 0 ? (
+                      <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                        {compatibility.reasons.slice(0, 3).map((reason, idx) => (
+                          <div key={`${a.manifest.id}-reason-${idx}`}>- {reason}</div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
