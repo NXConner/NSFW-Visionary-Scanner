@@ -15,6 +15,7 @@ import {
   type VideoRecordingRow,
 } from "@/lib/videoEditing";
 import { VideoStudioEditorDialog } from "@/components/videoEditing/VideoStudioEditorDialog";
+import { RecordingPreviewDialog } from "./RecordingPreviewDialog";
 
 export function StudioTab({ isActive }: { isActive: boolean }): JSX.Element {
   const [loading, setLoading] = useState(false);
@@ -23,10 +24,15 @@ export function StudioTab({ isActive }: { isActive: boolean }): JSX.Element {
   const [streams, setStreams] = useState<CameraStreamRow[]>([]);
   const [recordings, setRecordings] = useState<VideoRecordingRow[]>([]);
   const [openRecordingId, setOpenRecordingId] = useState<string | null>(null);
+  const [previewRecordingId, setPreviewRecordingId] = useState<string | null>(null);
 
   const openRecording = useMemo(
     () => recordings.find(r => r.id === openRecordingId) ?? null,
     [openRecordingId, recordings],
+  );
+  const previewRecording = useMemo(
+    () => recordings.find(r => r.id === previewRecordingId) ?? null,
+    [previewRecordingId, recordings],
   );
 
   const loadSessions = useCallback(async () => {
@@ -196,6 +202,14 @@ export function StudioTab({ isActive }: { isActive: boolean }): JSX.Element {
                       >
                         Open editor
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setPreviewRecordingId(r.id)}
+                        disabled={!r.video_url}
+                      >
+                        Preview
+                      </Button>
                     </div>
                   </div>
                 ))
@@ -212,6 +226,11 @@ export function StudioTab({ isActive }: { isActive: boolean }): JSX.Element {
           recordings={recordings}
           baseRecording={openRecording}
           onRefresh={loadSessionData}
+        />
+        <RecordingPreviewDialog
+          open={Boolean(previewRecordingId)}
+          onClose={() => setPreviewRecordingId(null)}
+          recording={previewRecording}
         />
       </CardContent>
     </Card>

@@ -25,7 +25,7 @@
 | P1 | Media storage + upload foundation | P0 | Done | NSFW buckets, signed URLs, upload UI, content lifecycle rules |
 | P2 | Video pipeline (record, upload, playback, edit) | P1 | Done | MediaRecorder, chunk upload, merge, player, editing backend |
 | P3 | Seductive AI chat backend | P0 | Done | Edge function, provider integration, prompts, memory, safety, throttling |
-| P4 | Advanced NSFW features completion | P1, P2 | Not Started | Multi-cam, screenshots, dates media, positions seed |
+| P4 | Advanced NSFW features completion | P1, P2 | Done | Partner sync sessions, screenshots UI, dates media, positions detail |
 | P5 | NSFW content pipelines + admin tools | P1 | Not Started | Topics import, moderation tools, rating tiers |
 | P6 | Privacy/consent hardening | P0 | Not Started | Session lock, incognito/redaction, policy block UX |
 | P7 | DLC/addon productionization | P0 | Not Started | Registry UI, versioning, catalog validation |
@@ -105,12 +105,12 @@
 ---
 
 ## P4 — Advanced NSFW Features Completion
-**Status**: Not Started
+**Status**: Done
 
-- [ ] Multi-camera recording backend + partner sync
-- [ ] Video screenshots UI + storage
-- [ ] Intimate dates: voice recording + media upload
-- [ ] Positions library: seed data + media + search + detail view
+- [x] Multi-camera recording backend + partner sync
+- [x] Video screenshots UI + storage
+- [x] Intimate dates: voice recording + media upload
+- [x] Positions library: seed data + media + search + detail view
 
 **Files to update**
 - `src/lib/nsfwAdvancedFeatures/multiCamera.ts`
@@ -239,3 +239,4 @@
 - 2026-02-02: P1 completed (signed URLs, storage, auditing, upload UI).
 - 2026-02-02: P2 completed (recording/upload/playback/edit pipeline).
 - 2026-02-02: P3 completed (provider integration, prompts, memory, safety, throttling).
+- 2026-02-02: P4 completed (partner sync sessions, screenshots UI, dates media, positions detail).

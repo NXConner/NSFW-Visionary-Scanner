@@ -17,6 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { fromExtended } from "@/lib/supabaseExtensions";
 import { ensureRecordingForCameraStream } from "@/lib/videoEditing";
+import { PartnerSyncRecordingPanel } from "./PartnerSyncRecordingPanel";
 
 type VideoRefs = Record<number, HTMLVideoElement | null>;
 
@@ -155,15 +156,24 @@ export function RecordingTab({ isActive }: { isActive: boolean }): JSX.Element {
           data: { user },
         } = await supabase.auth.getUser();
         if (user && uploads.length > 0) {
+          const isPartnerRecorder =
+            currentSession.partner_id === user.id && currentSession.user_id !== user.id;
           const streamRows = await Promise.all(
             uploads.map(async u => {
+              const stream = cameraStreams[u.cameraIndex];
+              const track = stream?.getVideoTracks?.()[0];
+              const deviceId =
+                typeof track?.getSettings === "function" ? track.getSettings().deviceId : null;
+              const cameraName = track?.label || null;
               const resolvedUrl = u.bucket === "recordings" ? null : u.publicUrl;
               const { data: inserted, error } = await fromExtended("camera_streams")
                 .insert({
                   session_id: currentSession.id,
                   user_id: user.id,
                   camera_index: u.cameraIndex,
-                  device_type: "webcam",
+                  camera_name: cameraName,
+                  device_id: deviceId,
+                  device_type: isPartnerRecorder ? "partner_device" : "webcam",
                   is_active: false,
                   is_recording: false,
                   video_url: resolvedUrl,
@@ -193,13 +203,25 @@ export function RecordingTab({ isActive }: { isActive: boolean }): JSX.Element {
                 }),
               ),
           );
+
+          await supabase
+            .from("multi_camera_sessions")
+            .update({ camera_count: uploads.length, updated_at: new Date().toISOString() })
+            .eq("id", currentSession.id);
         }
       }
       await load();
     } finally {
       setLoading(false);
     }
-  }, [currentSession, load, stopAllStreams, stopMultiCameraRecording, uploadRecordingSet]);
+  }, [
+    cameraStreams,
+    currentSession,
+    load,
+    stopAllStreams,
+    stopMultiCameraRecording,
+    uploadRecordingSet,
+  ]);
 
   return (
     <Card className="glass-card border-border/50">
@@ -249,6 +271,15 @@ export function RecordingTab({ isActive }: { isActive: boolean }): JSX.Element {
             <Progress value={uploadPercent} />
           </div>
         )}
+
+        <PartnerSyncRecordingPanel
+          sessions={sessions}
+          currentSession={currentSession}
+          onAddSession={session =>
+            setSessions(prev => (prev.some(s => s.id === session.id) ? prev : [session, ...prev]))
+          }
+          onSelectSession={session => setCurrentSession(session)}
+        />
 
         {isRecording && cameraStreams.length > 0 && (
           <div className="grid grid-cols-2 gap-4">

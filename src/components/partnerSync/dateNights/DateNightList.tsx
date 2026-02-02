@@ -10,6 +10,7 @@ import { buildGoogleCalendarUrl, buildIcsDataUrl, formatDate, formatTime } from 
 import type { DateNightPlanDetails, DateNightPlanInput, DateNightReminderItem } from "@/lib/partnerSync";
 import type { IntimateDateProposal, ProposalModifications } from "@/lib/nsfwAdvancedFeatures";
 import { CalendarCheck, CheckCircle2, Copy, X } from "lucide-react";
+import { DateNightMediaPreview } from "./DateNightMediaPreview";
 
 type DateNightListProps = {
   proposals: IntimateDateProposal[];
@@ -117,6 +118,7 @@ export function DateNightList({
                       {reminderItems.map(r => `${r.reminderType}:${r.remindAt}`).join(", ")}
                     </div>
                   )}
+                  <DateNightMediaPreview proposal={proposal} />
 
                   <div className="flex flex-wrap gap-2">
                     <Button

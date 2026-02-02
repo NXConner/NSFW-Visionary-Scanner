@@ -161,6 +161,13 @@ export interface DateNightPlanInput {
   positions: string[];
   message: string;
   specialRequests: string;
+  voiceMessageUrl?: string;
+  voiceMessageDurationSeconds?: number | null;
+  images?: string[];
+  gifs?: string[];
+  videos?: string[];
+  emojis?: string[];
+  links?: string[];
   budget: number | null;
   travelMinutes: number | null;
   checklist: DateNightChecklistItem[];
