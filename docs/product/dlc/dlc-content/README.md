@@ -40,3 +40,9 @@ You can validate a CSV/JSON file locally before importing:
 
 - Script: `scripts/validate-dlc-import.ts`
 - Command: `npm run dlc:validate-import -- --type positions --file path/to/file.csv`
+
+### Licensing & compliance
+
+Before importing any NSFW media, complete the licensing checklist:
+
+- `docs/product/dlc/NSFW_CONTENT_LICENSING.md`
