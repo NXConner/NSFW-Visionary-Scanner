@@ -197,6 +197,7 @@
 **Blocker**: Requires signed licenses, model releases, and verified rights for all assets.
 **Notes**:
 - Positions illustrations source recorded (MIT) in `docs/product/dlc/licensing/SOURCES.md` but still needs import.
+- adminlove520/Sex-Positions has no recorded license (pending).
 
 ---
 
