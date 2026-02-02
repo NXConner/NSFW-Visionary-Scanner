@@ -46,3 +46,4 @@ You can validate a CSV/JSON file locally before importing:
 Before importing any NSFW media, complete the licensing checklist:
 
 - `docs/product/dlc/NSFW_CONTENT_LICENSING.md`
+- Approved sources: `docs/product/dlc/licensing/SOURCES.md`

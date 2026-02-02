@@ -195,6 +195,8 @@
 
 **Note**: No placeholder content in dev/prod. Use licensed or user-provided assets only.
 **Blocker**: Requires signed licenses, model releases, and verified rights for all assets.
+**Notes**:
+- Positions illustrations source recorded (MIT) in `docs/product/dlc/licensing/SOURCES.md` but still needs import.
 
 ---
 

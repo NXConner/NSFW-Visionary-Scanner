@@ -14,6 +14,7 @@ shipping NSFW DLC content. It is designed to prevent unlicensed media from enter
 - Proof of age (18+) for all performers (kept securely; not stored in the app DB)
 - Content ownership chain (who created, who owns, who licensed)
 - Content rating determination (`educational`, `demonstrative`, `explicit`)
+- Open-source license text (if using open-source illustrations)
 
 ## Required metadata (store in internal systems)
 
@@ -38,6 +39,7 @@ shipping NSFW DLC content. It is designed to prevent unlicensed media from enter
 4. **Content QA**:
    - Validate metadata, tags, ratings, and required warnings.
    - Ensure assets are stored under the required `{packageId}/...` path.
+   - Verify open-source license file is stored in `docs/product/dlc/licensing/`.
 5. **Publish**:
    - Import via Admin → DLC Content Import.
    - Verify signed URL access + entitlement gating.
