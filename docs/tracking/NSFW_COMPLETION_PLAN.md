@@ -27,7 +27,7 @@
 | P3 | Seductive AI chat backend | P0 | Done | Edge function, provider integration, prompts, memory, safety, throttling |
 | P4 | Advanced NSFW features completion | P1, P2 | Done | Partner sync sessions, screenshots UI, dates media, positions detail |
 | P5 | NSFW content pipelines + admin tools | P1 | Done | Topics import rollback, rating tiers, moderation, creator verify |
-| P6 | Privacy/consent hardening | P0 | Not Started | Session lock, incognito/redaction, policy block UX |
+| P6 | Privacy/consent hardening | P0 | Done | Session lock, panic exit, incognito/redaction, audit logs |
 | P7 | DLC/addon productionization | P0 | Not Started | Registry UI, versioning, catalog validation |
 | P8 | Testing + QA + perf | P0-P7 | Not Started | Unit/integration/E2E/perf coverage for NSFW flows |
 | P9 | Content production + licensing | P1 | Not Started | Licensed media library, expert content, compliance checks |
@@ -136,13 +136,13 @@
 ---
 
 ## P6 — Privacy/Consent Hardening
-**Status**: Not Started
+**Status**: Done
 
-- [ ] Session lock: inactivity, background lock
-- [ ] Biometric enforcement if available
-- [ ] Incognito/redaction across all NSFW surfaces
-- [ ] Policy block UX + audit log entry
-- [ ] Panic exit + safe notifications
+- [x] Session lock: inactivity, background lock
+- [x] Biometric enforcement if available
+- [x] Incognito/redaction across all NSFW surfaces
+- [x] Policy block UX + audit log entry
+- [x] Panic exit + safe notifications
 
 **Files to update**
 - `src/lib/nsfwSessionLock.ts`
@@ -241,3 +241,4 @@
 - 2026-02-02: P3 completed (provider integration, prompts, memory, safety, throttling).
 - 2026-02-02: P4 completed (partner sync sessions, screenshots UI, dates media, positions detail).
 - 2026-02-02: P5 completed (topics import rollback, rating tiers, moderation, creator verify).
+- 2026-02-02: P6 completed (session lock hardening, audit logs, panic exit, incognito).

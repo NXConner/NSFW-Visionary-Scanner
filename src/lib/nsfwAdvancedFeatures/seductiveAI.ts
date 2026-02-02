@@ -3,6 +3,7 @@ import { fromExtended } from "@/lib/supabaseExtensions";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 import { isLovablePolicyBuild } from "@/lib/featureFlags";
+import { appendAuditLogEntry } from "@/lib/auditLogStorage";
 import type {
   SeductiveAIMessageMedia,
   SeductiveAIResponse,
@@ -146,6 +147,27 @@ export async function sendSeductiveAIMessage(
     const aiPayload = aiResponseData as AiEdgeResponse;
     if (aiPayload.policy?.action === "block") {
       toast.error(aiPayload.policy.message || "Message blocked by safety policy.");
+      void appendAuditLogEntry({
+        action: "nsfw_policy_block",
+        category: "nsfw",
+        details: aiPayload.policy.message || "Message blocked by safety policy",
+        metadata: {
+          sessionId,
+          category: aiPayload.policy.category,
+          severity: aiPayload.policy.severity,
+        },
+      });
+    } else if (aiPayload.policy?.action === "deescalate") {
+      void appendAuditLogEntry({
+        action: "nsfw_policy_deescalate",
+        category: "nsfw",
+        details: aiPayload.policy.message || "Message deescalated by safety policy",
+        metadata: {
+          sessionId,
+          category: aiPayload.policy.category,
+          severity: aiPayload.policy.severity,
+        },
+      });
     }
 
     const { data: aiMessage, error: aiMessageError } = await fromExtended("seductive_ai_messages")
