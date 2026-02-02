@@ -19,6 +19,32 @@ const ADULT_RATINGS = new Set(["18+", "adult", "explicit", "nsfw"]);
 const isAdultRating = (rating?: string | null): boolean =>
   ADULT_RATINGS.has(String(rating || "").trim().toLowerCase());
 
+async function logAssetAccess(params: {
+  supabase: any;
+  userId: string;
+  packageId: string;
+  assetPath: string;
+  deviceId?: string;
+  devicePlatform?: string;
+  expiresInSeconds: number;
+  accessType?: string;
+}): Promise<void> {
+  try {
+    const expiresAt = new Date(Date.now() + params.expiresInSeconds * 1000).toISOString();
+    await params.supabase.from("dlc_asset_access_logs").insert({
+      user_id: params.userId,
+      package_id: params.packageId,
+      asset_path: params.assetPath,
+      device_id: params.deviceId || null,
+      device_platform: params.devicePlatform || null,
+      access_type: params.accessType || "signed_url",
+      expires_at: expiresAt,
+    });
+  } catch {
+    // Best-effort; avoid blocking asset delivery on log failure.
+  }
+}
+
 serve(async req => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -117,6 +143,17 @@ serve(async req => {
         .from(bucket)
         .createSignedUrl(assetPath, expiresInSeconds);
       if (error) throw error;
+
+      await logAssetAccess({
+        supabase,
+        userId: user.id,
+        packageId,
+        assetPath,
+        deviceId,
+        devicePlatform,
+        expiresInSeconds,
+        accessType: "signed_url",
+      });
 
       return new Response(
         JSON.stringify({
@@ -235,6 +272,17 @@ serve(async req => {
       .from(bucket)
       .createSignedUrl(assetPath, expiresInSeconds);
     if (error) throw error;
+
+    await logAssetAccess({
+      supabase,
+      userId: user.id,
+      packageId,
+      assetPath,
+      deviceId,
+      devicePlatform,
+      expiresInSeconds,
+      accessType: "signed_url",
+    });
 
     return new Response(
       JSON.stringify({

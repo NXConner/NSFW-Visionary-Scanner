@@ -4,21 +4,13 @@ import { secureDownloader } from "@/dlc/security";
 import { getDeviceId, getDevicePlatform } from "@/dlc/core/device";
 import { cacheVideoBytes, type VideoQuality } from "@/lib/offlineMedia/videoCache";
 import { logger } from "@/lib/logger";
+import { inferPackageIdFromAssetPath, isHttpUrl, signAssetPath } from "@/lib/nsfwAssets";
 
 type DownloadProgressCb = (p: {
   progress: number;
   downloadedBytes: number;
   totalBytes: number;
 }) => void;
-
-function isHttpUrl(value: string): boolean {
-  return /^https?:\/\//i.test(value);
-}
-
-function inferPackageIdFromAssetPath(assetPath: string): string {
-  const first = assetPath.split("/")[0];
-  return first || "dlc-videos";
-}
 
 const dlcPackageIdCache = new Map<string, string>();
 
@@ -39,7 +31,7 @@ async function resolvePackageIdForVideo(params: {
       return String(data.package_id);
     }
   }
-  return inferPackageIdFromAssetPath(assetPath);
+  return inferPackageIdFromAssetPath(assetPath, "dlc-videos");
 }
 
 function guessMimeType(assetPathOrUrl: string): string {
@@ -89,16 +81,14 @@ async function resolveDownloadUrl(params: {
   const deviceId = getDeviceId();
   const devicePlatform = getDevicePlatform();
 
-  const { data: signed, error: signedError } = await supabase.functions.invoke(
-    "get-dlc-signed-url",
-    {
-      body: { packageId, assetPath, expiresInSeconds: 900, deviceId, devicePlatform },
-    },
-  );
-  if (signedError || !signed?.signedUrl) {
-    throw new Error(signedError?.message || "Unable to authorize download");
-  }
-  return { url: String(signed.signedUrl), assetRef: assetPath };
+  const signedUrl = await signAssetPath({
+    assetPath,
+    packageId,
+    expiresInSeconds: 900,
+    deviceId,
+    devicePlatform,
+  });
+  return { url: signedUrl, assetRef: assetPath };
 }
 
 async function upsertDownloadRow(params: {

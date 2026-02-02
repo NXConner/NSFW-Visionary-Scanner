@@ -480,8 +480,14 @@ export const NSFWAdvancedFeatures = () => {
                       variant="compact"
                       onUploadComplete={(result) => {
                         const results = Array.isArray(result) ? result : [result]
-                        const images = results.filter(r => r.type.startsWith('image/')).map(r => r.url)
-                        const videos = results.filter(r => r.type.startsWith('video/')).map(r => r.url)
+                        const images = results
+                          .filter(r => r.mimeType?.startsWith('image/'))
+                          .map(r => r.publicUrl)
+                          .filter(Boolean)
+                        const videos = results
+                          .filter(r => r.mimeType?.startsWith('video/'))
+                          .map(r => r.publicUrl)
+                          .filter(Boolean)
                         setNewProposal({
                           ...newProposal,
                           // Store URLs for later use in proposal

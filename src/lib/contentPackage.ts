@@ -5,10 +5,10 @@
 
 import { logger } from "./logger";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { getDeviceId, getDevicePlatform } from "@/dlc/core/device";
 import { fetchDlcKey } from "@/lib/dlcKeys";
 import { contentEncryption } from "@/dlc/security";
+import { inferPackageIdFromAssetPath, isHttpUrl, signAssetPath } from "@/lib/nsfwAssets";
 
 export interface ContentPackageManifest {
   version: string;
@@ -48,10 +48,6 @@ export interface ContentFile {
 const CONTENT_DB_NAME = "dlc_content";
 const CONTENT_DB_VERSION = 2;
 const CONTENT_STORE = "files";
-
-function isHttpUrl(value: string): boolean {
-  return /^https?:\/\//i.test(value);
-}
 
 function lsKeyManifest(packageId: string): string {
   return `dlc_content_manifest:${packageId}`;
@@ -130,11 +126,6 @@ async function maybeDecryptFile(params: {
   return decrypted;
 }
 
-function inferPackageIdFromAssetPath(assetPath: string): string {
-  const first = String(assetPath || "").split("/")[0];
-  return first || "dlc";
-}
-
 async function resolveContentFileUrl(params: {
   packageId: string;
   file: ContentFile;
@@ -156,21 +147,15 @@ async function resolveContentFileUrl(params: {
   const deviceId = getDeviceId();
   const devicePlatform = getDevicePlatform();
 
-  const { data, error } = await supabase.functions.invoke("get-dlc-signed-url", {
-    body: {
-      packageId: signingPackageId,
-      assetPath,
-      expiresInSeconds: Math.max(60, Math.min(60 * 60, Number(params.expiresInSeconds ?? 900))),
-      deviceId,
-      devicePlatform,
-    },
+  const signedUrl = await signAssetPath({
+    assetPath,
+    packageId: signingPackageId,
+    expiresInSeconds: Math.max(60, Math.min(60 * 60, Number(params.expiresInSeconds ?? 900))),
+    deviceId,
+    devicePlatform,
   });
 
-  if (error || !data?.signedUrl) {
-    throw new Error(error?.message || "Failed to sign DLC asset URL");
-  }
-
-  return { url: String(data.signedUrl), assetRef: assetPath };
+  return { url: signedUrl, assetRef: assetPath };
 }
 
 /**

@@ -1,9 +1,9 @@
-import { supabase } from "@/integrations/supabase/client";
 import { fromExtended } from "@/lib/supabaseExtensions";
 import { getDeviceId, getDevicePlatform } from "@/dlc/core/device";
 import type { VideoQuality } from "@/lib/offlineMedia/videoCache";
 import { getCachedVideoUrl } from "@/lib/offlineMedia/videoCache";
 import { logger } from "@/lib/logger";
+import { inferPackageIdFromAssetPath, isHttpUrl, signAssetPath } from "@/lib/nsfwAssets";
 
 export type ResolvedVideoSource = {
   sourceType: "cached" | "remote";
@@ -15,10 +15,6 @@ export type ResolvedVideoSource = {
 
 export type VideoPlaybackMode = "cache_first" | "stream";
 
-function isHttpUrl(value: string): boolean {
-  return /^https?:\/\//i.test(value);
-}
-
 function pickVideoField(video: Record<string, unknown>, quality: VideoQuality): string | null {
   const candidate =
     quality === "4k"
@@ -27,11 +23,6 @@ function pickVideoField(video: Record<string, unknown>, quality: VideoQuality): 
         ? video.video_url_sd
         : video.video_url_hd;
   return candidate ? String(candidate) : null;
-}
-
-function inferPackageIdFromAssetPath(assetPath: string): string {
-  const first = assetPath.split("/")[0];
-  return first || "dlc-videos";
 }
 
 const dlcPackageIdCache = new Map<string, string>();
@@ -53,7 +44,7 @@ async function resolvePackageIdForVideo(params: {
       return String(data.package_id);
     }
   }
-  return inferPackageIdFromAssetPath(assetPath);
+  return inferPackageIdFromAssetPath(assetPath, "dlc-videos");
 }
 
 export async function getNSFWVideoPlaybackUrl(params: {
@@ -98,28 +89,25 @@ export async function getNSFWVideoPlaybackUrl(params: {
   const deviceId = getDeviceId();
   const devicePlatform = getDevicePlatform();
 
-  const { data: signed, error: signedError } = await supabase.functions.invoke(
-    "get-dlc-signed-url",
-    {
-      body: {
-        packageId,
-        assetPath,
-        // Streaming needs a longer-lived URL; offline download uses its own flow.
-        expiresInSeconds: mode === "stream" ? 60 * 60 : 5 * 60,
-        deviceId,
-        devicePlatform,
-      },
-    },
-  );
-
-  if (signedError || !signed?.signedUrl) {
-    logger.error("nsfwVideoDelivery: failed to sign video url", { error: signedError?.message });
+  let signedUrl: string;
+  try {
+    signedUrl = await signAssetPath({
+      assetPath,
+      packageId,
+      expiresInSeconds: mode === "stream" ? 60 * 60 : 5 * 60,
+      deviceId,
+      devicePlatform,
+    });
+  } catch (error) {
+    logger.error("nsfwVideoDelivery: failed to sign video url", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 
   return {
     sourceType: "remote",
-    url: String(signed.signedUrl),
+    url: signedUrl,
     assetPath,
     packageId,
   };

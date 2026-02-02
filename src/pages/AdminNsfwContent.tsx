@@ -8,6 +8,7 @@ import { ContentModerationPanel } from "@/components/admin/ContentModerationPane
 import { NsfwVideoContentAdminPanel } from "@/components/admin/nsfw/NsfwVideoContentAdminPanel";
 import { NsfwTopicLibraryAdminPanel } from "@/components/admin/nsfw/NsfwTopicLibraryAdminPanel";
 import { NsfwConsentPolicyAdminPanel } from "@/components/admin/nsfw/NsfwConsentPolicyAdminPanel";
+import { NsfwAssetUploadPanel } from "@/components/admin/nsfw/NsfwAssetUploadPanel";
 
 export default function AdminNsfwContent(): React.ReactElement {
   const { isAdmin, isLoading } = useUserRoles();
@@ -46,12 +47,13 @@ export default function AdminNsfwContent(): React.ReactElement {
       <RouteTopNav title="Admin — NSFW" badge="Admin" />
       <div className="container mx-auto px-4 py-8 max-w-6xl space-y-6">
         <Tabs defaultValue="videos" className="space-y-4">
-          <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
+          <TabsList className="grid grid-cols-2 md:grid-cols-6 w-full">
             <TabsTrigger value="videos">Video Library</TabsTrigger>
             <TabsTrigger value="topics">Topics Library</TabsTrigger>
             <TabsTrigger value="consent">Consent Policies</TabsTrigger>
             <TabsTrigger value="moderation">Moderation</TabsTrigger>
             <TabsTrigger value="import">Content Import</TabsTrigger>
+            <TabsTrigger value="assets">Asset Uploads</TabsTrigger>
           </TabsList>
 
           <TabsContent value="videos">
@@ -78,6 +80,9 @@ export default function AdminNsfwContent(): React.ReactElement {
             >
               <DLCContentImport />
             </Suspense>
+          </TabsContent>
+          <TabsContent value="assets">
+            <NsfwAssetUploadPanel />
           </TabsContent>
         </Tabs>
       </div>

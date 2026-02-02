@@ -22,7 +22,7 @@
 | Phase | Goal | Dependencies | Status | Key Deliverables |
 | --- | --- | --- | --- | --- |
 | P0 | Store-safety separation + gating | None | Done | Build-time gating tests, no NSFW bundles in SFW, entitlement checks |
-| P1 | Media storage + upload foundation | P0 | Not Started | NSFW buckets, signed URLs, upload UI, content lifecycle rules |
+| P1 | Media storage + upload foundation | P0 | Done | NSFW buckets, signed URLs, upload UI, content lifecycle rules |
 | P2 | Video pipeline (record, upload, playback, edit) | P1 | Not Started | MediaRecorder, chunk upload, merge, player, editing backend |
 | P3 | Seductive AI chat backend | P0 | Not Started | Edge function, LLM integration, prompts, context manager |
 | P4 | Advanced NSFW features completion | P1, P2 | Not Started | Multi-cam, screenshots, dates media, positions seed |
@@ -53,13 +53,13 @@
 ---
 
 ## P1 — Media Storage + Upload Foundation
-**Status**: Not Started
+**Status**: Done
 
-- [ ] Storage buckets: `nsfw-content`, `videos`, `screenshots`, `recordings`
-- [ ] Signed URL helpers (read/write)
-- [ ] Upload UI components + progress
-- [ ] Content lifecycle rules (expiry, revocation, re-signing)
-- [ ] Access auditing for downloads
+- [x] Storage buckets: `nsfw-content`, `videos`, `screenshots`, `recordings`
+- [x] Signed URL helpers (read/write)
+- [x] Upload UI components + progress
+- [x] Content lifecycle rules (expiry, revocation, re-signing)
+- [x] Access auditing for downloads
 
 **Files to update**
 - `supabase/migrations/20251223130000_nsfw_content_storage_bucket.sql`
@@ -236,3 +236,4 @@
 ## Status Update Log
 - 2026-02-02: Plan created. All phases Not Started.
 - 2026-02-02: P0 completed (gating + SFW bundle verification + entitlements).
+- 2026-02-02: P1 completed (signed URLs, storage, auditing, upload UI).

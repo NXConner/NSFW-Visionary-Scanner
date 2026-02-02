@@ -609,11 +609,13 @@ export async function uploadRecordedVideo(
       return null
     }
 
+    const resolvedUrl = result.publicUrl || getFileUrl(result.path, STORAGE_BUCKETS.RECORDINGS)
+
     // Update database with video URL
     const { error } = await supabase
       .from('video_recordings')
       .update({
-        video_file_url: result.url,
+        video_file_url: resolvedUrl,
         video_file_path: result.path,
         duration_seconds: recording.duration,
         file_size_bytes: recording.blob.size
@@ -624,7 +626,7 @@ export async function uploadRecordedVideo(
       logger.error('Error updating video recording:', error)
     }
 
-    return result.url
+    return resolvedUrl
   } catch (error) {
     logger.error('Error in uploadRecordedVideo:', error)
     toast.error('Failed to upload video')
