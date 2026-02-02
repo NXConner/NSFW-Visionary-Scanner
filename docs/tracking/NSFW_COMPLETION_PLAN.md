@@ -24,7 +24,7 @@
 | P0 | Store-safety separation + gating | None | Done | Build-time gating tests, no NSFW bundles in SFW, entitlement checks |
 | P1 | Media storage + upload foundation | P0 | Done | NSFW buckets, signed URLs, upload UI, content lifecycle rules |
 | P2 | Video pipeline (record, upload, playback, edit) | P1 | Done | MediaRecorder, chunk upload, merge, player, editing backend |
-| P3 | Seductive AI chat backend | P0 | Not Started | Edge function, LLM integration, prompts, context manager |
+| P3 | Seductive AI chat backend | P0 | Done | Edge function, provider integration, prompts, memory, safety, throttling |
 | P4 | Advanced NSFW features completion | P1, P2 | Not Started | Multi-cam, screenshots, dates media, positions seed |
 | P5 | NSFW content pipelines + admin tools | P1 | Not Started | Topics import, moderation tools, rating tiers |
 | P6 | Privacy/consent hardening | P0 | Not Started | Session lock, incognito/redaction, policy block UX |
@@ -89,13 +89,13 @@
 ---
 
 ## P3 — Seductive AI Chat Backend
-**Status**: Not Started
+**Status**: Done
 
-- [ ] Implement `seductive-ai-chat` edge function
-- [ ] Provider integration (OpenAI/Anthropic/custom)
-- [ ] Prompt library by personality + intensity
-- [ ] Context retrieval + memory window
-- [ ] Safety filters + abuse throttling
+- [x] Implement `seductive-ai-chat` edge function
+- [x] Provider integration (OpenAI/Anthropic/custom)
+- [x] Prompt library by personality + intensity
+- [x] Context retrieval + memory window
+- [x] Safety filters + abuse throttling
 
 **Files to update**
 - `supabase/functions/seductive-ai-chat/index.ts`
@@ -238,3 +238,4 @@
 - 2026-02-02: P0 completed (gating + SFW bundle verification + entitlements).
 - 2026-02-02: P1 completed (signed URLs, storage, auditing, upload UI).
 - 2026-02-02: P2 completed (recording/upload/playback/edit pipeline).
+- 2026-02-02: P3 completed (provider integration, prompts, memory, safety, throttling).

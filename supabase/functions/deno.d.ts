@@ -10,6 +10,8 @@ declare function serve(handler: (req: Request) => Promise<Response> | Response):
 // Allow importing from URLs
 declare module 'https://*' {
   const content: any
+  export const serve: any
+  export const createClient: any
   export default content
   export = content
 }
