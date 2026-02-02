@@ -5,8 +5,17 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  appType: "spa",
+export default defineConfig(({ mode }) => {
+  const isCapacitorBuild =
+    process.env.CAPACITOR_BUILD === "1" ||
+    process.env.CAPACITOR_BUILD === "true" ||
+    process.env.VITE_PLATFORM === "capacitor" ||
+    process.env.VITE_CAPACITOR === "1" ||
+    process.env.VITE_CAPACITOR === "true";
+
+  return {
+    base: isCapacitorBuild ? "./" : "/",
+    appType: "spa",
   server: {
     // Remote preview hardening:
     // - Bind to IPv4 (0.0.0.0) to avoid IPv6-only exposure flakiness in proxies.
@@ -223,7 +232,8 @@ export default defineConfig(({ mode }) => ({
     exclude: ["@vite/client", "@vite/env"],
   },
   // Environment variables
-  define: {
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
-  },
-}));
+    define: {
+      __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+    },
+  };
+});

@@ -5,6 +5,8 @@ Write-Host ""
 Write-Host "=== MorphoScan Pro - Android Build Process ===" -ForegroundColor Cyan
 Write-Host ""
 
+$env:CAPACITOR_BUILD = "1"
+
 # Step 1: Build the web app
 Write-Host "Step 1: Building web application (NSFW direct)..." -ForegroundColor Yellow
 try {

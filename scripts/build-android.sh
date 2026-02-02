@@ -25,6 +25,10 @@ echo "📦 Step 1: Installing dependencies..."
 npm install
 
 echo ""
+echo "🔧 Setting Capacitor build mode..."
+export CAPACITOR_BUILD=1
+
+echo ""
 echo "🔧 Step 2: Building web app (NSFW direct)..."
 npm run build:nsfw:direct
 
