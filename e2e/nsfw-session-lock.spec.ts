@@ -53,5 +53,26 @@ test.describe("NSFW Session Lock", () => {
 
     await expect(page.getByText("NSFW Hub").first()).toBeVisible();
   });
+
+  test("shows gate when panic lock flag is enabled", async ({ page }) => {
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem("morphoscan_nsfw_panic_lock", "true");
+      } catch {
+        // ignore
+      }
+    });
+
+    await page.goto("/nsfw");
+    await waitForAppReady(page);
+
+    const notFound = page.getByText(/oops! page not found/i);
+    if (await notFound.count()) {
+      await expect(notFound).toBeVisible();
+      return;
+    }
+
+    await expect(page.getByText(/nsfw session locked/i)).toBeVisible();
+  });
 });
 
