@@ -305,6 +305,7 @@ export function ThreadsTab({ isActive }: { isActive: boolean }): JSX.Element {
                       type="checkbox"
                       checked={newPost.is_anonymous}
                       onChange={e => setNewPost({ ...newPost, is_anonymous: e.target.checked })}
+                      aria-label="Post anonymously"
                     />
                     Post anonymously
                   </label>
@@ -385,6 +386,7 @@ export function ThreadsTab({ isActive }: { isActive: boolean }): JSX.Element {
                   type="checkbox"
                   checked={newThread.is_anonymous}
                   onChange={e => setNewThread({ ...newThread, is_anonymous: e.target.checked })}
+                  aria-label="Post anonymously"
                 />
                 Post anonymously
               </label>
@@ -393,6 +395,7 @@ export function ThreadsTab({ isActive }: { isActive: boolean }): JSX.Element {
                   type="checkbox"
                   checked={newThread.is_qa_thread}
                   onChange={e => setNewThread({ ...newThread, is_qa_thread: e.target.checked })}
+                  aria-label="Mark as Q&A thread"
                 />
                 This is a Q&amp;A thread
               </label>
@@ -401,6 +404,7 @@ export function ThreadsTab({ isActive }: { isActive: boolean }): JSX.Element {
                   type="checkbox"
                   checked={newThread.is_success_story}
                   onChange={e => setNewThread({ ...newThread, is_success_story: e.target.checked })}
+                  aria-label="Mark as success story"
                 />
                 This is a success story
               </label>

@@ -224,6 +224,7 @@ export const ProgressSharingChallenges = () => {
                     type="checkbox"
                     checked={newShare.is_anonymous}
                     onChange={e => setNewShare({ ...newShare, is_anonymous: e.target.checked })}
+                    aria-label="Share anonymously"
                   />
                   Share anonymously
                 </label>

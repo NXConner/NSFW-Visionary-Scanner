@@ -108,6 +108,7 @@ export function LessonView({
                                 value={option}
                                 checked={checked}
                                 onChange={() => setAnswers(prev => ({ ...prev, [key]: option }))}
+                                aria-label={option}
                               />
                               <span>{option}</span>
                             </label>

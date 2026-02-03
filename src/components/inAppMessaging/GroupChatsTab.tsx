@@ -102,6 +102,7 @@ export function GroupChatsTab(props: {
                     type="checkbox"
                     checked={newGroup.is_private}
                     onChange={e => setNewGroup({ ...newGroup, is_private: e.target.checked })}
+                    aria-label="Private group"
                   />
                   Private Group
                 </label>
@@ -110,6 +111,7 @@ export function GroupChatsTab(props: {
                     type="checkbox"
                     checked={newGroup.is_premium}
                     onChange={e => setNewGroup({ ...newGroup, is_premium: e.target.checked })}
+                    aria-label="Premium group"
                   />
                   Premium Only
                 </label>

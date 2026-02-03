@@ -232,6 +232,7 @@ export const WallpaperPicker = ({
           type="file"
           accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime"
           onChange={handleUpload}
+        aria-label="Upload custom wallpaper"
           className="hidden"
         />
         <button

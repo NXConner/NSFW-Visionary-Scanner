@@ -280,6 +280,7 @@ export function PhotoEditorTab() {
               accept="image/*"
               className="hidden"
               onChange={handleFileChange}
+              aria-label="Upload photo for editing"
             />
             <div
               className="aspect-video bg-muted/30 rounded-lg border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden"

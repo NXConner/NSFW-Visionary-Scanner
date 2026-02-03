@@ -178,6 +178,7 @@ export const DataImport = () => {
               type="file"
               accept=".json"
               onChange={handleFileSelect}
+              aria-label="Import data backup file"
               className="hidden"
             />
             <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />

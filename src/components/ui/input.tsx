@@ -12,6 +12,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className,
         )}
         ref={ref}
+        aria-label={props["aria-label"] ?? props.name ?? props.id}
         {...props}
       />
     );

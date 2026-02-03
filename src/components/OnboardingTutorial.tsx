@@ -183,6 +183,7 @@ export const OnboardingTutorial = ({ onComplete }: OnboardingTutorialProps) => {
           <button
             onClick={handleSkip}
             className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Skip onboarding"
           >
             <X className="w-5 h-5" />
           </button>

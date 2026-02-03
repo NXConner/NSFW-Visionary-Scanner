@@ -78,6 +78,7 @@ export function NewThreadForm(props: {
                 type="checkbox"
                 checked={v.is_anonymous}
                 onChange={e => props.onChange({ ...v, is_anonymous: e.target.checked })}
+                aria-label="Post anonymously"
               />
               Post anonymously
             </label>
@@ -86,6 +87,7 @@ export function NewThreadForm(props: {
                 type="checkbox"
                 checked={v.is_success_story}
                 onChange={e => props.onChange({ ...v, is_success_story: e.target.checked })}
+                aria-label="Mark as success story"
               />
               This is a success story
             </label>
