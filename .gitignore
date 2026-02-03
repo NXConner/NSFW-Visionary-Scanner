@@ -72,3 +72,7 @@ dlc-assets/
 core
 core.*
 *.core
+
+# Allow DLC core module directory
+!src/dlc/core/
+!src/dlc/core/**
