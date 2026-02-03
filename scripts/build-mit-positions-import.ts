@@ -89,8 +89,8 @@ function tipsFor(tags: string[]): string[] {
 
 function csvEscape(value: string | null | undefined): string {
   const v = String(value ?? "");
-  if (v.includes(",") || v.includes("\n") || v.includes("\"")) {
-    return `"${v.replace(/\"/g, "\"\"")}"`;
+  if (v.includes(",") || v.includes("\n") || v.includes('"')) {
+    return `"${v.replace(/"/g, '""')}"`;
   }
   return v;
 }
@@ -105,7 +105,9 @@ function buildRows(): string[] {
 
   for (const entry of nsfwPositionImagesAll) {
     const fileName = basename(entry.path);
-    const slugBase = slugify(entry.path.replace(/^public\/images\/positions\//, "").replace(/\.[^/.]+$/, ""));
+    const slugBase = slugify(
+      entry.path.replace(/^public\/images\/positions\//, "").replace(/\.[^/.]+$/, ""),
+    );
     let slug = slugBase;
     let suffix = 1;
     while (used.has(slug)) {
