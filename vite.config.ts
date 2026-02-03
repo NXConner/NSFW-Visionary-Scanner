@@ -185,7 +185,18 @@ export default defineConfig(({ mode }) => {
         // Isolated by dependency tree to avoid cyclic cross-chunk imports.
         manualChunks: (id) => {
           if (id.includes("node_modules")) {
-            // Single vendor chunk avoids circular chunk deps during Rollup optimization.
+            const isThree =
+              id.includes("/node_modules/three/") ||
+              id.includes("\\node_modules\\three\\") ||
+              id.includes("@react-three");
+            if (isThree) return "vendor-3d";
+            if (id.includes("@tensorflow") || id.includes("nsfwjs")) return "vendor-ml";
+            if (id.includes("recharts") || id.includes("d3-")) return "vendor-charts";
+            if (id.includes("framer-motion")) return "vendor-motion";
+            if (id.includes("jspdf")) return "vendor-docs";
+            if (id.includes("@radix-ui")) return "vendor-ui";
+            if (id.includes("@stripe")) return "vendor-stripe";
+            if (id.includes("@supabase")) return "vendor-supabase";
             return "vendor";
           }
         },

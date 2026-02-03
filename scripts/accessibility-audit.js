@@ -33,30 +33,6 @@ const issues = [];
 // Accessibility patterns to check
 const a11yChecks = [
   {
-    name: "Missing alt text on images",
-    pattern: /<img\s+[^>]*(?!alt=)[^>]*>/gi,
-    severity: "error",
-    fix: "Add alt attribute to all <img> tags",
-  },
-  {
-    name: "Images with empty alt text",
-    pattern: /<img[^>]*alt=["']\s*["'][^>]*>/gi,
-    severity: "warning",
-    fix: "Provide descriptive alt text or use alt='' for decorative images",
-  },
-  {
-    name: "Missing aria-label on interactive elements",
-    pattern: /<(button|a)[^>]*(?!aria-label=)(?!aria-labelledby=)[^>]*>(?!.*<\/button>|<\/a>)/gi,
-    severity: "warning",
-    fix: "Add aria-label or aria-labelledby to interactive elements without visible text",
-  },
-  {
-    name: "Missing form labels",
-    pattern: /<input[^>]*(?!id=)[^>]*>/gi,
-    severity: "warning",
-    fix: "Associate inputs with labels using id/for or aria-label",
-  },
-  {
     name: "Missing heading hierarchy",
     pattern: /<h([1-6])[^>]*>.*<\/h\1>/gi,
     severity: "info",
@@ -75,12 +51,6 @@ const a11yChecks = [
     fix: "Ensure focus indicators are visible for keyboard navigation",
   },
   {
-    name: "Missing lang attribute",
-    pattern: /<html[^>]*(?!lang=)[^>]*>/gi,
-    severity: "error",
-    fix: "Add lang attribute to <html> tag",
-  },
-  {
     name: "Missing skip links",
     pattern: /<a[^>]*href=["']#main["'][^>]*>/gi,
     severity: "info",
@@ -94,9 +64,109 @@ const a11yChecks = [
   },
 ];
 
+function lineForIndex(content, index) {
+  return content.slice(0, index).split("\n").length;
+}
+
+function addIssue({ file, line, check, severity, fix, match }) {
+  issues.push({ file, line, check, severity, fix, match });
+}
+
+function checkImages(content, file) {
+  const regex = /<img\b[^>]*>/gi;
+  let match;
+  while ((match = regex.exec(content))) {
+    const tag = match[0];
+    const altMatch = tag.match(/\balt\s*=\s*["']([^"']*)["']/i);
+    if (!altMatch) {
+      addIssue({
+        file,
+        line: lineForIndex(content, match.index),
+        check: "Missing alt text on images",
+        severity: "error",
+        fix: "Add alt attribute to all <img> tags",
+        match: tag.substring(0, 100),
+      });
+      continue;
+    }
+    if (altMatch[1].trim().length === 0) {
+      addIssue({
+        file,
+        line: lineForIndex(content, match.index),
+        check: "Images with empty alt text",
+        severity: "warning",
+        fix: "Provide descriptive alt text or use alt='' for decorative images",
+        match: tag.substring(0, 100),
+      });
+    }
+  }
+}
+
+function checkHtmlLang(content, file) {
+  const regex = /<html\b[^>]*>/g;
+  let match;
+  while ((match = regex.exec(content))) {
+    const tag = match[0];
+    if (!/\blang\s*=/.test(tag)) {
+      addIssue({
+        file,
+        line: lineForIndex(content, match.index),
+        check: "Missing lang attribute",
+        severity: "error",
+        fix: "Add lang attribute to <html> tag",
+        match: tag.substring(0, 100),
+      });
+    }
+  }
+}
+
+function checkInteractiveLabels(content, file) {
+  const regex = /<(button|a)\b[^>]*>[\s\S]*?<\/\1>/gi;
+  let match;
+  while ((match = regex.exec(content))) {
+    const block = match[0];
+    const openTag = block.match(/^<[^>]+>/)?.[0] ?? "";
+    if (/\b(aria-label|aria-labelledby)\s*=/.test(openTag)) continue;
+    const inner = block.replace(/^<[^>]+>/, "").replace(/<\/[^>]+>$/, "");
+    const text = inner.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+    if (text.length > 0) continue;
+    addIssue({
+      file,
+      line: lineForIndex(content, match.index),
+      check: "Missing aria-label on interactive elements",
+      severity: "warning",
+      fix: "Add aria-label or aria-labelledby to interactive elements without visible text",
+      match: openTag.substring(0, 100),
+    });
+  }
+}
+
+function checkInputLabels(content, file) {
+  const regex = /<input\b[^>]*>/gi;
+  let match;
+  while ((match = regex.exec(content))) {
+    const tag = match[0];
+    if (/\bid\s*=/.test(tag)) continue;
+    if (/\b(aria-label|aria-labelledby)\s*=/.test(tag)) continue;
+    addIssue({
+      file,
+      line: lineForIndex(content, match.index),
+      check: "Missing form labels",
+      severity: "warning",
+      fix: "Associate inputs with labels using id/for or aria-label",
+      match: tag.substring(0, 100),
+    });
+  }
+}
+
 async function checkFile(filePath) {
   const content = fs.readFileSync(filePath, "utf8");
   const relativePath = path.relative(process.cwd(), filePath);
+
+  checkImages(content, relativePath);
+  checkHtmlLang(content, relativePath);
+  checkInteractiveLabels(content, relativePath);
+  checkInputLabels(content, relativePath);
 
   a11yChecks.forEach(check => {
     const matches = content.match(check.pattern);
