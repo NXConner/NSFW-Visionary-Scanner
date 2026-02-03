@@ -18,11 +18,27 @@ If you’re looking for the overall “what’s left” plan, see `docs/tracking
 - JDK 17+
 - macOS + Xcode + CocoaPods (iOS)
 
-## Build web assets
+## Build web assets (Capacitor)
 
+> ✅ **Important**: Mobile builds must set `CAPACITOR_BUILD=1` so the bundle is packaged for the
+> Capacitor local server. Skipping this can produce an APK that boots into a permanent loader.
+
+**PowerShell (recommended):**
+```powershell
+npm install
+$env:CAPACITOR_BUILD="1"
+$env:VITE_PLATFORM="capacitor"
+
+# Choose one (match your distribution channel):
+npm run build:sfw:direct
+# npm run build:nsfw:direct
+# npm run build:hybrid:direct
+```
+
+**Bash (CI/Linux):**
 ```bash
 npm install
-npm run build
+CAPACITOR_BUILD=1 VITE_PLATFORM=capacitor npm run build:sfw:direct
 ```
 
 ## Android

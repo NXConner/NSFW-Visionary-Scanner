@@ -73,6 +73,7 @@ If you want Pavement Performance Suite to be the canonical product, Phase 1 reco
 - **Manual production QA is not completed** (device matrix, performance, a11y).
 - **Store submission and signing are manual** (keystore/certs are local-only).
 - **Residual placeholder/legacy links exist** (e.g., `example.com` in several UI files).
+- **Android APK boot hangs on loader if Capacitor assets/scheme are misconfigured** (ensure `CAPACITOR_BUILD=1`, `androidScheme=https`, and re-sync before Gradle build).
 
 ---
 
@@ -158,6 +159,7 @@ These features exist; here’s their **max potential** state and what to do next
 |       P0 | End-to-end Stripe QA (subscription + DLC if used)                            | Fix                                              | `supabase/functions/stripe-webhook/index.ts`, `supabase/functions/create-checkout-session/*`, `src/components/payments/*`                                 |
 |       P0 | Configure push notifications (FCM/APNs) + verify on devices                  | Fix                                              | `docs/guides/integrations/notifications/FCM_SETUP.md`, Supabase secrets, `android/app/google-services.json` (local only), `ios/*` (local only)            |
 |       P0 | Run production QA checklist + fix failures                                   | Fix                                              | `docs/guides/testing/PRODUCTION_TESTING_GUIDE.md`, targeted `src/**` as issues found                                                                      |
+|       P0 | Android boot loader hang fix (Capacitor scheme + build sync)                 | Fix                                              | `capacitor.config.ts`, `docs/guides/build/MOBILE_BUILD_GUIDE.md`                                                                                          |
 |       P0 | Remove placeholder URLs (`example.com`) and centralize legal/support URLs    | Fix/Refactor                                     | `src/pages/Auth.tsx`, `src/components/payments/PaymentForm.tsx`, `src/components/APIWebhooks.tsx`, `src/__tests__/e2e/utils.ts`, new `src/config/urls.ts` |
 |       P1 | Accessibility audit + fixes on primary flows                                 | Fix                                              | `src/components/**`, `src/pages/**`, `eslint.config.js` (rules tuning only if needed)                                                                     |
 |       P1 | Performance + bundle optimization pass (verify lazy boundaries)              | Refactor                                         | `src/pages/indexLazyTabs.ts`, heavy feature modules, `vite.config.ts`                                                                                     |
