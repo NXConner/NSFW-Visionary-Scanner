@@ -98,7 +98,8 @@ export function normalizeNotificationPreferences(
 
   if (next.medicationSchedule?.daysOfWeek?.length) {
     const days = next.medicationSchedule.daysOfWeek
-      .map(d => Math.max(0, Math.min(6, Math.floor(d))))
+      .map(d => Math.floor(d))
+      .filter(d => d >= 0 && d <= 6)
       .filter((d, idx, arr) => arr.indexOf(d) === idx)
       .sort();
     next.medicationSchedule.daysOfWeek = days.length ? days : [1, 3, 5];
