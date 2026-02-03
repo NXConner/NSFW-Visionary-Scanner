@@ -9,11 +9,26 @@ test.describe("Pricing page (anonymous)", () => {
   test("shows sign-in prompt and plan headline", async ({ page }) => {
     page.on("pageerror", error => {
       console.error("PAGEERROR:", error.message);
+      if (error.stack) {
+        console.error("PAGEERROR_STACK:", error.stack);
+      }
     });
     page.on("console", msg => {
       if (msg.type() === "error") {
-        console.error("CONSOLE:", msg.text());
+        const location = msg.location();
+        const locationSuffix = location.url
+          ? ` (${location.url}:${location.lineNumber}:${location.columnNumber})`
+          : "";
+        console.error("CONSOLE:", `${msg.text()}${locationSuffix}`);
       }
+    });
+    page.on("requestfailed", request => {
+      const failure = request.failure();
+      console.error(
+        "REQUESTFAILED:",
+        request.url(),
+        failure?.errorText ? `(${failure.errorText})` : "",
+      );
     });
 
     await page.goto("/pricing");
