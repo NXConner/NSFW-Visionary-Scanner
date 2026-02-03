@@ -82,6 +82,22 @@ Send `targets` so the function can route Android via FCM and iOS via APNs:
 }
 ```
 
+## Step 6: Scheduled reminder functions (automation)
+
+The following **scheduled** edge functions drive recurring reminders. Configure schedules in the
+Supabase dashboard (Scheduled Functions) or your automation tooling:
+
+- `send-health-reminder` (daily health + scan reminders)
+- `send-medication-reminder` (medication schedule reminders)
+- `send-weekly-report` (weekly report notifications)
+
+Recommended schedule: **every minute** (each function performs timezone + schedule checks per user).
+
+Notes:
+- These functions require `SUPABASE_SERVICE_ROLE_KEY` in the function environment.
+- User preferences are stored in `user_preferences.notification_preferences`.
+- If you disable push reminders in Settings, these functions skip the user automatically.
+
 ## Notes
 
 - Local notifications are handled by Capacitor; this doc is for **remote** pushes.
