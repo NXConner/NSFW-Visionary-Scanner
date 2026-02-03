@@ -25,7 +25,7 @@
   - Implement subscription status checks
 
 ### 2. Production Build Testing
-- **Status**: In Progress (docs + tooling updated)
+- **Status**: In Progress (docs updated; physical device runs pending)
 - **Priority**: CRITICAL
 - **Effort**: 2-3 days
 - **Tasks**:
@@ -67,7 +67,7 @@
 ## 🟡 Medium Priority
 
 ### 5. Social Login
-- **Status**: Not Started
+- **Status**: Complete (Google/Apple OAuth + docs)
 - **Priority**: MEDIUM
 - **Effort**: 1-2 days
 - **Tasks**:
@@ -110,7 +110,7 @@
   - Handle subscription cancellation
 
 ### 9. Data Retention Policy
-- **Status**: Not Started
+- **Status**: Complete (cleanup function + settings + docs)
 - **Priority**: MEDIUM (GDPR requirement)
 - **Effort**: 1 day
 - **Tasks**:
@@ -120,7 +120,7 @@
   - Notify users before deletion
 
 ### 10. Rate Limiting
-- **Status**: Partially Complete (Edge rate-limit utilities + tests)
+- **Status**: Complete (Edge coverage enforced)
 - **Priority**: MEDIUM
 - **Effort**: 1 day
 - **Tasks**:
@@ -131,7 +131,7 @@
   - Add rate limit headers
 
 ### 11. Analytics Dashboard
-- **Status**: Not Started
+- **Status**: Complete (admin analytics + dashboard updates)
 - **Priority**: MEDIUM
 - **Effort**: 2-3 days
 - **Tasks**:
@@ -169,7 +169,7 @@
   - Test data sync flow
 
 ### 14. Performance Audit
-- **Status**: In Progress (perf:audit + docs)
+- **Status**: In Progress (audits run; fixes pending)
 - **Priority**: MEDIUM
 - **Effort**: 1 day
 - **Tasks**:
@@ -207,25 +207,25 @@
 
 ### Phase 1: Critical Infrastructure (Start Here)
 1. ✅ Payment Integration
-2. 🟡 Production Build Testing
+2. 🟡 Production Build Testing (physical device runs pending)
 3. ✅ Push Notification Backend
 
 ### Phase 2: Compliance & Security
 4. ✅ Email Confirmation Flow
 5. ✅ Account Deletion
-6. ⏳ Data Retention Policy
-7. 🟡 Rate Limiting
+6. ✅ Data Retention Policy
+7. ✅ Rate Limiting
 
 ### Phase 3: User Experience
-8. ⏳ Social Login
+8. ✅ Social Login
 9. ⏸️ Biometric Authentication (skipped)
-10. ⏳ Analytics Dashboard
+10. ✅ Analytics Dashboard
 
 ### Phase 4: Quality & Performance
 11. 🟡 Unit Tests (increase coverage)
 12. 🟡 E2E Tests
-13. 🟡 Performance Audit
-14. 🟡 Bundle Size Optimization
+13. 🟡 Performance Audit (fixes pending)
+14. 🟡 Bundle Size Optimization (vendor chunk large)
 15. ✅ Error Boundary Components
 
 ### Phase 5: App Store (User requested to stop here)
@@ -236,6 +236,6 @@
 ## 🎯 Next Steps
 
 Continue with **Production Build Testing** (device runs + offline/push/perf),
-then complete **Performance/Bundle Audits** and remaining **Compliance** items
-(Data Retention Policy, Rate Limiting, Social Login).
+then complete **Performance/Bundle Audit fixes** and remaining **Quality** items
+(Unit/E2E test expansion, a11y remediation).
 
