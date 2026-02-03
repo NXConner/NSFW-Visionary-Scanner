@@ -1,1 +1,0 @@
-import{j as m}from"./vendor-3d-CVUMHd8J.js";import{r as t}from"./index-C-5_GPYO.js";function a({className:e,premium:s=!1,glow:o=!1,...r}){return m.jsx("div",{className:t("rounded-md",s?"skeleton-premium":"skeleton-shimmer",o&&"pulse-glow",e),...r})}export{a as S};

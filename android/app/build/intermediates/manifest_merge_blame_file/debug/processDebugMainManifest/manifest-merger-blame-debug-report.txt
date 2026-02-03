@@ -5,8 +5,8 @@
 5    android:versionName="1.0.0" >
 6
 7    <uses-sdk
-8        android:minSdkVersion="24"
-9        android:targetSdkVersion="36" />
+8        android:minSdkVersion="22"
+9        android:targetSdkVersion="34" />
 10
 11    <!-- Network permissions -->
 12    <uses-permission android:name="android.permission.INTERNET" />
@@ -35,263 +35,425 @@
 23-->/workspace/android/app/src/main/AndroidManifest.xml:12:68-92
 24
 25    <!-- Storage permissions for image handling -->
-26    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-26-->/workspace/android/app/src/main/AndroidManifest.xml:15:5-80
-26-->/workspace/android/app/src/main/AndroidManifest.xml:15:22-77
-27    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-27-->/workspace/android/app/src/main/AndroidManifest.xml:16:5-81
-27-->/workspace/android/app/src/main/AndroidManifest.xml:16:22-78
-28
-29    <!-- Biometric authentication -->
-30    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
-30-->/workspace/android/app/src/main/AndroidManifest.xml:19:5-72
-30-->/workspace/android/app/src/main/AndroidManifest.xml:19:22-69
-31    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
-31-->/workspace/android/app/src/main/AndroidManifest.xml:20:5-74
-31-->/workspace/android/app/src/main/AndroidManifest.xml:20:22-71
-32
-33    <!-- Push notifications -->
-34    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
-34-->/workspace/android/app/src/main/AndroidManifest.xml:23:5-82
-34-->/workspace/android/app/src/main/AndroidManifest.xml:23:22-79
-35
-36    <permission
-37        android:name="com.morphoscan.pro.permission.C2D_MESSAGE"
-37-->/workspace/android/app/src/main/AndroidManifest.xml:25:9-63
-38        android:protectionLevel="signature" />
-38-->/workspace/android/app/src/main/AndroidManifest.xml:26:9-44
-39
-40    <uses-permission android:name="com.morphoscan.pro.permission.C2D_MESSAGE" />
-40-->/workspace/android/app/src/main/AndroidManifest.xml:27:22-76
-41
-42    <!-- Wake lock for notifications -->
-43    <uses-permission android:name="android.permission.WAKE_LOCK" />
-43-->/workspace/android/app/src/main/AndroidManifest.xml:30:5-68
-43-->/workspace/android/app/src/main/AndroidManifest.xml:30:22-65
-44
-45    <!-- Vibrate permission for haptic feedback -->
-46    <uses-permission android:name="android.permission.VIBRATE" />
-46-->/workspace/android/app/src/main/AndroidManifest.xml:33:5-66
-46-->/workspace/android/app/src/main/AndroidManifest.xml:33:22-63
+26    <!-- READ_EXTERNAL_STORAGE is deprecated for Android 13+ (API 33+) -->
+27    <uses-permission
+27-->/workspace/android/app/src/main/AndroidManifest.xml:16:5-107
+28        android:name="android.permission.READ_EXTERNAL_STORAGE"
+28-->/workspace/android/app/src/main/AndroidManifest.xml:16:22-77
+29        android:maxSdkVersion="32" />
+29-->/workspace/android/app/src/main/AndroidManifest.xml:16:78-104
+30    <uses-permission
+30-->/workspace/android/app/src/main/AndroidManifest.xml:17:5-108
+31        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+31-->/workspace/android/app/src/main/AndroidManifest.xml:17:22-78
+32        android:maxSdkVersion="29" />
+32-->/workspace/android/app/src/main/AndroidManifest.xml:17:79-105
+33    <!-- Android 13+ (API 33+) uses granular media permissions -->
+34    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+34-->/workspace/android/app/src/main/AndroidManifest.xml:19:5-76
+34-->/workspace/android/app/src/main/AndroidManifest.xml:19:22-73
+35    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+35-->/workspace/android/app/src/main/AndroidManifest.xml:20:5-75
+35-->/workspace/android/app/src/main/AndroidManifest.xml:20:22-72
+36
+37    <!-- Biometric authentication -->
+38    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+38-->/workspace/android/app/src/main/AndroidManifest.xml:23:5-72
+38-->/workspace/android/app/src/main/AndroidManifest.xml:23:22-69
+39    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+39-->/workspace/android/app/src/main/AndroidManifest.xml:24:5-74
+39-->/workspace/android/app/src/main/AndroidManifest.xml:24:22-71
+40
+41    <!-- Push notifications -->
+42    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+42-->/workspace/android/app/src/main/AndroidManifest.xml:27:5-82
+42-->/workspace/android/app/src/main/AndroidManifest.xml:27:22-79
+43
+44    <permission
+45        android:name="com.morphoscan.pro.permission.C2D_MESSAGE"
+45-->/workspace/android/app/src/main/AndroidManifest.xml:29:9-63
+46        android:protectionLevel="signature" />
+46-->/workspace/android/app/src/main/AndroidManifest.xml:30:9-44
 47
-48    <permission
-48-->[androidx.core:core:1.17.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/1f5f1d526ea59343cbc37a7d3b2ee923/transformed/core-1.17.0/AndroidManifest.xml:22:5-24:47
-49        android:name="com.morphoscan.pro.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-49-->[androidx.core:core:1.17.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/1f5f1d526ea59343cbc37a7d3b2ee923/transformed/core-1.17.0/AndroidManifest.xml:23:9-81
-50        android:protectionLevel="signature" />
-50-->[androidx.core:core:1.17.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/1f5f1d526ea59343cbc37a7d3b2ee923/transformed/core-1.17.0/AndroidManifest.xml:24:9-44
-51
-52    <uses-permission android:name="com.morphoscan.pro.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-52-->[androidx.core:core:1.17.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/1f5f1d526ea59343cbc37a7d3b2ee923/transformed/core-1.17.0/AndroidManifest.xml:26:5-97
-52-->[androidx.core:core:1.17.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/1f5f1d526ea59343cbc37a7d3b2ee923/transformed/core-1.17.0/AndroidManifest.xml:26:22-94
-53
-54    <application
-54-->/workspace/android/app/src/main/AndroidManifest.xml:35:5-100:19
-55        android:allowBackup="true"
-55-->/workspace/android/app/src/main/AndroidManifest.xml:36:9-35
-56        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-56-->[androidx.core:core:1.17.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/1f5f1d526ea59343cbc37a7d3b2ee923/transformed/core-1.17.0/AndroidManifest.xml:28:18-86
-57        android:dataExtractionRules="@xml/data_extraction_rules"
-57-->/workspace/android/app/src/main/AndroidManifest.xml:37:9-65
-58        android:debuggable="true"
-59        android:extractNativeLibs="false"
-60        android:fullBackupContent="@xml/backup_rules"
-60-->/workspace/android/app/src/main/AndroidManifest.xml:38:9-54
-61        android:icon="@mipmap/ic_launcher"
-61-->/workspace/android/app/src/main/AndroidManifest.xml:39:9-43
-62        android:label="@string/app_name"
-62-->/workspace/android/app/src/main/AndroidManifest.xml:40:9-41
-63        android:theme="@style/AppTheme"
-63-->/workspace/android/app/src/main/AndroidManifest.xml:41:9-40
-64        android:usesCleartextTraffic="false" >
-64-->/workspace/android/app/src/main/AndroidManifest.xml:42:9-45
-65
-66        <!-- Main Activity -->
-67        <activity
-67-->/workspace/android/app/src/main/AndroidManifest.xml:46:9-69:20
-68            android:name="io.ionic.starter.MainActivity"
-68-->/workspace/android/app/src/main/AndroidManifest.xml:48:13-57
-69            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
-69-->/workspace/android/app/src/main/AndroidManifest.xml:47:13-129
-70            android:exported="true"
-70-->/workspace/android/app/src/main/AndroidManifest.xml:52:13-36
-71            android:label="@string/title_activity_main"
-71-->/workspace/android/app/src/main/AndroidManifest.xml:49:13-56
-72            android:launchMode="singleTask"
-72-->/workspace/android/app/src/main/AndroidManifest.xml:51:13-44
-73            android:screenOrientation="portrait"
-73-->/workspace/android/app/src/main/AndroidManifest.xml:53:13-49
-74            android:theme="@style/AppTheme.NoActionBarLaunch" >
-74-->/workspace/android/app/src/main/AndroidManifest.xml:50:13-62
-75            <intent-filter android:autoVerify="true" >
-75-->/workspace/android/app/src/main/AndroidManifest.xml:55:13-58:29
-75-->/workspace/android/app/src/main/AndroidManifest.xml:55:28-53
-76                <action android:name="android.intent.action.MAIN" />
-76-->/workspace/android/app/src/main/AndroidManifest.xml:56:17-69
-76-->/workspace/android/app/src/main/AndroidManifest.xml:56:25-66
-77
-78                <category android:name="android.intent.category.LAUNCHER" />
-78-->/workspace/android/app/src/main/AndroidManifest.xml:57:17-77
-78-->/workspace/android/app/src/main/AndroidManifest.xml:57:27-74
-79            </intent-filter>
-80
-81            <!-- Deep linking -->
-82            <intent-filter android:autoVerify="true" >
-82-->/workspace/android/app/src/main/AndroidManifest.xml:61:13-68:29
-82-->/workspace/android/app/src/main/AndroidManifest.xml:61:28-53
-83                <action android:name="android.intent.action.VIEW" />
-83-->/workspace/android/app/src/main/AndroidManifest.xml:62:17-69
-83-->/workspace/android/app/src/main/AndroidManifest.xml:62:25-66
-84
-85                <category android:name="android.intent.category.DEFAULT" />
-85-->/workspace/android/app/src/main/AndroidManifest.xml:63:17-76
-85-->/workspace/android/app/src/main/AndroidManifest.xml:63:27-73
-86                <category android:name="android.intent.category.BROWSABLE" />
-86-->/workspace/android/app/src/main/AndroidManifest.xml:64:17-78
-86-->/workspace/android/app/src/main/AndroidManifest.xml:64:27-75
-87
-88                <data
-88-->/workspace/android/app/src/main/AndroidManifest.xml:65:17-66:58
-89                    android:host="morphoscanpro.com"
-89-->/workspace/android/app/src/main/AndroidManifest.xml:66:23-55
-90                    android:scheme="https" />
-90-->/workspace/android/app/src/main/AndroidManifest.xml:65:23-45
-91                <data android:scheme="morphoscan" />
-91-->/workspace/android/app/src/main/AndroidManifest.xml:65:17-66:58
-91-->/workspace/android/app/src/main/AndroidManifest.xml:65:23-45
+48    <uses-permission android:name="com.morphoscan.pro.permission.C2D_MESSAGE" />
+48-->/workspace/android/app/src/main/AndroidManifest.xml:31:22-76
+49
+50    <!-- Wake lock for notifications -->
+51    <uses-permission android:name="android.permission.WAKE_LOCK" />
+51-->/workspace/android/app/src/main/AndroidManifest.xml:34:5-68
+51-->/workspace/android/app/src/main/AndroidManifest.xml:34:22-65
+52
+53    <!-- Vibrate permission for haptic feedback -->
+54    <uses-permission android:name="android.permission.VIBRATE" />
+54-->/workspace/android/app/src/main/AndroidManifest.xml:37:5-66
+54-->/workspace/android/app/src/main/AndroidManifest.xml:37:22-63
+55    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+55-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:23:5-77
+55-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:23:22-74
+56
+57    <permission
+57-->[androidx.core:core:1.15.0] /home/ubuntu/.gradle/caches/transforms-4/2013713e862841d11e0c600e519aec94/transformed/core-1.15.0/AndroidManifest.xml:22:5-24:47
+58        android:name="com.morphoscan.pro.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+58-->[androidx.core:core:1.15.0] /home/ubuntu/.gradle/caches/transforms-4/2013713e862841d11e0c600e519aec94/transformed/core-1.15.0/AndroidManifest.xml:23:9-81
+59        android:protectionLevel="signature" />
+59-->[androidx.core:core:1.15.0] /home/ubuntu/.gradle/caches/transforms-4/2013713e862841d11e0c600e519aec94/transformed/core-1.15.0/AndroidManifest.xml:24:9-44
+60
+61    <uses-permission android:name="com.morphoscan.pro.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+61-->[androidx.core:core:1.15.0] /home/ubuntu/.gradle/caches/transforms-4/2013713e862841d11e0c600e519aec94/transformed/core-1.15.0/AndroidManifest.xml:26:5-97
+61-->[androidx.core:core:1.15.0] /home/ubuntu/.gradle/caches/transforms-4/2013713e862841d11e0c600e519aec94/transformed/core-1.15.0/AndroidManifest.xml:26:22-94
+62
+63    <application
+63-->/workspace/android/app/src/main/AndroidManifest.xml:39:5-104:19
+64        android:allowBackup="true"
+64-->/workspace/android/app/src/main/AndroidManifest.xml:40:9-35
+65        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+65-->[androidx.core:core:1.15.0] /home/ubuntu/.gradle/caches/transforms-4/2013713e862841d11e0c600e519aec94/transformed/core-1.15.0/AndroidManifest.xml:28:18-86
+66        android:dataExtractionRules="@xml/data_extraction_rules"
+66-->/workspace/android/app/src/main/AndroidManifest.xml:41:9-65
+67        android:debuggable="true"
+68        android:extractNativeLibs="true"
+69        android:fullBackupContent="@xml/backup_rules"
+69-->/workspace/android/app/src/main/AndroidManifest.xml:42:9-54
+70        android:hardwareAccelerated="true"
+70-->/workspace/android/app/src/main/AndroidManifest.xml:48:9-43
+71        android:icon="@drawable/ic_launcher"
+71-->/workspace/android/app/src/main/AndroidManifest.xml:43:9-45
+72        android:label="@string/app_name"
+72-->/workspace/android/app/src/main/AndroidManifest.xml:44:9-41
+73        android:largeHeap="true"
+73-->/workspace/android/app/src/main/AndroidManifest.xml:49:9-33
+74        android:networkSecurityConfig="@xml/network_security_config"
+74-->/workspace/android/app/src/main/AndroidManifest.xml:47:9-69
+75        android:requestLegacyExternalStorage="false"
+75-->/workspace/android/app/src/main/AndroidManifest.xml:50:9-53
+76        android:theme="@style/AppTheme"
+76-->/workspace/android/app/src/main/AndroidManifest.xml:45:9-40
+77        android:usesCleartextTraffic="false" >
+77-->/workspace/android/app/src/main/AndroidManifest.xml:46:9-45
+78
+79        <!-- Main Activity -->
+80        <activity
+80-->/workspace/android/app/src/main/AndroidManifest.xml:54:9-77:20
+81            android:name="com.morphoscan.pro.MainActivity"
+81-->/workspace/android/app/src/main/AndroidManifest.xml:56:13-59
+82            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+82-->/workspace/android/app/src/main/AndroidManifest.xml:55:13-129
+83            android:exported="true"
+83-->/workspace/android/app/src/main/AndroidManifest.xml:60:13-36
+84            android:label="@string/title_activity_main"
+84-->/workspace/android/app/src/main/AndroidManifest.xml:57:13-56
+85            android:launchMode="singleTask"
+85-->/workspace/android/app/src/main/AndroidManifest.xml:59:13-44
+86            android:screenOrientation="portrait"
+86-->/workspace/android/app/src/main/AndroidManifest.xml:61:13-49
+87            android:theme="@style/AppTheme.NoActionBarLaunch" >
+87-->/workspace/android/app/src/main/AndroidManifest.xml:58:13-62
+88            <intent-filter android:autoVerify="true" >
+88-->/workspace/android/app/src/main/AndroidManifest.xml:63:13-66:29
+88-->/workspace/android/app/src/main/AndroidManifest.xml:63:28-53
+89                <action android:name="android.intent.action.MAIN" />
+89-->/workspace/android/app/src/main/AndroidManifest.xml:64:17-69
+89-->/workspace/android/app/src/main/AndroidManifest.xml:64:25-66
+90
+91                <category android:name="android.intent.category.LAUNCHER" />
+91-->/workspace/android/app/src/main/AndroidManifest.xml:65:17-77
+91-->/workspace/android/app/src/main/AndroidManifest.xml:65:27-74
 92            </intent-filter>
-93        </activity>
-94
-95        <!-- Push Notification Service -->
-96        <service
-96-->/workspace/android/app/src/main/AndroidManifest.xml:72:9-78:19
-97            android:name="io.ionic.starter.FirebaseMessagingService"
-97-->/workspace/android/app/src/main/AndroidManifest.xml:73:13-69
-98            android:exported="false" >
-98-->/workspace/android/app/src/main/AndroidManifest.xml:74:13-37
-99            <intent-filter>
-99-->/workspace/android/app/src/main/AndroidManifest.xml:75:13-77:29
-100                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-100-->/workspace/android/app/src/main/AndroidManifest.xml:76:17-78
-100-->/workspace/android/app/src/main/AndroidManifest.xml:76:25-75
-101            </intent-filter>
-102        </service>
-103
-104        <!-- File Provider for sharing -->
-105        <provider
-106            android:name="androidx.core.content.FileProvider"
-106-->/workspace/android/app/src/main/AndroidManifest.xml:82:13-62
-107            android:authorities="com.morphoscan.pro.fileprovider"
-107-->/workspace/android/app/src/main/AndroidManifest.xml:83:13-64
-108            android:exported="false"
-108-->/workspace/android/app/src/main/AndroidManifest.xml:84:13-37
-109            android:grantUriPermissions="true" >
-109-->/workspace/android/app/src/main/AndroidManifest.xml:85:13-47
-110            <meta-data
-110-->/workspace/android/app/src/main/AndroidManifest.xml:86:13-88:54
-111                android:name="android.support.FILE_PROVIDER_PATHS"
-111-->/workspace/android/app/src/main/AndroidManifest.xml:87:17-67
-112                android:resource="@xml/file_paths" />
-112-->/workspace/android/app/src/main/AndroidManifest.xml:88:17-51
-113        </provider>
-114
-115        <!-- App Links verification -->
-116        <meta-data
-116-->/workspace/android/app/src/main/AndroidManifest.xml:92:9-94:59
-117            android:name="asset_statements"
-117-->/workspace/android/app/src/main/AndroidManifest.xml:93:13-44
-118            android:resource="@string/asset_statements" />
-118-->/workspace/android/app/src/main/AndroidManifest.xml:94:13-56
-119
-120        <!-- Security config -->
-121        <meta-data
-121-->/workspace/android/app/src/main/AndroidManifest.xml:97:9-99:63
-122            android:name="android.security.network_security_config"
-122-->/workspace/android/app/src/main/AndroidManifest.xml:98:13-68
-123            android:resource="@xml/network_security_config" />
-123-->/workspace/android/app/src/main/AndroidManifest.xml:99:13-60
-124
-125        <service
-125-->[androidx.camera:camera-camera2:1.3.1] /home/ubuntu/.gradle/caches/8.11.1/transforms/3017527f6c5b83ae9d18938bdd853ba7/transformed/jetified-camera-camera2-1.3.1/AndroidManifest.xml:24:9-33:19
-126            android:name="androidx.camera.core.impl.MetadataHolderService"
-126-->[androidx.camera:camera-camera2:1.3.1] /home/ubuntu/.gradle/caches/8.11.1/transforms/3017527f6c5b83ae9d18938bdd853ba7/transformed/jetified-camera-camera2-1.3.1/AndroidManifest.xml:25:13-75
-127            android:enabled="false"
-127-->[androidx.camera:camera-camera2:1.3.1] /home/ubuntu/.gradle/caches/8.11.1/transforms/3017527f6c5b83ae9d18938bdd853ba7/transformed/jetified-camera-camera2-1.3.1/AndroidManifest.xml:26:13-36
-128            android:exported="false" >
-128-->[androidx.camera:camera-camera2:1.3.1] /home/ubuntu/.gradle/caches/8.11.1/transforms/3017527f6c5b83ae9d18938bdd853ba7/transformed/jetified-camera-camera2-1.3.1/AndroidManifest.xml:27:13-37
-129            <meta-data
-129-->[androidx.camera:camera-camera2:1.3.1] /home/ubuntu/.gradle/caches/8.11.1/transforms/3017527f6c5b83ae9d18938bdd853ba7/transformed/jetified-camera-camera2-1.3.1/AndroidManifest.xml:30:13-32:89
-130                android:name="androidx.camera.core.impl.MetadataHolderService.DEFAULT_CONFIG_PROVIDER"
-130-->[androidx.camera:camera-camera2:1.3.1] /home/ubuntu/.gradle/caches/8.11.1/transforms/3017527f6c5b83ae9d18938bdd853ba7/transformed/jetified-camera-camera2-1.3.1/AndroidManifest.xml:31:17-103
-131                android:value="androidx.camera.camera2.Camera2Config$DefaultProvider" />
-131-->[androidx.camera:camera-camera2:1.3.1] /home/ubuntu/.gradle/caches/8.11.1/transforms/3017527f6c5b83ae9d18938bdd853ba7/transformed/jetified-camera-camera2-1.3.1/AndroidManifest.xml:32:17-86
-132        </service>
+93
+94            <!-- Deep linking -->
+95            <intent-filter android:autoVerify="true" >
+95-->/workspace/android/app/src/main/AndroidManifest.xml:69:13-76:29
+95-->/workspace/android/app/src/main/AndroidManifest.xml:69:28-53
+96                <action android:name="android.intent.action.VIEW" />
+96-->/workspace/android/app/src/main/AndroidManifest.xml:70:17-69
+96-->/workspace/android/app/src/main/AndroidManifest.xml:70:25-66
+97
+98                <category android:name="android.intent.category.DEFAULT" />
+98-->/workspace/android/app/src/main/AndroidManifest.xml:71:17-76
+98-->/workspace/android/app/src/main/AndroidManifest.xml:71:27-73
+99                <category android:name="android.intent.category.BROWSABLE" />
+99-->/workspace/android/app/src/main/AndroidManifest.xml:72:17-78
+99-->/workspace/android/app/src/main/AndroidManifest.xml:72:27-75
+100
+101                <data
+101-->/workspace/android/app/src/main/AndroidManifest.xml:73:17-74:58
+102                    android:host="morphoscanpro.com"
+102-->/workspace/android/app/src/main/AndroidManifest.xml:74:23-55
+103                    android:scheme="https" />
+103-->/workspace/android/app/src/main/AndroidManifest.xml:73:23-45
+104                <data android:scheme="morphoscan" />
+104-->/workspace/android/app/src/main/AndroidManifest.xml:73:17-74:58
+104-->/workspace/android/app/src/main/AndroidManifest.xml:73:23-45
+105            </intent-filter>
+106        </activity>
+107
+108        <!-- File Provider for sharing -->
+109        <provider
+110            android:name="androidx.core.content.FileProvider"
+110-->/workspace/android/app/src/main/AndroidManifest.xml:81:13-62
+111            android:authorities="com.morphoscan.pro.fileprovider"
+111-->/workspace/android/app/src/main/AndroidManifest.xml:82:13-64
+112            android:exported="false"
+112-->/workspace/android/app/src/main/AndroidManifest.xml:83:13-37
+113            android:grantUriPermissions="true" >
+113-->/workspace/android/app/src/main/AndroidManifest.xml:84:13-47
+114            <meta-data
+114-->/workspace/android/app/src/main/AndroidManifest.xml:85:13-87:54
+115                android:name="android.support.FILE_PROVIDER_PATHS"
+115-->/workspace/android/app/src/main/AndroidManifest.xml:86:17-67
+116                android:resource="@xml/file_paths" />
+116-->/workspace/android/app/src/main/AndroidManifest.xml:87:17-51
+117        </provider>
+118
+119        <!-- Meta-data for Google Play Services -->
+120        <meta-data
+120-->/workspace/android/app/src/main/AndroidManifest.xml:91:9-93:69
+121            android:name="com.google.android.gms.version"
+121-->/workspace/android/app/src/main/AndroidManifest.xml:92:13-58
+122            android:value="@integer/google_play_services_version" />
+122-->/workspace/android/app/src/main/AndroidManifest.xml:93:13-66
+123
+124        <!-- App Links verification -->
+125        <meta-data
+125-->/workspace/android/app/src/main/AndroidManifest.xml:96:9-98:59
+126            android:name="asset_statements"
+126-->/workspace/android/app/src/main/AndroidManifest.xml:97:13-44
+127            android:resource="@string/asset_statements" />
+127-->/workspace/android/app/src/main/AndroidManifest.xml:98:13-56
+128
+129        <!-- Security config -->
+130        <meta-data
+130-->/workspace/android/app/src/main/AndroidManifest.xml:101:9-103:63
+131            android:name="android.security.network_security_config"
+131-->/workspace/android/app/src/main/AndroidManifest.xml:102:13-68
+132            android:resource="@xml/network_security_config" />
+132-->/workspace/android/app/src/main/AndroidManifest.xml:103:13-60
 133
-134        <provider
-134-->[androidx.emoji2:emoji2:1.3.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/60f0c1e3b494fa440782e601310c405f/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
-135            android:name="androidx.startup.InitializationProvider"
-135-->[androidx.emoji2:emoji2:1.3.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/60f0c1e3b494fa440782e601310c405f/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:25:13-67
-136            android:authorities="com.morphoscan.pro.androidx-startup"
-136-->[androidx.emoji2:emoji2:1.3.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/60f0c1e3b494fa440782e601310c405f/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:26:13-68
+134        <service
+134-->[androidx.camera:camera-camera2:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/d9d43cb42e516053d250f9fe2b2f8d58/transformed/jetified-camera-camera2-1.3.1/AndroidManifest.xml:24:9-33:19
+135            android:name="androidx.camera.core.impl.MetadataHolderService"
+135-->[androidx.camera:camera-camera2:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/d9d43cb42e516053d250f9fe2b2f8d58/transformed/jetified-camera-camera2-1.3.1/AndroidManifest.xml:25:13-75
+136            android:enabled="false"
+136-->[androidx.camera:camera-camera2:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/d9d43cb42e516053d250f9fe2b2f8d58/transformed/jetified-camera-camera2-1.3.1/AndroidManifest.xml:26:13-36
 137            android:exported="false" >
-137-->[androidx.emoji2:emoji2:1.3.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/60f0c1e3b494fa440782e601310c405f/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:27:13-37
+137-->[androidx.camera:camera-camera2:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/d9d43cb42e516053d250f9fe2b2f8d58/transformed/jetified-camera-camera2-1.3.1/AndroidManifest.xml:27:13-37
 138            <meta-data
-138-->[androidx.emoji2:emoji2:1.3.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/60f0c1e3b494fa440782e601310c405f/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
-139                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-139-->[androidx.emoji2:emoji2:1.3.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/60f0c1e3b494fa440782e601310c405f/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:30:17-75
-140                android:value="androidx.startup" />
-140-->[androidx.emoji2:emoji2:1.3.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/60f0c1e3b494fa440782e601310c405f/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:31:17-49
-141            <meta-data
-141-->[androidx.lifecycle:lifecycle-process:2.6.2] /home/ubuntu/.gradle/caches/8.11.1/transforms/5a3166803f578ea4506249b39422bd63/transformed/jetified-lifecycle-process-2.6.2/AndroidManifest.xml:29:13-31:52
-142                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-142-->[androidx.lifecycle:lifecycle-process:2.6.2] /home/ubuntu/.gradle/caches/8.11.1/transforms/5a3166803f578ea4506249b39422bd63/transformed/jetified-lifecycle-process-2.6.2/AndroidManifest.xml:30:17-78
-143                android:value="androidx.startup" />
-143-->[androidx.lifecycle:lifecycle-process:2.6.2] /home/ubuntu/.gradle/caches/8.11.1/transforms/5a3166803f578ea4506249b39422bd63/transformed/jetified-lifecycle-process-2.6.2/AndroidManifest.xml:31:17-49
-144            <meta-data
-144-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
-145                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-145-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
-146                android:value="androidx.startup" />
-146-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
-147        </provider>
-148
-149        <receiver
-149-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
-150            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-150-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
-151            android:directBootAware="false"
-151-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
-152            android:enabled="true"
-152-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
-153            android:exported="true"
-153-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
-154            android:permission="android.permission.DUMP" >
-154-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
-155            <intent-filter>
-155-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
-156                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-156-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
-156-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
-157            </intent-filter>
-158            <intent-filter>
-158-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
-159                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-159-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
-159-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
-160            </intent-filter>
-161            <intent-filter>
-161-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
-162                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-162-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
-162-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
-163            </intent-filter>
-164            <intent-filter>
-164-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
-165                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-165-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
-165-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/ubuntu/.gradle/caches/8.11.1/transforms/0f7b4e22898c73104479f5b68545f33f/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
-166            </intent-filter>
-167        </receiver>
-168    </application>
-169
-170</manifest>
+138-->[androidx.camera:camera-camera2:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/d9d43cb42e516053d250f9fe2b2f8d58/transformed/jetified-camera-camera2-1.3.1/AndroidManifest.xml:30:13-32:89
+139                android:name="androidx.camera.core.impl.MetadataHolderService.DEFAULT_CONFIG_PROVIDER"
+139-->[androidx.camera:camera-camera2:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/d9d43cb42e516053d250f9fe2b2f8d58/transformed/jetified-camera-camera2-1.3.1/AndroidManifest.xml:31:17-103
+140                android:value="androidx.camera.camera2.Camera2Config$DefaultProvider" />
+140-->[androidx.camera:camera-camera2:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/d9d43cb42e516053d250f9fe2b2f8d58/transformed/jetified-camera-camera2-1.3.1/AndroidManifest.xml:32:17-86
+141        </service>
+142
+143        <receiver
+143-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:29:9-40:20
+144            android:name="com.google.firebase.iid.FirebaseInstanceIdReceiver"
+144-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:30:13-78
+145            android:exported="true"
+145-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:31:13-36
+146            android:permission="com.google.android.c2dm.permission.SEND" >
+146-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:32:13-73
+147            <intent-filter>
+147-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:33:13-35:29
+148                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+148-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:34:17-81
+148-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:34:25-78
+149            </intent-filter>
+150
+151            <meta-data
+151-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:37:13-39:40
+152                android:name="com.google.android.gms.cloudmessaging.FINISHED_AFTER_HANDLED"
+152-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:38:17-92
+153                android:value="true" />
+153-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:39:17-37
+154        </receiver>
+155        <!--
+156             FirebaseMessagingService performs security checks at runtime,
+157             but set to not exported to explicitly avoid allowing another app to call it.
+158        -->
+159        <service
+159-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:46:9-53:19
+160            android:name="com.google.firebase.messaging.FirebaseMessagingService"
+160-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:47:13-82
+161            android:directBootAware="true"
+161-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:48:13-43
+162            android:exported="false" >
+162-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:49:13-37
+163            <intent-filter android:priority="-500" >
+163-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:50:13-52:29
+163-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:50:28-51
+164                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+164-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:51:17-78
+164-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:51:25-75
+165            </intent-filter>
+166        </service>
+167        <service
+167-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:54:9-63:19
+168            android:name="com.google.firebase.components.ComponentDiscoveryService"
+168-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:55:13-84
+169            android:directBootAware="true"
+169-->[com.google.firebase:firebase-common:20.4.2] /home/ubuntu/.gradle/caches/transforms-4/38d99a8f3b4505e74e83b3663c3b914a/transformed/jetified-firebase-common-20.4.2/AndroidManifest.xml:32:13-43
+170            android:exported="false" >
+170-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:56:13-37
+171            <meta-data
+171-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:57:13-59:85
+172                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingKtxRegistrar"
+172-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:58:17-122
+173                android:value="com.google.firebase.components.ComponentRegistrar" />
+173-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:59:17-82
+174            <meta-data
+174-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:60:13-62:85
+175                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingRegistrar"
+175-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:61:17-119
+176                android:value="com.google.firebase.components.ComponentRegistrar" />
+176-->[com.google.firebase:firebase-messaging:23.4.0] /home/ubuntu/.gradle/caches/transforms-4/15746c39a5a7817e14c54ba0e370cb86/transformed/jetified-firebase-messaging-23.4.0/AndroidManifest.xml:62:17-82
+177            <meta-data
+177-->[com.google.firebase:firebase-installations:17.2.0] /home/ubuntu/.gradle/caches/transforms-4/e4f5f7f44fdf90b96e2554c7e2979a36/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:15:13-17:85
+178                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsKtxRegistrar"
+178-->[com.google.firebase:firebase-installations:17.2.0] /home/ubuntu/.gradle/caches/transforms-4/e4f5f7f44fdf90b96e2554c7e2979a36/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:16:17-130
+179                android:value="com.google.firebase.components.ComponentRegistrar" />
+179-->[com.google.firebase:firebase-installations:17.2.0] /home/ubuntu/.gradle/caches/transforms-4/e4f5f7f44fdf90b96e2554c7e2979a36/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:17:17-82
+180            <meta-data
+180-->[com.google.firebase:firebase-installations:17.2.0] /home/ubuntu/.gradle/caches/transforms-4/e4f5f7f44fdf90b96e2554c7e2979a36/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:18:13-20:85
+181                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsRegistrar"
+181-->[com.google.firebase:firebase-installations:17.2.0] /home/ubuntu/.gradle/caches/transforms-4/e4f5f7f44fdf90b96e2554c7e2979a36/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:19:17-127
+182                android:value="com.google.firebase.components.ComponentRegistrar" />
+182-->[com.google.firebase:firebase-installations:17.2.0] /home/ubuntu/.gradle/caches/transforms-4/e4f5f7f44fdf90b96e2554c7e2979a36/transformed/jetified-firebase-installations-17.2.0/AndroidManifest.xml:20:17-82
+183            <meta-data
+183-->[com.google.firebase:firebase-common-ktx:20.4.2] /home/ubuntu/.gradle/caches/transforms-4/dac53c5dcc0e509298115193ca2ea24f/transformed/jetified-firebase-common-ktx-20.4.2/AndroidManifest.xml:12:13-14:85
+184                android:name="com.google.firebase.components:com.google.firebase.ktx.FirebaseCommonLegacyRegistrar"
+184-->[com.google.firebase:firebase-common-ktx:20.4.2] /home/ubuntu/.gradle/caches/transforms-4/dac53c5dcc0e509298115193ca2ea24f/transformed/jetified-firebase-common-ktx-20.4.2/AndroidManifest.xml:13:17-116
+185                android:value="com.google.firebase.components.ComponentRegistrar" />
+185-->[com.google.firebase:firebase-common-ktx:20.4.2] /home/ubuntu/.gradle/caches/transforms-4/dac53c5dcc0e509298115193ca2ea24f/transformed/jetified-firebase-common-ktx-20.4.2/AndroidManifest.xml:14:17-82
+186            <meta-data
+186-->[com.google.firebase:firebase-common:20.4.2] /home/ubuntu/.gradle/caches/transforms-4/38d99a8f3b4505e74e83b3663c3b914a/transformed/jetified-firebase-common-20.4.2/AndroidManifest.xml:35:13-37:85
+187                android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar"
+187-->[com.google.firebase:firebase-common:20.4.2] /home/ubuntu/.gradle/caches/transforms-4/38d99a8f3b4505e74e83b3663c3b914a/transformed/jetified-firebase-common-20.4.2/AndroidManifest.xml:36:17-109
+188                android:value="com.google.firebase.components.ComponentRegistrar" />
+188-->[com.google.firebase:firebase-common:20.4.2] /home/ubuntu/.gradle/caches/transforms-4/38d99a8f3b4505e74e83b3663c3b914a/transformed/jetified-firebase-common-20.4.2/AndroidManifest.xml:37:17-82
+189            <meta-data
+189-->[com.google.firebase:firebase-datatransport:18.1.7] /home/ubuntu/.gradle/caches/transforms-4/e49d3701f0dec0ad8cc9d3688c5c6c1d/transformed/jetified-firebase-datatransport-18.1.7/AndroidManifest.xml:27:13-29:85
+190                android:name="com.google.firebase.components:com.google.firebase.datatransport.TransportRegistrar"
+190-->[com.google.firebase:firebase-datatransport:18.1.7] /home/ubuntu/.gradle/caches/transforms-4/e49d3701f0dec0ad8cc9d3688c5c6c1d/transformed/jetified-firebase-datatransport-18.1.7/AndroidManifest.xml:28:17-115
+191                android:value="com.google.firebase.components.ComponentRegistrar" />
+191-->[com.google.firebase:firebase-datatransport:18.1.7] /home/ubuntu/.gradle/caches/transforms-4/e49d3701f0dec0ad8cc9d3688c5c6c1d/transformed/jetified-firebase-datatransport-18.1.7/AndroidManifest.xml:29:17-82
+192        </service>
+193
+194        <activity
+194-->[com.google.android.gms:play-services-base:18.0.1] /home/ubuntu/.gradle/caches/transforms-4/df719c0d565e4de9c07ff061ca0e99e9/transformed/jetified-play-services-base-18.0.1/AndroidManifest.xml:20:9-22:45
+195            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+195-->[com.google.android.gms:play-services-base:18.0.1] /home/ubuntu/.gradle/caches/transforms-4/df719c0d565e4de9c07ff061ca0e99e9/transformed/jetified-play-services-base-18.0.1/AndroidManifest.xml:20:19-85
+196            android:exported="false"
+196-->[com.google.android.gms:play-services-base:18.0.1] /home/ubuntu/.gradle/caches/transforms-4/df719c0d565e4de9c07ff061ca0e99e9/transformed/jetified-play-services-base-18.0.1/AndroidManifest.xml:22:19-43
+197            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+197-->[com.google.android.gms:play-services-base:18.0.1] /home/ubuntu/.gradle/caches/transforms-4/df719c0d565e4de9c07ff061ca0e99e9/transformed/jetified-play-services-base-18.0.1/AndroidManifest.xml:21:19-78
+198
+199        <provider
+199-->[com.google.firebase:firebase-common:20.4.2] /home/ubuntu/.gradle/caches/transforms-4/38d99a8f3b4505e74e83b3663c3b914a/transformed/jetified-firebase-common-20.4.2/AndroidManifest.xml:23:9-28:39
+200            android:name="com.google.firebase.provider.FirebaseInitProvider"
+200-->[com.google.firebase:firebase-common:20.4.2] /home/ubuntu/.gradle/caches/transforms-4/38d99a8f3b4505e74e83b3663c3b914a/transformed/jetified-firebase-common-20.4.2/AndroidManifest.xml:24:13-77
+201            android:authorities="com.morphoscan.pro.firebaseinitprovider"
+201-->[com.google.firebase:firebase-common:20.4.2] /home/ubuntu/.gradle/caches/transforms-4/38d99a8f3b4505e74e83b3663c3b914a/transformed/jetified-firebase-common-20.4.2/AndroidManifest.xml:25:13-72
+202            android:directBootAware="true"
+202-->[com.google.firebase:firebase-common:20.4.2] /home/ubuntu/.gradle/caches/transforms-4/38d99a8f3b4505e74e83b3663c3b914a/transformed/jetified-firebase-common-20.4.2/AndroidManifest.xml:26:13-43
+203            android:exported="false"
+203-->[com.google.firebase:firebase-common:20.4.2] /home/ubuntu/.gradle/caches/transforms-4/38d99a8f3b4505e74e83b3663c3b914a/transformed/jetified-firebase-common-20.4.2/AndroidManifest.xml:27:13-37
+204            android:initOrder="100" />
+204-->[com.google.firebase:firebase-common:20.4.2] /home/ubuntu/.gradle/caches/transforms-4/38d99a8f3b4505e74e83b3663c3b914a/transformed/jetified-firebase-common-20.4.2/AndroidManifest.xml:28:13-36
+205        <provider
+205-->[androidx.emoji2:emoji2:1.3.0] /home/ubuntu/.gradle/caches/transforms-4/7ec53f1719aa81a42ed0ceb35158f966/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
+206            android:name="androidx.startup.InitializationProvider"
+206-->[androidx.emoji2:emoji2:1.3.0] /home/ubuntu/.gradle/caches/transforms-4/7ec53f1719aa81a42ed0ceb35158f966/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:25:13-67
+207            android:authorities="com.morphoscan.pro.androidx-startup"
+207-->[androidx.emoji2:emoji2:1.3.0] /home/ubuntu/.gradle/caches/transforms-4/7ec53f1719aa81a42ed0ceb35158f966/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:26:13-68
+208            android:exported="false" >
+208-->[androidx.emoji2:emoji2:1.3.0] /home/ubuntu/.gradle/caches/transforms-4/7ec53f1719aa81a42ed0ceb35158f966/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:27:13-37
+209            <meta-data
+209-->[androidx.emoji2:emoji2:1.3.0] /home/ubuntu/.gradle/caches/transforms-4/7ec53f1719aa81a42ed0ceb35158f966/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+210                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+210-->[androidx.emoji2:emoji2:1.3.0] /home/ubuntu/.gradle/caches/transforms-4/7ec53f1719aa81a42ed0ceb35158f966/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:30:17-75
+211                android:value="androidx.startup" />
+211-->[androidx.emoji2:emoji2:1.3.0] /home/ubuntu/.gradle/caches/transforms-4/7ec53f1719aa81a42ed0ceb35158f966/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:31:17-49
+212            <meta-data
+212-->[androidx.lifecycle:lifecycle-process:2.6.2] /home/ubuntu/.gradle/caches/transforms-4/7e0867bd74c6a6e53b4f08532fbf4587/transformed/jetified-lifecycle-process-2.6.2/AndroidManifest.xml:29:13-31:52
+213                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+213-->[androidx.lifecycle:lifecycle-process:2.6.2] /home/ubuntu/.gradle/caches/transforms-4/7e0867bd74c6a6e53b4f08532fbf4587/transformed/jetified-lifecycle-process-2.6.2/AndroidManifest.xml:30:17-78
+214                android:value="androidx.startup" />
+214-->[androidx.lifecycle:lifecycle-process:2.6.2] /home/ubuntu/.gradle/caches/transforms-4/7e0867bd74c6a6e53b4f08532fbf4587/transformed/jetified-lifecycle-process-2.6.2/AndroidManifest.xml:31:17-49
+215            <meta-data
+215-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:29:13-31:52
+216                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+216-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:30:17-85
+217                android:value="androidx.startup" />
+217-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:31:17-49
+218        </provider>
+219
+220        <service
+220-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/ubuntu/.gradle/caches/transforms-4/8deb1183e485f13d50e0149c08d94373/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:28:9-34:19
+221            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+221-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/ubuntu/.gradle/caches/transforms-4/8deb1183e485f13d50e0149c08d94373/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:29:13-103
+222            android:exported="false" >
+222-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/ubuntu/.gradle/caches/transforms-4/8deb1183e485f13d50e0149c08d94373/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:30:13-37
+223            <meta-data
+223-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/ubuntu/.gradle/caches/transforms-4/8deb1183e485f13d50e0149c08d94373/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:31:13-33:39
+224                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
+224-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/ubuntu/.gradle/caches/transforms-4/8deb1183e485f13d50e0149c08d94373/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:32:17-94
+225                android:value="cct" />
+225-->[com.google.android.datatransport:transport-backend-cct:3.1.8] /home/ubuntu/.gradle/caches/transforms-4/8deb1183e485f13d50e0149c08d94373/transformed/jetified-transport-backend-cct-3.1.8/AndroidManifest.xml:33:17-36
+226        </service>
+227        <service
+227-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/ubuntu/.gradle/caches/transforms-4/d7afb83cb5d7e738df3ddbd17ec250b8/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:26:9-30:19
+228            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
+228-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/ubuntu/.gradle/caches/transforms-4/d7afb83cb5d7e738df3ddbd17ec250b8/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:27:13-117
+229            android:exported="false"
+229-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/ubuntu/.gradle/caches/transforms-4/d7afb83cb5d7e738df3ddbd17ec250b8/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:28:13-37
+230            android:permission="android.permission.BIND_JOB_SERVICE" >
+230-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/ubuntu/.gradle/caches/transforms-4/d7afb83cb5d7e738df3ddbd17ec250b8/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:29:13-69
+231        </service>
+232
+233        <receiver
+233-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/ubuntu/.gradle/caches/transforms-4/d7afb83cb5d7e738df3ddbd17ec250b8/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:32:9-34:40
+234            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
+234-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/ubuntu/.gradle/caches/transforms-4/d7afb83cb5d7e738df3ddbd17ec250b8/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:33:13-132
+235            android:exported="false" />
+235-->[com.google.android.datatransport:transport-runtime:3.1.8] /home/ubuntu/.gradle/caches/transforms-4/d7afb83cb5d7e738df3ddbd17ec250b8/transformed/jetified-transport-runtime-3.1.8/AndroidManifest.xml:34:13-37
+236        <receiver
+236-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:34:9-52:20
+237            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+237-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:35:13-76
+238            android:directBootAware="false"
+238-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:36:13-44
+239            android:enabled="true"
+239-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:37:13-35
+240            android:exported="true"
+240-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:38:13-36
+241            android:permission="android.permission.DUMP" >
+241-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:39:13-57
+242            <intent-filter>
+242-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:40:13-42:29
+243                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+243-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:41:17-91
+243-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:41:25-88
+244            </intent-filter>
+245            <intent-filter>
+245-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:43:13-45:29
+246                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+246-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:44:17-85
+246-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:44:25-82
+247            </intent-filter>
+248            <intent-filter>
+248-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:46:13-48:29
+249                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+249-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:47:17-88
+249-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:47:25-85
+250            </intent-filter>
+251            <intent-filter>
+251-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:49:13-51:29
+252                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+252-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:50:17-95
+252-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/ubuntu/.gradle/caches/transforms-4/a17e9c69bd3a28d48bc6a0b9b410c809/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:50:25-92
+253            </intent-filter>
+254        </receiver>
+255    </application>
+256
+257</manifest>

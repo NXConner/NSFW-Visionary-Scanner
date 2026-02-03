@@ -1,44 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.morphoscan.pro.app-mergeReleaseResources-41:/values-en-rCA/values-en-rCA.xml",
+            "outputFile": "com.morphoscan.pro.app-mergeReleaseResources-44:/values-en-rCA/values-en-rCA.xml",
             "map": [
                 {
-                    "source": "/home/ubuntu/.gradle/caches/8.11.1/transforms/1f5f1d526ea59343cbc37a7d3b2ee923/transformed/core-1.17.0/res/values-en-rCA/values-en-rCA.xml",
-                    "from": {
-                        "startLines": "2,3,4,5,6,7,8,9",
-                        "startColumns": "4,4,4,4,4,4,4,4",
-                        "startOffsets": "55,151,253,352,451,555,657,773",
-                        "endColumns": "95,101,98,98,103,101,115,100",
-                        "endOffsets": "146,248,347,446,550,652,768,869"
-                    },
-                    "to": {
-                        "startLines": "29,30,31,32,33,34,35,53",
-                        "startColumns": "4,4,4,4,4,4,4,4",
-                        "startOffsets": "2762,2858,2960,3059,3158,3262,3364,5409",
-                        "endColumns": "95,101,98,98,103,101,115,100",
-                        "endOffsets": "2853,2955,3054,3153,3257,3359,3475,5505"
-                    }
-                },
-                {
-                    "source": "/home/ubuntu/.gradle/caches/8.11.1/transforms/248fd36ece8edb372fa67a3067366c5d/transformed/browser-1.8.0/res/values-en-rCA/values-en-rCA.xml",
-                    "from": {
-                        "startLines": "2,3,4,5",
-                        "startColumns": "4,4,4,4",
-                        "startOffsets": "55,153,250,359",
-                        "endColumns": "97,96,108,98",
-                        "endOffsets": "148,245,354,453"
-                    },
-                    "to": {
-                        "startLines": "37,39,40,41",
-                        "startColumns": "4,4,4,4",
-                        "startOffsets": "3586,3774,3871,3980",
-                        "endColumns": "97,96,108,98",
-                        "endOffsets": "3679,3866,3975,4074"
-                    }
-                },
-                {
-                    "source": "/home/ubuntu/.gradle/caches/8.11.1/transforms/09237ab0809f6f25e4ace0dce8068758/transformed/appcompat-1.7.1/res/values-en-rCA/values-en-rCA.xml",
+                    "source": "/home/ubuntu/.gradle/caches/transforms-4/00f8665c3e77a205172e12723b9f3cc5/transformed/appcompat-1.7.0/res/values-en-rCA/values-en-rCA.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -55,7 +21,7 @@
                     }
                 },
                 {
-                    "source": "/home/ubuntu/.gradle/caches/8.11.1/transforms/13a605adb0474f3c60b19c41bfcf02b6/transformed/biometric-1.1.0/res/values-en-rCA/values-en-rCA.xml",
+                    "source": "/home/ubuntu/.gradle/caches/transforms-4/497255c7e43dfe9aa66bcf4f61f4780f/transformed/biometric-1.1.0/res/values-en-rCA/values-en-rCA.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4",
@@ -69,6 +35,40 @@
                         "startOffsets": "3480,3684,4079,4198,4327,4465,4592,4710,4841,4941,5067,5206",
                         "endColumns": "105,89,118,128,137,126,117,130,99,125,138,119",
                         "endOffsets": "3581,3769,4193,4322,4460,4587,4705,4836,4936,5062,5201,5321"
+                    }
+                },
+                {
+                    "source": "/home/ubuntu/.gradle/caches/transforms-4/2013713e862841d11e0c600e519aec94/transformed/core-1.15.0/res/values-en-rCA/values-en-rCA.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,151,253,352,451,555,657,773",
+                        "endColumns": "95,101,98,98,103,101,115,100",
+                        "endOffsets": "146,248,347,446,550,652,768,869"
+                    },
+                    "to": {
+                        "startLines": "29,30,31,32,33,34,35,53",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "2762,2858,2960,3059,3158,3262,3364,5409",
+                        "endColumns": "95,101,98,98,103,101,115,100",
+                        "endOffsets": "2853,2955,3054,3153,3257,3359,3475,5505"
+                    }
+                },
+                {
+                    "source": "/home/ubuntu/.gradle/caches/transforms-4/62cc1c4efa44e14083d47e1c6215c992/transformed/browser-1.8.0/res/values-en-rCA/values-en-rCA.xml",
+                    "from": {
+                        "startLines": "2,3,4,5",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,153,250,359",
+                        "endColumns": "97,96,108,98",
+                        "endOffsets": "148,245,354,453"
+                    },
+                    "to": {
+                        "startLines": "37,39,40,41",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "3586,3774,3871,3980",
+                        "endColumns": "97,96,108,98",
+                        "endOffsets": "3679,3866,3975,4074"
                     }
                 }
             ]
