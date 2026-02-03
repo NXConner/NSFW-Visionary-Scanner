@@ -178,6 +178,16 @@ verify_jwt = false
 enabled = true
 verify_jwt = true
 
+# Scheduled/automation endpoint (service role used inside)
+[functions.send-medication-reminder]
+enabled = true
+verify_jwt = false
+
+# Scheduled/automation endpoint (service role used inside)
+[functions.send-weekly-report]
+enabled = true
+verify_jwt = false
+
 # Public webhook endpoint (Stripe calls this; signature verified inside)
 [functions.stripe-webhook]
 enabled = true

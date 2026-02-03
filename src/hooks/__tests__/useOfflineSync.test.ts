@@ -183,6 +183,27 @@ describe("useOfflineSync", () => {
     });
   });
 
+  it("should apply update operations during sync", async () => {
+    const mockSupabaseOp = {
+      update: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+    };
+
+    vi.mocked(supabase.from).mockReturnValue(mockSupabaseOp as any);
+
+    const { result } = renderHook(() => useOfflineSync());
+
+    act(() => {
+      result.current.queueOperation("scans", "update", { id: "scan-1", name: "Updated" });
+    });
+
+    await act(async () => {
+      await result.current.syncAll();
+    });
+
+    expect(mockSupabaseOp.update).toHaveBeenCalledWith({ name: "Updated" });
+  });
+
   it("should handle failed sync operations with retry", async () => {
     // Mock a failed operation
     const mockSupabaseOp = {

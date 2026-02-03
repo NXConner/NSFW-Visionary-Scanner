@@ -189,6 +189,7 @@ export const MultiAngleCapture = ({
                     <button
                       onClick={() => handleRetake(index)}
                       className="absolute top-1 right-1 p-1 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
+                      aria-label={`Retake ${angle.label} capture`}
                     >
                       <RotateCw className="w-3 h-3 text-white" />
                     </button>

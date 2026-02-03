@@ -163,7 +163,11 @@ export function DateNightMediaSection({ plan, onUpdate }: DateNightMediaSectionP
                 {plan.images.map(url => (
                   <Badge key={url} variant="outline" className="gap-1">
                     <span className="truncate max-w-[120px]">{url}</span>
-                    <button type="button" onClick={() => removeMedia("images", url)}>
+                    <button
+                      type="button"
+                      onClick={() => removeMedia("images", url)}
+                      aria-label="Remove image attachment"
+                    >
                       <X className="w-3 h-3" />
                     </button>
                   </Badge>
@@ -179,7 +183,11 @@ export function DateNightMediaSection({ plan, onUpdate }: DateNightMediaSectionP
                 {plan.gifs.map(url => (
                   <Badge key={url} variant="outline" className="gap-1">
                     <span className="truncate max-w-[120px]">{url}</span>
-                    <button type="button" onClick={() => removeMedia("gifs", url)}>
+                    <button
+                      type="button"
+                      onClick={() => removeMedia("gifs", url)}
+                      aria-label="Remove GIF attachment"
+                    >
                       <X className="w-3 h-3" />
                     </button>
                   </Badge>
@@ -195,7 +203,11 @@ export function DateNightMediaSection({ plan, onUpdate }: DateNightMediaSectionP
                 {plan.videos.map(url => (
                   <Badge key={url} variant="outline" className="gap-1">
                     <span className="truncate max-w-[120px]">{url}</span>
-                    <button type="button" onClick={() => removeMedia("videos", url)}>
+                    <button
+                      type="button"
+                      onClick={() => removeMedia("videos", url)}
+                      aria-label="Remove video attachment"
+                    >
                       <X className="w-3 h-3" />
                     </button>
                   </Badge>

@@ -33,6 +33,10 @@ test.describe("Core navigation flow (smoke)", () => {
       await settingsTab.click({ force: true });
       await expect(page.getByText("Appearance")).toBeVisible();
       await expect(page.getByText("Theme", { exact: true })).toBeVisible();
+      await expect(page.getByText("Push Notifications")).toBeVisible();
+      await expect(page.getByText("Linked Accounts")).toBeVisible();
+      await expect(page.getByText("Data Retention Policy")).toBeVisible();
+      await expect(page.getByText("Delete Account")).toBeVisible();
     } else {
       // Mobile layouts may split internal tabs across rows/overflows.
       // Keep the smoke test stable by verifying Profile renders and proceeding.

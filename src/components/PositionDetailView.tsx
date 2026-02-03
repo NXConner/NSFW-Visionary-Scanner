@@ -353,6 +353,7 @@ export const PositionDetailView: React.FC<PositionDetailViewProps> = ({
                           className={`flex-shrink-0 w-20 h-20 rounded overflow-hidden border-2 ${
                             selectedImageIndex === idx ? "border-primary" : "border-transparent"
                           }`}
+                          aria-label={`View image ${idx + 1}`}
                         >
                           <img
                             src={img}

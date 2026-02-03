@@ -9,12 +9,16 @@ import { toast } from "sonner";
 // Mock the auth context
 const mockSignIn = vi.fn();
 const mockSignUp = vi.fn();
+const mockSignInWithGoogle = vi.fn();
+const mockSignInWithApple = vi.fn();
 
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({
     user: null,
     signIn: mockSignIn,
     signUp: mockSignUp,
+    signInWithGoogle: mockSignInWithGoogle,
+    signInWithApple: mockSignInWithApple,
     signOut: vi.fn(),
     loading: false,
   }),

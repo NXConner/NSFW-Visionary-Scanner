@@ -1,3 +1,4 @@
+import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
 /**
  * Supabase Edge Function: Apply Referral Code
  *
@@ -65,6 +66,14 @@ serve(async req => {
     if (codeRow.expires_at && new Date(codeRow.expires_at as string).getTime() < Date.now()) {
       return json(400, { error: "Referral code has expired" });
     }
+
+  const rateLimitResponse = await applyRateLimit({
+    req,
+    endpoint: "apply-referral-code",
+    ...DEFAULT_EDGE_RATE_LIMIT,
+    headers: corsHeaders,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
     const maxUses = codeRow.max_uses as number | null;
     const usageCount = (codeRow.usage_count as number | null) ?? 0;
     if (maxUses != null && usageCount >= maxUses)

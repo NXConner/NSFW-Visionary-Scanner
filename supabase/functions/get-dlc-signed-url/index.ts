@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,6 +57,14 @@ serve(async req => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+  const rateLimitResponse = await applyRateLimit({
+    req,
+    endpoint: "get-dlc-signed-url",
+    ...DEFAULT_EDGE_RATE_LIMIT,
+    headers: corsHeaders,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
     const token = authHeader.replace("Bearer ", "");
 

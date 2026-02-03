@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
 import {
   AiProviderError,
   buildContextPayload,
@@ -50,6 +51,14 @@ serve(async req => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+
+  const rateLimitResponse = await applyRateLimit({
+    req,
+    endpoint: "seductive-ai-chat",
+    ...DEFAULT_EDGE_RATE_LIMIT,
+    headers: corsHeaders,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     if (isLovablePolicy() || !(SEDUCTIVE_AI_MODE === "tame" || SEDUCTIVE_AI_MODE === "explicit")) {

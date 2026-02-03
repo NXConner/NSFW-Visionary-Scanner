@@ -33,12 +33,12 @@ export function DateNightMediaPreview({ proposal }: DateNightMediaPreviewProps):
       {(images.length > 0 || gifs.length > 0) && (
         <div className="flex flex-wrap gap-2">
           {images.slice(0, 4).map(url => (
-            <a key={url} href={url} target="_blank" rel="noreferrer">
+            <a key={url} href={url} target="_blank" rel="noreferrer" aria-label="Open image in new tab">
               <img src={url} alt="Image" className="h-16 w-16 object-cover rounded border" />
             </a>
           ))}
           {gifs.slice(0, 4).map(url => (
-            <a key={url} href={url} target="_blank" rel="noreferrer">
+            <a key={url} href={url} target="_blank" rel="noreferrer" aria-label="Open GIF in new tab">
               <img src={url} alt="GIF" className="h-16 w-16 object-cover rounded border" />
             </a>
           ))}
@@ -48,7 +48,7 @@ export function DateNightMediaPreview({ proposal }: DateNightMediaPreviewProps):
       {videos.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {videos.slice(0, 3).map(url => (
-            <a key={url} href={url} target="_blank" rel="noreferrer">
+            <a key={url} href={url} target="_blank" rel="noreferrer" aria-label="Open video in new tab">
               <Badge variant="outline">Video</Badge>
             </a>
           ))}
@@ -58,7 +58,7 @@ export function DateNightMediaPreview({ proposal }: DateNightMediaPreviewProps):
       {links.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {links.slice(0, 3).map(url => (
-            <a key={url} href={url} target="_blank" rel="noreferrer">
+            <a key={url} href={url} target="_blank" rel="noreferrer" aria-label="Open link in new tab">
               <Badge variant="secondary">Link</Badge>
             </a>
           ))}

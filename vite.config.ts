@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
-import path from "path";
+import { resolve } from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
@@ -165,7 +165,7 @@ export default defineConfig(({ mode }) => {
   ].filter(Boolean),
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": resolve(__dirname, "./src"),
     },
   },
   build: {
@@ -185,20 +185,19 @@ export default defineConfig(({ mode }) => {
         // Isolated by dependency tree to avoid cyclic cross-chunk imports.
         manualChunks: (id) => {
           if (id.includes("node_modules")) {
-            // Heavy visualization libraries (dynamically imported via LazyCharts/LazyModel3DViewer)
-            if (id.includes("recharts") || id.includes("d3-")) return "vendor-charts";
-            if (id.includes("three") || id.includes("@react-three")) return "vendor-3d";
+            const isThree =
+              id.includes("/node_modules/three/") ||
+              id.includes("\\node_modules\\three\\") ||
+              id.includes("@react-three");
+            if (isThree) return "vendor-3d";
             if (id.includes("@tensorflow") || id.includes("nsfwjs")) return "vendor-ml";
-            // UI component libraries
-            if (id.includes("@radix-ui")) return "vendor-ui";
+            if (id.includes("recharts") || id.includes("d3-")) return "vendor-charts";
             if (id.includes("framer-motion")) return "vendor-motion";
-            // Core React ecosystem
-            if (id.includes("react-dom")) return "vendor-react";
-            if (id.includes("react-router")) return "vendor-router";
-            // Supabase
-            if (id.includes("@supabase")) return "vendor-supabase";
-            // Stripe
+            if (id.includes("jspdf")) return "vendor-docs";
+            if (id.includes("@radix-ui")) return "vendor-ui";
             if (id.includes("@stripe")) return "vendor-stripe";
+            if (id.includes("@supabase")) return "vendor-supabase";
+            return "vendor";
           }
         },
         chunkFileNames: "assets/[name]-[hash].js",

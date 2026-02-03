@@ -72,3 +72,10 @@ dlc-assets/
 core
 core.*
 *.core
+
+# Allow DLC core module directory
+!src/dlc/core/
+!src/dlc/core/**
+
+# Load test summary output
+performance-report.json

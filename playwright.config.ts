@@ -44,6 +44,7 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       NODE_ENV: "production",
+      VITE_DISTRIBUTION_CHANNEL: "direct",
     },
   },
 });

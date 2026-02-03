@@ -9,3 +9,4 @@ export { FeatureTogglesCard } from "./FeatureTogglesCard";
 export { FeedbackHubCard } from "./FeedbackHubCard";
 export { VisualEffectsCard } from "./VisualEffectsCard";
 export { PerformanceModeCard } from "./PerformanceModeCard";
+export { LinkedAccountsCard } from "./LinkedAccountsCard";

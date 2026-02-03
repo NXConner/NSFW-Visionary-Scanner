@@ -78,7 +78,7 @@ export const LazyAIHealthChatbot = lazyWithRetry(
 
 // Analytics Dashboard - Heavy charts
 export const LazyAnalyticsDashboard = lazyWithRetry(
-  () => import('@/components/AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard }))
+  () => import('@/components/analytics').then(m => ({ default: m.AnalyticsDashboard }))
 )
 
 // Video Player - Media playback
@@ -162,13 +162,19 @@ export const LazyHealthAppIntegrations = lazyWithRetry(
 
 // Page-level lazy loading for routes
 export const pages = {
-  Index: lazyWithRetry(() => import('@/pages/Index')),
-  Auth: lazyWithRetry(() => import('@/pages/Auth')),
-  AuthCallback: lazyWithRetry(() => import('@/pages/AuthCallback')),
-  Pricing: lazyWithRetry(() => import('@/pages/Pricing')),
-  PrivacyPolicy: lazyWithRetry(() => import('@/pages/PrivacyPolicy')),
-  TermsOfService: lazyWithRetry(() => import('@/pages/TermsOfService')),
-  NotFound: lazyWithRetry(() => import('@/pages/NotFound'))
+  Index: lazyWithRetry(() => import('@/pages/Index').then(m => ({ default: m.default ?? m.Index }))),
+  Auth: lazyWithRetry(() => import('@/pages/Auth').then(m => ({ default: m.default ?? m.Auth }))),
+  AuthCallback: lazyWithRetry(() =>
+    import('@/pages/AuthCallback').then(m => ({ default: m.AuthCallback }))
+  ),
+  Pricing: lazyWithRetry(() => import('@/pages/Pricing').then(m => ({ default: m.default ?? m.Pricing }))),
+  PrivacyPolicy: lazyWithRetry(() =>
+    import('@/pages/PrivacyPolicy').then(m => ({ default: m.default ?? m.PrivacyPolicy }))
+  ),
+  TermsOfService: lazyWithRetry(() =>
+    import('@/pages/TermsOfService').then(m => ({ default: m.default ?? m.TermsOfService }))
+  ),
+  NotFound: lazyWithRetry(() => import('@/pages/NotFound').then(m => ({ default: m.default ?? m.NotFound })))
 }
 
 // ============================================================================
@@ -182,8 +188,12 @@ export function preloadCriticalComponents(): void {
   if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
       // Preload commonly used components
-      preloadComponent(() => import('@/components/ProgressCharts'))
-      preloadComponent(() => import('@/components/HealthDiarySection'))
+      preloadComponent(() =>
+        import('@/components/ProgressCharts').then(m => ({ default: m.ProgressCharts }))
+      )
+      preloadComponent(() =>
+        import('@/components/HealthDiarySection').then(m => ({ default: m.HealthDiarySection }))
+      )
     })
   }
 }
@@ -208,14 +218,22 @@ export function preloadOnHover(componentImport: () => Promise<any>): () => void 
 export function preloadRouteComponents(route: string): void {
   switch (route) {
     case '/':
-      preloadComponent(() => import('@/components/ScannerSection'))
-      preloadComponent(() => import('@/components/ProgressCharts'))
+      preloadComponent(() =>
+        import('@/components/ScannerSection').then(m => ({ default: m.ScannerSection }))
+      )
+      preloadComponent(() =>
+        import('@/components/ProgressCharts').then(m => ({ default: m.ProgressCharts }))
+      )
       break
     case '/settings':
-      preloadComponent(() => import('@/components/SettingsPanel'))
+      preloadComponent(() =>
+        import('@/components/SettingsPanel').then(m => ({ default: m.SettingsPanel }))
+      )
       break
     case '/pricing':
-      preloadComponent(() => import('@/components/SubscriptionTiers'))
+      preloadComponent(() =>
+        import('@/components/SubscriptionTiers').then(m => ({ default: m.SubscriptionTiers }))
+      )
       break
   }
 }
