@@ -7,6 +7,15 @@ test.describe("Pricing page (anonymous)", () => {
   });
 
   test("shows sign-in prompt and plan headline", async ({ page }) => {
+    page.on("pageerror", error => {
+      console.error("PAGEERROR:", error.message);
+    });
+    page.on("console", msg => {
+      if (msg.type() === "error") {
+        console.error("CONSOLE:", msg.text());
+      }
+    });
+
     await page.goto("/pricing");
     await waitForAppReady(page);
 
