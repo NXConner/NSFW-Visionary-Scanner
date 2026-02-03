@@ -4,11 +4,11 @@
     name=":app"
     type="APP"
     maven="android:app:unspecified"
-    agpVersion="8.9.1"
+    agpVersion="8.5.2"
     buildFolder="build"
-    bootClassPath="/usr/lib/android-sdk/platforms/android-36/android.jar:/usr/lib/android-sdk/build-tools/35.0.0/core-lambda-stubs.jar"
-    javaSourceLevel="21"
-    compileTarget="android-36">
+    bootClassPath="/workspace/android-sdk/platforms/android-35/android.jar:/workspace/android-sdk/build-tools/34.0.0/core-lambda-stubs.jar"
+    javaSourceLevel="17"
+    compileTarget="android-35">
   <lintOptions
       abortOnError="true"
       absolutePaths="true"
