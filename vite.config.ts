@@ -164,10 +164,10 @@ export default defineConfig(({ mode }) => {
     }),
   ].filter(Boolean),
   resolve: {
-    alias: {
-      "@": resolve(__dirname, "./src"),
-      "lucide-react": resolve(__dirname, "./src/lib/lucide"),
-    },
+    alias: [
+      { find: "@", replacement: resolve(__dirname, "./src") },
+      { find: /^lucide-react$/, replacement: resolve(__dirname, "./src/lib/lucide") },
+    ],
   },
   build: {
     // Production optimizations
