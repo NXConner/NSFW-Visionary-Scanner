@@ -38,12 +38,33 @@ These contain headers only. Fill with real content data and then import via the 
 
 - `seed/topics_pps_original.csv` (topics library, tiered ratings)
 - `seed/education_expert_content_pps.json` (expert articles)
+- `seed/positions_mit_generated.csv` (positions derived from MIT illustrations)
 
 Import topics via Admin → DLC Content Import → Topics. Import expert content via:
 
 ```powershell
 npm run dlc:import-expert-content -- --file docs/product/dlc/dlc-content/seed/education_expert_content_pps.json
 ```
+
+### MIT positions (download + import)
+
+1) Download MIT illustrations locally (not committed):
+
+```powershell
+npm run dlc:download-mit-positions
+```
+
+2) Regenerate the CSV (optional, already generated):
+
+```powershell
+npm run dlc:build-mit-positions-csv
+```
+
+3) In **Admin → DLC → Content Import → Positions**:
+
+- Select `seed/positions_mit_generated.csv`.
+- Add all downloaded files from `dlc-assets/mit-positions/` as asset uploads.
+- Run a **Dry-run** first, then import.
 
 ### Optional validator (recommended)
 

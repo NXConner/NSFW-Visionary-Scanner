@@ -32,3 +32,8 @@ This registry tracks **approved content sources** and their licensing artifacts.
   - Image Usage Conditions reference website/YouTube use only.
   - All materials are copyright protected.
   - Not approved for in-app distribution without a signed agreement.
+
+## Video assets
+
+- **Status**: No approved open-source NSFW video assets found.
+- **Requirement**: Provide licensed videos with model releases before import.

@@ -200,6 +200,7 @@
 - adminlove520/Sex-Positions has no recorded license (pending).
 - sexpositions.club image usage terms do not grant app distribution rights.
 - Topics and expert content authored in `docs/product/dlc/dlc-content/seed/`; import still required.
+- Positions CSV generated: `docs/product/dlc/dlc-content/seed/positions_mit_generated.csv` (requires asset upload).
 
 ---
 

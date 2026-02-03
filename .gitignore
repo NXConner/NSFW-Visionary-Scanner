@@ -65,6 +65,9 @@ ios/App/App/GoogleService-Info.plist
 # Local comparison clones (do not commit)
 external-repos/
 
+# Local DLC asset staging (do not commit)
+dlc-assets/
+
 # Core dumps (never commit)
 core
 core.*
