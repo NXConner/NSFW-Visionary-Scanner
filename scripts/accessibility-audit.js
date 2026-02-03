@@ -73,7 +73,7 @@ function addIssue({ file, line, check, severity, fix, match }) {
 }
 
 function checkImages(content, file) {
-  const regex = /<img\b[^>]*>/gi;
+  const regex = /<img\b[^>]*>/g;
   let match;
   while ((match = regex.exec(content))) {
     const tag = match[0];
@@ -122,7 +122,7 @@ function checkHtmlLang(content, file) {
 }
 
 function checkInteractiveLabels(content, file) {
-  const regex = /<(button|a)\b[^>]*>[\s\S]*?<\/\1>/gi;
+  const regex = /<(button|a)\b[^>]*>[\s\S]*?<\/\1>/g;
   let match;
   while ((match = regex.exec(content))) {
     const block = match[0];
@@ -143,7 +143,7 @@ function checkInteractiveLabels(content, file) {
 }
 
 function checkInputLabels(content, file) {
-  const regex = /<input\b[^>]*>/gi;
+  const regex = /<input\b[^>]*>/g;
   let match;
   while ((match = regex.exec(content))) {
     const tag = match[0];
