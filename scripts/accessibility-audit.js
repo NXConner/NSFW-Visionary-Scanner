@@ -77,8 +77,8 @@ function checkImages(content, file) {
   let match;
   while ((match = regex.exec(content))) {
     const tag = match[0];
-    const altMatch = tag.match(/\balt\s*=\s*["']([^"']*)["']/i);
-    if (!altMatch) {
+    const hasAlt = /\balt\s*=/i.test(tag);
+    if (!hasAlt) {
       addIssue({
         file,
         line: lineForIndex(content, match.index),
@@ -89,7 +89,8 @@ function checkImages(content, file) {
       });
       continue;
     }
-    if (altMatch[1].trim().length === 0) {
+    const emptyAltMatch = tag.match(/\balt\s*=\s*["']\s*["']/i);
+    if (emptyAltMatch) {
       addIssue({
         file,
         line: lineForIndex(content, match.index),
