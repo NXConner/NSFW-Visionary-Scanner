@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,6 +52,14 @@ serve(async req => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const rateLimitResponse = await applyRateLimit({
+    req,
+    endpoint: "ai-scan-analysis",
+    ...DEFAULT_EDGE_RATE_LIMIT,
+    headers: corsHeaders,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     if (!allowMedicalAi()) {

@@ -1,3 +1,4 @@
+import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
 /**
  * Supabase Edge Function: Generate Health Insights
  * Generates daily AI-powered health insights for users
@@ -15,6 +16,14 @@ serve(async req => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const rateLimitResponse = await applyRateLimit({
+    req,
+    endpoint: "generate-health-insights",
+    ...DEFAULT_EDGE_RATE_LIMIT,
+    headers: corsHeaders,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const supabaseClient = createClient(

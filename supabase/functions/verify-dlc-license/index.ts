@@ -1,3 +1,4 @@
+import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
 // Verify DLC License
 // Verifies and activates DLC licenses for NSFW content unlock.
 //
@@ -19,6 +20,14 @@ serve(async req => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const rateLimitResponse = await applyRateLimit({
+    req,
+    endpoint: "verify-dlc-license",
+    ...DEFAULT_EDGE_RATE_LIMIT,
+    headers: corsHeaders,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const authHeader = req.headers.get("Authorization");

@@ -14,12 +14,62 @@ export interface RateLimitResult {
   limit: number;
 }
 
+export const DEFAULT_EDGE_RATE_LIMIT = {
+  windowSeconds: 60,
+  maxRequests: 60,
+};
+
 export function buildRateLimitHeaders(result: RateLimitResult) {
   return {
     "X-RateLimit-Limit": result.limit.toString(),
     "X-RateLimit-Remaining": Math.max(0, result.remaining).toString(),
     "X-RateLimit-Reset": Math.floor(result.resetAt / 1000).toString(),
   };
+}
+
+function getRequestIp(req: Request): string | null {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) {
+    const first = forwarded.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) return realIp.trim();
+  const cfIp = req.headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp.trim();
+  return null;
+}
+
+export function resolveRateLimitIdentifier(req: Request, userId?: string | null): string {
+  if (userId && userId.length > 0) return userId;
+  return getRequestIp(req) || "anonymous";
+}
+
+export async function applyRateLimit(options: {
+  req: Request;
+  endpoint: string;
+  userId?: string | null;
+  windowSeconds: number;
+  maxRequests: number;
+  headers?: Record<string, string>;
+}): Promise<Response | null> {
+  const rate = await enforceRateLimit({
+    identifier: resolveRateLimitIdentifier(options.req, options.userId),
+    endpoint: options.endpoint,
+    windowSeconds: options.windowSeconds,
+    maxRequests: options.maxRequests,
+  });
+  if (rate.allowed) return null;
+
+  const headers = {
+    ...(options.headers ?? {}),
+    ...buildRateLimitHeaders(rate),
+    "Content-Type": "application/json",
+  };
+  return new Response(JSON.stringify({ success: false, error: "Rate limit exceeded" }), {
+    status: 429,
+    headers,
+  });
 }
 
 export async function enforceRateLimit(config: RateLimitConfig): Promise<RateLimitResult> {

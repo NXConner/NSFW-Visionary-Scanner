@@ -78,7 +78,7 @@ export const LazyAIHealthChatbot = lazyWithRetry(
 
 // Analytics Dashboard - Heavy charts
 export const LazyAnalyticsDashboard = lazyWithRetry(
-  () => import('@/components/AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard }))
+  () => import('@/components/analytics').then(m => ({ default: m.AnalyticsDashboard }))
 )
 
 // Video Player - Media playback

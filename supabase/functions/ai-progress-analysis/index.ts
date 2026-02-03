@@ -1,3 +1,4 @@
+import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
 /**
  * Supabase Edge Function: AI Progress Analysis
  * Answers user questions about their health progress using AI
@@ -15,6 +16,14 @@ serve(async req => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const rateLimitResponse = await applyRateLimit({
+    req,
+    endpoint: "ai-progress-analysis",
+    ...DEFAULT_EDGE_RATE_LIMIT,
+    headers: corsHeaders,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const url = Deno.env.get("SUPABASE_URL") ?? "";

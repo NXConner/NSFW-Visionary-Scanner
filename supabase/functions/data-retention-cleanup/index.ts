@@ -100,6 +100,20 @@ serve(async req => {
   }
 
   try {
+    const retentionSecret = Deno.env.get("DATA_RETENTION_SECRET") ?? "";
+    if (retentionSecret) {
+      const providedSecret = req.headers.get("x-retention-secret") ?? "";
+      const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+      const authHeader = req.headers.get("Authorization") ?? "";
+      const serviceAuthorized = serviceRole.length > 0 && authHeader === `Bearer ${serviceRole}`;
+      if (providedSecret !== retentionSecret && !serviceAuthorized) {
+        return new Response(JSON.stringify({ error: "Unauthorized", success: false }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401,
+        });
+      }
+    }
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",

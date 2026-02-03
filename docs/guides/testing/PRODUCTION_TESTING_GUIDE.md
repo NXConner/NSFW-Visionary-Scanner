@@ -82,6 +82,14 @@ Test on minimum 3 devices:
 - [ ] Different screen sizes (phone, tablet)
 - [ ] Different manufacturers (Samsung, Google, OnePlus, etc.)
 
+### Physical Device Test Log (Android)
+
+Record results for each device tested:
+
+| Device | OS | Build | Offline | Push | Perf | Battery | Memory | Notes |
+|---|---|---|---|---|---|---|---|---|
+| _TBD_ | _TBD_ | _TBD_ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |  |
+
 ### Installation Testing
 
 - [ ] Install from APK file
@@ -222,6 +230,14 @@ Test on minimum 3 devices:
 - [ ] iPhone 15+ (iOS 17+)
 - [ ] iPad (if supported)
 - [ ] Different screen sizes
+
+### Physical Device Test Log (iOS)
+
+Record results for each device tested:
+
+| Device | iOS | Build | Offline | Push | Perf | Battery | Memory | Notes |
+|---|---|---|---|---|---|---|---|---|
+| _TBD_ | _TBD_ | _TBD_ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |  |
 
 ### Installation Testing
 

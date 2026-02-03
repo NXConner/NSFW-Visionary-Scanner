@@ -96,6 +96,15 @@ These should **never** be in `.env` (client-side). Use Supabase Edge Functions s
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `FIREBASE_SERVICE_ACCOUNT` (JSON)
+- `DATA_RETENTION_SECRET` (Edge Functions schedule secret)
+
+## Social Login Providers
+
+Configure OAuth providers in:
+
+- Supabase Dashboard → Authentication → Providers
+
+See: `docs/guides/integrations/auth/SOCIAL_LOGIN_SETUP.md`
 
 ## Verification
 

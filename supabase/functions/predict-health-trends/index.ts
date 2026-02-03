@@ -1,3 +1,4 @@
+import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
 /**
  * Supabase Edge Function: Predict Health Trends
  * Generates simple time-series forecasts from existing metrics
@@ -27,6 +28,14 @@ serve(async req => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const rateLimitResponse = await applyRateLimit({
+    req,
+    endpoint: "predict-health-trends",
+    ...DEFAULT_EDGE_RATE_LIMIT,
+    headers: corsHeaders,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const url = Deno.env.get("SUPABASE_URL") ?? "";
