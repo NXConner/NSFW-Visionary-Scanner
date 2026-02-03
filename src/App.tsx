@@ -32,7 +32,6 @@ import { RouteLoadingFallback } from "@/components/LoadingFallback";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { AppCommandPalette } from "@/components/commandPalette";
 import { KeyboardShortcutsDialog } from "@/components/keyboardShortcuts";
-import { ScrollToTopButton } from "@/components/navigation/ScrollToTopButton";
 import TabDeepLinkRedirect from "@/routes/TabDeepLinkRedirect";
 import LegacyAdminRedirect from "@/routes/LegacyAdminRedirect";
 import { isAdultContentEnabled } from "@/lib/featureFlags";
@@ -43,6 +42,11 @@ const Index = lazy(() => import("./pages/Index"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const DLCStorePage = lazy(() => import("./pages/DLCStorePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const LazyScrollToTopButton = lazy(() =>
+  import("@/components/navigation/ScrollToTopButton").then(m => ({
+    default: m.ScrollToTopButton,
+  })),
+);
 
 // Build-time flag: only ship direct-download deep-link routes outside stores.
 // Store builds should not include optional DLC deep-link pages that may reference adult gating.
@@ -168,7 +172,9 @@ const AppContent = () => {
       <PerformanceMonitor />
       <AppCommandPalette />
       <KeyboardShortcutsDialog />
-      <ScrollToTopButton />
+      <Suspense fallback={null}>
+        <LazyScrollToTopButton />
+      </Suspense>
       <RouteAnalytics />
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
