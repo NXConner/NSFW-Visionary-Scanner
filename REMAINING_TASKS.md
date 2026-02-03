@@ -12,7 +12,7 @@
 ## 🔴 High Priority (Critical for Launch)
 
 ### 1. Payment Integration
-- **Status**: Not Started
+- **Status**: Complete (see PAYMENT_INTEGRATION_COMPLETE.md)
 - **Priority**: CRITICAL
 - **Effort**: 2-3 days
 - **Tasks**:
@@ -25,10 +25,11 @@
   - Implement subscription status checks
 
 ### 2. Production Build Testing
-- **Status**: Not Started
+- **Status**: In Progress (docs + tooling updated)
 - **Priority**: CRITICAL
 - **Effort**: 2-3 days
 - **Tasks**:
+  - Run automated preflight commands (check:production, check:pre-submission, test suites)
   - Test on physical Android devices
   - Test on physical iOS devices
   - Verify all features work on mobile
@@ -39,7 +40,7 @@
   - Memory leak testing
 
 ### 3. Push Notification Backend
-- **Status**: Partially Complete (Edge Function exists)
+- **Status**: Complete (Edge functions + scheduling + docs)
 - **Priority**: HIGH
 - **Effort**: 1-2 hours
 - **Tasks**:
@@ -50,7 +51,7 @@
   - Add notification preferences
 
 ### 4. App Store Submission
-- **Status**: Not Started
+- **Status**: Skipped (per request)
 - **Priority**: HIGH (Phase 4 - User requested to stop here)
 - **Effort**: 1-2 days
 - **Tasks**:
@@ -76,7 +77,7 @@
   - Handle OAuth callbacks
 
 ### 6. Biometric Authentication
-- **Status**: Partially Complete (App Lock exists)
+- **Status**: Skipped (per request; App Lock exists)
 - **Priority**: MEDIUM
 - **Effort**: 1 day
 - **Tasks**:
@@ -87,7 +88,7 @@
   - Improve UX
 
 ### 7. Email Confirmation Flow
-- **Status**: Not Started
+- **Status**: Complete (EmailVerificationGate enforced)
 - **Priority**: MEDIUM
 - **Effort**: 1 day
 - **Tasks**:
@@ -98,7 +99,7 @@
   - Handle verification tokens
 
 ### 8. Account Deletion
-- **Status**: Not Started
+- **Status**: Complete (ACCOUNT_DELETION_COMPLETE.md)
 - **Priority**: MEDIUM (GDPR requirement)
 - **Effort**: 1 day
 - **Tasks**:
@@ -119,7 +120,7 @@
   - Notify users before deletion
 
 ### 10. Rate Limiting
-- **Status**: Not Started
+- **Status**: Partially Complete (Edge rate-limit utilities + tests)
 - **Priority**: MEDIUM
 - **Effort**: 1 day
 - **Tasks**:
@@ -146,7 +147,7 @@
 ## 🔵 Technical Debt
 
 ### 12. Unit Tests
-- **Status**: Partially Complete (Vitest setup exists)
+- **Status**: In Progress (coverage expanding)
 - **Priority**: MEDIUM
 - **Effort**: 3-5 days
 - **Tasks**:
@@ -157,7 +158,7 @@
   - Test edge cases
 
 ### 13. E2E Tests
-- **Status**: Partially Complete (Playwright setup exists)
+- **Status**: In Progress (pricing + landing coverage)
 - **Priority**: MEDIUM
 - **Effort**: 2-3 days
 - **Tasks**:
@@ -168,7 +169,7 @@
   - Test data sync flow
 
 ### 14. Performance Audit
-- **Status**: Not Started
+- **Status**: In Progress (perf:audit + docs)
 - **Priority**: MEDIUM
 - **Effort**: 1 day
 - **Tasks**:
@@ -179,7 +180,7 @@
   - Improve Core Web Vitals
 
 ### 15. Bundle Size Optimization
-- **Status**: Not Started
+- **Status**: In Progress (bundle analysis + chunking)
 - **Priority**: MEDIUM
 - **Effort**: 1-2 days
 - **Tasks**:
@@ -190,7 +191,7 @@
   - Tree shaking optimization
 
 ### 16. Error Boundary Components
-- **Status**: Not Started
+- **Status**: Complete (ErrorBoundary in App)
 - **Priority**: MEDIUM
 - **Effort**: 1 day
 - **Tasks**:
@@ -206,33 +207,35 @@
 
 ### Phase 1: Critical Infrastructure (Start Here)
 1. ✅ Payment Integration
-2. ✅ Production Build Testing
+2. 🟡 Production Build Testing
 3. ✅ Push Notification Backend
 
 ### Phase 2: Compliance & Security
 4. ✅ Email Confirmation Flow
 5. ✅ Account Deletion
-6. ✅ Data Retention Policy
-7. ✅ Rate Limiting
+6. ⏳ Data Retention Policy
+7. 🟡 Rate Limiting
 
 ### Phase 3: User Experience
-8. ✅ Social Login
-9. ✅ Biometric Authentication
-10. ✅ Analytics Dashboard
+8. ⏳ Social Login
+9. ⏸️ Biometric Authentication (skipped)
+10. ⏳ Analytics Dashboard
 
 ### Phase 4: Quality & Performance
-11. ✅ Unit Tests (increase coverage)
-12. ✅ E2E Tests
-13. ✅ Performance Audit
-14. ✅ Bundle Size Optimization
+11. 🟡 Unit Tests (increase coverage)
+12. 🟡 E2E Tests
+13. 🟡 Performance Audit
+14. 🟡 Bundle Size Optimization
 15. ✅ Error Boundary Components
 
 ### Phase 5: App Store (User requested to stop here)
-16. ⏸️ App Store Submission
+16. ⏸️ App Store Submission (skipped)
 
 ---
 
 ## 🎯 Next Steps
 
-Starting with **Payment Integration** as it's critical for monetization and required before app store submission.
+Continue with **Production Build Testing** (device runs + offline/push/perf),
+then complete **Performance/Bundle Audits** and remaining **Compliance** items
+(Data Retention Policy, Rate Limiting, Social Login).
 
