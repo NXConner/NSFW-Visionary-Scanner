@@ -20,18 +20,23 @@ export type DLCFeature = {
 };
 
 export type DLCPackageType = "individual" | "bundle" | "subscription";
-export type DLCPriceType = "one-time" | "subscription" | "free";
+export type DLCPriceType = "one-time" | "one_time" | "subscription" | "free";
 
 export type DLCPackage = {
+  id?: string;
   packageId: string;
   packageName: string;
   safeDescription: string;
   fullDescription?: string;
+  marketingTagline?: string;
   contentRating?: string;
   version: string;
+  contentVersion?: string;
+  minAppVersion?: string;
   priceUsd: number;
   currency: string;
   priceType: DLCPriceType;
+  subscriptionInterval?: string;
   packageType: DLCPackageType;
   isActive: boolean;
   isFeatured: boolean;
@@ -50,6 +55,8 @@ export type DLCPackage = {
   checksum?: string | null;
   downloadSizeBytes?: number | null;
   releaseDate?: string | null;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
 };
 
 export type DLCLicense = {
@@ -147,6 +154,6 @@ export type DLCModule = {
   routes: DLCModuleRoute[];
   navigationItems: DLCNavigationItem[];
   features: string[];
-  onLoad: () => Promise<void>;
-  onUnload: () => Promise<void>;
+  onLoad?: () => Promise<void>;
+  onUnload?: () => Promise<void>;
 };

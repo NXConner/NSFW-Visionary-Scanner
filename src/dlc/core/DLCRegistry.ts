@@ -1,4 +1,5 @@
 import type { DLCPackage, DLCFeature, DLCFeatureCategory } from "./types";
+import type { DLCBundleManifest } from "./dlcRegistryParts/manifests";
 import { DLC_MODULES, MODULE_PACKAGE_MAP } from "../modules";
 
 type PackageMeta = {
@@ -177,6 +178,7 @@ class DLCRegistry {
   private packages = new Map<string, DLCPackage>(
     DLC_PACKAGES.map(pkg => [pkg.packageId, pkg] as const),
   );
+  private bundleManifests = new Map<string, DLCBundleManifest>();
 
   getAllPackages(): DLCPackage[] {
     return Array.from(this.packages.values());
@@ -195,6 +197,29 @@ class DLCRegistry {
     if (!pkg) return 0;
     const regional = pkg.regionalPricing?.[currency.toUpperCase()];
     return typeof regional === "number" ? regional : pkg.priceUsd;
+  }
+
+  registerPackages(packages: Record<string, DLCPackage>): void {
+    Object.entries(packages || {}).forEach(([key, pkg]) => {
+      const packageId = pkg.packageId || key;
+      const existing = this.packages.get(packageId);
+      this.packages.set(packageId, {
+        ...(existing || {}),
+        ...pkg,
+        packageId,
+      });
+    });
+  }
+
+  registerManifests(manifests: Record<string, DLCBundleManifest>): void {
+    Object.entries(manifests || {}).forEach(([key, manifest]) => {
+      const id = manifest.id || key;
+      this.bundleManifests.set(id, { ...manifest, id });
+    });
+  }
+
+  getManifests(): DLCBundleManifest[] {
+    return Array.from(this.bundleManifests.values());
   }
 }
 
