@@ -17,9 +17,10 @@ import { fetchNsfwStats, type NsfwStats } from "./stats";
 import { useDLC, useDLCFeature } from "@/dlc/context/DLCContext";
 import { AgeVerificationModal } from "@/dlc/components/AgeVerificationModal";
 import { Lock, RefreshCcw } from "lucide-react";
-import { Link } from "react-router-dom";
+import { NavLink } from "@/components/NavLink";
 import { useNsfwPrivacySettings } from "@/lib/nsfwPrivacySettings";
-import { clearNsfwSessionUnlocked, isNsfwSessionLocked } from "@/lib/nsfwSessionLock";
+import { clearNsfwSessionUnlocked, isNsfwSessionLocked, triggerNsfwPanicExit } from "@/lib/nsfwSessionLock";
+import { toast } from "sonner";
 
 function navigateToTab(tabId: string, navigate: (to: string) => void): void {
   // Switch back to the main tabbed app and then select a specific tab.
@@ -169,7 +170,8 @@ export function NSFWDashboard(): React.ReactElement {
                   <Button
                     variant="destructive"
                     onClick={() => {
-                      clearNsfwSessionUnlocked();
+                      triggerNsfwPanicExit({ reason: "Panic exit from NSFW dashboard" });
+                      toast.success("Session locked");
                       navigate("/");
                     }}
                   >
@@ -339,7 +341,7 @@ export function NSFWDashboard(): React.ReactElement {
                   </Button>
                 ))}
                 <Button asChild variant="outline" className="gap-2">
-                  <Link to="/nsfw/topics">Topics Library</Link>
+                  <NavLink to="/nsfw/topics">Topics Library</NavLink>
                 </Button>
                 <Button variant="outline" onClick={() => navigate("/store")}>
                   Open Store

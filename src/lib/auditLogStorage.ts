@@ -1,6 +1,13 @@
 import { encryptData, decryptData } from "@/lib/encryption";
 
-export type AuditLogCategory = "scan" | "export" | "settings" | "auth" | "data" | "report";
+export type AuditLogCategory =
+  | "scan"
+  | "export"
+  | "settings"
+  | "auth"
+  | "data"
+  | "report"
+  | "nsfw";
 
 export interface AuditLogEntry {
   id: string;

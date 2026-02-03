@@ -24,8 +24,11 @@ export type BrowseTabProps = {
   setSelectedCategory: (v: string) => void;
   selectedDifficulty: string;
   setSelectedDifficulty: (v: string) => void;
+  selectedRating: string;
+  setSelectedRating: (v: string) => void;
   categories: Array<{ id: string; label: string }>;
   difficultyLevels: Array<{ id: string; label: string }>;
+  ratingLevels: Array<{ id: string; label: string }>;
   downloadQuality: VideoQuality;
   setDownloadQuality: (q: VideoQuality) => void;
   downloadProgress: Record<string, number>;
@@ -57,8 +60,11 @@ export function BrowseTab(props: BrowseTabProps): JSX.Element {
     setSelectedCategory,
     selectedDifficulty,
     setSelectedDifficulty,
+    selectedRating,
+    setSelectedRating,
     categories,
     difficultyLevels,
+    ratingLevels,
     downloadQuality,
     setDownloadQuality,
     downloadProgress,
@@ -107,6 +113,19 @@ export function BrowseTab(props: BrowseTabProps): JSX.Element {
           </SelectTrigger>
           <SelectContent>
             {difficultyLevels.map(level => (
+              <SelectItem key={level.id} value={level.id}>
+                {level.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={selectedRating} onValueChange={setSelectedRating}>
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectValue placeholder="Rating tier" />
+          </SelectTrigger>
+          <SelectContent>
+            {ratingLevels.map(level => (
               <SelectItem key={level.id} value={level.id}>
                 {level.label}
               </SelectItem>

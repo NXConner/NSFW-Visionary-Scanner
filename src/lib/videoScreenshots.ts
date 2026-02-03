@@ -30,6 +30,26 @@ function canvasToPngFile(canvas: HTMLCanvasElement, fileName: string): Promise<F
   });
 }
 
+function createThumbnailFile(
+  canvas: HTMLCanvasElement,
+  fileName: string,
+  maxWidth: number = 320,
+): Promise<File | null> {
+  const w = canvas.width;
+  const h = canvas.height;
+  if (!w || !h) return Promise.resolve(null);
+  const scale = Math.min(1, maxWidth / w);
+  const tw = Math.max(1, Math.round(w * scale));
+  const th = Math.max(1, Math.round(h * scale));
+  const thumb = document.createElement("canvas");
+  thumb.width = tw;
+  thumb.height = th;
+  const ctx = thumb.getContext("2d");
+  if (!ctx) return Promise.resolve(null);
+  ctx.drawImage(canvas, 0, 0, tw, th);
+  return canvasToPngFile(thumb, fileName);
+}
+
 export async function captureVideoScreenshot(
   videoEl: HTMLVideoElement,
   timestampSeconds: number,
@@ -65,6 +85,19 @@ export async function captureVideoScreenshot(
 
     if (!upload) return null;
 
+    const thumbFile = await createThumbnailFile(
+      canvas,
+      `thumbnail-${recordingId}-${Date.now()}.png`,
+    );
+    const thumbUpload = thumbFile
+      ? await uploadFile(thumbFile, {
+          folder: `screenshots/${recordingId}/thumbnails`,
+          compress: false,
+          allowedTypes: ["image/png"],
+          maxSize: 2 * 1024 * 1024,
+        })
+      : null;
+
     const { data, error } = await fromExtended("video_screenshots")
       .insert({
         recording_id: recordingId,
@@ -73,7 +106,7 @@ export async function captureVideoScreenshot(
         timestamp_seconds: Number(timestampSeconds ?? 0),
         image_url: upload.publicUrl ?? null,
         image_storage_path: upload.path,
-        thumbnail_url: upload.publicUrl ?? null,
+        thumbnail_url: thumbUpload?.publicUrl ?? upload.publicUrl ?? null,
         is_edited: false,
         edit_data: null,
       })

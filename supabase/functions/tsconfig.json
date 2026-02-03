@@ -5,6 +5,7 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "types": ["./deno.d.ts"],
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "strict": false,
     "noImplicitAny": false,

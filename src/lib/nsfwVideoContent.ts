@@ -50,7 +50,8 @@ export interface NSFWVideoContent {
 
 export async function getNSFWVideos(
   category?: NSFWVideoContent['category'],
-  difficultyLevel?: NSFWVideoContent['difficulty_level']
+  difficultyLevel?: NSFWVideoContent['difficulty_level'],
+  contentRating?: NSFWVideoContent['content_rating']
 ): Promise<NSFWVideoContent[]> {
   try {
     let query = supabase
@@ -66,6 +67,9 @@ export async function getNSFWVideos(
     }
     if (difficultyLevel) {
       query = query.eq('difficulty_level', difficultyLevel)
+    }
+    if (contentRating) {
+      query = query.eq('content_rating', contentRating)
     }
 
     const { data, error } = await query

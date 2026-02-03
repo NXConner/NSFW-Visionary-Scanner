@@ -76,8 +76,10 @@ export const PositionDetailView: React.FC<PositionDetailViewProps> = ({
   onMediaOverrideChange,
 }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedAnimationIndex, setSelectedAnimationIndex] = useState(0);
   const [isImageFullscreen, setIsImageFullscreen] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
+  const [showAnimations, setShowAnimations] = useState(false);
   const [overrideUrls, setOverrideUrls] = useState<Partial<Record<PositionMediaKind, string>>>({});
   const [overrideLoading, setOverrideLoading] = useState(false);
   const [uploadingKind, setUploadingKind] = useState<PositionMediaKind | null>(null);
@@ -89,6 +91,8 @@ export const PositionDetailView: React.FC<PositionDetailViewProps> = ({
     const override = overrideUrls.image ? [overrideUrls.image] : [];
     return override.length > 0 ? override : base;
   }, [overrideUrls.image, pos?.images]);
+
+  const displayAnimations = useMemo(() => pos?.animations || [], [pos?.animations]);
 
   const displayGifs = useMemo(() => {
     const base = pos?.gifs || [];
@@ -120,6 +124,10 @@ export const PositionDetailView: React.FC<PositionDetailViewProps> = ({
   };
 
   const currentImage = displayImages[selectedImageIndex] || allMedia[0];
+  const currentAnimation = displayAnimations[selectedAnimationIndex];
+  const isVideoAnimation = Boolean(
+    currentAnimation && /\.(mp4|webm|mov)$/i.test(String(currentAnimation)),
+  );
 
   const mediaFilterClass = invertedColors ? "invert hue-rotate-180" : "";
 
@@ -355,6 +363,77 @@ export const PositionDetailView: React.FC<PositionDetailViewProps> = ({
                       ))}
                     </div>
                   )}
+                </Card>
+              )}
+
+              {displayAnimations.length > 0 && (
+                <Card>
+                  <CardContent className="pt-6 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <Play className="w-4 h-4 text-primary" /> Animations
+                      </h4>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowAnimations(prev => !prev)}
+                      >
+                        {showAnimations ? "Hide" : "Show"}
+                      </Button>
+                    </div>
+
+                    {showAnimations ? (
+                      <div className="relative aspect-video bg-muted/30 rounded-lg overflow-hidden">
+                        {isVideoAnimation ? (
+                          <video
+                            src={currentAnimation}
+                            controls
+                            className={`w-full h-full object-contain ${mediaFilterClass}`}
+                          >
+                            <track kind="captions" />
+                          </video>
+                        ) : (
+                          <img
+                            src={currentAnimation}
+                            alt={`${position.name} animation`}
+                            className={`w-full h-full object-contain ${mediaFilterClass}`}
+                          />
+                        )}
+                        {displayAnimations.length > 1 && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute left-2 top-1/2 -translate-y-1/2"
+                              onClick={() =>
+                                setSelectedAnimationIndex(
+                                  prev => (prev - 1 + displayAnimations.length) % displayAnimations.length,
+                                )
+                              }
+                            >
+                              <ChevronRight className="w-4 h-4 rotate-180" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-2 top-1/2 -translate-y-1/2"
+                              onClick={() =>
+                                setSelectedAnimationIndex(
+                                  prev => (prev + 1) % displayAnimations.length,
+                                )
+                              }
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Toggle to preview the available animation (if provided).
+                      </p>
+                    )}
+                  </CardContent>
                 </Card>
               )}
 

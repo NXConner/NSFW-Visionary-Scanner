@@ -16,3 +16,10 @@ export const VIDEO_DIFFICULTY_LEVELS: Array<{ id: string; label: string }> = [
   { id: "advanced", label: "Advanced" },
   { id: "expert", label: "Expert" },
 ];
+
+export const VIDEO_RATING_LEVELS: Array<{ id: string; label: string }> = [
+  { id: "all", label: "All Ratings" },
+  { id: "educational", label: "Educational" },
+  { id: "demonstrative", label: "Demonstrative" },
+  { id: "explicit", label: "Explicit" },
+];

@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AgeVerificationModal } from "@/dlc/components/AgeVerificationModal";
-import { Link } from "react-router-dom";
+import { NavLink } from "@/components/NavLink";
 import { Loader2, Lock, Shield, Video } from "lucide-react";
 import { toast } from "sonner";
 import { NsfwConsentGate } from "@/components/nsfw/NsfwConsentGate";
@@ -26,7 +26,11 @@ import { PlaylistsTab } from "@/components/nsfwVideoContent/tabs/PlaylistsTab";
 import { HistoryTab } from "@/components/nsfwVideoContent/tabs/HistoryTab";
 import { BookmarksTab } from "@/components/nsfwVideoContent/tabs/BookmarksTab";
 import { PlayerDialog } from "@/components/nsfwVideoContent/components/PlayerDialog";
-import { VIDEO_CATEGORIES, VIDEO_DIFFICULTY_LEVELS } from "@/components/nsfwVideoContent/constants";
+import {
+  VIDEO_CATEGORIES,
+  VIDEO_DIFFICULTY_LEVELS,
+  VIDEO_RATING_LEVELS,
+} from "@/components/nsfwVideoContent/constants";
 import { useNsfwPrivacySettings } from "@/lib/nsfwPrivacySettings";
 import {
   getNsfwContinueWatching,
@@ -62,6 +66,7 @@ export const NSFWVideoContent = ({
   const [cachedMap, setCachedMap] = useState<Record<string, boolean>>({});
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
+  const [selectedRating, setSelectedRating] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [continueWatching, setContinueWatching] = useState<NSFWVideoType[]>([]);
   const [recentlyWatched, setRecentlyWatched] = useState<NSFWVideoType[]>([]);
@@ -73,12 +78,15 @@ export const NSFWVideoContent = ({
   const [playerMode, setPlayerMode] = useState<VideoPlaybackMode>("cache_first");
   const [playerUrl, setPlayerUrl] = useState<string | null>(null);
   const [playerLoading, setPlayerLoading] = useState(false);
+  const [playerRefreshToken, setPlayerRefreshToken] = useState(0);
   const progressRef = useRef<{ videoId: string; current: number; duration: number }>({
     videoId: "",
     current: 0,
     duration: 0,
   });
   const lastProgressSentMs = useRef(0);
+  const lastRefreshMs = useRef(0);
+  const forceRefreshRef = useRef(false);
 
   const { isAgeVerified } = useDLC();
   const { isAvailable: hasVideoDLC, isLoading: dlcLoading } = useDLCFeature("video_library");
@@ -86,6 +94,7 @@ export const NSFWVideoContent = ({
 
   const categories = VIDEO_CATEGORIES;
   const difficultyLevels = VIDEO_DIFFICULTY_LEVELS;
+  const ratingLevels = VIDEO_RATING_LEVELS;
 
   const selectedCategoryTyped = useMemo(() => {
     return selectedCategory === "all" ? undefined : (selectedCategory as NSFWVideoType["category"]);
@@ -97,13 +106,23 @@ export const NSFWVideoContent = ({
       : (selectedDifficulty as NSFWVideoType["difficulty_level"]);
   }, [selectedDifficulty]);
 
+  const selectedRatingTyped = useMemo(() => {
+    return selectedRating === "all"
+      ? undefined
+      : (selectedRating as NSFWVideoType["content_rating"]);
+  }, [selectedRating]);
+
   const selectedVideoId = selectedVideo?.id ?? null;
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       if (activeTab === "browse") {
-        const videosData = await getNSFWVideos(selectedCategoryTyped, selectedDifficultyTyped);
+        const videosData = await getNSFWVideos(
+          selectedCategoryTyped,
+          selectedDifficultyTyped,
+          selectedRatingTyped,
+        );
         setVideos(videosData);
       }
 
@@ -130,7 +149,7 @@ export const NSFWVideoContent = ({
     } finally {
       setLoading(false);
     }
-  }, [activeTab, selectedCategoryTyped, selectedDifficultyTyped]);
+  }, [activeTab, selectedCategoryTyped, selectedDifficultyTyped, selectedRatingTyped]);
 
   const loadBookmarks = useCallback(async () => {
     const ids = await getNsfwVideoBookmarks();
@@ -161,14 +180,24 @@ export const NSFWVideoContent = ({
           videoId: selectedVideoId,
           quality: playerQuality,
           mode: playerMode,
+          forceRefresh: forceRefreshRef.current,
         });
+        forceRefreshRef.current = false;
         setPlayerUrl(res?.url ?? null);
       } finally {
         setPlayerLoading(false);
       }
     };
     void run();
-  }, [selectedVideoId, playerQuality, playerMode]);
+  }, [selectedVideoId, playerQuality, playerMode, playerRefreshToken]);
+
+  const refreshPlayerUrl = useCallback(() => {
+    const now = Date.now();
+    if (now - lastRefreshMs.current < 5000) return;
+    lastRefreshMs.current = now;
+    forceRefreshRef.current = true;
+    setPlayerRefreshToken(t => t + 1);
+  }, []);
 
   useEffect(() => {
     const run = async () => {
@@ -239,10 +268,11 @@ export const NSFWVideoContent = ({
   const handleDownload = async (video: NSFWVideoType, quality: VideoQuality) => {
     try {
       setDownloadProgress(p => ({ ...p, [`${video.id}:${quality}`]: 0 }));
-      const download = await requestVideoDownload(video.id, quality, progress => {
-        setDownloadProgress(p => ({ ...p, [`${video.id}:${quality}`]: progress }));
-      });
-      if (download) await loadData();
+      const download = await requestVideoDownload(video.id, quality);
+      if (download) {
+        setDownloadProgress(p => ({ ...p, [`${video.id}:${quality}`]: 100 }));
+        await loadData();
+      }
     } catch {
       toast.error("Failed to start download");
     }
@@ -315,14 +345,14 @@ export const NSFWVideoContent = ({
                 </Button>
               ) : (
                 <Button asChild className="gap-2">
-                  <Link to="/store">
+                  <NavLink to="/store">
                     <Lock className="w-4 h-4" />
                     Open DLC Store
-                  </Link>
+                  </NavLink>
                 </Button>
               )}
               <Button asChild variant="outline">
-                <Link to="/pricing">View Pricing</Link>
+                <NavLink to="/pricing">View Pricing</NavLink>
               </Button>
             </div>
             <Badge variant="secondary" className="mt-3">
@@ -392,8 +422,11 @@ export const NSFWVideoContent = ({
                 setSelectedCategory={setSelectedCategory}
                 selectedDifficulty={selectedDifficulty}
                 setSelectedDifficulty={setSelectedDifficulty}
+            selectedRating={selectedRating}
+            setSelectedRating={setSelectedRating}
                 categories={categories}
                 difficultyLevels={difficultyLevels}
+            ratingLevels={ratingLevels}
                 downloadQuality={downloadQuality}
                 setDownloadQuality={setDownloadQuality}
                 downloadProgress={downloadProgress}
@@ -481,6 +514,7 @@ export const NSFWVideoContent = ({
           void flushWatchHistory();
           void loadData();
         }}
+        onRequestRefresh={refreshPlayerUrl}
       />
     </div>
   );

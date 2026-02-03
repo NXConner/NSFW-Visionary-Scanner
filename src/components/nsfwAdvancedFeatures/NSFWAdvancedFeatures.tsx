@@ -15,13 +15,14 @@ import { AIChatTab } from "./tabs/AIChatTab";
 import { PositionsTab } from "./tabs/PositionsTab";
 import { AgeVerificationModal } from "@/dlc/components/AgeVerificationModal";
 import { useDLC, useDLCFeature } from "@/dlc/context/DLCContext";
-import { Link } from "react-router-dom";
+import { NavLink } from "@/components/NavLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card as UiCard, CardContent as UiCardContent } from "@/components/ui/card";
 import { Loader2, Lock, Shield } from "lucide-react";
 import { NsfwConsentGate } from "@/components/nsfw/NsfwConsentGate";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { useNsfwPrivacySettings } from "@/lib/nsfwPrivacySettings";
 
 type TabKey = "pornmd" | "recording" | "studio" | "dates" | "ai-chat" | "positions";
 
@@ -31,6 +32,8 @@ export const NSFWAdvancedFeatures = ({
   initialTab?: TabKey;
 } = {}): JSX.Element => {
   const consentEnabled = useFeatureFlag("nsfw_consent_gate", true);
+  const { settings: privacy } = useNsfwPrivacySettings();
+  const incognito = Boolean(privacy.incognitoMode);
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab ?? "pornmd");
   const [showAgeModal, setShowAgeModal] = useState(false);
   const { isAgeVerified } = useDLC();
@@ -74,14 +77,14 @@ export const NSFWAdvancedFeatures = ({
                 </Button>
               ) : (
                 <Button asChild className="gap-2">
-                  <Link to="/store">
+                  <NavLink to="/store">
                     <Lock className="w-4 h-4" />
                     Open DLC Store
-                  </Link>
+                  </NavLink>
                 </Button>
               )}
               <Button asChild variant="outline">
-                <Link to="/pricing">View Pricing</Link>
+                <NavLink to="/pricing">View Pricing</NavLink>
               </Button>
             </div>
             <Badge variant="secondary" className="mt-3">
@@ -100,6 +103,24 @@ export const NSFWAdvancedFeatures = ({
     );
   }
 
+  const tabLabels: Record<TabKey, string> = incognito
+    ? {
+        pornmd: "Browse",
+        recording: "Record",
+        studio: "Studio",
+        dates: "Plans",
+        "ai-chat": "Chat",
+        positions: "Library",
+      }
+    : {
+        pornmd: "PornMD",
+        recording: "Recording",
+        studio: "Studio",
+        dates: "Intimate Dates",
+        "ai-chat": "AI Chat",
+        positions: "Positions",
+      };
+
   const content = (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <AgeVerificationModal
@@ -113,22 +134,23 @@ export const NSFWAdvancedFeatures = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Heart className="w-6 h-6" />
-            NSFW Advanced Features
+            {incognito ? "Private Tools" : "NSFW Advanced Features"}
           </CardTitle>
           <CardDescription>
-            PornMD integration, multi-camera recording, intimate date planning, seductive AI chat,
-            and sex positions library
+            {incognito
+              ? "Discreet private tools with redacted labels."
+              : "PornMD integration, multi-camera recording, intimate date planning, seductive AI chat, and sex positions library"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={v => setActiveTab(v as TabKey)}>
             <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="pornmd">PornMD</TabsTrigger>
-              <TabsTrigger value="recording">Recording</TabsTrigger>
-              <TabsTrigger value="studio">Studio</TabsTrigger>
-              <TabsTrigger value="dates">Intimate Dates</TabsTrigger>
-              <TabsTrigger value="ai-chat">AI Chat</TabsTrigger>
-              <TabsTrigger value="positions">Positions</TabsTrigger>
+              <TabsTrigger value="pornmd">{tabLabels.pornmd}</TabsTrigger>
+              <TabsTrigger value="recording">{tabLabels.recording}</TabsTrigger>
+              <TabsTrigger value="studio">{tabLabels.studio}</TabsTrigger>
+              <TabsTrigger value="dates">{tabLabels.dates}</TabsTrigger>
+              <TabsTrigger value="ai-chat">{tabLabels["ai-chat"]}</TabsTrigger>
+              <TabsTrigger value="positions">{tabLabels.positions}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="pornmd" className="space-y-4">

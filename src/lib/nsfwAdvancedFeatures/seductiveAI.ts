@@ -3,6 +3,7 @@ import { fromExtended } from "@/lib/supabaseExtensions";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 import { isLovablePolicyBuild } from "@/lib/featureFlags";
+import { appendAuditLogEntry } from "@/lib/auditLogStorage";
 import type {
   SeductiveAIMessageMedia,
   SeductiveAIResponse,
@@ -17,6 +18,25 @@ type AiEdgeResponse = {
   sentiment?: string;
   suggestions?: string[];
   context?: JsonObject;
+  policy?: {
+    action: "allow" | "deescalate" | "block";
+    reason?: string;
+    category?: string;
+    severity?: string;
+    matched?: string[];
+    message?: string;
+  };
+  rateLimit?: {
+    limit: number;
+    remaining: number;
+    resetAt: string;
+    retryAfterSeconds?: number;
+  };
+  provider?: {
+    name: string;
+    model: string;
+    latencyMs?: number;
+  };
 };
 
 export async function createSeductiveAISession(
@@ -98,16 +118,57 @@ export async function sendSeductiveAIMessage(
     const { data: aiResponseData, error: aiError } = await supabase.functions.invoke(
       "seductive-ai-chat",
       {
-        body: { session_id: sessionId, user_message: message, media },
+        body: {
+          session_id: sessionId,
+          user_message: message,
+          media,
+          client_context: {
+            app_version: import.meta.env?.VITE_APP_VERSION,
+            app_env: import.meta.env?.VITE_APP_ENV,
+            distribution_channel: import.meta.env?.VITE_DISTRIBUTION_CHANNEL,
+          },
+        },
       },
     );
 
     if (aiError || !aiResponseData) {
-      logger.error("Error getting AI response", { error: aiError?.message });
+      const status = (aiError as any)?.context?.status as number | undefined;
+      if (status === 429) {
+        toast.error("Rate limit exceeded. Please wait a moment.");
+      } else if (status === 402) {
+        toast.error("AI credits exhausted. Please try again later.");
+      } else {
+        toast.error("Failed to get AI response");
+      }
+      logger.error("Error getting AI response", { error: aiError?.message, status });
       return null;
     }
 
     const aiPayload = aiResponseData as AiEdgeResponse;
+    if (aiPayload.policy?.action === "block") {
+      toast.error(aiPayload.policy.message || "Message blocked by safety policy.");
+      void appendAuditLogEntry({
+        action: "nsfw_policy_block",
+        category: "nsfw",
+        details: aiPayload.policy.message || "Message blocked by safety policy",
+        metadata: {
+          sessionId,
+          category: aiPayload.policy.category,
+          severity: aiPayload.policy.severity,
+        },
+      });
+    } else if (aiPayload.policy?.action === "deescalate") {
+      void appendAuditLogEntry({
+        action: "nsfw_policy_deescalate",
+        category: "nsfw",
+        details: aiPayload.policy.message || "Message deescalated by safety policy",
+        metadata: {
+          sessionId,
+          category: aiPayload.policy.category,
+          severity: aiPayload.policy.severity,
+        },
+      });
+    }
 
     const { data: aiMessage, error: aiMessageError } = await fromExtended("seductive_ai_messages")
       .insert({

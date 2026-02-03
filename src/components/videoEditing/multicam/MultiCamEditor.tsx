@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { CameraStreamRow, VideoEditRow, VideoRecordingRow } from "@/lib/videoEditing";
-import { clamp, getEditsForRecording, queueVideoEdit, roundTo, uuidLike } from "@/lib/videoEditing";
+import {
+  clamp,
+  getEditsForRecording,
+  queueVideoEdit,
+  renderAndUploadEdit,
+  roundTo,
+  type RenderProgress,
+  uuidLike,
+} from "@/lib/videoEditing";
 import type { CameraSource, CameraSwitchEvent, MaskTrack, MaskKeyframe, TimelineSpecV1, TransitionType } from "@/lib/videoEditing";
 import { EditsList } from "@/components/videoEditing/multicam/EditsList";
 import { TimelineBar } from "@/components/videoEditing/multicam/TimelineBar";
@@ -141,6 +149,8 @@ export function MultiCamEditor(props: {
   const [loadingEdits, setLoadingEdits] = useState(false);
   const [edits, setEdits] = useState<VideoEditRow[]>([]);
   const [queuing, setQueuing] = useState(false);
+  const [rendering, setRendering] = useState(false);
+  const [renderProgress, setRenderProgress] = useState<RenderProgress | null>(null);
 
   const loadEdits = useCallback(async () => {
     setLoadingEdits(true);
@@ -212,6 +222,29 @@ export function MultiCamEditor(props: {
     }
   }, [baseRecording.id, editName, loadEdits, onRefresh, timeline]);
 
+  const handleRender = useCallback(async () => {
+    setRendering(true);
+    setRenderProgress({ phase: "loading", progress: 0 });
+    try {
+      const res = await renderAndUploadEdit({
+        recordingId: baseRecording.id,
+        editName,
+        timeline,
+        onProgress: setRenderProgress,
+      });
+      if (!res.ok) {
+        toast.error(res.error || "Render failed");
+        return;
+      }
+      toast.success("Render complete");
+      await loadEdits();
+      await onRefresh();
+    } finally {
+      setRendering(false);
+      setTimeout(() => setRenderProgress(null), 800);
+    }
+  }, [baseRecording.id, editName, loadEdits, onRefresh, timeline]);
+
   const handleAddMaskKeyframeFromDetection = useCallback(() => {
     const det = detection.detections[selectedDetectionIndex];
     if (!det) return toast.info("No detection selected");
@@ -250,7 +283,11 @@ export function MultiCamEditor(props: {
           onLoadDraft={handleLoadDraft}
           onSaveDraft={handleSaveDraft}
           onQueue={handleQueue}
+          onRender={handleRender}
           queuing={queuing}
+          rendering={rendering}
+          renderPhase={renderProgress?.phase}
+          renderProgress={renderProgress?.progress}
         />
 
         <div className="flex-1 overflow-hidden grid grid-rows-[auto,1fr,auto]">

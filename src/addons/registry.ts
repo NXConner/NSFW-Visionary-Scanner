@@ -5,7 +5,7 @@ type AddonState = {
   manifest: AddonManifest;
   contributions?: AddonContributions;
   runtime: {
-    status: "discovered" | "registering" | "ready" | "failed";
+    status: "discovered" | "registering" | "ready" | "failed" | "blocked";
     lastError?: string | null;
     updatedAt: string;
   };

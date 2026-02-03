@@ -16,9 +16,40 @@ export type AddonRequirement = {
   requiredDlcFeatureIds?: string[];
 };
 
+export type AddonBuildVariant = {
+  appVersion?: string;
+  distribution?: string;
+  allowAdultBundle?: boolean;
+};
+
+export type AddonCompatibilityStatus =
+  | "supported"
+  | "experimental"
+  | "deprecated"
+  | "blocked"
+  | "unsupported";
+
+export type AddonCompatibilityEntry = {
+  minAppVersion?: string;
+  maxAppVersion?: string;
+  appVersions?: string[];
+  buildVariants?: AddonBuildVariant[];
+  status?: AddonCompatibilityStatus;
+  notes?: string[];
+};
+
+export type AddonCompatibilityMatrix = {
+  entries: AddonCompatibilityEntry[];
+  defaultStatus?: AddonCompatibilityStatus;
+  lastUpdated?: string;
+  notes?: string[];
+};
+
 export interface AddonManifest {
   id: AddonId;
   name: string;
+  /** Manifest schema version (separate from addon version). */
+  manifestVersion: string;
   version: string;
   /**
    * Minimum app version required for this addon (semantic version).
@@ -27,6 +58,7 @@ export interface AddonManifest {
   minAppVersion?: string;
   description: string;
   enabledByDefault: boolean;
+  compatibility?: AddonCompatibilityMatrix;
   requirements?: AddonRequirement;
 }
 

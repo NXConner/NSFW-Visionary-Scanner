@@ -25,6 +25,13 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 const buckets = [
   {
+    id: 'user-media',
+    name: 'user-media',
+    public: true,
+    fileSizeLimit: 250 * 1024 * 1024, // 250MB
+    allowedMimeTypes: null
+  },
+  {
     id: 'user-uploads',
     name: 'user-uploads',
     public: true,
@@ -76,9 +83,19 @@ const buckets = [
   {
     id: 'nsfw-content',
     name: 'nsfw-content',
-    public: true,
-    fileSizeLimit: 500 * 1024 * 1024, // 500MB
-    allowedMimeTypes: null
+    public: false,
+    fileSizeLimit: 10 * 1024 * 1024 * 1024, // 10GB
+    allowedMimeTypes: [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'video/mp4',
+      'video/webm',
+      'video/quicktime',
+      'application/json',
+      'text/plain'
+    ]
   }
 ]
 

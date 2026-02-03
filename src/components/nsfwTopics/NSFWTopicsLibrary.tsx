@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { NavLink } from "@/components/NavLink";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { AgeVerificationModal } from "@/dlc/components/AgeVerificationModal";
 import { useDLC, useDLCFeature, useNSFWAvailable } from "@/dlc/context/DLCContext";
@@ -46,6 +53,7 @@ export function NSFWTopicsLibrary(): React.ReactElement {
   const [items, setItems] = useState<NsfwTopicLibraryItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<NsfwTopicLibraryItem | null>(null);
   const [revealSelected, setRevealSelected] = useState(false);
+  const [ratingFilter, setRatingFilter] = useState<"all" | "educational" | "demonstrative" | "explicit">("all");
 
   // Wait for DLC context to load before showing any restriction UI
   const stillCheckingAccess = dlcContextLoading || topicsLibrary.isLoading;
@@ -86,6 +94,7 @@ export function NSFWTopicsLibrary(): React.ReactElement {
       const rows = await fetchTopicLibraryItems({
         topicId,
         requiresFeatureIds: allowedFeatureIds,
+        contentRating: ratingFilter,
       });
       setItems(rows);
     } catch (e) {
@@ -95,7 +104,7 @@ export function NSFWTopicsLibrary(): React.ReactElement {
     } finally {
       setLoading(false);
     }
-  }, [activeTopicId, allowedFeatureIds]);
+  }, [activeTopicId, allowedFeatureIds, ratingFilter]);
 
   useEffect(() => {
     if (stillCheckingAccess) return;
@@ -181,7 +190,7 @@ export function NSFWTopicsLibrary(): React.ReactElement {
               Open the store to purchase an NSFW DLC upgrade and topic packs.
             </p>
             <Button asChild className="gap-2">
-              <Link to="/store">Open DLC Store</Link>
+              <NavLink to="/store">Open DLC Store</NavLink>
             </Button>
             <Badge variant="secondary" className="mt-3">
               Requires NSFW DLC
@@ -206,7 +215,7 @@ export function NSFWTopicsLibrary(): React.ReactElement {
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <Button asChild>
-                <Link to="/store">Open DLC Store</Link>
+                <NavLink to="/store">Open DLC Store</NavLink>
               </Button>
               <Button variant="outline" onClick={() => void load()}>
                 <RefreshCcw className="w-4 h-4 mr-2" /> Refresh
@@ -294,6 +303,17 @@ export function NSFWTopicsLibrary(): React.ReactElement {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Select value={ratingFilter} onValueChange={v => setRatingFilter(v as typeof ratingFilter)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Rating tier" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All ratings</SelectItem>
+                  <SelectItem value="educational">Educational</SelectItem>
+                  <SelectItem value="demonstrative">Demonstrative</SelectItem>
+                  <SelectItem value="explicit">Explicit</SelectItem>
+                </SelectContent>
+              </Select>
               {incognito ? <Badge variant="secondary">Incognito</Badge> : null}
               <Button variant="outline" onClick={() => void load()} className="gap-2">
                 <RefreshCcw className="w-4 h-4" /> Refresh Topics
@@ -302,7 +322,7 @@ export function NSFWTopicsLibrary(): React.ReactElement {
                 <RefreshCcw className="w-4 h-4" /> Refresh Items
               </Button>
               <Button asChild>
-                <Link to="/store">Store</Link>
+                <NavLink to="/store">Store</NavLink>
               </Button>
             </div>
           </div>
