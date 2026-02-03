@@ -185,34 +185,8 @@ export default defineConfig(({ mode }) => {
         // Isolated by dependency tree to avoid cyclic cross-chunk imports.
         manualChunks: (id) => {
           if (id.includes("node_modules")) {
-            const isReact =
-              id.includes("/node_modules/react/") || id.includes("\\node_modules\\react\\");
-            const isReactDom =
-              id.includes("/node_modules/react-dom/") ||
-              id.includes("\\node_modules\\react-dom\\");
-            const isScheduler =
-              id.includes("/node_modules/scheduler/") ||
-              id.includes("\\node_modules\\scheduler\\");
-            const isReactIs =
-              id.includes("/node_modules/react-is/") || id.includes("\\node_modules\\react-is\\");
-            const isUseSyncExternalStore =
-              id.includes("/node_modules/use-sync-external-store/") ||
-              id.includes("\\node_modules\\use-sync-external-store\\");
-            if (isReact || isReactDom || isScheduler || isReactIs || isUseSyncExternalStore) {
-              return "vendor-react";
-            }
-            // Heavy visualization libraries (dynamically imported via LazyCharts/LazyModel3DViewer)
-            if (id.includes("recharts") || id.includes("d3-")) return "vendor-charts";
-            if (id.includes("three") || id.includes("@react-three")) return "vendor-3d";
-            if (id.includes("@tensorflow") || id.includes("nsfwjs")) return "vendor-ml";
-            // UI component libraries
-            if (id.includes("@radix-ui")) return "vendor-ui";
-            if (id.includes("framer-motion")) return "vendor-motion";
-            if (id.includes("react-router")) return "vendor-router";
-            // Supabase
-            if (id.includes("@supabase")) return "vendor-supabase";
-            // Stripe
-            if (id.includes("@stripe")) return "vendor-stripe";
+            // Single vendor chunk avoids circular chunk deps during Rollup optimization.
+            return "vendor";
           }
         },
         chunkFileNames: "assets/[name]-[hash].js",
