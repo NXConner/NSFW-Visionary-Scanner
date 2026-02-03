@@ -166,6 +166,7 @@ export default defineConfig(({ mode }) => {
   resolve: {
     alias: {
       "@": resolve(__dirname, "./src"),
+      "lucide-react": resolve(__dirname, "./src/lib/lucide"),
     },
   },
   build: {
