@@ -72,11 +72,37 @@ function addIssue({ file, line, check, severity, fix, match }) {
   issues.push({ file, line, check, severity, fix, match });
 }
 
+function extractJsxTag(content, startIndex) {
+  let inSingle = false;
+  let inDouble = false;
+  let inTemplate = false;
+  let braceDepth = 0;
+  for (let i = startIndex; i < content.length; i++) {
+    const ch = content[i];
+    const prev = content[i - 1];
+    if (!inDouble && !inTemplate && ch === "'" && prev !== "\\") {
+      inSingle = !inSingle;
+    } else if (!inSingle && !inTemplate && ch === '"' && prev !== "\\") {
+      inDouble = !inDouble;
+    } else if (!inSingle && !inDouble && ch === "`" && prev !== "\\") {
+      inTemplate = !inTemplate;
+    } else if (!inSingle && !inDouble && !inTemplate) {
+      if (ch === "{") braceDepth += 1;
+      if (ch === "}" && braceDepth > 0) braceDepth -= 1;
+      if (ch === ">" && braceDepth === 0) {
+        return content.slice(startIndex, i + 1);
+      }
+    }
+  }
+  return "";
+}
+
 function checkImages(content, file) {
-  const regex = /<img\b[^>]*>/g;
+  const regex = /<img\b/g;
   let match;
   while ((match = regex.exec(content))) {
-    const tag = match[0];
+    const tag = extractJsxTag(content, match.index);
+    if (!tag) continue;
     const hasAlt = /\balt\s*=/i.test(tag);
     if (!hasAlt) {
       addIssue({
@@ -122,13 +148,17 @@ function checkHtmlLang(content, file) {
 }
 
 function checkInteractiveLabels(content, file) {
-  const regex = /<(button|a)\b[^>]*>[\s\S]*?<\/\1>/g;
+  const regex = /<(button|a)\b/g;
   let match;
   while ((match = regex.exec(content))) {
-    const block = match[0];
-    const openTag = block.match(/^<[^>]+>/)?.[0] ?? "";
+    const tagName = match[1];
+    const openTag = extractJsxTag(content, match.index);
+    if (!openTag) continue;
+    const startIndex = match.index + openTag.length;
+    const closeIndex = content.indexOf(`</${tagName}>`, startIndex);
+    if (closeIndex === -1) continue;
+    const inner = content.slice(startIndex, closeIndex);
     if (/\b(aria-label|aria-labelledby)\s*=/.test(openTag)) continue;
-    const inner = block.replace(/^<[^>]+>/, "").replace(/<\/[^>]+>$/, "");
     const text = inner.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
     if (text.length > 0) continue;
     addIssue({
@@ -143,10 +173,11 @@ function checkInteractiveLabels(content, file) {
 }
 
 function checkInputLabels(content, file) {
-  const regex = /<input\b[^>]*>/g;
+  const regex = /<input\b/g;
   let match;
   while ((match = regex.exec(content))) {
-    const tag = match[0];
+    const tag = extractJsxTag(content, match.index);
+    if (!tag) continue;
     if (/\bid\s*=/.test(tag)) continue;
     if (/\b(aria-label|aria-labelledby)\s*=/.test(tag)) continue;
     addIssue({
