@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { EmailVerificationBanner } from "./EmailVerificationBanner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Shield, Loader2 } from "lucide-react";
+import { Mail, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 
@@ -19,15 +19,15 @@ export const EmailVerificationGate = ({
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(true);
 
-  // AGGRESSIVE fallback: 1s max for verification check
+  // Fallback: avoid indefinite loading, but keep verification strict
   useEffect(() => {
     const fallback = setTimeout(() => {
       if (checking) {
-        logger.warn("[verify] Fallback triggered - allowing access");
+        logger.warn("[verify] Verification check timed out");
         setChecking(false);
-        setIsVerified(true);
+        setIsVerified(false);
       }
-    }, 1000);
+    }, 4000);
 
     return () => clearTimeout(fallback);
   }, [checking]);
@@ -42,9 +42,9 @@ export const EmailVerificationGate = ({
       return;
     }
 
-    // Quick async check with 800ms timeout
+    // Quick async check with 2s timeout
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 800);
+    const timeout = setTimeout(() => controller.abort(), 2000);
 
     supabase.auth
       .getUser()
@@ -54,9 +54,9 @@ export const EmailVerificationGate = ({
         }
       })
       .catch(() => {
-        // On error, allow access
+        // On error, keep strict (do not allow access)
         if (!controller.signal.aborted) {
-          setIsVerified(true);
+          setIsVerified(false);
         }
       })
       .finally(() => {

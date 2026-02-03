@@ -180,13 +180,38 @@ export const SocialLoginButtons = ({
 
 // Export as standalone component for settings page
 export const LinkedAccountsManager = () => {
-  const { user } = useAuth()
+  const { user, linkSocialAccount } = useAuth()
   const [linking, setLinking] = useState<'google' | 'apple' | null>(null)
+  const isAuthenticated = Boolean(user?.id)
 
-  // Check which providers are already linked
-  const linkedProviders = user?.app_metadata?.providers || []
-  const hasGoogle = linkedProviders.includes('google')
-  const hasApple = linkedProviders.includes('apple')
+  const providerList = new Set<string>()
+  if (Array.isArray(user?.app_metadata?.providers)) {
+    user?.app_metadata?.providers.forEach((provider: string) => providerList.add(provider))
+  }
+  if (Array.isArray(user?.identities)) {
+    user.identities.forEach(identity => {
+      if (identity?.provider) providerList.add(identity.provider)
+    })
+  }
+
+  const hasGoogle = providerList.has('google')
+  const hasApple = providerList.has('apple')
+
+  const handleLink = async (provider: 'google' | 'apple') => {
+    setLinking(provider)
+    try {
+      const result = await linkSocialAccount(provider)
+      if (result.error) throw result.error
+      toast.success(`${provider === 'google' ? 'Google' : 'Apple'} account linked`)
+    } catch (error) {
+      logger.error('Social account link failed', { error, provider })
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to link social account'
+      )
+    } finally {
+      setLinking(null)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -194,6 +219,11 @@ export const LinkedAccountsManager = () => {
       <p className="text-sm text-muted-foreground">
         Connect your social accounts for easier sign-in.
       </p>
+      {!isAuthenticated && (
+        <p className="text-xs text-muted-foreground">
+          Sign in to link your Google or Apple account.
+        </p>
+      )}
 
       <div className="space-y-2">
         <div className="flex items-center justify-between p-3 rounded-lg border">
@@ -209,12 +239,10 @@ export const LinkedAccountsManager = () => {
           <Button
             variant={hasGoogle ? 'secondary' : 'outline'}
             size="sm"
-            disabled={hasGoogle || linking !== null}
-            onClick={() => {
-              // Trigger link flow
-            }}
+            disabled={!isAuthenticated || hasGoogle || linking !== null}
+            onClick={() => handleLink('google')}
           >
-            {hasGoogle ? 'Connected' : 'Connect'}
+            {linking === 'google' ? 'Linking...' : hasGoogle ? 'Connected' : 'Connect'}
           </Button>
         </div>
 
@@ -231,12 +259,10 @@ export const LinkedAccountsManager = () => {
           <Button
             variant={hasApple ? 'secondary' : 'outline'}
             size="sm"
-            disabled={hasApple || linking !== null}
-            onClick={() => {
-              // Trigger link flow
-            }}
+            disabled={!isAuthenticated || hasApple || linking !== null}
+            onClick={() => handleLink('apple')}
           >
-            {hasApple ? 'Connected' : 'Connect'}
+            {linking === 'apple' ? 'Linking...' : hasApple ? 'Connected' : 'Connect'}
           </Button>
         </div>
       </div>

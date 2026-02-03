@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BiometricLoginButton } from "@/components/BiometricLoginButton";
 import { useBiometricAuth } from "@/hooks/useBiometricAuth";
 import { SUPPORT_CONTACT_EMAIL } from "@/config/brand";
+import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -42,6 +43,7 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
   const { user, signIn, signUp, signInWithGoogle, signInWithApple } = useAuth();
   const navigate = useNavigate();
   const {
@@ -67,6 +69,7 @@ const Auth = () => {
 
     if (verified === "true") {
       toast.success("Email verified successfully! You can now sign in.");
+      setNeedsVerification(false);
       setMode("login");
     }
   }, []);
@@ -145,6 +148,7 @@ const Auth = () => {
             throw new Error(message);
           }
           toast.success("Account created! Please check your email to verify your account.");
+          setNeedsVerification(true);
           // Show verification message instead of navigating
           setMode("login");
           return;
@@ -156,6 +160,9 @@ const Auth = () => {
               : error.message.includes("Email not confirmed")
                 ? "Please verify your email address before signing in. Check your inbox for the verification link."
                 : error.message;
+            if (error.message.includes("Email not confirmed")) {
+              setNeedsVerification(true);
+            }
             throw new Error(message);
           }
 
@@ -165,6 +172,7 @@ const Auth = () => {
           }
 
           toast.success("Welcome back!");
+          setNeedsVerification(false);
           navigate("/");
         }
       }
@@ -231,6 +239,14 @@ const Auth = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {needsVerification && email && (mode === "login" || mode === "signup") && (
+              <div className="mb-4">
+                <EmailVerificationBanner
+                  email={email}
+                  onVerified={() => setNeedsVerification(false)}
+                />
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               {mode !== "reset" && (
                 <div className="space-y-2">

@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveEmailFromEnv, sendResendEmail } from "../_shared/email.ts";
+import { buildRateLimitHeaders, enforceRateLimit } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,14 +41,98 @@ serve(async req => {
       throw new Error("Unauthorized: Can only delete your own account");
     }
 
+    const rate = await enforceRateLimit({
+      identifier: user.id,
+      endpoint: "delete-user-account",
+      windowSeconds: 3600,
+      maxRequests: 2,
+    });
+    if (!rate.allowed) {
+      return new Response(JSON.stringify({ success: false, error: "Rate limit exceeded" }), {
+        status: 429,
+        headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+      });
+    }
+
+    const sendDeletionEmail = async (email: string) => {
+      const resendKey = Deno.env.get("RESEND_API_KEY") ?? "";
+      if (!resendKey) return false;
+      const from = resolveEmailFromEnv();
+      const subject = "Your account has been deleted";
+      const html = `
+        <p>Hello,</p>
+        <p>This is a confirmation that your account and associated data have been deleted.</p>
+        <p>If you did not request this, please contact support immediately.</p>
+      `;
+      try {
+        let eventId: string | null = null;
+        try {
+          const { data: ev, error: evErr } = await supabaseClient
+            .from("email_send_events")
+            .insert({
+              campaign_id: "account-deletion",
+              user_id: user.id,
+              to_email: email,
+              provider: "resend",
+              provider_message_id: null,
+              status: "queued",
+              error_message: null,
+              sent_at: null,
+            })
+            .select("*")
+            .single();
+          if (!evErr && ev?.id) eventId = ev.id;
+        } catch (error) {
+          console.warn("Failed to log email send event:", error);
+        }
+
+        const sent = await sendResendEmail({
+          to: email,
+          subject,
+          html,
+          from,
+          apiKey: resendKey,
+        });
+
+        if (eventId) {
+          await supabaseClient
+            .from("email_send_events")
+            .update({
+              provider_message_id: sent.id,
+              status: "sent",
+              sent_at: new Date().toISOString(),
+            })
+            .eq("id", eventId);
+        }
+        return true;
+      } catch (error) {
+        console.warn("Account deletion email failed:", error);
+        return false;
+      }
+    };
+
+    if (user.email) {
+      await sendDeletionEmail(user.email);
+    }
+
     // Delete all user data from tables
     const tablesToClean = [
-      "user_subscriptions",
+      "api_usage_analytics",
+      "api_keys",
+      "app_analytics_events",
+      "dlc_analytics_events",
+      "dlc_backup_status",
+      "dlc_content_library",
+      "dlc_download_queue",
+      "dlc_purchases",
       "device_tokens",
-      "user_preferences",
-      "scan_history",
+      "email_analytics",
       "health_diary",
+      "scan_history",
+      "user_preferences",
       "user_roles",
+      "user_subscriptions",
+      "webhooks",
       "profiles",
     ];
 
@@ -97,7 +183,7 @@ serve(async req => {
         message: "Account deleted successfully",
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
         status: 200,
       },
     );

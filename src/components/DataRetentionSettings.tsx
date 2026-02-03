@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,7 @@ interface RetentionPreference {
   health_diary: number; // days
   auto_cleanup_enabled: boolean;
   notify_before_deletion: boolean;
+  notify_days_before: number;
 }
 
 const DEFAULT_RETENTION: RetentionPreference = {
@@ -29,6 +30,7 @@ const DEFAULT_RETENTION: RetentionPreference = {
   health_diary: 730, // 2 years
   auto_cleanup_enabled: true,
   notify_before_deletion: true,
+  notify_days_before: 30,
 };
 
 export const DataRetentionSettings = () => {
@@ -38,6 +40,42 @@ export const DataRetentionSettings = () => {
     DEFAULT_RETENTION,
   );
   const [isSaving, setIsSaving] = useState(false);
+  const hasLoadedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) {
+      hasLoadedRef.current = null;
+      return;
+    }
+
+    if (hasLoadedRef.current === user.id) return;
+    hasLoadedRef.current = user.id;
+
+    const load = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("user_preferences" as any)
+          .select("data_retention_preferences")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (error) throw error;
+        const incoming = (data as any)?.data_retention_preferences as
+          | Partial<RetentionPreference>
+          | null;
+        if (incoming) {
+          setPreferences({
+            ...DEFAULT_RETENTION,
+            ...incoming,
+          });
+        }
+      } catch (error) {
+        logger.warn("Failed to load retention preferences", { error, userId: user.id });
+        hasLoadedRef.current = null;
+      }
+    };
+
+    void load();
+  }, [setPreferences, user?.id]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -45,7 +83,7 @@ export const DataRetentionSettings = () => {
     setIsSaving(true);
     try {
       // Save to Supabase for cloud sync
-      const { error } = await supabase.from("user_preferences").upsert(
+      const { error } = await supabase.from("user_preferences" as any).upsert(
         {
           user_id: user.id,
           data_retention_preferences: preferences,
@@ -75,6 +113,11 @@ export const DataRetentionSettings = () => {
     { value: "730", label: "730 days (2 years)" },
     { value: "1095", label: "1095 days (3 years)" },
     { value: "0", label: "Never (keep indefinitely)" },
+  ];
+  const notifyOptions = [
+    { value: "7", label: "7 days before" },
+    { value: "14", label: "14 days before" },
+    { value: "30", label: "30 days before" },
   ];
 
   return (
@@ -181,6 +224,32 @@ export const DataRetentionSettings = () => {
               className="w-4 h-4"
             />
           </div>
+
+          {preferences.notify_before_deletion && (
+            <div className="space-y-2">
+              <Label htmlFor="notify-days">Notification Lead Time</Label>
+              <Select
+                value={preferences.notify_days_before.toString()}
+                onValueChange={value =>
+                  setPreferences({ ...preferences, notify_days_before: parseInt(value) })
+                }
+              >
+                <SelectTrigger id="notify-days">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {notifyOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                We'll email you before automatic deletion occurs.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="p-4 rounded-lg bg-muted/30 space-y-2">

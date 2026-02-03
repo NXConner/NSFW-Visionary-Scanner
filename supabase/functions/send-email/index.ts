@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { resolveEmailFromEnv, sanitizeNotificationText, sendResendEmail } from "../_shared/email.ts";
+import { buildRateLimitHeaders, enforceRateLimit } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,44 +14,6 @@ type ReqBody = {
   content: string;
   campaignId?: string;
 };
-
-function sanitizeNotificationText(input: unknown): string {
-  const s = typeof input === "string" ? input : input == null ? "" : String(input);
-  return s
-    .replace(/\b(nsfw|explicit|porn|sexual|sex|adult(-only)?|18\+)\b/gi, "private")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-}
-
-async function sendViaResend(params: {
-  to: string;
-  subject: string;
-  html: string;
-  from: string;
-  apiKey: string;
-}) {
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${params.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: params.from,
-      to: [params.to],
-      subject: params.subject,
-      html: params.html,
-    }),
-  });
-
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`Resend error ${res.status}: ${txt}`);
-  }
-
-  const json = await res.json();
-  return { id: String(json?.id ?? "") };
-}
 
 serve(async req => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -97,6 +61,19 @@ serve(async req => {
       });
     }
 
+    const rate = await enforceRateLimit({
+      identifier: user.id,
+      endpoint: "send-email",
+      windowSeconds: 60,
+      maxRequests: 20,
+    });
+    if (!rate.allowed) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+        status: 429,
+        headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+      });
+    }
+
     const body = (await req.json()) as ReqBody;
     const to = String(body.to || "").trim();
     const subject = sanitizeNotificationText(body.subject);
@@ -115,8 +92,7 @@ serve(async req => {
 
     const provider = "resend";
     const resendKey = Deno.env.get("RESEND_API_KEY") ?? "";
-    const from =
-      Deno.env.get("EMAIL_FROM") ?? "Pavement Performance Suite <n8ter8@gmail.com>";
+    const from = resolveEmailFromEnv();
 
     if (!resendKey) {
       throw new Error("RESEND_API_KEY is not configured");
@@ -140,7 +116,7 @@ serve(async req => {
 
     if (evErr) throw evErr;
 
-    const sent = await sendViaResend({ to, subject, html: content, from, apiKey: resendKey });
+    const sent = await sendResendEmail({ to, subject, html: content, from, apiKey: resendKey });
 
     await supabaseClient
       .from("email_send_events")
@@ -153,7 +129,7 @@ serve(async req => {
 
     return new Response(JSON.stringify({ ok: true, provider, id: sent.id }), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("send-email error:", e);

@@ -3,7 +3,7 @@
  * Comprehensive admin panel for managing the application
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,22 +28,48 @@ import {
   Upload,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ContentModerationPanel } from "@/components/admin/ContentModerationPanel";
-import { AdminUsersPanel } from "@/components/admin/AdminUsersPanel";
-import { AdminAnalyticsPanel } from "@/components/admin/AdminAnalyticsPanel";
-import { AdminDLCPanel } from "@/components/admin/AdminDLCPanel";
-import { AdminLicensesPanel } from "@/components/admin/AdminLicensesPanel";
-import { AdminNotificationsPanel } from "@/components/admin/AdminNotificationsPanel";
-import { AdminDatabasePanel } from "@/components/admin/AdminDatabasePanel";
-import { AdminSettingsPanel } from "@/components/admin/AdminSettingsPanel";
-import { AdminHealthPanel } from "@/components/admin/AdminHealthPanel";
-import { AdminSecurityPanel } from "@/components/admin/AdminSecurityPanel";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import {
   SUPPORT_CONTACT_EMAIL,
   PRIVACY_CONTACT_EMAIL,
   DPO_CONTACT_EMAIL,
 } from "@/config/brand";
 import { useAdminMetrics } from "@/hooks/useAdminMetrics";
+
+const ContentModerationPanel = lazy(() =>
+  import("@/components/admin/ContentModerationPanel").then(m => ({
+    default: m.ContentModerationPanel,
+  })),
+);
+const AdminUsersPanel = lazy(() =>
+  import("@/components/admin/AdminUsersPanel").then(m => ({ default: m.AdminUsersPanel })),
+);
+const AdminAnalyticsPanel = lazy(() =>
+  import("@/components/admin/AdminAnalyticsPanel").then(m => ({ default: m.AdminAnalyticsPanel })),
+);
+const AdminDLCPanel = lazy(() =>
+  import("@/components/admin/AdminDLCPanel").then(m => ({ default: m.AdminDLCPanel })),
+);
+const AdminLicensesPanel = lazy(() =>
+  import("@/components/admin/AdminLicensesPanel").then(m => ({ default: m.AdminLicensesPanel })),
+);
+const AdminNotificationsPanel = lazy(() =>
+  import("@/components/admin/AdminNotificationsPanel").then(m => ({
+    default: m.AdminNotificationsPanel,
+  })),
+);
+const AdminDatabasePanel = lazy(() =>
+  import("@/components/admin/AdminDatabasePanel").then(m => ({ default: m.AdminDatabasePanel })),
+);
+const AdminSettingsPanel = lazy(() =>
+  import("@/components/admin/AdminSettingsPanel").then(m => ({ default: m.AdminSettingsPanel })),
+);
+const AdminHealthPanel = lazy(() =>
+  import("@/components/admin/AdminHealthPanel").then(m => ({ default: m.AdminHealthPanel })),
+);
+const AdminSecurityPanel = lazy(() =>
+  import("@/components/admin/AdminSecurityPanel").then(m => ({ default: m.AdminSecurityPanel })),
+);
 
 interface MetricCardProps {
   title: string;
@@ -432,25 +458,85 @@ export default function AdminDashboard({ initialSection }: AdminDashboardProps) 
               </>
             )}
 
-            {activeSection === "users" && <AdminUsersPanel />}
-            
-            {activeSection === "content" && <ContentModerationPanel />}
-            
-            {activeSection === "analytics" && <AdminAnalyticsPanel />}
+            {activeSection === "users" && (
+              <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
+                <ErrorBoundary section="Admin Users">
+                  <AdminUsersPanel />
+                </ErrorBoundary>
+              </Suspense>
+            )}
 
-            {activeSection === "dlc" && <AdminDLCPanel />}
-            
-            {activeSection === "licenses" && <AdminLicensesPanel />}
-            
-            {activeSection === "notifications" && <AdminNotificationsPanel />}
-            
-            {activeSection === "database" && <AdminDatabasePanel />}
-            
-            {activeSection === "settings" && <AdminSettingsPanel />}
-            
-            {activeSection === "health" && <AdminHealthPanel />}
-            
-            {activeSection === "security" && <AdminSecurityPanel />}
+            {activeSection === "content" && (
+              <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
+                <ErrorBoundary section="Content Moderation">
+                  <ContentModerationPanel />
+                </ErrorBoundary>
+              </Suspense>
+            )}
+
+            {activeSection === "analytics" && (
+              <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
+                <ErrorBoundary section="Analytics">
+                  <AdminAnalyticsPanel />
+                </ErrorBoundary>
+              </Suspense>
+            )}
+
+            {activeSection === "dlc" && (
+              <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
+                <ErrorBoundary section="DLC">
+                  <AdminDLCPanel />
+                </ErrorBoundary>
+              </Suspense>
+            )}
+
+            {activeSection === "licenses" && (
+              <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
+                <ErrorBoundary section="Licenses">
+                  <AdminLicensesPanel />
+                </ErrorBoundary>
+              </Suspense>
+            )}
+
+            {activeSection === "notifications" && (
+              <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
+                <ErrorBoundary section="Notifications">
+                  <AdminNotificationsPanel />
+                </ErrorBoundary>
+              </Suspense>
+            )}
+
+            {activeSection === "database" && (
+              <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
+                <ErrorBoundary section="Database">
+                  <AdminDatabasePanel />
+                </ErrorBoundary>
+              </Suspense>
+            )}
+
+            {activeSection === "settings" && (
+              <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
+                <ErrorBoundary section="System Settings">
+                  <AdminSettingsPanel />
+                </ErrorBoundary>
+              </Suspense>
+            )}
+
+            {activeSection === "health" && (
+              <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
+                <ErrorBoundary section="System Health">
+                  <AdminHealthPanel />
+                </ErrorBoundary>
+              </Suspense>
+            )}
+
+            {activeSection === "security" && (
+              <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
+                <ErrorBoundary section="Security">
+                  <AdminSecurityPanel />
+                </ErrorBoundary>
+              </Suspense>
+            )}
           </div>
         </div>
       </div>
