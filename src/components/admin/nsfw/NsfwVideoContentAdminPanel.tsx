@@ -19,6 +19,9 @@ type VideoRow = {
   is_featured: boolean;
   is_premium: boolean;
   view_count: number;
+  license_status: string | null;
+  compliance_status: string | null;
+  license_id: string | null;
   updated_at: string | null;
 };
 
@@ -32,7 +35,7 @@ export function NsfwVideoContentAdminPanel(): JSX.Element {
     try {
       const { data, error } = await fromExtended("nsfw_video_content")
         .select(
-          "id,title,category,difficulty_level,is_approved,is_active,is_featured,is_premium,view_count,updated_at",
+          "id,title,category,difficulty_level,is_approved,is_active,is_featured,is_premium,view_count,license_status,compliance_status,license_id,updated_at",
         )
         .order("updated_at", { ascending: false })
         .limit(200);
@@ -99,6 +102,8 @@ export function NsfwVideoContentAdminPanel(): JSX.Element {
                 <TableHead>Category</TableHead>
                 <TableHead>Difficulty</TableHead>
                 <TableHead>Views</TableHead>
+                <TableHead>License</TableHead>
+                <TableHead>Compliance</TableHead>
                 <TableHead>Approved</TableHead>
                 <TableHead>Active</TableHead>
                 <TableHead>Featured</TableHead>
@@ -117,6 +122,19 @@ export function NsfwVideoContentAdminPanel(): JSX.Element {
                   </TableCell>
                   <TableCell>{row.difficulty_level ?? "n/a"}</TableCell>
                   <TableCell>{row.view_count ?? 0}</TableCell>
+                  <TableCell>
+                    <Badge variant={row.license_status === "verified" ? "secondary" : "outline"}>
+                      {row.license_status || "unknown"}
+                    </Badge>
+                    {row.license_id ? (
+                      <div className="text-xs text-muted-foreground">{row.license_id}</div>
+                    ) : null}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={row.compliance_status === "verified" ? "secondary" : "outline"}>
+                      {row.compliance_status || "n/a"}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     <Switch
                       checked={row.is_approved}

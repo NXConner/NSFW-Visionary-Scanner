@@ -39,6 +39,7 @@ This index helps you find the right documentation for your needs.
 | [FINAL_IMPLEMENTATION_SUMMARY.md](./FINAL_IMPLEMENTATION_SUMMARY.md) | Complete implementation summary | Overview of what was built |
 | [ALL_FEATURES_COMPLETE.md](./ALL_FEATURES_COMPLETE.md) | Feature completion status | Feature overview |
 | [ENHANCEMENTS_AND_UTILITIES.md](./ENHANCEMENTS_AND_UTILITIES.md) | Enhancements documentation | Understanding enhancements |
+| [NSFW_LICENSING_AND_COMPLIANCE.md](./docs/NSFW_LICENSING_AND_COMPLIANCE.md) | Licensing + 2257 compliance workflow | NSFW content ops |
 
 ---
 
@@ -125,33 +126,34 @@ This index helps you find the right documentation for your needs.
 3. [COMPLETE_SETUP_GUIDE.md](./COMPLETE_SETUP_GUIDE.md)
 4. [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
 
-### Implementation (5)
+### Implementation (6)
 5. [MISSING_FEATURES_IMPLEMENTATION_COMPLETE.md](./MISSING_FEATURES_IMPLEMENTATION_COMPLETE.md)
 6. [INTEGRATION_COMPLETE.md](./INTEGRATION_COMPLETE.md)
 7. [FINAL_IMPLEMENTATION_SUMMARY.md](./FINAL_IMPLEMENTATION_SUMMARY.md)
 8. [ALL_FEATURES_COMPLETE.md](./ALL_FEATURES_COMPLETE.md)
 9. [ENHANCEMENTS_AND_UTILITIES.md](./ENHANCEMENTS_AND_UTILITIES.md)
+10. [NSFW_LICENSING_AND_COMPLIANCE.md](./docs/NSFW_LICENSING_AND_COMPLIANCE.md)
 
 ### Usage & API (3)
-10. [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md)
-11. [API_REFERENCE.md](./API_REFERENCE.md)
-12. [README_NSFW.md](./README_NSFW.md)
+11. [USAGE_EXAMPLES.md](./USAGE_EXAMPLES.md)
+12. [API_REFERENCE.md](./API_REFERENCE.md)
+13. [README_NSFW.md](./README_NSFW.md)
 
 ### Deployment & Operations (5)
-13. [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
-14. [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
-15. [TESTING_GUIDE.md](./TESTING_GUIDE.md)
-16. [SECURITY_CHECKLIST.md](./SECURITY_CHECKLIST.md)
-17. [PERFORMANCE_GUIDE.md](./PERFORMANCE_GUIDE.md)
+14. [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
+15. [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+16. [TESTING_GUIDE.md](./TESTING_GUIDE.md)
+17. [SECURITY_CHECKLIST.md](./SECURITY_CHECKLIST.md)
+18. [PERFORMANCE_GUIDE.md](./PERFORMANCE_GUIDE.md)
 
 ### Project Management (5)
-18. [PROJECT_COMPLETION_REPORT.md](./PROJECT_COMPLETION_REPORT.md)
-19. [COMPLETE_PROJECT_SUMMARY.md](./COMPLETE_PROJECT_SUMMARY.md)
-20. [PROJECT_STATUS.md](./PROJECT_STATUS.md)
-21. [CHANGELOG.md](./CHANGELOG.md)
-22. [FINAL_VERIFICATION_CHECKLIST.md](./FINAL_VERIFICATION_CHECKLIST.md)
+19. [PROJECT_COMPLETION_REPORT.md](./PROJECT_COMPLETION_REPORT.md)
+20. [COMPLETE_PROJECT_SUMMARY.md](./COMPLETE_PROJECT_SUMMARY.md)
+21. [PROJECT_STATUS.md](./PROJECT_STATUS.md)
+22. [CHANGELOG.md](./CHANGELOG.md)
+23. [FINAL_VERIFICATION_CHECKLIST.md](./FINAL_VERIFICATION_CHECKLIST.md)
 
-**Total**: 22 Documentation Files
+**Total**: 23 Documentation Files
 
 ---
 
@@ -193,9 +195,9 @@ This index helps you find the right documentation for your needs.
 
 ## 📊 Documentation Statistics
 
-- **Total Documents**: 22
+- **Total Documents**: 23
 - **Setup Guides**: 4
-- **Implementation Docs**: 5
+- **Implementation Docs**: 6
 - **Usage & API**: 3
 - **Deployment & Ops**: 5
 - **Project Management**: 5

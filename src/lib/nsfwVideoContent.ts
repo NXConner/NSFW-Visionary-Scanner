@@ -44,6 +44,13 @@ export interface NSFWVideoContent {
   dlc_pack_id: string | null
   is_approved: boolean
   is_active: boolean
+  license_id: string | null
+  license_status: string | null
+  license_verified_at: string | null
+  license_notes: string | null
+  compliance_status: string | null
+  compliance_verified_at: string | null
+  compliance_notes: string | null
   created_at: string
   updated_at: string
 }

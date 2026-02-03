@@ -230,6 +230,10 @@ export function DLCContentImport(): React.ReactElement {
           const items = rows.map(r => ({
             content_slug: r.content_slug || null,
             source_import_key: r.source_import_key || null,
+            license_key: r.license_key || null,
+            license_id: r.license_id || null,
+            compliance_record_key: r.compliance_record_key || null,
+            compliance_record_id: r.compliance_record_id || null,
             title: r.title,
             description: r.description,
             category: r.category,
@@ -504,14 +508,16 @@ export function DLCContentImport(): React.ReactElement {
             <div className="text-sm text-muted-foreground">
               Upload a <code>.json</code> manifest or <code>.csv</code> with headers like:{" "}
               <code>content_slug</code>, <code>title</code>, <code>description</code>,{" "}
-              <code>category</code>, <code>video_url_hd</code>, <code>thumbnail_url</code>. Use{" "}
-              <code>|</code> to separate list fields (tags/key_points/warnings/prerequisites).
+              <code>category</code>, <code>video_url_hd</code>, <code>thumbnail_url</code>,{" "}
+              <code>license_key</code>. Use <code>|</code> to separate list fields
+              (tags/key_points/warnings/prerequisites).
             </div>
             <div className="text-xs text-muted-foreground">
               Optional: include <code>video_hd_file</code> / <code>video_sd_file</code> /{" "}
               <code>video_4k_file</code> / <code>thumbnail_file</code> /{" "}
-              <code>preview_gif_file</code> and select matching asset files below to upload into
-              private storage automatically.
+              <code>preview_gif_file</code>. Compliance fields include{" "}
+              <code>compliance_record_key</code> or <code>compliance_record_id</code> for explicit
+              content.
             </div>
           </TabsContent>
           <TabsContent value="topics" className="space-y-2">

@@ -103,6 +103,10 @@ export const positionsCsvRowSchema = z.object({
 export const videosItemSchema = z.object({
   content_slug: z.string().nullable().optional(),
   source_import_key: z.string().nullable().optional(),
+  license_key: z.string().nullable().optional(),
+  license_id: z.string().nullable().optional(),
+  compliance_record_key: z.string().nullable().optional(),
+  compliance_record_id: z.string().nullable().optional(),
   title: nonEmpty,
   description: z.string().default(""),
   category: z.enum([
@@ -141,6 +145,10 @@ export const videosItemSchema = z.object({
 export const videosCsvRowSchema = z.object({
   content_slug: z.string().optional(),
   source_import_key: z.string().optional(),
+  license_key: z.string().optional(),
+  license_id: z.string().optional(),
+  compliance_record_key: z.string().optional(),
+  compliance_record_id: z.string().optional(),
   title: nonEmpty,
   description: z.string().optional(),
   category: nonEmpty,

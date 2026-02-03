@@ -43,6 +43,10 @@ type PositionsItem = {
 type VideosItem = {
   content_slug?: string | null;
   source_import_key?: string | null;
+  license_key?: string | null;
+  license_id?: string | null;
+  compliance_record_key?: string | null;
+  compliance_record_id?: string | null;
   title: string;
   description: string;
   category:
@@ -132,6 +136,123 @@ function normalizeResources(value: unknown): unknown[] | null {
   return null;
 }
 
+type LicenseRow = {
+  id: string;
+  license_key: string;
+  status: string;
+  is_active: boolean | null;
+  start_date: string | null;
+  end_date: string | null;
+  allowed_content_types: string[] | null;
+  allows_educational: boolean | null;
+  allows_demonstrative: boolean | null;
+  allows_explicit: boolean | null;
+  requires_2257: boolean | null;
+};
+
+type ComplianceRecordRow = {
+  id: string;
+  record_key: string;
+  content_id: string | null;
+  verification_status: string;
+  last_verified_at: string | null;
+};
+
+const licenseCacheByKey = new Map<string, LicenseRow | null>();
+const licenseCacheById = new Map<string, LicenseRow | null>();
+const recordCacheByKey = new Map<string, ComplianceRecordRow | null>();
+const recordCacheById = new Map<string, ComplianceRecordRow | null>();
+
+function safeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map(v => String(v || "").trim()).filter(Boolean);
+}
+
+function parseDate(value: string | null): Date | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function normalizeContentTypes(value: unknown): string[] {
+  return safeStringArray(value).map(v => v.toLowerCase());
+}
+
+function licenseAllowsRating(license: LicenseRow, rating: string): boolean {
+  if (rating === "educational") return license.allows_educational !== false;
+  if (rating === "demonstrative") return license.allows_demonstrative !== false;
+  if (rating === "explicit") return license.allows_explicit !== false;
+  return true;
+}
+
+async function fetchLicenseByKey(supabase: any, key: string): Promise<LicenseRow | null> {
+  if (licenseCacheByKey.has(key)) return licenseCacheByKey.get(key) ?? null;
+  const { data, error } = await supabase
+    .from("nsfw_content_licenses")
+    .select(
+      "id,license_key,status,is_active,start_date,end_date,allowed_content_types,allows_educational,allows_demonstrative,allows_explicit,requires_2257",
+    )
+    .eq("license_key", key)
+    .maybeSingle();
+  if (error || !data) {
+    licenseCacheByKey.set(key, null);
+    return null;
+  }
+  licenseCacheByKey.set(key, data as LicenseRow);
+  licenseCacheById.set(String(data.id), data as LicenseRow);
+  return data as LicenseRow;
+}
+
+async function fetchLicenseById(supabase: any, id: string): Promise<LicenseRow | null> {
+  if (licenseCacheById.has(id)) return licenseCacheById.get(id) ?? null;
+  const { data, error } = await supabase
+    .from("nsfw_content_licenses")
+    .select(
+      "id,license_key,status,is_active,start_date,end_date,allowed_content_types,allows_educational,allows_demonstrative,allows_explicit,requires_2257",
+    )
+    .eq("id", id)
+    .maybeSingle();
+  if (error || !data) {
+    licenseCacheById.set(id, null);
+    return null;
+  }
+  licenseCacheById.set(id, data as LicenseRow);
+  licenseCacheByKey.set(String(data.license_key), data as LicenseRow);
+  return data as LicenseRow;
+}
+
+async function fetchComplianceByKey(supabase: any, key: string): Promise<ComplianceRecordRow | null> {
+  if (recordCacheByKey.has(key)) return recordCacheByKey.get(key) ?? null;
+  const { data, error } = await supabase
+    .from("nsfw_2257_records")
+    .select("id,record_key,content_id,verification_status,last_verified_at")
+    .eq("record_key", key)
+    .maybeSingle();
+  if (error || !data) {
+    recordCacheByKey.set(key, null);
+    return null;
+  }
+  recordCacheByKey.set(key, data as ComplianceRecordRow);
+  recordCacheById.set(String(data.id), data as ComplianceRecordRow);
+  return data as ComplianceRecordRow;
+}
+
+async function fetchComplianceById(supabase: any, id: string): Promise<ComplianceRecordRow | null> {
+  if (recordCacheById.has(id)) return recordCacheById.get(id) ?? null;
+  const { data, error } = await supabase
+    .from("nsfw_2257_records")
+    .select("id,record_key,content_id,verification_status,last_verified_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (error || !data) {
+    recordCacheById.set(id, null);
+    return null;
+  }
+  recordCacheById.set(id, data as ComplianceRecordRow);
+  recordCacheByKey.set(String(data.record_key), data as ComplianceRecordRow);
+  return data as ComplianceRecordRow;
+}
+
 serve(async req => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -205,6 +326,7 @@ serve(async req => {
       status: "completed" | "skipped" | "failed";
       action: "created" | "updated" | "skipped" | "failed";
       error?: string;
+      metadata?: Record<string, unknown>;
     }> = [];
 
     if (importType === "positions") {
@@ -321,6 +443,7 @@ serve(async req => {
         }
 
         let action: "created" | "updated" = "created";
+        let existingId: string | null = null;
         try {
           if (key) {
             const { data: existing } = await supabase
@@ -328,18 +451,147 @@ serve(async req => {
               .select("id")
               .eq("source_import_key", key)
               .maybeSingle();
-            if (existing?.id) action = "updated";
+            if (existing?.id) {
+              action = "updated";
+              existingId = String(existing.id);
+            }
           } else if (slug) {
             const { data: existing } = await supabase
               .from("nsfw_video_content")
               .select("id")
               .eq("content_slug", slug)
               .maybeSingle();
-            if (existing?.id) action = "updated";
+            if (existing?.id) {
+              action = "updated";
+              existingId = String(existing.id);
+            }
           }
         } catch {
           // ignore; fallback to created
         }
+
+        const licenseKey = it.license_key ? String(it.license_key).trim() : "";
+        const licenseId = it.license_id ? String(it.license_id).trim() : "";
+        if (!licenseKey && !licenseId) {
+          results.push({
+            key: key || slug,
+            status: "failed",
+            action: "failed",
+            error: "license_key or license_id required",
+          });
+          continue;
+        }
+
+        const license = licenseId
+          ? await fetchLicenseById(supabase, licenseId)
+          : await fetchLicenseByKey(supabase, licenseKey);
+        if (!license) {
+          results.push({
+            key: key || slug,
+            status: "failed",
+            action: "failed",
+            error: "license not found",
+          });
+          continue;
+        }
+
+        const now = new Date();
+        const licenseErrors: string[] = [];
+        if (license.is_active === false || String(license.status || "").toLowerCase() !== "active") {
+          licenseErrors.push("license not active");
+        }
+        const startDate = parseDate(license.start_date);
+        if (startDate && now < startDate) licenseErrors.push("license not yet active");
+        const endDate = parseDate(license.end_date);
+        if (endDate && now > endDate) licenseErrors.push("license expired");
+        const allowedTypes = normalizeContentTypes(license.allowed_content_types);
+        if (
+          allowedTypes.length > 0 &&
+          !allowedTypes.includes("video") &&
+          !allowedTypes.includes("nsfw_video")
+        ) {
+          licenseErrors.push("license does not allow video content");
+        }
+        if (!licenseAllowsRating(license, rating)) {
+          licenseErrors.push("license does not allow selected content_rating");
+        }
+
+        if (licenseErrors.length > 0) {
+          results.push({
+            key: key || slug,
+            status: "failed",
+            action: "failed",
+            error: licenseErrors.join("; "),
+          });
+          continue;
+        }
+
+        const requiresCompliance = (license.requires_2257 ?? true) && rating !== "educational";
+        let complianceRecord: ComplianceRecordRow | null = null;
+        let complianceStatus: string | null = null;
+
+        if (requiresCompliance) {
+          const recordKey = it.compliance_record_key ? String(it.compliance_record_key).trim() : "";
+          const recordId = it.compliance_record_id ? String(it.compliance_record_id).trim() : "";
+          if (!recordKey && !recordId) {
+            results.push({
+              key: key || slug,
+              status: "failed",
+              action: "failed",
+              error: "compliance_record_key or compliance_record_id required for explicit content",
+            });
+            continue;
+          }
+          complianceRecord = recordId
+            ? await fetchComplianceById(supabase, recordId)
+            : await fetchComplianceByKey(supabase, recordKey);
+          if (!complianceRecord) {
+            results.push({
+              key: key || slug,
+              status: "failed",
+              action: "failed",
+              error: "compliance record not found",
+            });
+            continue;
+          }
+          if (complianceRecord.verification_status === "revoked") {
+            results.push({
+              key: key || slug,
+              status: "failed",
+              action: "failed",
+              error: "compliance record revoked",
+            });
+            continue;
+          }
+          if (complianceRecord.content_id && !existingId) {
+            results.push({
+              key: key || slug,
+              status: "failed",
+              action: "failed",
+              error: "compliance record already linked to another content item",
+            });
+            continue;
+          }
+          if (
+            complianceRecord.content_id &&
+            existingId &&
+            String(complianceRecord.content_id) !== String(existingId)
+          ) {
+            results.push({
+              key: key || slug,
+              status: "failed",
+              action: "failed",
+              error: "compliance record linked to different content item",
+            });
+            continue;
+          }
+          complianceStatus = complianceRecord.verification_status || "pending";
+        }
+
+        const nowIso = new Date().toISOString();
+        const licenseStatus = "verified";
+        const complianceVerifiedAt =
+          complianceStatus === "verified" ? complianceRecord?.last_verified_at ?? nowIso : null;
 
         const payload = {
           content_slug: slug || null,
@@ -367,19 +619,50 @@ serve(async req => {
           dlc_pack_id: it.dlc_pack_id ?? null,
           is_approved: it.is_approved == null ? false : Boolean(it.is_approved),
           is_active: it.is_active == null ? true : Boolean(it.is_active),
-          updated_at: new Date().toISOString(),
+          license_id: license.id,
+          license_status: licenseStatus,
+          license_verified_at: nowIso,
+          compliance_status: complianceStatus,
+          compliance_verified_at: complianceVerifiedAt,
+          updated_at: nowIso,
         };
 
         try {
           if (!dryRun) {
             // Prefer upsert by source_import_key when present, otherwise by content_slug.
             const conflict = key ? "source_import_key" : "content_slug";
-            const { error } = await supabase.from("nsfw_video_content").upsert(payload, {
-              onConflict: conflict,
-            });
+            const { data: upserted, error } = await supabase
+              .from("nsfw_video_content")
+              .upsert(payload, { onConflict: conflict })
+              .select("id")
+              .maybeSingle();
             if (error) throw new Error(error.message);
+            const contentId = String(upserted?.id || existingId || "");
+            if (complianceRecord && contentId) {
+              if (complianceRecord.content_id && String(complianceRecord.content_id) !== contentId) {
+                throw new Error("compliance record linked to a different content item");
+              }
+              if (!complianceRecord.content_id) {
+                const { error: recordError } = await supabase
+                  .from("nsfw_2257_records")
+                  .update({ content_id: contentId, updated_at: nowIso })
+                  .eq("id", complianceRecord.id);
+                if (recordError) throw new Error(recordError.message);
+              }
+            }
           }
-          results.push({ key: key || slug, status: "completed", action });
+          results.push({
+            key: key || slug,
+            status: "completed",
+            action,
+            metadata: {
+              licenseId: license.id,
+              licenseKey: license.license_key,
+              licenseStatus,
+              complianceRecordId: complianceRecord?.id ?? null,
+              complianceStatus: complianceStatus ?? null,
+            },
+          });
         } catch (e) {
           const msg = e instanceof Error ? e.message : "Upsert failed";
           results.push({ key: key || slug, status: "failed", action: "failed", error: msg });
@@ -515,6 +798,7 @@ serve(async req => {
           status: r.status,
           action: r.action,
           error_message: r.error ?? null,
+          metadata: r.metadata ?? {},
         }));
         if (rows.length > 0)
           await supabase
