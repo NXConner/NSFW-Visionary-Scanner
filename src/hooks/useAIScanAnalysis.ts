@@ -43,6 +43,26 @@ interface UseAIScanAnalysisOptions {
   saveToHistory?: boolean;
 }
 
+type ScanInput =
+  | string
+  | {
+      image?: string;
+      imageData?: string;
+      imageBase64?: string;
+      image_data?: string;
+    };
+
+const normalizeScanInput = (input: ScanInput | undefined | null): string | null => {
+  if (typeof input === "string") return input;
+  if (!input || typeof input !== "object") return null;
+  const candidate =
+    input.image ??
+    input.imageData ??
+    input.imageBase64 ??
+    (input as { image_data?: string }).image_data;
+  return typeof candidate === "string" ? candidate : null;
+};
+
 export const useAIScanAnalysis = (options: UseAIScanAnalysisOptions = {}) => {
   const { onSuccess, onError, saveToHistory = true } = options;
 
@@ -52,7 +72,7 @@ export const useAIScanAnalysis = (options: UseAIScanAnalysisOptions = {}) => {
   const [progress, setProgress] = useState(0);
 
   const analyzeImage = useCallback(
-    async (imageData: string): Promise<AIScanAnalysisResult | null> => {
+    async (imageData: ScanInput): Promise<AIScanAnalysisResult | null> => {
       setIsAnalyzing(true);
       setError(null);
       setProgress(10);
@@ -66,18 +86,18 @@ export const useAIScanAnalysis = (options: UseAIScanAnalysisOptions = {}) => {
           throw new Error("AI scan analysis isn’t available in this build.");
         }
 
-        // Validate image data
-        if (!imageData) {
-          throw new Error("No image data provided");
+        const normalized = normalizeScanInput(imageData);
+        if (!normalized) {
+          throw new Error("Invalid scan data");
         }
 
         setProgress(20);
 
         // Ensure proper base64 format
-        let processedImageData = imageData;
-        if (!imageData.startsWith("data:image/")) {
+        let processedImageData = normalized;
+        if (!normalized.startsWith("data:image/")) {
           // Assume it's raw base64, add proper prefix
-          processedImageData = `data:image/jpeg;base64,${imageData}`;
+          processedImageData = `data:image/jpeg;base64,${normalized}`;
         }
 
         setProgress(30);
@@ -249,12 +269,14 @@ export const useAIScanAnalysis = (options: UseAIScanAnalysisOptions = {}) => {
     analyzeScan,
     reset,
     resetAnalysis,
+    clearAnalysis: reset,
     getAnalysisHistory,
     compareAnalyses,
 
     // State
     isAnalyzing,
     result,
+    analysis: result,
     error,
     progress,
   };

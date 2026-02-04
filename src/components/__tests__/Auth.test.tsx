@@ -1,90 +1,109 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { Auth } from '../Auth'
-import { AuthProvider } from '../../contexts/AuthContext'
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import Auth from "@/pages/Auth";
+import { MemoryRouter } from "react-router-dom";
+import { toast } from "sonner";
 
-// Mock Supabase client
-vi.mock('../../integrations/supabase/client', () => ({
-  supabase: {
-    auth: {
-      signInWithPassword: vi.fn(),
-      signUp: vi.fn(),
-      signOut: vi.fn(),
-      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } }))
-    }
-  }
-}))
+const mockUseAuth = vi.fn();
+vi.mock("@/contexts/AuthContext", () => ({
+  useAuth: () => mockUseAuth(),
+}));
 
-describe('Auth', () => {
-  it('renders login form by default', () => {
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  },
+}));
+
+describe("Auth", () => {
+  const baseAuth = {
+    user: null,
+    session: null,
+    loading: false,
+    rolesLoading: false,
+    isSuperAdmin: false,
+    hasFullAccess: false,
+    allFeaturesUnlocked: false,
+    signIn: vi.fn(),
+    signUp: vi.fn(),
+    signInWithGoogle: vi.fn(),
+    signInWithApple: vi.fn(),
+    linkSocialAccount: vi.fn(),
+    signOut: vi.fn(),
+  };
+
+  it("renders login form by default", () => {
+    mockUseAuth.mockReturnValue(baseAuth);
     render(
-      <AuthProvider>
+      <MemoryRouter>
         <Auth />
-      </AuthProvider>
-    )
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument()
-  })
+      </MemoryRouter>,
+    );
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+  });
 
-  it('toggles between login and signup', () => {
+  it("toggles between login and signup", () => {
+    mockUseAuth.mockReturnValue(baseAuth);
     render(
-      <AuthProvider>
+      <MemoryRouter>
         <Auth />
-      </AuthProvider>
-    )
+      </MemoryRouter>,
+    );
 
-    const toggleButton = screen.getByRole('button', { name: /sign up/i })
-    fireEvent.click(toggleButton)
+    const toggleButton = screen.getByRole("button", { name: /sign up/i });
+    fireEvent.click(toggleButton);
 
-    expect(screen.getByText(/create account/i)).toBeInTheDocument()
-  })
+    expect(screen.getAllByText(/create account/i).length).toBeGreaterThan(0);
+  });
 
-  it('handles form submission', async () => {
-    const mockSignIn = vi.fn().mockResolvedValue({ data: {}, error: null })
-    const { supabase } = await import('../../integrations/supabase/client')
-    supabase.auth.signInWithPassword = mockSignIn
+  it("handles form submission", async () => {
+    const mockSignIn = vi.fn().mockResolvedValue({ error: null });
+    mockUseAuth.mockReturnValue({ ...baseAuth, signIn: mockSignIn });
 
     render(
-      <AuthProvider>
+      <MemoryRouter>
         <Auth />
-      </AuthProvider>
-    )
+      </MemoryRouter>,
+    );
 
-    const emailInput = screen.getByLabelText(/email/i)
-    const passwordInput = screen.getByLabelText(/password/i)
-    const submitButton = screen.getByRole('button', { name: /sign in/i })
+    const emailInput = screen.getByLabelText(/email/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const submitButton = screen.getByRole("button", { name: /sign in/i });
 
-    fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
-    fireEvent.change(passwordInput, { target: { value: 'password123' } })
-    fireEvent.click(submitButton)
+    fireEvent.change(emailInput, { target: { value: "test@example.com" } });
+    fireEvent.change(passwordInput, { target: { value: "password123" } });
+    fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(mockSignIn).toHaveBeenCalledWith({
-        email: 'test@example.com',
-        password: 'password123'
-      })
-    })
-  })
+      expect(mockSignIn).toHaveBeenCalledWith("test@example.com", "password123", false);
+    });
+  });
 
-  it('displays error messages', async () => {
+  it("displays error messages", async () => {
     const mockSignIn = vi.fn().mockResolvedValue({
-      data: null,
-      error: { message: 'Invalid credentials' }
-    })
-    const { supabase } = await import('../../integrations/supabase/client')
-    supabase.auth.signInWithPassword = mockSignIn
+      error: { message: "Invalid credentials" },
+    });
+    mockUseAuth.mockReturnValue({ ...baseAuth, signIn: mockSignIn });
 
     render(
-      <AuthProvider>
+      <MemoryRouter>
         <Auth />
-      </AuthProvider>
-    )
+      </MemoryRouter>,
+    );
 
-    const submitButton = screen.getByRole('button', { name: /sign in/i })
-    fireEvent.click(submitButton)
+    const emailInput = screen.getByLabelText(/email/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    fireEvent.change(emailInput, { target: { value: "test@example.com" } });
+    fireEvent.change(passwordInput, { target: { value: "password123" } });
+
+    const submitButton = screen.getByRole("button", { name: /sign in/i });
+    fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Invalid credentials')).toBeInTheDocument()
-    })
-  })
-})
+      expect(toast.error).toHaveBeenCalledWith("Invalid credentials");
+    });
+  });
+});

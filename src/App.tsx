@@ -27,6 +27,7 @@ import { DLCProvider } from "@/dlc/context/DLCContext";
 import { useScrollCssVars } from "@/hooks/useScrollCssVars";
 import { useAnalytics } from "@/lib/analytics";
 import { BootWatchdog } from "@/components/BootWatchdog";
+import { SupabaseConfigGate } from "@/components/SupabaseConfigGate";
 import { bootstrapAddons } from "@/addons";
 import { RouteLoadingFallback } from "@/components/LoadingFallback";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -321,27 +322,29 @@ const AppContent = () => {
 const App = () => (
   <ErrorBoundary>
     <BootWatchdog timeoutMs={7000} />
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <I18nProvider>
-          <SettingsProvider>
-            <DataProvider>
-              <DLCProvider>
-                <TooltipProvider>
-                  <Toaster />
-                  <Sonner />
-                  <BrowserRouter>
-                    <AppLock>
-                      <AppContent />
-                    </AppLock>
-                  </BrowserRouter>
-                </TooltipProvider>
-              </DLCProvider>
-            </DataProvider>
-          </SettingsProvider>
-        </I18nProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <SupabaseConfigGate>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <I18nProvider>
+            <SettingsProvider>
+              <DataProvider>
+                <DLCProvider>
+                  <TooltipProvider>
+                    <Toaster />
+                    <Sonner />
+                    <BrowserRouter>
+                      <AppLock>
+                        <AppContent />
+                      </AppLock>
+                    </BrowserRouter>
+                  </TooltipProvider>
+                </DLCProvider>
+              </DataProvider>
+            </SettingsProvider>
+          </I18nProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </SupabaseConfigGate>
   </ErrorBoundary>
 );
 

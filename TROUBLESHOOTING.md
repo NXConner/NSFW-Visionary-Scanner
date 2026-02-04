@@ -312,6 +312,26 @@ npm install -g npm@latest
 
 ---
 
+### Issue: Android APK stuck on loading screen
+
+**Symptoms**: APK shows the loading screen and never advances
+
+**Solutions**:
+1. Ensure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are set in `.env`
+2. Rebuild the web bundle with Capacitor build flag:
+   ```powershell
+   $env:CAPACITOR_BUILD = "1"
+   npm run build:nsfw:direct
+   ```
+3. Sync assets to Android:
+   ```powershell
+   npx cap sync android
+   ```
+4. Rebuild the APK (Android Studio or Gradle)
+5. If still stuck, clear app storage/cache on device and relaunch
+
+---
+
 ## General Debugging
 
 ### Enable Debug Logging
