@@ -123,7 +123,7 @@ export const LazyAdvancedRoutineFeatures = lazy(() =>
   })),
 );
 export const LazyNSFWVideoContent = BUILD_ALLOW_ADULT_BUNDLE
-  ? lazy(() => import("@/components/NSFWVideoContent").then(m => ({ default: m.NSFWVideoContent })))
+  ? lazy(() => import("@/components/nsfwVideoContent").then(m => ({ default: m.NSFWVideoContent })))
   : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
 
 export const LazyNSFWCommunityForum = BUILD_ALLOW_ADULT_BUNDLE

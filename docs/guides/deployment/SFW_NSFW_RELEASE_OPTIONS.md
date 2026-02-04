@@ -3,6 +3,8 @@
 This document explains two supported ways to ship a Safe-For-Work (SFW) app store build
 and a separate NSFW build. Both options use the existing build flavors:
 
+**Policy:** The NSFW build is direct distribution only and must not be submitted to app stores.
+
 - SFW (store build): VITE_APP_VERSION=sfw, VITE_DISTRIBUTION_CHANNEL=store
 - NSFW (direct build): VITE_APP_VERSION=nsfw, VITE_DISTRIBUTION_CHANNEL=direct
 

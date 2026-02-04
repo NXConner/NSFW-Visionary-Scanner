@@ -17,33 +17,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   getNSFWVideos,
-  createVideoPlaylist,
   getVideoDownloads,
   requestVideoDownload,
   updateVideoProgress as updateVideoProgressFn,
   type NSFWVideoContent as NSFWVideoItem,
-  type NSFWVideoPlaylist,
   type NSFWVideoDownload,
-  type NSFWVideoProgress,
 } from "@/lib/nsfwVideoContent";
 import { hasNSFWContent, isSFW } from "@/lib/featureFlags";
 import {
   Play,
   Download,
-  Bookmark,
   Star,
   Clock,
   Eye,
   Search,
   Plus,
-  Filter,
   Loader2,
   Lock,
   CheckCircle2,
-  X,
   Video,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -55,7 +48,6 @@ export const NSFWVideoContent = () => {
   const [loading, setLoading] = useState(false);
   const [videos, setVideos] = useState<NSFWVideoItem[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<NSFWVideoItem | null>(null);
-  const [playlists, setPlaylists] = useState<NSFWVideoPlaylist[]>([]);
   const [downloads, setDownloads] = useState<NSFWVideoDownload[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
@@ -137,7 +129,7 @@ export const NSFWVideoContent = () => {
   }, [activeTab, selectedCategory, selectedDifficulty, selectedRating, nsfwAvailable, loadData]);
 
   const handleDownload = async (
-    video: NSFWVideoContent,
+    video: NSFWVideoItem,
     quality: "sd" | "hd" | "2k" | "4k" = "hd",
   ) => {
     try {

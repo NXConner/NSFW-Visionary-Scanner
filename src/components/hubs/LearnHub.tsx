@@ -55,10 +55,12 @@ const LazyPhysicianLocator = lazy(() =>
   import("@/components/PhysicianLocator").then(m => ({ default: m.PhysicianLocator })),
 );
 const LazyNsfwSessionGate = BUILD_ALLOW_ADULT_BUNDLE
-  ? lazy(() => import("@/components/nsfw/NsfwSessionGate").then(m => ({ default: m.NsfwSessionGate })))
+  ? lazy(() =>
+      import("@/components/nsfw/NsfwSessionGate").then(m => ({ default: m.NsfwSessionGate })),
+    )
   : null;
 const LazyNSFWVideoContent = BUILD_ALLOW_ADULT_BUNDLE
-  ? lazy(() => import("@/components/NSFWVideoContent").then(m => ({ default: m.NSFWVideoContent })))
+  ? lazy(() => import("@/components/nsfwVideoContent").then(m => ({ default: m.NSFWVideoContent })))
   : null;
 const LazyNSFWEducationHub = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() => import("@/components/nsfwEducation").then(m => ({ default: m.NsfwEducationHub })))
@@ -205,7 +207,12 @@ export function LearnHub({ initialTab }: { initialTab?: string }): JSX.Element {
       },
     ];
 
-    if (!BUILD_ALLOW_ADULT_BUNDLE || !LazyNsfwSessionGate || !LazyNSFWVideoContent || !LazyNSFWEducationHub) {
+    if (
+      !BUILD_ALLOW_ADULT_BUNDLE ||
+      !LazyNsfwSessionGate ||
+      !LazyNSFWVideoContent ||
+      !LazyNSFWEducationHub
+    ) {
       return base;
     }
 
@@ -256,5 +263,12 @@ export function LearnHub({ initialTab }: { initialTab?: string }): JSX.Element {
     ];
   }, []);
 
-  return <HubTabs title="Learn" description="Courses, guides, and expert education." tabs={tabs} initialTab={initialTab} />;
+  return (
+    <HubTabs
+      title="Learn"
+      description="Courses, guides, and expert education."
+      tabs={tabs}
+      initialTab={initialTab}
+    />
+  );
 }
