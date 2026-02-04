@@ -59,7 +59,7 @@ const PrivacyPolicy = () => {
                 <section>
                   <h2 className="text-lg font-semibold mb-3 text-foreground">1. Introduction</h2>
                   <p className="text-muted-foreground">
-                    This Privacy Policy explains how MorphoScan Pro ("we," "us," or "our") collects,
+                    This Privacy Policy explains how {APP_NAME} ("we," "us," or "our") collects,
                     uses, stores, and protects your information when you use our mobile application
                     ("App"). We are committed to protecting your privacy and ensuring the security
                     of your personal health information.

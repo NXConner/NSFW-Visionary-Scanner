@@ -1,9 +1,15 @@
 import type { ScanEntry, DiaryEntry } from "@/contexts/DataContext";
+import {
+  APP_FHIR_ORG_ID,
+  APP_FHIR_ORG_NAME,
+  APP_NAMESPACE,
+  APP_REPORT_TITLE,
+} from "@/config/brand";
 
 // Enhanced HL7 FHIR R4 compatible export format
 export const generateHL7FHIR = (scans: ScanEntry[], diaryEntries: DiaryEntry[]): string => {
   const bundleId = `bundle-${Date.now().toString(36)}`;
-  const organizationId = "org-morphoscan-pro";
+  const organizationId = APP_FHIR_ORG_ID;
 
   const bundle = {
     resourceType: "Bundle",
@@ -13,7 +19,7 @@ export const generateHL7FHIR = (scans: ScanEntry[], diaryEntries: DiaryEntry[]):
       profile: ["http://hl7.org/fhir/StructureDefinition/Bundle"],
     },
     identifier: {
-      system: "urn:morphoscan:bundle",
+      system: `urn:${APP_NAMESPACE}:bundle`,
       value: bundleId,
     },
     type: "collection",
@@ -30,7 +36,7 @@ export const generateHL7FHIR = (scans: ScanEntry[], diaryEntries: DiaryEntry[]):
             profile: ["http://hl7.org/fhir/StructureDefinition/Organization"],
           },
           active: true,
-          name: "MorphoScan Pro Self-Assessment",
+          name: APP_FHIR_ORG_NAME,
           type: [
             {
               coding: [
@@ -54,7 +60,7 @@ export const generateHL7FHIR = (scans: ScanEntry[], diaryEntries: DiaryEntry[]):
           },
           identifier: [
             {
-              system: "urn:morphoscan:local",
+              system: `urn:${APP_NAMESPACE}:local`,
               value: "self-assessment-patient",
             },
           ],
@@ -223,7 +229,7 @@ export const generateCDA = (scans: ScanEntry[], diaryEntries: DiaryEntry[]): str
   <typeId root="2.16.840.1.113883.1.3" extension="POCD_HD000040"/>
   <id root="2.16.840.1.113883.19.5" extension="${Date.now()}"/>
   <code code="34117-2" codeSystem="2.16.840.1.113883.6.1" displayName="History and physical note"/>
-  <title>MorphoScan Health Assessment Report</title>
+  <title>${APP_REPORT_TITLE}</title>
   <effectiveTime value="${date.replace(/[-:]/g, "").split(".")[0]}"/>
   <confidentialityCode code="N" codeSystem="2.16.840.1.113883.5.25"/>
   <languageCode code="en-US"/>

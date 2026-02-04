@@ -5,6 +5,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 import { useGenericStorage } from "./useGenericStorage";
+import { APP_SHORT_NAME } from "@/config/brand";
 
 interface BiometricSettings {
   enabled: boolean;
@@ -83,7 +84,7 @@ export const useBiometricAuth = () => {
 
         await NativeBiometric.verifyIdentity({
           reason: reason || "Verify your identity to continue",
-          title: "MorphoScan",
+          title: APP_SHORT_NAME,
           subtitle: "Biometric Authentication",
           description: "Use your fingerprint or face to unlock",
           maxAttempts: 3,

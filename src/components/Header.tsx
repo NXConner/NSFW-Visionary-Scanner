@@ -61,6 +61,7 @@ import { ContentRatingNeonSign } from "@/components/ContentRatingNeonSign";
 import { NavigationDropdown } from "@/components/navigation/NavigationDropdown";
 import { useNSFWAvailable } from "@/dlc/context/DLCContext";
 import { BUILD_ALLOW_ADULT_BUNDLE } from "@/lib/buildFlags";
+import { APP_SHORT_NAME } from "@/config/brand";
 interface HeaderProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
@@ -412,7 +413,7 @@ export const Header = ({ activeTab, onTabChange }: HeaderProps) => {
             aria-label="Go to home"
           >
             <span className="text-sm sm:text-base font-bold tracking-wide neon-text">
-              MorphoScan
+              {APP_SHORT_NAME}
             </span>
           </button>
 

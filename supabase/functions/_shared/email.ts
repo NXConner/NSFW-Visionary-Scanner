@@ -37,5 +37,5 @@ export async function sendResendEmail(params: {
 }
 
 export function resolveEmailFromEnv(): string {
-  return Deno.env.get("EMAIL_FROM") ?? "Pavement Performance Suite <n8ter8@gmail.com>";
+  return Deno.env.get("EMAIL_FROM") ?? "Visionary Scanner Suite <n8ter8@gmail.com>";
 }

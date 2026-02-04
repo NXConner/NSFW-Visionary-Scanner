@@ -1,4 +1,5 @@
 import type { IntimateDateProposal } from "@/lib/nsfwAdvancedFeatures";
+import { APP_ICS_PROD_ID } from "@/config/brand";
 
 function formatIcsDate(date: string, time: string) {
   const value = `${date}T${time}`.replace(/[-:]/g, "");
@@ -21,7 +22,7 @@ export function buildIcsContent(proposal: IntimateDateProposal) {
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//MorphoScan//Partner Sync//EN",
+    `PRODID:-//${APP_ICS_PROD_ID}//Partner Sync//EN`,
     "BEGIN:VEVENT",
     `UID:${proposal.id}`,
     `DTSTART:${start}`,

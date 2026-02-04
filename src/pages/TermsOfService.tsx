@@ -47,7 +47,7 @@ const TermsOfService = () => {
                     1. Acceptance of Terms
                   </h2>
                   <p className="text-muted-foreground">
-                    By downloading, installing, or using the MorphoScan Pro application ("App"), you
+                    By downloading, installing, or using the {APP_NAME} application ("App"), you
                     agree to be bound by these Terms of Service ("Terms"). If you do not agree to
                     these Terms, do not use the App. We reserve the right to modify these Terms at
                     any time, and your continued use of the App constitutes acceptance of any
@@ -60,8 +60,8 @@ const TermsOfService = () => {
                     2. Description of Service
                   </h2>
                   <p className="text-muted-foreground mb-3">
-                    MorphoScan Pro is a personal health tracking and wellness application designed
-                    to help users monitor and track personal health metrics. The App provides:
+                    {APP_NAME} is a personal health tracking and wellness application designed to
+                    help users monitor and track personal health metrics. The App provides:
                   </p>
                   <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
                     <li>Personal measurement tracking and logging</li>
@@ -78,7 +78,7 @@ const TermsOfService = () => {
                     3. Medical Disclaimer
                   </h2>
                   <p className="text-muted-foreground mb-3">
-                    <strong className="text-foreground">IMPORTANT:</strong> MorphoScan Pro is NOT a
+                    <strong className="text-foreground">IMPORTANT:</strong> {APP_NAME} is NOT a
                     medical device and is NOT intended to diagnose, treat, cure, or prevent any
                     disease or medical condition.
                   </p>

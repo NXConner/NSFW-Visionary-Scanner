@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { RouteTopNav } from "@/components/navigation/RouteTopNav";
+import { APP_NAME } from "@/config/brand";
 
 type ResourceItem = {
   name: string;
@@ -53,7 +54,7 @@ function ExternalAnchor({
 
 const CreditsResources = () => {
   useEffect(() => {
-    document.title = "Credits & Resources - MorphoScan Pro";
+    document.title = `Credits & Resources - ${APP_NAME}`;
   }, []);
 
   const sections = useMemo(() => {
@@ -195,7 +196,7 @@ const CreditsResources = () => {
                   </h2>
                   <p className="text-muted-foreground">
                     Huge appreciation to the people who share knowledge, lived experience, safety
-                    reminders, and supportive discussion in online communities. MorphoScan Pro
+                    reminders, and supportive discussion in online communities. {APP_NAME}
                     exists because communities teach, challenge, and improve what “good” looks
                     like—especially around privacy, harm reduction, and realistic expectations.
                   </p>

@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { z } from "zod";
+import { APP_SHORT_NAME } from "@/config/brand";
 
 const backupSchema = z
   .object({
@@ -86,7 +87,9 @@ export const DataImport = () => {
         const result = backupSchema.safeParse(parsed);
 
         if (!result.success) {
-          setError("Invalid backup file format. Please use a file exported from MorphoScan.");
+          setError(
+            `Invalid backup file format. Please use a file exported from ${APP_SHORT_NAME}.`,
+          );
           return;
         }
 

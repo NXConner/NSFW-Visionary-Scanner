@@ -2,13 +2,11 @@
 
 **Date**: 2025-12-24  
 **Workspace**: `/workspace` (git repo)  
-**Canonical product identity found in repo**: **MorphoScan Pro**  
-**User-stated identity in rules**: **Pavement Performance Suite** (no supporting code found in `src/` for pavement/asphalt workflows)
+**Canonical product identity found in repo**: **Visionary Scanner Suite** (MorphoScan Pro + NSFW Visionary Scanner)
 
-This Phase 1 report is intentionally **reality-based**: it describes what is implemented in this codebase today, what is still missing to ship safely, and two clean paths forward:
+This Phase 1 report is intentionally **reality-based**: it describes what is implemented in this codebase today, what is still missing to ship safely, and the chosen path forward:
 
-- **Track A (Ship current product)**: Productionize MorphoScan Pro (SFW/NSFW/Hybrid variants) with Stripe + Push + Store submission.
-- **Track B (Pivot)**: Stand up Pavement Performance Suite as a separate product surface (new domain model, workflows, UI), while keeping MorphoScan as a separate app or archiving it.
+- **Track A (Ship current product)**: Productionize Visionary Scanner Suite (SFW/NSFW/Hybrid variants) with Stripe + Push + Store submission.
 
 ---
 
@@ -16,7 +14,7 @@ This Phase 1 report is intentionally **reality-based**: it describes what is imp
 
 ### Purpose (as implemented)
 
-MorphoScan Pro is a **privacy-first health tracking and “scanner” SPA** with:
+Visionary Scanner Suite is a **privacy-first health tracking and “scanner” SPA** with:
 
 - Scanning + analysis flows (including AI-assisted features)
 - Health diary + progress tracking (including photos)
@@ -37,19 +35,12 @@ MorphoScan Pro is a **privacy-first health tracking and “scanner” SPA** with
 
 ---
 
-## Repo Reality Check: Identity Mismatch
+## Repo Reality Check: Identity Alignment
 
 ### What I found
 
-- No code references for pavement/asphalt/sealcoating/line-striping/church parking workflows in `src/`.
-- App routes and content are aligned to MorphoScan Pro’s health/DLC feature set.
-
-### Options (recommended decision)
-
-- **Option A — Ship MorphoScan Pro** (fastest path): treat Pavement Performance Suite as a future product and finish Phase 8 + integrations + store submission.
-- **Option B — Pivot to Pavement Performance Suite** (clean architecture): keep MorphoScan as a separate branch/product; create a new domain module and UI, or a new repo/app shell, to avoid mixing regulated health content patterns with contractor workflow needs.
-
-If you want Pavement Performance Suite to be the canonical product, Phase 1 recommends **Option B** to avoid “half-pivoting” the existing app into an unrelated domain.
+- App routes and content are aligned to the Visionary Scanner Suite health/DLC feature set.
+- Canonical naming: **MorphoScan Pro** (SFW/store) and **NSFW Visionary Scanner** (direct/NSFW).
 
 ---
 
@@ -155,7 +146,7 @@ These features exist; here’s their **max potential** state and what to do next
 
 | Priority | Task Description                                                             | Task Type (Max-Feature/New-Feature/Refactor/Fix) | Files to Modify/Create                                                                                                                                    |
 | -------: | ---------------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|       P0 | Configure Stripe secrets + webhook endpoint + live price IDs                 | Fix                                              | `docs/guides/integrations/payments/STRIPE_SETUP_GUIDE.md`, Supabase secrets, `.env` (local only), `src/lib/pricing.ts`, `src/lib/stripe.ts`              |
+|       P0 | Configure Stripe secrets + webhook endpoint + live price IDs                 | Fix                                              | `docs/guides/integrations/payments/STRIPE_SETUP_GUIDE.md`, Supabase secrets, `.env` (local only), `src/lib/pricing.ts`, `src/lib/stripe.ts`               |
 |       P0 | End-to-end Stripe QA (subscription + DLC if used)                            | Fix                                              | `supabase/functions/stripe-webhook/index.ts`, `supabase/functions/create-checkout-session/*`, `src/components/payments/*`                                 |
 |       P0 | Configure push notifications (FCM/APNs) + verify on devices                  | Fix                                              | `docs/guides/integrations/notifications/FCM_SETUP.md`, Supabase secrets, `android/app/google-services.json` (local only), `ios/*` (local only)            |
 |       P0 | Run production QA checklist + fix failures                                   | Fix                                              | `docs/guides/testing/PRODUCTION_TESTING_GUIDE.md`, targeted `src/**` as issues found                                                                      |
@@ -166,7 +157,7 @@ These features exist; here’s their **max potential** state and what to do next
 |       P2 | Social login (Google/Apple) via Supabase OAuth                               | New-Feature                                      | `src/pages/Auth.tsx`, `src/pages/AuthCallback.tsx`, `src/contexts/AuthContext.tsx`, docs update                                                           |
 |       P2 | Biometric/AppLock UX completion                                              | Max-Feature                                      | `src/components/AppLock.tsx`, `src/hooks/useBiometricAuth.ts`                                                                                             |
 |       P2 | Analytics Dashboard (privacy-compliant)                                      | New-Feature                                      | `src/lib/analytics.ts`, new `src/pages/AnalyticsDashboard.tsx`, admin routing if needed                                                                   |
-|       P2 | DLC production hardening (idempotency/refunds/signed URLs/restore purchases) | Fix/Max-Feature                                  | `docs/archive/nsfw/NSFW_DLC_REMAINING_WORK.md`, `supabase/functions/stripe-webhook/index.ts`, new migration for webhook events table                       |
+|       P2 | DLC production hardening (idempotency/refunds/signed URLs/restore purchases) | Fix/Max-Feature                                  | `docs/archive/nsfw/NSFW_DLC_REMAINING_WORK.md`, `supabase/functions/stripe-webhook/index.ts`, new migration for webhook events table                      |
 |       P3 | Mobile polish + store assets + compliance review                             | Max-Feature                                      | `docs/product/store/app-store-listing.md`, `docs/security/compliance/COMPLIANCE_DISTRIBUTION.md`, platform-specific assets                                |
 
 ---

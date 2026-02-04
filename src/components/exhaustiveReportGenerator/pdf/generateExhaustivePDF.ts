@@ -1,6 +1,7 @@
 import type jsPDF from "jspdf";
 import type { ScanEntry, DiaryEntry } from "@/contexts/DataContext";
 import type { ReportSection } from "../types";
+import { APP_REPORT_TITLE } from "@/config/brand";
 
 export async function generateExhaustivePDF({
   scans,
@@ -340,7 +341,7 @@ export async function generateExhaustivePDF({
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: "right" });
-    doc.text("MorphoScan Pro Health Report - Confidential", margin, pageHeight - 10);
+    doc.text(`${APP_REPORT_TITLE} - Confidential`, margin, pageHeight - 10);
   }
 
   onProgress(100);
