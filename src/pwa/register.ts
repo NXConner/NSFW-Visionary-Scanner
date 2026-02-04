@@ -22,6 +22,16 @@ function isPreviewHost(): boolean {
   }
 }
 
+function isNativeApp(): boolean {
+  try {
+    const w = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
+    if (w?.Capacitor?.isNativePlatform?.()) return true;
+    return window.location.protocol === "capacitor:" || window.location.protocol === "file:";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Register the PWA service worker only on stable, user-facing origins.
  * This prevents remote preview environments from being bricked by a stale SW.
@@ -30,6 +40,7 @@ export function registerPwaIfAllowed(): void {
   if (import.meta.env.DEV) return;
   if (typeof window === "undefined") return;
   if (!("serviceWorker" in navigator)) return;
+  if (isNativeApp()) return;
   if (isPreviewHost()) return;
 
   // Delay registration to keep boot fast and avoid timing-related races.
