@@ -3,16 +3,22 @@
  * UI component for pornmd.com integration, multi-camera recording, intimate date planning, seductive AI chat, and sex positions
  */
 
-import { useState, useEffect, useRef } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   getPornMDIntegration,
   enablePornMDIntegration,
@@ -29,209 +35,223 @@ import {
   type MultiCameraSession,
   type IntimateDateProposal,
   type SeductiveAISession,
-  type SexPosition
-} from '@/lib/nsfwAdvancedFeatures'
-import { recordVideo, uploadRecordedVideo } from '@/lib/videoProcessing'
-import { MediaUploader } from '@/components/MediaUploader'
-import { STORAGE_BUCKETS } from '@/lib/mediaUpload'
-import { Video, Camera, Heart, MessageSquare, Loader2, Play, Square, Mic, Image as ImageIcon, Send, CheckCircle2, X, Star } from 'lucide-react'
-import { toast } from 'sonner'
-import { logger } from '@/lib/logger'
+  type SexPosition,
+} from "@/lib/nsfwAdvancedFeatures";
+import { recordVideo, uploadRecordedVideo } from "@/lib/videoProcessing";
+import { MediaUploader } from "@/components/MediaUploader";
+import { STORAGE_BUCKETS } from "@/lib/mediaUpload";
+import {
+  Video,
+  Camera,
+  Heart,
+  MessageSquare,
+  Loader2,
+  Play,
+  Square,
+  Mic,
+  Image as ImageIcon,
+  Send,
+  CheckCircle2,
+  X,
+  Star,
+} from "lucide-react";
+import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export const NSFWAdvancedFeatures = () => {
-  const [activeTab, setActiveTab] = useState('pornmd')
-  const [loading, setLoading] = useState(false)
-  
+  const [activeTab, setActiveTab] = useState("pornmd");
+  const [loading, setLoading] = useState(false);
+
   // PornMD
-  const [pornmdIntegration, setPornmdIntegration] = useState<PornMDIntegration | null>(null)
-  const [pornmdApiKey, setPornmdApiKey] = useState('')
-  const [pornmdApiSecret, setPornmdApiSecret] = useState('')
-  
+  const [pornmdIntegration, setPornmdIntegration] = useState<PornMDIntegration | null>(null);
+  const [pornmdApiKey, setPornmdApiKey] = useState("");
+  const [pornmdApiSecret, setPornmdApiSecret] = useState("");
+
   // Multi-Camera
-  const [sessions, setSessions] = useState<MultiCameraSession[]>([])
-  const [currentSession, setCurrentSession] = useState<MultiCameraSession | null>(null)
-  const [isRecording, setIsRecording] = useState(false)
-  const [cameraStreams, setCameraStreams] = useState<MediaStream[]>([])
-  const [recorders, setRecorders] = useState<MediaRecorder[]>([])
-  const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({})
-  
+  const [sessions, setSessions] = useState<MultiCameraSession[]>([]);
+  const [currentSession, setCurrentSession] = useState<MultiCameraSession | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [cameraStreams, setCameraStreams] = useState<MediaStream[]>([]);
+  const [recorders, setRecorders] = useState<MediaRecorder[]>([]);
+  const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
+
   // Intimate Dates
-  const [proposals, setProposals] = useState<IntimateDateProposal[]>([])
+  const [proposals, setProposals] = useState<IntimateDateProposal[]>([]);
   const [newProposal, setNewProposal] = useState({
-    title: '',
-    date: '',
-    time: '',
-    location: '',
-    locationType: 'home' as const,
-    message: '',
-    positions: [] as string[]
-  })
-  
+    title: "",
+    date: "",
+    time: "",
+    location: "",
+    locationType: "home" as const,
+    message: "",
+    positions: [] as string[],
+  });
+
   // Seductive AI
-  const [aiSession, setAiSession] = useState<SeductiveAISession | null>(null)
-  const [aiMessages, setAiMessages] = useState<any[]>([])
-  const [aiInput, setAiInput] = useState('')
-  const [aiPersonality, setAiPersonality] = useState<'seductive' | 'flirty' | 'dirty' | 'nasty' | 'romantic' | 'kinky'>('seductive')
-  const [aiIntensity, setAiIntensity] = useState<'light' | 'medium' | 'strong' | 'extreme'>('medium')
-  
+  const [aiSession, setAiSession] = useState<SeductiveAISession | null>(null);
+  const [aiMessages, setAiMessages] = useState<any[]>([]);
+  const [aiInput, setAiInput] = useState("");
+  const [aiPersonality, setAiPersonality] = useState<
+    "seductive" | "flirty" | "dirty" | "nasty" | "romantic" | "kinky"
+  >("seductive");
+  const [aiIntensity, setAiIntensity] = useState<"light" | "medium" | "strong" | "extreme">(
+    "medium",
+  );
+
   // Sex Positions
-  const [positions, setPositions] = useState<SexPosition[]>([])
-  const [positionCategory, setPositionCategory] = useState<string>('all')
-  const [positionDifficulty, setPositionDifficulty] = useState<string>('all')
+  const [positions, setPositions] = useState<SexPosition[]>([]);
+  const [positionCategory, setPositionCategory] = useState<string>("all");
+  const [positionDifficulty, setPositionDifficulty] = useState<string>("all");
 
-  useEffect(() => {
-    loadData()
-  }, [activeTab])
-
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
       switch (activeTab) {
-        case 'pornmd': {
-          const integration = await getPornMDIntegration()
-          setPornmdIntegration(integration)
-          break
+        case "pornmd": {
+          const integration = await getPornMDIntegration();
+          setPornmdIntegration(integration);
+          break;
         }
-        case 'recording': {
+        case "recording": {
           // Load sessions would go here
-          break
+          break;
         }
-        case 'dates': {
+        case "dates": {
           // Load proposals would go here
-          break
+          break;
         }
-        case 'ai-chat': {
+        case "ai-chat": {
           // Load AI session would go here
-          break
+          break;
         }
-        case 'positions': {
-          const pos = await getSexPositions()
-          setPositions(pos)
-          break
+        case "positions": {
+          const pos = await getSexPositions();
+          setPositions(pos);
+          break;
         }
       }
     } catch (error) {
-      toast.error('Failed to load data')
+      toast.error("Failed to load data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [activeTab]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const handleEnablePornMD = async () => {
     if (!pornmdApiKey || !pornmdApiSecret) {
-      toast.error('Please enter API credentials')
-      return
+      toast.error("Please enter API credentials");
+      return;
     }
 
     try {
-      const integration = await enablePornMDIntegration(
-        pornmdApiKey,
-        pornmdApiSecret,
-        {}
-      )
+      const integration = await enablePornMDIntegration(pornmdApiKey, pornmdApiSecret, {});
       if (integration) {
-        setPornmdIntegration(integration)
-        setPornmdApiKey('')
-        setPornmdApiSecret('')
+        setPornmdIntegration(integration);
+        setPornmdApiKey("");
+        setPornmdApiSecret("");
       }
     } catch (error) {
-      toast.error('Failed to enable integration')
+      toast.error("Failed to enable integration");
     }
-  }
+  };
 
   const handleStartRecording = async () => {
     if (!currentSession) {
       // Create new session
       const session = await createMultiCameraSession(
         `Recording ${new Date().toLocaleString()}`,
-        'multi_camera',
+        "multi_camera",
         null,
-        '1080p'
-      )
+        "1080p",
+      );
       if (session) {
-        setCurrentSession(session)
-        await startRecording(session.id)
-        setIsRecording(true)
-        await initializeCameras()
+        setCurrentSession(session);
+        await startRecording(session.id);
+        setIsRecording(true);
+        await initializeCameras();
       }
     } else {
-      await startRecording(currentSession.id)
-      setIsRecording(true)
-      await initializeCameras()
+      await startRecording(currentSession.id);
+      setIsRecording(true);
+      await initializeCameras();
     }
-  }
+  };
 
   const initializeCameras = async () => {
     try {
-      const devices = await navigator.mediaDevices.enumerateDevices()
-      const videoDevices = devices.filter(device => device.kind === 'videoinput')
-      
-      const streams: MediaStream[] = []
-      const newRecorders: MediaRecorder[] = []
-      
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === "videoinput");
+
+      const streams: MediaStream[] = [];
+      const newRecorders: MediaRecorder[] = [];
+
       for (let i = 0; i < Math.min(videoDevices.length, 4); i++) {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { deviceId: videoDevices[i].deviceId },
-          audio: true
-        })
-        streams.push(stream)
-        
+          audio: true,
+        });
+        streams.push(stream);
+
         // Create MediaRecorder for each stream
         const recorder = new MediaRecorder(stream, {
-          mimeType: 'video/webm;codecs=vp9,opus'
-        })
-        newRecorders.push(recorder)
+          mimeType: "video/webm;codecs=vp9,opus",
+        });
+        newRecorders.push(recorder);
       }
-      
-      setCameraStreams(streams)
-      setRecorders(newRecorders)
-      
+
+      setCameraStreams(streams);
+      setRecorders(newRecorders);
+
       // Start recording on all recorders
       newRecorders.forEach(recorder => {
-        if (recorder.state === 'inactive') {
-          recorder.start()
+        if (recorder.state === "inactive") {
+          recorder.start();
         }
-      })
-      
+      });
+
       // Attach streams to video elements
       streams.forEach((stream, index) => {
         if (videoRefs.current[index]) {
-          videoRefs.current[index]!.srcObject = stream
+          videoRefs.current[index]!.srcObject = stream;
         }
-      })
+      });
     } catch (error) {
-      logger.error('Error initializing cameras:', error)
-      toast.error('Failed to access cameras')
+      logger.error("Error initializing cameras:", error);
+      toast.error("Failed to access cameras");
     }
-  }
+  };
 
   const handleStopRecording = async () => {
-    if (!currentSession) return
+    if (!currentSession) return;
 
     // Stop all recorders and collect recordings
-    const recordings: Blob[] = []
+    const recordings: Blob[] = [];
     for (const recorder of recorders) {
-      if (recorder.state === 'recording') {
-        const chunks: Blob[] = []
-        recorder.ondataavailable = (e) => {
-          if (e.data.size > 0) chunks.push(e.data)
-        }
-        recorder.stop()
-        
+      if (recorder.state === "recording") {
+        const chunks: Blob[] = [];
+        recorder.ondataavailable = e => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+        recorder.stop();
+
         // Wait for data to be available
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise(resolve => setTimeout(resolve, 1000));
         if (chunks.length > 0) {
-          recordings.push(new Blob(chunks, { type: 'video/webm' }))
+          recordings.push(new Blob(chunks, { type: "video/webm" }));
         }
       }
     }
 
     // Stop all camera streams
     cameraStreams.forEach(stream => {
-      stream.getTracks().forEach(track => track.stop())
-    })
-    setCameraStreams([])
-    setRecorders([])
+      stream.getTracks().forEach(track => track.stop());
+    });
+    setCameraStreams([]);
+    setRecorders([]);
 
     // Upload recordings
     if (recordings.length > 0 && currentSession) {
@@ -241,25 +261,25 @@ export const NSFWAdvancedFeatures = () => {
           blob: recordings[i],
           duration: 0, // Would calculate from metadata
           startTime: Date.now(),
-          endTime: Date.now()
-        }
-        await uploadRecordedVideo(recording, currentSession.id, `camera-${i}`)
+          endTime: Date.now(),
+        };
+        await uploadRecordedVideo(recording, currentSession.id, `camera-${i}`);
       }
     }
 
-    await stopRecording(currentSession.id, 0) // Duration would be calculated
-    setIsRecording(false)
-    toast.success('Recording stopped and uploaded!')
-  }
+    await stopRecording(currentSession.id, 0); // Duration would be calculated
+    setIsRecording(false);
+    toast.success("Recording stopped and uploaded!");
+  };
 
   const handleCreateProposal = async () => {
     if (!newProposal.title || !newProposal.date || !newProposal.time) {
-      toast.error('Please fill in required fields')
-      return
+      toast.error("Please fill in required fields");
+      return;
     }
 
     // In real implementation, partner_id would be selected
-    const partnerId = 'partner-id-here' // Would come from user selection
+    const partnerId = "partner-id-here"; // Would come from user selection
 
     try {
       const proposal = await createIntimateDateProposal(partnerId, {
@@ -270,51 +290,51 @@ export const NSFWAdvancedFeatures = () => {
         locationType: newProposal.locationType,
         activities: { positions: newProposal.positions },
         positions: newProposal.positions,
-        message: newProposal.message
-      })
+        message: newProposal.message,
+      });
 
       if (proposal) {
         setNewProposal({
-          title: '',
-          date: '',
-          time: '',
-          location: '',
-          locationType: 'home',
-          message: '',
-          positions: []
-        })
-        toast.success('Proposal sent!')
+          title: "",
+          date: "",
+          time: "",
+          location: "",
+          locationType: "home",
+          message: "",
+          positions: [],
+        });
+        toast.success("Proposal sent!");
       }
     } catch (error) {
-      toast.error('Failed to create proposal')
+      toast.error("Failed to create proposal");
     }
-  }
+  };
 
   const handleStartAIChat = async () => {
     try {
-      const session = await createSeductiveAISession(aiPersonality, aiIntensity)
+      const session = await createSeductiveAISession(aiPersonality, aiIntensity);
       if (session) {
-        setAiSession(session)
-        setAiMessages([])
+        setAiSession(session);
+        setAiMessages([]);
       }
     } catch (error) {
-      toast.error('Failed to start AI chat')
+      toast.error("Failed to start AI chat");
     }
-  }
+  };
 
   const handleSendAIMessage = async () => {
-    if (!aiInput.trim() || !aiSession) return
+    if (!aiInput.trim() || !aiSession) return;
 
     try {
-      const result = await sendSeductiveAIMessage(aiSession.id, aiInput)
+      const result = await sendSeductiveAIMessage(aiSession.id, aiInput);
       if (result) {
-        setAiMessages(prev => [...prev, result.userMessage, result.aiResponse])
-        setAiInput('')
+        setAiMessages(prev => [...prev, result.userMessage, result.aiResponse]);
+        setAiInput("");
       }
     } catch (error) {
-      toast.error('Failed to send message')
+      toast.error("Failed to send message");
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -326,7 +346,7 @@ export const NSFWAdvancedFeatures = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -338,7 +358,8 @@ export const NSFWAdvancedFeatures = () => {
             NSFW Advanced Features
           </CardTitle>
           <CardDescription>
-            PornMD integration, multi-camera recording, intimate date planning, seductive AI chat, and sex positions library
+            PornMD integration, multi-camera recording, intimate date planning, seductive AI chat,
+            and sex positions library
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -356,7 +377,8 @@ export const NSFWAdvancedFeatures = () => {
                 <CardHeader>
                   <CardTitle>PornMD.com Integration</CardTitle>
                   <CardDescription>
-                    Connect with PornMD for enhanced content discovery and potential partnership opportunities
+                    Connect with PornMD for enhanced content discovery and potential partnership
+                    opportunities
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -382,7 +404,7 @@ export const NSFWAdvancedFeatures = () => {
                         <Input
                           type="password"
                           value={pornmdApiKey}
-                          onChange={(e) => setPornmdApiKey(e.target.value)}
+                          onChange={e => setPornmdApiKey(e.target.value)}
                           placeholder="Enter PornMD API Key"
                         />
                       </div>
@@ -391,7 +413,7 @@ export const NSFWAdvancedFeatures = () => {
                         <Input
                           type="password"
                           value={pornmdApiSecret}
-                          onChange={(e) => setPornmdApiSecret(e.target.value)}
+                          onChange={e => setPornmdApiSecret(e.target.value)}
                           placeholder="Enter PornMD API Secret"
                         />
                       </div>
@@ -436,9 +458,14 @@ export const NSFWAdvancedFeatures = () => {
                   {isRecording && (
                     <div className="grid grid-cols-2 gap-4">
                       {cameraStreams.map((stream, index) => (
-                        <div key={index} className="relative aspect-video bg-black rounded overflow-hidden">
+                        <div
+                          key={index}
+                          className="relative aspect-video bg-black rounded overflow-hidden"
+                        >
                           <video
-                            ref={(el) => { videoRefs.current[index] = el }}
+                            ref={el => {
+                              videoRefs.current[index] = el;
+                            }}
                             autoPlay
                             playsInline
                             muted
@@ -466,7 +493,8 @@ export const NSFWAdvancedFeatures = () => {
                 <CardHeader>
                   <CardTitle>Intimate Date Planning</CardTitle>
                   <CardDescription>
-                    Plan and propose intimate dates with your partner, including positions, activities, and special requests
+                    Plan and propose intimate dates with your partner, including positions,
+                    activities, and special requests
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -478,21 +506,21 @@ export const NSFWAdvancedFeatures = () => {
                       bucket={STORAGE_BUCKETS.USER_UPLOADS}
                       folder="intimate-dates"
                       variant="compact"
-                      onUploadComplete={(result) => {
-                        const results = Array.isArray(result) ? result : [result]
+                      onUploadComplete={result => {
+                        const results = Array.isArray(result) ? result : [result];
                         const images = results
-                          .filter(r => r.mimeType?.startsWith('image/'))
+                          .filter(r => r.mimeType?.startsWith("image/"))
                           .map(r => r.publicUrl)
-                          .filter(Boolean)
+                          .filter(Boolean);
                         const videos = results
-                          .filter(r => r.mimeType?.startsWith('video/'))
+                          .filter(r => r.mimeType?.startsWith("video/"))
                           .map(r => r.publicUrl)
-                          .filter(Boolean)
+                          .filter(Boolean);
                         setNewProposal({
                           ...newProposal,
                           // Store URLs for later use in proposal
-                        })
-                        toast.success(`Uploaded ${results.length} file(s)`)
+                        });
+                        toast.success(`Uploaded ${results.length} file(s)`);
                       }}
                     />
                   </div>
@@ -501,7 +529,7 @@ export const NSFWAdvancedFeatures = () => {
                       <Label>Proposal Title</Label>
                       <Input
                         value={newProposal.title}
-                        onChange={(e) => setNewProposal({ ...newProposal, title: e.target.value })}
+                        onChange={e => setNewProposal({ ...newProposal, title: e.target.value })}
                         placeholder="Romantic Evening..."
                       />
                     </div>
@@ -510,7 +538,7 @@ export const NSFWAdvancedFeatures = () => {
                       <Input
                         type="date"
                         value={newProposal.date}
-                        onChange={(e) => setNewProposal({ ...newProposal, date: e.target.value })}
+                        onChange={e => setNewProposal({ ...newProposal, date: e.target.value })}
                       />
                     </div>
                     <div>
@@ -518,14 +546,16 @@ export const NSFWAdvancedFeatures = () => {
                       <Input
                         type="time"
                         value={newProposal.time}
-                        onChange={(e) => setNewProposal({ ...newProposal, time: e.target.value })}
+                        onChange={e => setNewProposal({ ...newProposal, time: e.target.value })}
                       />
                     </div>
                     <div>
                       <Label>Location Type</Label>
                       <Select
                         value={newProposal.locationType}
-                        onValueChange={(value) => setNewProposal({ ...newProposal, locationType: value as any })}
+                        onValueChange={value =>
+                          setNewProposal({ ...newProposal, locationType: value as any })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -543,7 +573,7 @@ export const NSFWAdvancedFeatures = () => {
                     <Label>Message</Label>
                     <Textarea
                       value={newProposal.message}
-                      onChange={(e) => setNewProposal({ ...newProposal, message: e.target.value })}
+                      onChange={e => setNewProposal({ ...newProposal, message: e.target.value })}
                       placeholder="Write a flirty, sexy message to your partner..."
                       rows={4}
                     />
@@ -570,7 +600,10 @@ export const NSFWAdvancedFeatures = () => {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label>AI Personality</Label>
-                          <Select value={aiPersonality} onValueChange={(value) => setAiPersonality(value as any)}>
+                          <Select
+                            value={aiPersonality}
+                            onValueChange={value => setAiPersonality(value as any)}
+                          >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
@@ -586,7 +619,10 @@ export const NSFWAdvancedFeatures = () => {
                         </div>
                         <div>
                           <Label>Intensity</Label>
-                          <Select value={aiIntensity} onValueChange={(value) => setAiIntensity(value as any)}>
+                          <Select
+                            value={aiIntensity}
+                            onValueChange={value => setAiIntensity(value as any)}
+                          >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
@@ -610,9 +646,9 @@ export const NSFWAdvancedFeatures = () => {
                           <div
                             key={idx}
                             className={`p-3 rounded ${
-                              msg.message_type === 'user'
-                                ? 'bg-primary/20 ml-auto max-w-[80%]'
-                                : 'bg-muted mr-auto max-w-[80%]'
+                              msg.message_type === "user"
+                                ? "bg-primary/20 ml-auto max-w-[80%]"
+                                : "bg-muted mr-auto max-w-[80%]"
                             }`}
                           >
                             <p>{msg.message_content}</p>
@@ -622,8 +658,8 @@ export const NSFWAdvancedFeatures = () => {
                       <div className="flex gap-2">
                         <Input
                           value={aiInput}
-                          onChange={(e) => setAiInput(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleSendAIMessage()}
+                          onChange={e => setAiInput(e.target.value)}
+                          onKeyPress={e => e.key === "Enter" && handleSendAIMessage()}
                           placeholder="Type your message..."
                         />
                         <Button onClick={handleSendAIMessage}>
@@ -676,11 +712,7 @@ export const NSFWAdvancedFeatures = () => {
                       <p className="text-sm text-muted-foreground mb-2">{position.description}</p>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">{position.position_category}</Badge>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => savePosition(position.id)}
-                        >
+                        <Button size="sm" variant="ghost" onClick={() => savePosition(position.id)}>
                           <Star className="w-4 h-4" />
                         </Button>
                       </div>
@@ -693,6 +725,5 @@ export const NSFWAdvancedFeatures = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
+  );
+};

@@ -3,15 +3,21 @@
  * Comprehensive video library for NSFW educational content, technique demonstrations, expert interviews, and tutorials
  */
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   getNSFWVideos,
   createVideoPlaylist,
@@ -21,117 +27,135 @@ import {
   type NSFWVideoContent as NSFWVideoItem,
   type NSFWVideoPlaylist,
   type NSFWVideoDownload,
-  type NSFWVideoProgress
-} from '@/lib/nsfwVideoContent'
-import { hasNSFWContent, isSFW } from '@/lib/featureFlags'
-import { Play, Download, Bookmark, Star, Clock, Eye, Search, Plus, Filter, Loader2, Lock, CheckCircle2, X, Video } from 'lucide-react'
-import { toast } from 'sonner'
-import { VideoPlayer } from '@/components/VideoPlayer'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+  type NSFWVideoProgress,
+} from "@/lib/nsfwVideoContent";
+import { hasNSFWContent, isSFW } from "@/lib/featureFlags";
+import {
+  Play,
+  Download,
+  Bookmark,
+  Star,
+  Clock,
+  Eye,
+  Search,
+  Plus,
+  Filter,
+  Loader2,
+  Lock,
+  CheckCircle2,
+  X,
+  Video,
+} from "lucide-react";
+import { toast } from "sonner";
+import { VideoPlayer } from "@/components/VideoPlayer";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const NSFWVideoContent = () => {
-  const [activeTab, setActiveTab] = useState('browse')
-  const [loading, setLoading] = useState(false)
-  const [videos, setVideos] = useState<NSFWVideoItem[]>([])
-  const [selectedVideo, setSelectedVideo] = useState<NSFWVideoItem | null>(null)
-  const [playlists, setPlaylists] = useState<NSFWVideoPlaylist[]>([])
-  const [downloads, setDownloads] = useState<NSFWVideoDownload[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all')
-  const [selectedRating, setSelectedRating] = useState<string>('all')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [nsfwAvailable, setNsfwAvailable] = useState(false)
-  const [isCheckingNsfw, setIsCheckingNsfw] = useState(true)
+  const [activeTab, setActiveTab] = useState("browse");
+  const [loading, setLoading] = useState(false);
+  const [videos, setVideos] = useState<NSFWVideoItem[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<NSFWVideoItem | null>(null);
+  const [playlists, setPlaylists] = useState<NSFWVideoPlaylist[]>([]);
+  const [downloads, setDownloads] = useState<NSFWVideoDownload[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
+  const [selectedRating, setSelectedRating] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [nsfwAvailable, setNsfwAvailable] = useState(false);
+  const [isCheckingNsfw, setIsCheckingNsfw] = useState(true);
 
   const categories = [
-    { id: 'all', label: 'All Videos' },
-    { id: 'technique', label: 'Technique' },
-    { id: 'tutorial', label: 'Tutorial' },
-    { id: 'expert_interview', label: 'Expert Interviews' },
-    { id: 'educational', label: 'Educational' },
-    { id: 'demonstration', label: 'Demonstration' },
-    { id: 'advanced', label: 'Advanced' },
-    { id: 'beginner', label: 'Beginner' }
-  ]
+    { id: "all", label: "All Videos" },
+    { id: "technique", label: "Technique" },
+    { id: "tutorial", label: "Tutorial" },
+    { id: "expert_interview", label: "Expert Interviews" },
+    { id: "educational", label: "Educational" },
+    { id: "demonstration", label: "Demonstration" },
+    { id: "advanced", label: "Advanced" },
+    { id: "beginner", label: "Beginner" },
+  ];
 
   const difficultyLevels = [
-    { id: 'all', label: 'All Levels' },
-    { id: 'beginner', label: 'Beginner' },
-    { id: 'intermediate', label: 'Intermediate' },
-    { id: 'advanced', label: 'Advanced' },
-    { id: 'expert', label: 'Expert' }
-  ]
+    { id: "all", label: "All Levels" },
+    { id: "beginner", label: "Beginner" },
+    { id: "intermediate", label: "Intermediate" },
+    { id: "advanced", label: "Advanced" },
+    { id: "expert", label: "Expert" },
+  ];
 
   const ratingLevels = [
-    { id: 'all', label: 'All Ratings' },
-    { id: 'educational', label: 'Educational' },
-    { id: 'demonstrative', label: 'Demonstrative' },
-    { id: 'explicit', label: 'Explicit' }
-  ]
+    { id: "all", label: "All Ratings" },
+    { id: "educational", label: "Educational" },
+    { id: "demonstrative", label: "Demonstrative" },
+    { id: "explicit", label: "Explicit" },
+  ];
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      switch (activeTab) {
+        case "browse": {
+          const videosData = await getNSFWVideos(
+            selectedCategory === "all" ? undefined : (selectedCategory as any),
+            selectedDifficulty === "all" ? undefined : (selectedDifficulty as any),
+            selectedRating === "all" ? undefined : (selectedRating as any),
+          );
+          setVideos(videosData);
+          break;
+        }
+        case "playlists": {
+          // Load playlists
+          break;
+        }
+        case "downloads": {
+          const downloadsData = await getVideoDownloads();
+          setDownloads(downloadsData);
+          break;
+        }
+      }
+    } catch (error) {
+      toast.error("Failed to load content");
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, selectedCategory, selectedDifficulty, selectedRating]);
 
   useEffect(() => {
     const checkNsfw = async () => {
-      setIsCheckingNsfw(true)
-      const available = await hasNSFWContent()
-      setNsfwAvailable(available)
-      setIsCheckingNsfw(false)
-    }
-    checkNsfw()
-  }, [])
+      setIsCheckingNsfw(true);
+      const available = await hasNSFWContent();
+      setNsfwAvailable(available);
+      setIsCheckingNsfw(false);
+    };
+    void checkNsfw();
+  }, []);
 
   useEffect(() => {
     if (nsfwAvailable) {
-      loadData()
+      void loadData();
     }
-  }, [activeTab, selectedCategory, selectedDifficulty, selectedRating, nsfwAvailable])
+  }, [activeTab, selectedCategory, selectedDifficulty, selectedRating, nsfwAvailable, loadData]);
 
-  const loadData = async () => {
-    setLoading(true)
+  const handleDownload = async (
+    video: NSFWVideoContent,
+    quality: "sd" | "hd" | "2k" | "4k" = "hd",
+  ) => {
     try {
-      switch (activeTab) {
-        case 'browse': {
-          const videosData = await getNSFWVideos(
-            selectedCategory === 'all' ? undefined : selectedCategory as any,
-            selectedDifficulty === 'all' ? undefined : selectedDifficulty as any,
-            selectedRating === 'all' ? undefined : selectedRating as any
-          )
-          setVideos(videosData)
-          break
-        }
-        case 'playlists': {
-          // Load playlists
-          break
-        }
-        case 'downloads': {
-          const downloadsData = await getVideoDownloads()
-          setDownloads(downloadsData)
-          break
-        }
-      }
-    } catch (error) {
-      toast.error('Failed to load content')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDownload = async (video: NSFWVideoContent, quality: 'sd' | 'hd' | '2k' | '4k' = 'hd') => {
-    try {
-      const download = await requestVideoDownload(video.id, quality)
+      const download = await requestVideoDownload(video.id, quality);
       if (download) {
-        await loadData()
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to start download')
+      toast.error("Failed to start download");
     }
-  }
+  };
 
   const formatDuration = (seconds: number | null) => {
-    if (!seconds) return 'N/A'
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
+    if (!seconds) return "N/A";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   if (isCheckingNsfw) {
     return (
@@ -143,7 +167,7 @@ export const NSFWVideoContent = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (isSFW() || !nsfwAvailable) {
@@ -162,15 +186,16 @@ export const NSFWVideoContent = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   const filteredVideos = videos.filter(video => {
-    const matchesSearch = searchQuery === '' || 
+    const matchesSearch =
+      searchQuery === "" ||
       video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      video.description.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesSearch
-  })
+      video.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -199,7 +224,7 @@ export const NSFWVideoContent = () => {
                   <Input
                     placeholder="Search videos..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={e => setSearchQuery(e.target.value)}
                     className="pl-10"
                   />
                 </div>
@@ -209,7 +234,9 @@ export const NSFWVideoContent = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -219,7 +246,9 @@ export const NSFWVideoContent = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {difficultyLevels.map(level => (
-                      <SelectItem key={level.id} value={level.id}>{level.label}</SelectItem>
+                      <SelectItem key={level.id} value={level.id}>
+                        {level.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -229,7 +258,9 @@ export const NSFWVideoContent = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {ratingLevels.map(level => (
-                      <SelectItem key={level.id} value={level.id}>{level.label}</SelectItem>
+                      <SelectItem key={level.id} value={level.id}>
+                        {level.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -242,7 +273,10 @@ export const NSFWVideoContent = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredVideos.map(video => (
-                    <Card key={video.id} className="glass-card border-border/50 hover:border-primary/50 transition-colors">
+                    <Card
+                      key={video.id}
+                      className="glass-card border-border/50 hover:border-primary/50 transition-colors"
+                    >
                       <CardContent className="p-0">
                         <div className="relative aspect-video bg-muted/30 rounded-t-lg overflow-hidden">
                           {video.thumbnail_url ? (
@@ -269,7 +303,9 @@ export const NSFWVideoContent = () => {
                         </div>
                         <div className="p-4 space-y-2">
                           <h3 className="font-semibold line-clamp-2">{video.title}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2">{video.description}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {video.description}
+                          </p>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
@@ -296,13 +332,12 @@ export const NSFWVideoContent = () => {
                               Play
                             </Button>
                             <Select
-                              onValueChange={(quality) => handleDownload(video, quality as 'sd' | 'hd' | '2k' | '4k')}
+                              onValueChange={quality =>
+                                handleDownload(video, quality as "sd" | "hd" | "2k" | "4k")
+                              }
                             >
                               <SelectTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                >
+                                <Button size="sm" variant="outline">
                                   <Download className="w-4 h-4" />
                                 </Button>
                               </SelectTrigger>
@@ -322,9 +357,7 @@ export const NSFWVideoContent = () => {
               )}
 
               {filteredVideos.length === 0 && !loading && (
-                <div className="text-center py-12 text-muted-foreground">
-                  No videos found
-                </div>
+                <div className="text-center py-12 text-muted-foreground">No videos found</div>
               )}
             </TabsContent>
 
@@ -344,9 +377,7 @@ export const NSFWVideoContent = () => {
             <TabsContent value="downloads" className="space-y-4">
               <h3 className="text-lg font-semibold">Downloads</h3>
               {downloads.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No downloads yet
-                </div>
+                <div className="text-center py-12 text-muted-foreground">No downloads yet</div>
               ) : (
                 <div className="space-y-2">
                   {downloads.map(download => (
@@ -360,19 +391,23 @@ export const NSFWVideoContent = () => {
                             </p>
                           </div>
                           <div className="flex items-center gap-4">
-                            {download.download_status === 'completed' && (
+                            {download.download_status === "completed" && (
                               <CheckCircle2 className="w-5 h-5 text-green-500" />
                             )}
-                            {download.download_status === 'downloading' && (
+                            {download.download_status === "downloading" && (
                               <div className="w-32">
                                 <Progress value={download.download_progress} />
                               </div>
                             )}
-                            <Badge variant={
-                              download.download_status === 'completed' ? 'default' :
-                              download.download_status === 'downloading' ? 'secondary' :
-                              'outline'
-                            }>
+                            <Badge
+                              variant={
+                                download.download_status === "completed"
+                                  ? "default"
+                                  : download.download_status === "downloading"
+                                    ? "secondary"
+                                    : "outline"
+                              }
+                            >
                               {download.download_status}
                             </Badge>
                           </div>
@@ -395,25 +430,25 @@ export const NSFWVideoContent = () => {
               <DialogTitle>{selectedVideo.title}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-                <VideoPlayer
-                  videoUrl={
-                    selectedVideo.video_url_4k ||
-                    selectedVideo.video_url_2k ||
-                    selectedVideo.video_url_hd ||
-                    selectedVideo.video_url_sd ||
-                    ''
+              <VideoPlayer
+                videoUrl={
+                  selectedVideo.video_url_4k ||
+                  selectedVideo.video_url_2k ||
+                  selectedVideo.video_url_hd ||
+                  selectedVideo.video_url_sd ||
+                  ""
+                }
+                recordingId={selectedVideo.id}
+                title={selectedVideo.title}
+                showScreenshots={true}
+                onProgress={async progress => {
+                  if (selectedVideo) {
+                    const currentTime =
+                      (progress / 100) * (selectedVideo.video_duration_seconds || 0);
+                    await updateVideoProgressFn(selectedVideo.id, currentTime, currentTime);
                   }
-                  recordingId={selectedVideo.id}
-                  title={selectedVideo.title}
-                  showScreenshots={true}
-                  onProgress={async (progress) => {
-                    if (selectedVideo) {
-                      const currentTime =
-                        (progress / 100) * (selectedVideo.video_duration_seconds || 0)
-                      await updateVideoProgressFn(selectedVideo.id, currentTime, currentTime)
-                    }
-                  }}
-                />
+                }}
+              />
               {selectedVideo.description && (
                 <div className="space-y-2">
                   <h4 className="font-semibold">Description</h4>
@@ -435,6 +470,5 @@ export const NSFWVideoContent = () => {
         </Dialog>
       )}
     </div>
-  )
-}
-
+  );
+};

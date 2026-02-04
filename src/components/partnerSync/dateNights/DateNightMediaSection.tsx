@@ -29,6 +29,7 @@ export function DateNightMediaSection({ plan, onUpdate }: DateNightMediaSectionP
   const [uploadPercent, setUploadPercent] = useState(0);
   const [uploading, setUploading] = useState(false);
   const voice = useVoiceRecorder();
+  const voiceCaptionsUrl = plan.voiceMessageUrl ? `${plan.voiceMessageUrl}.vtt` : "";
 
   const voiceLabel = useMemo(() => {
     if (voice.isRecording) return "Recording…";
@@ -72,7 +73,8 @@ export function DateNightMediaSection({ plan, onUpdate }: DateNightMediaSectionP
       setUploading(true);
       setUploadPercent(0);
       const list = Array.from(files);
-      const allowedTypes = kind === "images" ? IMAGE_TYPES : kind === "gifs" ? GIF_TYPES : VIDEO_TYPES;
+      const allowedTypes =
+        kind === "images" ? IMAGE_TYPES : kind === "gifs" ? GIF_TYPES : VIDEO_TYPES;
       const folder =
         kind === "images"
           ? "intimate-dates/images"
@@ -102,7 +104,8 @@ export function DateNightMediaSection({ plan, onUpdate }: DateNightMediaSectionP
 
   const removeMedia = useCallback(
     (kind: "images" | "gifs" | "videos", url: string) => {
-      const list = (kind === "images" ? plan.images : kind === "gifs" ? plan.gifs : plan.videos) ?? [];
+      const list =
+        (kind === "images" ? plan.images : kind === "gifs" ? plan.gifs : plan.videos) ?? [];
       const next = list.filter(item => item !== url);
       if (kind === "images") onUpdate({ images: next });
       if (kind === "gifs") onUpdate({ gifs: next });
@@ -129,25 +132,41 @@ export function DateNightMediaSection({ plan, onUpdate }: DateNightMediaSectionP
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{voiceLabel}</Badge>
           {!voice.isRecording ? (
-            <Button size="sm" variant="outline" onClick={() => void voice.start()} disabled={uploading}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => void voice.start()}
+              disabled={uploading}
+            >
               <Mic className="w-4 h-4 mr-1" />
               Record
             </Button>
           ) : (
-            <Button size="sm" variant="destructive" onClick={() => void handleVoiceStop()} disabled={uploading}>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => void handleVoiceStop()}
+              disabled={uploading}
+            >
               <Square className="w-4 h-4 mr-1" />
               Stop
             </Button>
           )}
           {plan.voiceMessageUrl && (
-            <Button size="sm" variant="ghost" onClick={() => onUpdate({ voiceMessageUrl: "", voiceMessageDurationSeconds: null })}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onUpdate({ voiceMessageUrl: "", voiceMessageDurationSeconds: null })}
+            >
               <X className="w-4 h-4 mr-1" />
               Clear
             </Button>
           )}
         </div>
         {plan.voiceMessageUrl && (
-          <audio controls src={plan.voiceMessageUrl} className="w-full" />
+          <audio controls src={plan.voiceMessageUrl} className="w-full">
+            <track kind="captions" srcLang="en" label="English" src={voiceCaptionsUrl} />
+          </audio>
         )}
         {voice.error && <div className="text-xs text-destructive">{voice.error}</div>}
       </div>
@@ -157,7 +176,12 @@ export function DateNightMediaSection({ plan, onUpdate }: DateNightMediaSectionP
         <div className="grid gap-3 md:grid-cols-3">
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Images</Label>
-            <Input type="file" multiple accept={IMAGE_TYPES.join(",")} onChange={e => void handleUploadFiles(e.target.files, "images")} />
+            <Input
+              type="file"
+              multiple
+              accept={IMAGE_TYPES.join(",")}
+              onChange={e => void handleUploadFiles(e.target.files, "images")}
+            />
             {plan.images && plan.images.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {plan.images.map(url => (
@@ -177,7 +201,12 @@ export function DateNightMediaSection({ plan, onUpdate }: DateNightMediaSectionP
           </div>
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">GIFs</Label>
-            <Input type="file" multiple accept={GIF_TYPES.join(",")} onChange={e => void handleUploadFiles(e.target.files, "gifs")} />
+            <Input
+              type="file"
+              multiple
+              accept={GIF_TYPES.join(",")}
+              onChange={e => void handleUploadFiles(e.target.files, "gifs")}
+            />
             {plan.gifs && plan.gifs.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {plan.gifs.map(url => (
@@ -197,7 +226,12 @@ export function DateNightMediaSection({ plan, onUpdate }: DateNightMediaSectionP
           </div>
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Videos</Label>
-            <Input type="file" multiple accept={VIDEO_TYPES.join(",")} onChange={e => void handleUploadFiles(e.target.files, "videos")} />
+            <Input
+              type="file"
+              multiple
+              accept={VIDEO_TYPES.join(",")}
+              onChange={e => void handleUploadFiles(e.target.files, "videos")}
+            />
             {plan.videos && plan.videos.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {plan.videos.map(url => (

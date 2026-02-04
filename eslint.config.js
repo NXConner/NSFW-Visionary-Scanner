@@ -64,6 +64,7 @@ export default tseslint.config(
   },
   {
     files: [
+      "src/components/**/*.{ts,tsx}",
       "src/components/ui/**/*.{ts,tsx}",
       "src/contexts/**/*.{ts,tsx}",
       "src/dlc/**/*.{ts,tsx}",
