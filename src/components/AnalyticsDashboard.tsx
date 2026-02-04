@@ -133,6 +133,15 @@ const TIME_RANGES = [
   { value: "1y", label: "Last year" },
 ];
 
+const TIME_RANGE_DAYS: Record<string, number> = {
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+  "1y": 365,
+};
+
+const getDaysForRange = (range: string) => TIME_RANGE_DAYS[range] ?? 30;
+
 export const AnalyticsDashboard = ({ className, isAdmin = false }: AnalyticsDashboardProps) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -143,7 +152,7 @@ export const AnalyticsDashboard = ({ className, isAdmin = false }: AnalyticsDash
   const [refreshing, setRefreshing] = useState(false);
 
   const generateMockData = useCallback((): AnalyticsData => {
-    const days = parseInt(timeRange) || 30;
+    const days = getDaysForRange(timeRange);
 
     return {
       overview: {
@@ -205,8 +214,70 @@ export const AnalyticsDashboard = ({ className, isAdmin = false }: AnalyticsDash
 
   const processAnalyticsData = useCallback(
     (overview: any, trends: any, usage: any): AnalyticsData => {
-      // Process real data or return mock if unavailable
-      return generateMockData();
+      const fallback = generateMockData();
+
+      const normalizedOverview =
+        overview && typeof overview === "object"
+          ? {
+              totalUsers: Number(
+                overview.total_users ?? overview.totalUsers ?? fallback.overview.totalUsers,
+              ),
+              activeUsers: Number(
+                overview.active_users ?? overview.activeUsers ?? fallback.overview.activeUsers,
+              ),
+              newUsers: Number(
+                overview.new_users ?? overview.newUsers ?? fallback.overview.newUsers,
+              ),
+              totalScans: Number(
+                overview.total_scans ?? overview.totalScans ?? fallback.overview.totalScans,
+              ),
+              averageSessionDuration: Number(
+                overview.avg_session_minutes ??
+                  overview.average_session_duration ??
+                  overview.averageSessionDuration ??
+                  fallback.overview.averageSessionDuration,
+              ),
+              bounceRate: Number(
+                overview.bounce_rate ?? overview.bounceRate ?? fallback.overview.bounceRate,
+              ),
+            }
+          : fallback.overview;
+
+      const normalizedTrends =
+        Array.isArray(trends) && trends.length > 0
+          ? trends.map((row: any) => ({
+              date: String(row.date ?? row.day ?? row.created_at ?? row.timestamp ?? ""),
+              users: Number(row.users ?? row.user_count ?? row.active_users ?? 0),
+              scans: Number(row.scans ?? row.scan_count ?? 0),
+              sessions: Number(row.sessions ?? row.session_count ?? 0),
+            }))
+          : fallback.trends;
+
+      const usageEvents = Array.isArray(usage) ? usage : [];
+      const usageTotals = usageEvents.reduce<Record<string, number>>((acc, row: any) => {
+        const name = String(row.event_name ?? row.name ?? "unknown");
+        acc[name] = (acc[name] ?? 0) + 1;
+        return acc;
+      }, {});
+      const totalUsage = Object.values(usageTotals).reduce((sum, val) => sum + val, 0);
+      const featureUsage =
+        totalUsage > 0
+          ? Object.entries(usageTotals)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 8)
+              .map(([name, count]) => ({
+                name,
+                count,
+                percentage: Math.round((count / totalUsage) * 100),
+              }))
+          : fallback.featureUsage;
+
+      return {
+        ...fallback,
+        overview: normalizedOverview,
+        trends: normalizedTrends,
+        featureUsage,
+      };
     },
     [generateMockData],
   );
@@ -217,10 +288,18 @@ export const AnalyticsDashboard = ({ className, isAdmin = false }: AnalyticsDash
     setLoading(true);
     try {
       // Calculate date range
-      const days = parseInt(timeRange) || 30;
+      const days = getDaysForRange(timeRange);
       const startDate = subDays(new Date(), days);
 
       // Fetch user analytics (personal or admin-level)
+      const usageQuery = supabase
+        .from("analytics_events")
+        .select("event_name, created_at")
+        .gte("created_at", startDate.toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1000);
+      const usageResPromise = isAdmin ? usageQuery : usageQuery.eq("user_id", user.id);
+
       const [overviewRes, trendsRes, usageRes] = await Promise.all([
         // Overview stats
         supabase.rpc("get_analytics_overview", {
@@ -235,13 +314,7 @@ export const AnalyticsDashboard = ({ className, isAdmin = false }: AnalyticsDash
           p_end_date: new Date().toISOString(),
         }),
         // Feature usage
-        supabase
-          .from("analytics_events")
-          .select("event_name, created_at")
-          .eq(isAdmin ? "id" : "user_id", isAdmin ? "id" : user.id)
-          .gte("created_at", startDate.toISOString())
-          .order("created_at", { ascending: false })
-          .limit(1000),
+        usageResPromise,
       ]);
 
       // Process and aggregate data
