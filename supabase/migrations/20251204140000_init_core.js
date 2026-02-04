@@ -1,16 +1,27 @@
 exports.up = pgm => {
   pgm.sql('CREATE EXTENSION IF NOT EXISTS "pgcrypto";');
 
-  pgm.createTable(
-    { schema: "public", name: "roles" },
-    {
-      id: { type: "uuid", primaryKey: true, default: pgm.func("gen_random_uuid()") },
-      name: { type: "text", notNull: true, unique: true },
-      description: { type: "text" },
-      created_at: { type: "timestamptz", notNull: true, default: pgm.func("now()") },
-    },
-    { ifNotExists: true },
-  );
+  pgm.sql(`
+    DO $$
+    BEGIN
+      BEGIN
+        CREATE TYPE public.app_role AS ENUM ('admin', 'pro', 'user');
+      EXCEPTION
+        WHEN duplicate_object THEN NULL;
+      END;
+    END $$;
+  `);
+
+  pgm.sql(`
+    DO $$
+    BEGIN
+      BEGIN
+        ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'super_admin';
+      EXCEPTION
+        WHEN undefined_object THEN NULL;
+      END;
+    END $$;
+  `);
 
   pgm.createTable(
     { schema: "public", name: "user_roles" },
@@ -22,23 +33,14 @@ exports.up = pgm => {
         references: { schema: "auth", name: "users" },
         onDelete: "CASCADE",
       },
-      role_id: {
-        type: "uuid",
-        notNull: true,
-        references: { schema: "public", name: "roles" },
-        onDelete: "CASCADE",
-      },
-      assigned_by: {
-        type: "uuid",
-        references: { schema: "auth", name: "users" },
-      },
+      role: { type: "app_role", notNull: true },
       created_at: { type: "timestamptz", notNull: true, default: pgm.func("now()") },
     },
     { ifNotExists: true },
   );
 
   pgm.addConstraint("public.user_roles", "user_roles_unique_assignment", {
-    unique: ["user_id", "role_id"],
+    unique: ["user_id", "role"],
     ifNotExists: true,
   });
 
@@ -107,70 +109,120 @@ exports.up = pgm => {
     { ifNotExists: true },
   );
 
-  pgm.createTable(
-    { schema: "public", name: "audit_logs" },
-    {
-      id: { type: "uuid", primaryKey: true, default: pgm.func("gen_random_uuid()") },
-      user_id: {
-        type: "uuid",
-        notNull: true,
-        references: { schema: "auth", name: "users" },
-        onDelete: "CASCADE",
-      },
-      action: { type: "text", notNull: true },
-      description: { type: "text" },
-      metadata: { type: "jsonb", default: pgm.func("'{}'::jsonb") },
-      created_at: { type: "timestamptz", notNull: true, default: pgm.func("now()") },
-    },
-    { ifNotExists: true },
-  );
-
   pgm.sql("ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;");
   pgm.sql("ALTER TABLE public.scan_history ENABLE ROW LEVEL SECURITY;");
   pgm.sql("ALTER TABLE public.health_diary ENABLE ROW LEVEL SECURITY;");
-  pgm.sql("ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;");
-  pgm.sql("ALTER TABLE public.roles ENABLE ROW LEVEL SECURITY;");
   pgm.sql("ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;");
 
   pgm.sql(`
-    CREATE POLICY "profiles_select_own" ON public.profiles
+    DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+    CREATE POLICY "Users can view own profile" ON public.profiles
       FOR SELECT USING (auth.uid() = user_id);
   `);
   pgm.sql(`
-    CREATE POLICY "profiles_modify_own" ON public.profiles
-      FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+    DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+    CREATE POLICY "Users can update own profile" ON public.profiles
+      FOR UPDATE USING (auth.uid() = user_id);
   `);
   pgm.sql(`
-    CREATE POLICY "scan_history_select_own" ON public.scan_history
+    DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+    CREATE POLICY "Users can insert own profile" ON public.profiles
+      FOR INSERT WITH CHECK (auth.uid() = user_id);
+  `);
+  pgm.sql(`
+    DROP POLICY IF EXISTS "Users can view own scans" ON public.scan_history;
+    CREATE POLICY "Users can view own scans" ON public.scan_history
       FOR SELECT USING (auth.uid() = user_id);
   `);
   pgm.sql(`
-    CREATE POLICY "scan_history_modify_own" ON public.scan_history
-      FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+    DROP POLICY IF EXISTS "Users can insert own scans" ON public.scan_history;
+    CREATE POLICY "Users can insert own scans" ON public.scan_history
+      FOR INSERT WITH CHECK (auth.uid() = user_id);
   `);
   pgm.sql(`
-    CREATE POLICY "health_diary_select_own" ON public.health_diary
+    DROP POLICY IF EXISTS "Users can delete own scans" ON public.scan_history;
+    CREATE POLICY "Users can delete own scans" ON public.scan_history
+      FOR DELETE USING (auth.uid() = user_id);
+  `);
+  pgm.sql(`
+    DROP POLICY IF EXISTS "Users can view own diary" ON public.health_diary;
+    CREATE POLICY "Users can view own diary" ON public.health_diary
       FOR SELECT USING (auth.uid() = user_id);
   `);
   pgm.sql(`
-    CREATE POLICY "health_diary_modify_own" ON public.health_diary
-      FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+    DROP POLICY IF EXISTS "Users can insert diary entries" ON public.health_diary;
+    CREATE POLICY "Users can insert diary entries" ON public.health_diary
+      FOR INSERT WITH CHECK (auth.uid() = user_id);
   `);
   pgm.sql(`
-    CREATE POLICY "audit_logs_select_own" ON public.audit_logs
-      FOR SELECT USING (auth.uid() = user_id);
+    DROP POLICY IF EXISTS "Users can update own diary entries" ON public.health_diary;
+    CREATE POLICY "Users can update own diary entries" ON public.health_diary
+      FOR UPDATE USING (auth.uid() = user_id);
   `);
   pgm.sql(`
-    CREATE POLICY "roles_service_role" ON public.roles
-      FOR ALL USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+    DROP POLICY IF EXISTS "Users can delete own diary entries" ON public.health_diary;
+    CREATE POLICY "Users can delete own diary entries" ON public.health_diary
+      FOR DELETE USING (auth.uid() = user_id);
+  `);
+
+  pgm.sql(`
+    CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role public.app_role)
+    RETURNS BOOLEAN
+    LANGUAGE sql
+    STABLE
+    SECURITY DEFINER
+    SET search_path = public
+    AS $$
+      SELECT EXISTS (
+        SELECT 1
+        FROM public.user_roles
+        WHERE user_id = _user_id
+          AND role = _role
+      )
+    $$;
+  `);
+
+  pgm.sql(`
+    CREATE OR REPLACE FUNCTION public.get_user_roles(_user_id UUID)
+    RETURNS SETOF public.app_role
+    LANGUAGE sql
+    STABLE
+    SECURITY DEFINER
+    SET search_path = public
+    AS $$
+      SELECT role
+      FROM public.user_roles
+      WHERE user_id = _user_id
+    $$;
+  `);
+
+  pgm.sql(`
+    DROP POLICY IF EXISTS "Users can view their own roles" ON public.user_roles;
+    CREATE POLICY "Users can view their own roles"
+    ON public.user_roles
+    FOR SELECT
+    USING (auth.uid() = user_id);
   `);
   pgm.sql(`
-    CREATE POLICY "user_roles_select_self" ON public.user_roles
-      FOR SELECT USING (auth.role() = 'service_role' OR auth.uid() = user_id);
+    DROP POLICY IF EXISTS "Admins can view all roles" ON public.user_roles;
+    CREATE POLICY "Admins can view all roles"
+    ON public.user_roles
+    FOR SELECT
+    USING (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'super_admin'));
   `);
   pgm.sql(`
-    CREATE POLICY "user_roles_manage_service" ON public.user_roles
-      FOR ALL USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+    DROP POLICY IF EXISTS "Admins can insert roles" ON public.user_roles;
+    CREATE POLICY "Admins can insert roles"
+    ON public.user_roles
+    FOR INSERT
+    WITH CHECK (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'super_admin'));
+  `);
+  pgm.sql(`
+    DROP POLICY IF EXISTS "Admins can delete roles" ON public.user_roles;
+    CREATE POLICY "Admins can delete roles"
+    ON public.user_roles
+    FOR DELETE
+    USING (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'super_admin'));
   `);
 
   pgm.sql(`
@@ -217,15 +269,6 @@ exports.up = pgm => {
       AFTER INSERT ON auth.users
       FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
   `);
-
-  pgm.sql(`
-    INSERT INTO public.roles (name, description)
-    VALUES
-      ('super_admin', 'Full administrative control'),
-      ('clinician', 'Medical professional access'),
-      ('patient', 'Standard end user access')
-    ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description;
-  `);
 };
 
 exports.down = pgm => {
@@ -234,29 +277,31 @@ exports.down = pgm => {
   pgm.sql("DROP TRIGGER IF EXISTS update_health_diary_updated_at ON public.health_diary;");
   pgm.sql("DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;");
   pgm.sql("DROP FUNCTION IF EXISTS public.update_updated_at_column;");
+  pgm.sql("DROP FUNCTION IF EXISTS public.get_user_roles;");
+  pgm.sql("DROP FUNCTION IF EXISTS public.has_role;");
 
-  pgm.sql('DROP POLICY IF EXISTS "user_roles_manage_service" ON public.user_roles;');
-  pgm.sql('DROP POLICY IF EXISTS "user_roles_select_self" ON public.user_roles;');
-  pgm.sql('DROP POLICY IF EXISTS "roles_service_role" ON public.roles;');
-  pgm.sql('DROP POLICY IF EXISTS "audit_logs_select_own" ON public.audit_logs;');
-  pgm.sql('DROP POLICY IF EXISTS "health_diary_modify_own" ON public.health_diary;');
-  pgm.sql('DROP POLICY IF EXISTS "health_diary_select_own" ON public.health_diary;');
-  pgm.sql('DROP POLICY IF EXISTS "scan_history_modify_own" ON public.scan_history;');
-  pgm.sql('DROP POLICY IF EXISTS "scan_history_select_own" ON public.scan_history;');
-  pgm.sql('DROP POLICY IF EXISTS "profiles_modify_own" ON public.profiles;');
-  pgm.sql('DROP POLICY IF EXISTS "profiles_select_own" ON public.profiles;');
+  pgm.sql('DROP POLICY IF EXISTS "Admins can delete roles" ON public.user_roles;');
+  pgm.sql('DROP POLICY IF EXISTS "Admins can insert roles" ON public.user_roles;');
+  pgm.sql('DROP POLICY IF EXISTS "Admins can view all roles" ON public.user_roles;');
+  pgm.sql('DROP POLICY IF EXISTS "Users can view their own roles" ON public.user_roles;');
+  pgm.sql('DROP POLICY IF EXISTS "Users can delete own diary entries" ON public.health_diary;');
+  pgm.sql('DROP POLICY IF EXISTS "Users can update own diary entries" ON public.health_diary;');
+  pgm.sql('DROP POLICY IF EXISTS "Users can insert diary entries" ON public.health_diary;');
+  pgm.sql('DROP POLICY IF EXISTS "Users can view own diary" ON public.health_diary;');
+  pgm.sql('DROP POLICY IF EXISTS "Users can delete own scans" ON public.scan_history;');
+  pgm.sql('DROP POLICY IF EXISTS "Users can insert own scans" ON public.scan_history;');
+  pgm.sql('DROP POLICY IF EXISTS "Users can view own scans" ON public.scan_history;');
+  pgm.sql('DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;');
+  pgm.sql('DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;');
+  pgm.sql('DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;');
 
   pgm.sql("ALTER TABLE public.user_roles DISABLE ROW LEVEL SECURITY;");
-  pgm.sql("ALTER TABLE public.roles DISABLE ROW LEVEL SECURITY;");
-  pgm.sql("ALTER TABLE public.audit_logs DISABLE ROW LEVEL SECURITY;");
   pgm.sql("ALTER TABLE public.health_diary DISABLE ROW LEVEL SECURITY;");
   pgm.sql("ALTER TABLE public.scan_history DISABLE ROW LEVEL SECURITY;");
   pgm.sql("ALTER TABLE public.profiles DISABLE ROW LEVEL SECURITY;");
 
-  pgm.dropTable({ schema: "public", name: "audit_logs" }, { ifExists: true, cascade: true });
   pgm.dropTable({ schema: "public", name: "health_diary" }, { ifExists: true, cascade: true });
   pgm.dropTable({ schema: "public", name: "scan_history" }, { ifExists: true, cascade: true });
   pgm.dropTable({ schema: "public", name: "profiles" }, { ifExists: true, cascade: true });
   pgm.dropTable({ schema: "public", name: "user_roles" }, { ifExists: true, cascade: true });
-  pgm.dropTable({ schema: "public", name: "roles" }, { ifExists: true, cascade: true });
 };

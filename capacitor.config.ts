@@ -7,23 +7,26 @@ const isDevMode =
   process.env.VITE_DEV_SERVER === "true" &&
   !process.env.CAPACITOR_BUILD;
 
+const serverConfig: CapacitorConfig["server"] = {
+  androidScheme: "https",
+  cleartext: false,
+  ...(isDevMode
+    ? {
+        url: "https://0b696f8a-6a68-4651-ba80-ae9256f5e910.lovableproject.com?forceHideBadge=true",
+        cleartext: false,
+      }
+    : {}),
+};
+
 const config: CapacitorConfig = {
   appId: "com.morphoscan.pro",
   appName: "MorphoScan Pro",
   webDir: "dist",
-  bundledWebRuntime: false,
 
   // NEVER include server URL in production builds - always use local bundled assets
   // Server URL is ONLY for local development when explicitly enabled
   // For Android/iOS builds, this should ALWAYS be empty to use bundled assets
-  ...(isDevMode
-    ? {
-        server: {
-          url: "https://0b696f8a-6a68-4651-ba80-ae9256f5e910.lovableproject.com?forceHideBadge=true",
-          cleartext: false,
-        },
-      }
-    : {}),
+  server: serverConfig,
 
   android: {
     allowMixedContent: isDevMode,

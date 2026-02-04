@@ -164,9 +164,23 @@ export default defineConfig(({ mode }) => {
     }),
   ].filter(Boolean),
   resolve: {
-    alias: {
-      "@": resolve(__dirname, "./src"),
-    },
+    alias: [
+      { find: "@", replacement: resolve(__dirname, "./src") },
+      { find: /^lucide-react$/, replacement: resolve(__dirname, "./src/lib/lucide") },
+      {
+        find: /\.\/shared\/src\/utils\/mergeClasses\.js$/,
+        replacement: resolve(__dirname, "./src/lib/lucide/mergeClasses"),
+      },
+      {
+        find: /\.\/shared\/src\/utils\/toKebabCase\.js$/,
+        replacement: resolve(__dirname, "./src/lib/lucide/toKebabCase"),
+      },
+      {
+        find: /\.\/shared\/src\/utils\/toPascalCase\.js$/,
+        replacement: resolve(__dirname, "./src/lib/lucide/toPascalCase"),
+      },
+      { find: /\.\/Icon\.js$/, replacement: resolve(__dirname, "./src/lib/lucide/Icon") },
+    ],
   },
   build: {
     // Production optimizations
