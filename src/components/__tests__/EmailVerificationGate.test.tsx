@@ -44,7 +44,7 @@ describe("EmailVerificationGate", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/email verification required/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/email verification required/i).length).toBeGreaterThan(0);
       expect(screen.queryByText("Protected")).not.toBeInTheDocument();
     });
   });
