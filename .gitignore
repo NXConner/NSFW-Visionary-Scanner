@@ -37,6 +37,7 @@ android/gradle.properties.user
 
 # Local Android SDK (if installed in repo root)
 android-sdk/
+deleted files/android-sdk/
 
 # Firebase config (do not commit; environment-specific)
 android/app/google-services.json
