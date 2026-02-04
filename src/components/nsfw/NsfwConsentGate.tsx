@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Loader2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useNsfwConsent } from "@/hooks/useNsfwConsent";
@@ -22,8 +23,13 @@ export function NsfwConsentGate({
   description = "Please review and accept the consent statements below to continue.",
   children,
 }: NsfwConsentGateProps): JSX.Element {
-  const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked, loading: authLoading, rolesLoading } =
-    useAuth();
+  const {
+    isSuperAdmin,
+    hasFullAccess,
+    allFeaturesUnlocked,
+    loading: authLoading,
+    rolesLoading,
+  } = useAuth();
   const { isAdmin, isSuperAdmin: isSuperAdminRole, isLoading: rolesHookLoading } = useUserRoles();
   const isPrivileged =
     isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole;
@@ -105,20 +111,30 @@ export function NsfwConsentGate({
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground whitespace-pre-line">{policy.body}</p>
-              <label className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={checked.has(policy.policy_key)}
-                  onCheckedChange={value => {
-                    setChecked(prev => {
-                      const next = new Set(prev);
-                      if (value) next.add(policy.policy_key);
-                      else next.delete(policy.policy_key);
-                      return next;
-                    });
-                  }}
-                />
-                I agree to this consent statement.
-              </label>
+              <div className="flex items-center gap-2 text-sm">
+                {(() => {
+                  const consentId = `consent-${policy.policy_key}`;
+                  return (
+                    <>
+                      <Checkbox
+                        id={consentId}
+                        checked={checked.has(policy.policy_key)}
+                        onCheckedChange={value => {
+                          setChecked(prev => {
+                            const next = new Set(prev);
+                            if (value) next.add(policy.policy_key);
+                            else next.delete(policy.policy_key);
+                            return next;
+                          });
+                        }}
+                      />
+                      <Label htmlFor={consentId} className="text-sm">
+                        I agree to this consent statement.
+                      </Label>
+                    </>
+                  );
+                })()}
+              </div>
             </CardContent>
           </Card>
         ))}

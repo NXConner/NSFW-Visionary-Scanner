@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import type { TrackedObject } from "@/hooks/useObjectTracking";
 
 export interface AutoTrackState {
@@ -34,17 +34,23 @@ export function useObjectAutoTrack(options: UseObjectAutoTrackOptions) {
   const lastFocusUpdateRef = useRef<number>(0);
 
   // Find the currently tracked object
-  const trackedObject = selectedTrackId != null
-    ? tracks.find(t => t.trackId === selectedTrackId) ?? null
-    : null;
+  const trackedObject = useMemo(
+    () =>
+      selectedTrackId != null ? (tracks.find(t => t.trackId === selectedTrackId) ?? null) : null,
+    [selectedTrackId, tracks],
+  );
 
   // Calculate focus point from tracked object center
-  const focusPoint = trackedObject
-    ? {
-        x: (trackedObject.box.x + trackedObject.box.width / 2) / 100,
-        y: (trackedObject.box.y + trackedObject.box.height / 2) / 100,
-      }
-    : null;
+  const focusPoint = useMemo(
+    () =>
+      trackedObject
+        ? {
+            x: (trackedObject.box.x + trackedObject.box.width / 2) / 100,
+            y: (trackedObject.box.y + trackedObject.box.height / 2) / 100,
+          }
+        : null,
+    [trackedObject],
+  );
 
   // Update focus point when tracking
   useEffect(() => {

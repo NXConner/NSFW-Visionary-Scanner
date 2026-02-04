@@ -5,6 +5,7 @@
 
 import { toast } from "sonner";
 import { logger } from "./logger";
+import { APP_NAME } from "@/config/brand";
 
 // Simple base32 encoding/decoding for TOTP
 const BASE32_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -142,7 +143,7 @@ export async function initiate2FASetup(email: string): Promise<TwoFactorSetup> {
   const secret = generateSecret(20);
   const backupCodes = generateBackupCodes(10);
 
-  const issuer = "MorphoScan Pro";
+  const issuer = APP_NAME;
   const otpauthUrl = `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(email)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`;
 
   // Store temporarily until verified

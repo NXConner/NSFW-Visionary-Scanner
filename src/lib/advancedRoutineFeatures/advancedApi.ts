@@ -4,7 +4,6 @@ import { logger } from "@/lib/logger";
 import { fromExtended } from "@/lib/supabaseExtensions";
 import type { JsonObject, RoutineTemplate } from "./types";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = { from: (t: string) => fromExtended(t as any) };
 import type {
   AdaptiveRoutine,

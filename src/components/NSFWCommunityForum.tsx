@@ -3,14 +3,14 @@
  * NSFW-specific discussion forums with anonymous posting, Q&A, success stories, and support groups
  */
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   getNSFWForumCategories,
   getNSFWForumThreads,
@@ -23,87 +23,101 @@ import {
   type NSFWForumThread,
   type NSFWForumPost,
   type NSFWCommunityChallenge,
-  type NSFWSupportGroup
-} from '@/lib/nsfwCommunityForum'
-import { hasNSFWContent, isSFW } from '@/lib/featureFlags'
-import { MessageSquare, Plus, Search, ThumbsUp, HelpCircle, Pin, Lock, TrendingUp, Users, Shield, Loader2, Eye, Clock } from 'lucide-react'
-import { toast } from 'sonner'
+  type NSFWSupportGroup,
+} from "@/lib/nsfwCommunityForum";
+import { hasNSFWContent, isSFW } from "@/lib/featureFlags";
+import {
+  MessageSquare,
+  Plus,
+  Search,
+  ThumbsUp,
+  HelpCircle,
+  Pin,
+  Lock,
+  TrendingUp,
+  Users,
+  Shield,
+  Loader2,
+  Eye,
+  Clock,
+} from "lucide-react";
+import { toast } from "sonner";
 
 export const NSFWCommunityForum = () => {
-  const [activeTab, setActiveTab] = useState('threads')
-  const [loading, setLoading] = useState(false)
-  const [categories, setCategories] = useState<NSFWForumCategory[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [threads, setThreads] = useState<NSFWForumThread[]>([])
-  const [selectedThread, setSelectedThread] = useState<NSFWForumThread | null>(null)
-  const [posts, setPosts] = useState<NSFWForumPost[]>([])
-  const [challenges, setChallenges] = useState<NSFWCommunityChallenge[]>([])
-  const [showNewThreadForm, setShowNewThreadForm] = useState(false)
-  const [showReplyForm, setShowReplyForm] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [nsfwAvailable, setNsfwAvailable] = useState(false)
-  const [isCheckingNsfw, setIsCheckingNsfw] = useState(true)
+  const [activeTab, setActiveTab] = useState("threads");
+  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<NSFWForumCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [threads, setThreads] = useState<NSFWForumThread[]>([]);
+  const [selectedThread, setSelectedThread] = useState<NSFWForumThread | null>(null);
+  const [posts, setPosts] = useState<NSFWForumPost[]>([]);
+  const [challenges, setChallenges] = useState<NSFWCommunityChallenge[]>([]);
+  const [showNewThreadForm, setShowNewThreadForm] = useState(false);
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [nsfwAvailable, setNsfwAvailable] = useState(false);
+  const [isCheckingNsfw, setIsCheckingNsfw] = useState(true);
 
   const [newThread, setNewThread] = useState({
-    category_id: '',
-    title: '',
-    content: '',
+    category_id: "",
+    title: "",
+    content: "",
     is_anonymous: false,
     is_qa_thread: false,
-    is_success_story: false
-  })
+    is_success_story: false,
+  });
 
   const [newPost, setNewPost] = useState({
-    content: '',
-    is_anonymous: false
-  })
+    content: "",
+    is_anonymous: false,
+  });
 
-  useEffect(() => {
-    const checkNsfw = async () => {
-      setIsCheckingNsfw(true)
-      const available = await hasNSFWContent()
-      setNsfwAvailable(available)
-      setIsCheckingNsfw(false)
-    }
-    checkNsfw()
-  }, [])
-
-  useEffect(() => {
-    if (nsfwAvailable) {
-      loadData()
-    }
-  }, [activeTab, selectedCategory, nsfwAvailable])
-
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
       switch (activeTab) {
-        case 'threads': {
+        case "threads": {
           const [categoriesData, threadsData] = await Promise.all([
             getNSFWForumCategories(),
-            getNSFWForumThreads(selectedCategory || undefined)
-          ])
-          setCategories(categoriesData)
-          setThreads(threadsData)
-          break
+            getNSFWForumThreads(selectedCategory || undefined),
+          ]);
+          setCategories(categoriesData);
+          setThreads(threadsData);
+          break;
         }
-        case 'challenges': {
-          const challengesData = await getNSFWCommunityChallenges()
-          setChallenges(challengesData)
-          break
+        case "challenges": {
+          const challengesData = await getNSFWCommunityChallenges();
+          setChallenges(challengesData);
+          break;
         }
       }
     } catch (error) {
-      toast.error('Failed to load forum data')
+      toast.error("Failed to load forum data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [activeTab, selectedCategory]);
+
+  useEffect(() => {
+    const checkNsfw = async () => {
+      setIsCheckingNsfw(true);
+      const available = await hasNSFWContent();
+      setNsfwAvailable(available);
+      setIsCheckingNsfw(false);
+    };
+    void checkNsfw();
+  }, []);
+
+  useEffect(() => {
+    if (nsfwAvailable) {
+      void loadData();
+    }
+  }, [activeTab, selectedCategory, nsfwAvailable, loadData]);
 
   const handleCreateThread = async () => {
     if (!newThread.category_id || !newThread.title || !newThread.content) {
-      toast.error('Please fill in all required fields')
-      return
+      toast.error("Please fill in all required fields");
+      return;
     }
 
     try {
@@ -113,49 +127,56 @@ export const NSFWCommunityForum = () => {
         newThread.content,
         newThread.is_anonymous,
         newThread.is_qa_thread,
-        newThread.is_success_story
-      )
+        newThread.is_success_story,
+      );
       if (thread) {
-        setShowNewThreadForm(false)
-        setNewThread({ category_id: '', title: '', content: '', is_anonymous: false, is_qa_thread: false, is_success_story: false })
-        await loadData()
+        setShowNewThreadForm(false);
+        setNewThread({
+          category_id: "",
+          title: "",
+          content: "",
+          is_anonymous: false,
+          is_qa_thread: false,
+          is_success_story: false,
+        });
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to create thread')
+      toast.error("Failed to create thread");
     }
-  }
+  };
 
   const handleLoadThread = async (thread: NSFWForumThread) => {
-    setSelectedThread(thread)
+    setSelectedThread(thread);
     try {
-      const postsData = await getNSFWForumPosts(thread.id)
-      setPosts(postsData)
+      const postsData = await getNSFWForumPosts(thread.id);
+      setPosts(postsData);
     } catch (error) {
-      toast.error('Failed to load posts')
+      toast.error("Failed to load posts");
     }
-  }
+  };
 
   const handleCreatePost = async () => {
     if (!selectedThread || !newPost.content) {
-      toast.error('Please enter a reply')
-      return
+      toast.error("Please enter a reply");
+      return;
     }
 
     try {
       const post = await createNSFWForumPost(
         selectedThread.id,
         newPost.content,
-        newPost.is_anonymous
-      )
+        newPost.is_anonymous,
+      );
       if (post) {
-        setShowReplyForm(false)
-        setNewPost({ content: '', is_anonymous: false })
-        await handleLoadThread(selectedThread)
+        setShowReplyForm(false);
+        setNewPost({ content: "", is_anonymous: false });
+        await handleLoadThread(selectedThread);
       }
     } catch (error) {
-      toast.error('Failed to create post')
+      toast.error("Failed to create post");
     }
-  }
+  };
 
   if (isCheckingNsfw) {
     return (
@@ -167,7 +188,7 @@ export const NSFWCommunityForum = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (isSFW() || !nsfwAvailable) {
@@ -186,14 +207,16 @@ export const NSFWCommunityForum = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   const filteredThreads = threads.filter(thread => {
-    if (searchQuery === '') return true
-    return thread.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           thread.content.toLowerCase().includes(searchQuery.toLowerCase())
-  })
+    if (searchQuery === "") return true;
+    return (
+      thread.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      thread.content.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -218,11 +241,7 @@ export const NSFWCommunityForum = () => {
             <TabsContent value="threads" className="space-y-4">
               {selectedThread ? (
                 <div className="space-y-4">
-                  <Button
-                    variant="ghost"
-                    onClick={() => setSelectedThread(null)}
-                    className="mb-4"
-                  >
+                  <Button variant="ghost" onClick={() => setSelectedThread(null)} className="mb-4">
                     ← Back to Threads
                   </Button>
                   <Card className="glass-card border-border/50">
@@ -231,13 +250,21 @@ export const NSFWCommunityForum = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <CardTitle>{selectedThread.title}</CardTitle>
-                            {selectedThread.is_pinned && <Pin className="w-4 h-4 text-yellow-500" />}
-                            {selectedThread.is_locked && <Lock className="w-4 h-4 text-muted-foreground" />}
+                            {selectedThread.is_pinned && (
+                              <Pin className="w-4 h-4 text-yellow-500" />
+                            )}
+                            {selectedThread.is_locked && (
+                              <Lock className="w-4 h-4 text-muted-foreground" />
+                            )}
                             {selectedThread.is_qa_thread && <Badge variant="secondary">Q&A</Badge>}
-                            {selectedThread.is_success_story && <Badge variant="default">Success Story</Badge>}
+                            {selectedThread.is_success_story && (
+                              <Badge variant="default">Success Story</Badge>
+                            )}
                           </div>
                           <CardDescription>
-                            {selectedThread.is_anonymous ? 'Anonymous' : `User ${selectedThread.user_id?.substring(0, 8)}`}
+                            {selectedThread.is_anonymous
+                              ? "Anonymous"
+                              : `User ${selectedThread.user_id?.substring(0, 8)}`}
                           </CardDescription>
                         </div>
                       </div>
@@ -272,7 +299,9 @@ export const NSFWCommunityForum = () => {
                                 {post.is_anonymous ? (
                                   <span className="text-sm text-muted-foreground">Anonymous</span>
                                 ) : (
-                                  <span className="text-sm">User {post.user_id?.substring(0, 8)}</span>
+                                  <span className="text-sm">
+                                    User {post.user_id?.substring(0, 8)}
+                                  </span>
                                 )}
                                 {post.is_expert_answer && (
                                   <Badge variant="default" className="text-xs">
@@ -306,7 +335,7 @@ export const NSFWCommunityForum = () => {
                           <Textarea
                             placeholder="Write a reply..."
                             value={newPost.content}
-                            onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
+                            onChange={e => setNewPost({ ...newPost, content: e.target.value })}
                             className="mb-2"
                             rows={4}
                           />
@@ -315,7 +344,9 @@ export const NSFWCommunityForum = () => {
                               <input
                                 type="checkbox"
                                 checked={newPost.is_anonymous}
-                                onChange={(e) => setNewPost({ ...newPost, is_anonymous: e.target.checked })}
+                                onChange={e =>
+                                  setNewPost({ ...newPost, is_anonymous: e.target.checked })
+                                }
                                 aria-label="Post anonymously"
                               />
                               Post anonymously
@@ -335,7 +366,7 @@ export const NSFWCommunityForum = () => {
                       <Input
                         placeholder="Search threads..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={e => setSearchQuery(e.target.value)}
                         className="pl-10"
                       />
                     </div>
@@ -351,12 +382,12 @@ export const NSFWCommunityForum = () => {
                         <Input
                           placeholder="Thread title"
                           value={newThread.title}
-                          onChange={(e) => setNewThread({ ...newThread, title: e.target.value })}
+                          onChange={e => setNewThread({ ...newThread, title: e.target.value })}
                         />
                         <Textarea
                           placeholder="Thread content"
                           value={newThread.content}
-                          onChange={(e) => setNewThread({ ...newThread, content: e.target.value })}
+                          onChange={e => setNewThread({ ...newThread, content: e.target.value })}
                           rows={6}
                         />
                         <div className="flex flex-col gap-2">
@@ -364,7 +395,9 @@ export const NSFWCommunityForum = () => {
                             <input
                               type="checkbox"
                               checked={newThread.is_anonymous}
-                              onChange={(e) => setNewThread({ ...newThread, is_anonymous: e.target.checked })}
+                              onChange={e =>
+                                setNewThread({ ...newThread, is_anonymous: e.target.checked })
+                              }
                               aria-label="Post anonymously"
                             />
                             Post anonymously
@@ -373,7 +406,9 @@ export const NSFWCommunityForum = () => {
                             <input
                               type="checkbox"
                               checked={newThread.is_qa_thread}
-                              onChange={(e) => setNewThread({ ...newThread, is_qa_thread: e.target.checked })}
+                              onChange={e =>
+                                setNewThread({ ...newThread, is_qa_thread: e.target.checked })
+                              }
                               aria-label="Mark as Q&A thread"
                             />
                             This is a Q&A thread
@@ -382,15 +417,21 @@ export const NSFWCommunityForum = () => {
                             <input
                               type="checkbox"
                               checked={newThread.is_success_story}
-                              onChange={(e) => setNewThread({ ...newThread, is_success_story: e.target.checked })}
+                              onChange={e =>
+                                setNewThread({ ...newThread, is_success_story: e.target.checked })
+                              }
                               aria-label="Mark as success story"
                             />
                             This is a success story
                           </label>
                         </div>
                         <div className="flex gap-2">
-                          <Button onClick={handleCreateThread} className="flex-1">Create Thread</Button>
-                          <Button variant="outline" onClick={() => setShowNewThreadForm(false)}>Cancel</Button>
+                          <Button onClick={handleCreateThread} className="flex-1">
+                            Create Thread
+                          </Button>
+                          <Button variant="outline" onClick={() => setShowNewThreadForm(false)}>
+                            Cancel
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -415,11 +456,19 @@ export const NSFWCommunityForum = () => {
                                   <h3 className="font-semibold">{thread.title}</h3>
                                   {thread.is_pinned && <Pin className="w-4 h-4 text-yellow-500" />}
                                   {thread.is_qa_thread && <Badge variant="secondary">Q&A</Badge>}
-                                  {thread.is_success_story && <Badge variant="default">Success</Badge>}
+                                  {thread.is_success_story && (
+                                    <Badge variant="default">Success</Badge>
+                                  )}
                                 </div>
-                                <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{thread.content}</p>
+                                <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                                  {thread.content}
+                                </p>
                                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                  <span>{thread.is_anonymous ? 'Anonymous' : `User ${thread.user_id?.substring(0, 8)}`}</span>
+                                  <span>
+                                    {thread.is_anonymous
+                                      ? "Anonymous"
+                                      : `User ${thread.user_id?.substring(0, 8)}`}
+                                  </span>
                                   <span className="flex items-center gap-1">
                                     <Eye className="w-3 h-3" />
                                     {thread.view_count}
@@ -449,9 +498,7 @@ export const NSFWCommunityForum = () => {
             <TabsContent value="challenges" className="space-y-4">
               <h3 className="text-lg font-semibold">Community Challenges</h3>
               {challenges.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No active challenges
-                </div>
+                <div className="text-center py-12 text-muted-foreground">No active challenges</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {challenges.map(challenge => (
@@ -492,6 +539,5 @@ export const NSFWCommunityForum = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
+  );
+};

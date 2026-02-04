@@ -14,10 +14,18 @@ const isConfigured =
   typeof SUPABASE_PUBLISHABLE_KEY === "string" &&
   SUPABASE_PUBLISHABLE_KEY.length > 0;
 
-// Avoid hard-crashing the app when env is missing (tests/preview shells).
-// Calls will still fail until real env is provided, but UI can render.
+const isTestEnv = Boolean(import.meta.env.VITEST) || import.meta.env.MODE === "test";
+
+// Avoid hard-crashing test runs when env is missing.
+// In dev/prod, require real credentials to prevent accidental placeholder usage.
 const FALLBACK_SUPABASE_URL = "https://example.supabase.co";
 const FALLBACK_SUPABASE_ANON_KEY = "public-anon-key";
+
+if (!isConfigured && !isTestEnv) {
+  throw new Error(
+    "Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.",
+  );
+}
 
 // Test localStorage availability for restricted contexts
 const isLocalStorageAvailable = (): boolean => {

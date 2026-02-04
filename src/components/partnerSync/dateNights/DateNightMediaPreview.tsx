@@ -9,13 +9,16 @@ function isHttpUrl(value: string | null | undefined): boolean {
   return /^https?:\/\//i.test(String(value || ""));
 }
 
-export function DateNightMediaPreview({ proposal }: DateNightMediaPreviewProps): JSX.Element | null {
+export function DateNightMediaPreview({
+  proposal,
+}: DateNightMediaPreviewProps): JSX.Element | null {
   const images = proposal.images_urls ?? [];
   const gifs = proposal.gifs_urls ?? [];
   const videos = proposal.videos_urls ?? [];
   const links = proposal.links ?? [];
   const emojis = proposal.adult_emojis ?? [];
   const voiceUrl = proposal.voice_message_url;
+  const voiceCaptionsUrl = voiceUrl && isHttpUrl(voiceUrl) ? `${voiceUrl}.vtt` : "";
 
   const hasMedia =
     images.length || gifs.length || videos.length || links.length || emojis.length || voiceUrl;
@@ -24,7 +27,9 @@ export function DateNightMediaPreview({ proposal }: DateNightMediaPreviewProps):
   return (
     <div className="space-y-2">
       {voiceUrl && isHttpUrl(voiceUrl) && (
-        <audio controls src={voiceUrl} className="w-full" />
+        <audio controls src={voiceUrl} className="w-full">
+          <track kind="captions" srcLang="en" label="English" src={voiceCaptionsUrl} />
+        </audio>
       )}
       {voiceUrl && !isHttpUrl(voiceUrl) && (
         <div className="text-xs text-muted-foreground">Voice message attached.</div>
@@ -32,14 +37,34 @@ export function DateNightMediaPreview({ proposal }: DateNightMediaPreviewProps):
 
       {(images.length > 0 || gifs.length > 0) && (
         <div className="flex flex-wrap gap-2">
-          {images.slice(0, 4).map(url => (
-            <a key={url} href={url} target="_blank" rel="noreferrer" aria-label="Open image in new tab">
-              <img src={url} alt="Image" className="h-16 w-16 object-cover rounded border" />
+          {images.slice(0, 4).map((url, index) => (
+            <a
+              key={url}
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open attachment in new tab"
+            >
+              <img
+                src={url}
+                alt={`Attachment ${index + 1}`}
+                className="h-16 w-16 object-cover rounded border"
+              />
             </a>
           ))}
-          {gifs.slice(0, 4).map(url => (
-            <a key={url} href={url} target="_blank" rel="noreferrer" aria-label="Open GIF in new tab">
-              <img src={url} alt="GIF" className="h-16 w-16 object-cover rounded border" />
+          {gifs.slice(0, 4).map((url, index) => (
+            <a
+              key={url}
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open attachment in new tab"
+            >
+              <img
+                src={url}
+                alt={`Animated attachment ${index + 1}`}
+                className="h-16 w-16 object-cover rounded border"
+              />
             </a>
           ))}
         </div>
@@ -48,7 +73,13 @@ export function DateNightMediaPreview({ proposal }: DateNightMediaPreviewProps):
       {videos.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {videos.slice(0, 3).map(url => (
-            <a key={url} href={url} target="_blank" rel="noreferrer" aria-label="Open video in new tab">
+            <a
+              key={url}
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open video in new tab"
+            >
               <Badge variant="outline">Video</Badge>
             </a>
           ))}
@@ -58,7 +89,13 @@ export function DateNightMediaPreview({ proposal }: DateNightMediaPreviewProps):
       {links.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {links.slice(0, 3).map(url => (
-            <a key={url} href={url} target="_blank" rel="noreferrer" aria-label="Open link in new tab">
+            <a
+              key={url}
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open link in new tab"
+            >
               <Badge variant="secondary">Link</Badge>
             </a>
           ))}

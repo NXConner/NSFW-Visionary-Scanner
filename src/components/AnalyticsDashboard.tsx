@@ -3,23 +3,23 @@
  * Privacy-compliant analytics with usage tracking, performance metrics, and admin insights
  */
 
-import { useState, useEffect, useMemo } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   BarChart3,
   LineChart,
@@ -46,8 +46,8 @@ import {
   ArrowDownRight,
   Loader2,
   Shield,
-  Settings
-} from 'lucide-react'
+  Settings,
+} from "lucide-react";
 import {
   LineChart as RechartsLine,
   Line,
@@ -63,155 +63,97 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
-} from 'recharts'
-import { useAuth } from '@/contexts/AuthContext'
-import { supabase } from '@/integrations/supabase/client'
-import { logger } from '@/lib/logger'
-import { cn } from '@/lib/utils'
-import { format, subDays, startOfDay, endOfDay } from 'date-fns'
+  ResponsiveContainer,
+} from "recharts";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
+import { cn } from "@/lib/utils";
+import { format, subDays, startOfDay, endOfDay } from "date-fns";
 
 interface AnalyticsData {
   overview: {
-    totalUsers: number
-    activeUsers: number
-    newUsers: number
-    totalScans: number
-    averageSessionDuration: number
-    bounceRate: number
-  }
+    totalUsers: number;
+    activeUsers: number;
+    newUsers: number;
+    totalScans: number;
+    averageSessionDuration: number;
+    bounceRate: number;
+  };
   trends: {
-    date: string
-    users: number
-    scans: number
-    sessions: number
-  }[]
+    date: string;
+    users: number;
+    scans: number;
+    sessions: number;
+  }[];
   featureUsage: {
-    name: string
-    count: number
-    percentage: number
-  }[]
+    name: string;
+    count: number;
+    percentage: number;
+  }[];
   deviceBreakdown: {
-    device: string
-    count: number
-    percentage: number
-  }[]
+    device: string;
+    count: number;
+    percentage: number;
+  }[];
   performanceMetrics: {
-    metric: string
-    value: number
-    unit: string
-    status: 'good' | 'warning' | 'critical'
-  }[]
+    metric: string;
+    value: number;
+    unit: string;
+    status: "good" | "warning" | "critical";
+  }[];
   topFeatures: {
-    feature: string
-    usage: number
-    trend: 'up' | 'down' | 'stable'
-    change: number
-  }[]
+    feature: string;
+    usage: number;
+    trend: "up" | "down" | "stable";
+    change: number;
+  }[];
   errorMetrics: {
-    type: string
-    count: number
-    lastOccurred: string
-  }[]
+    type: string;
+    count: number;
+    lastOccurred: string;
+  }[];
   userRetention: {
-    period: string
-    rate: number
-  }[]
+    period: string;
+    rate: number;
+  }[];
 }
 
 interface AnalyticsDashboardProps {
-  className?: string
-  isAdmin?: boolean
+  className?: string;
+  isAdmin?: boolean;
 }
 
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#a4de6c', '#d0ed57']
+const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#a4de6c", "#d0ed57"];
 
 const TIME_RANGES = [
-  { value: '7d', label: 'Last 7 days' },
-  { value: '30d', label: 'Last 30 days' },
-  { value: '90d', label: 'Last 90 days' },
-  { value: '1y', label: 'Last year' }
-]
+  { value: "7d", label: "Last 7 days" },
+  { value: "30d", label: "Last 30 days" },
+  { value: "90d", label: "Last 90 days" },
+  { value: "1y", label: "Last year" },
+];
 
-export const AnalyticsDashboard = ({ 
-  className,
-  isAdmin = false 
-}: AnalyticsDashboardProps) => {
-  const { user } = useAuth()
-  const [loading, setLoading] = useState(true)
-  const [timeRange, setTimeRange] = useState('30d')
-  const [data, setData] = useState<AnalyticsData | null>(null)
-  const [activeTab, setActiveTab] = useState('overview')
-  const [analyticsEnabled, setAnalyticsEnabled] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
+const TIME_RANGE_DAYS: Record<string, number> = {
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+  "1y": 365,
+};
 
-  // Fetch analytics data
-  useEffect(() => {
-    fetchAnalytics()
-  }, [timeRange, user])
+const getDaysForRange = (range: string) => TIME_RANGE_DAYS[range] ?? 30;
 
-  const fetchAnalytics = async () => {
-    if (!user) return
+export const AnalyticsDashboard = ({ className, isAdmin = false }: AnalyticsDashboardProps) => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState("30d");
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-    setLoading(true)
-    try {
-      // Calculate date range
-      const days = parseInt(timeRange) || 30
-      const startDate = subDays(new Date(), days)
+  const generateMockData = useCallback((): AnalyticsData => {
+    const days = getDaysForRange(timeRange);
 
-      // Fetch user analytics (personal or admin-level)
-      const [overviewRes, trendsRes, usageRes] = await Promise.all([
-        // Overview stats
-        supabase.rpc('get_analytics_overview', {
-          p_user_id: isAdmin ? null : user.id,
-          p_start_date: startDate.toISOString(),
-          p_end_date: new Date().toISOString()
-        }),
-        // Trends data
-        supabase.rpc('get_analytics_trends', {
-          p_user_id: isAdmin ? null : user.id,
-          p_start_date: startDate.toISOString(),
-          p_end_date: new Date().toISOString()
-        }),
-        // Feature usage
-        supabase
-          .from('analytics_events')
-          .select('event_name, created_at')
-          .eq(isAdmin ? 'id' : 'user_id', isAdmin ? 'id' : user.id)
-          .gte('created_at', startDate.toISOString())
-          .order('created_at', { ascending: false })
-          .limit(1000)
-      ])
-
-      // Process and aggregate data
-      const processedData = processAnalyticsData(
-        overviewRes.data,
-        trendsRes.data,
-        usageRes.data
-      )
-
-      setData(processedData)
-    } catch (error) {
-      logger.error('Failed to fetch analytics', { error })
-      // Use mock data for demonstration
-      setData(generateMockData())
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const processAnalyticsData = (
-    overview: any,
-    trends: any,
-    usage: any
-  ): AnalyticsData => {
-    // Process real data or return mock if unavailable
-    return generateMockData()
-  }
-
-  const generateMockData = (): AnalyticsData => {
-    const days = parseInt(timeRange) || 30
-    
     return {
       overview: {
         totalUsers: 1247,
@@ -219,95 +161,218 @@ export const AnalyticsDashboard = ({
         newUsers: 156,
         totalScans: 3421,
         averageSessionDuration: 8.5,
-        bounceRate: 24.3
+        bounceRate: 24.3,
       },
       trends: Array.from({ length: Math.min(days, 30) }, (_, i) => ({
-        date: format(subDays(new Date(), days - i - 1), 'MMM dd'),
+        date: format(subDays(new Date(), days - i - 1), "MMM dd"),
         users: Math.floor(Math.random() * 100) + 50,
         scans: Math.floor(Math.random() * 200) + 100,
-        sessions: Math.floor(Math.random() * 150) + 75
+        sessions: Math.floor(Math.random() * 150) + 75,
       })),
       featureUsage: [
-        { name: 'Scanner', count: 2341, percentage: 35 },
-        { name: 'Health Diary', count: 1892, percentage: 28 },
-        { name: 'Progress Tracking', count: 1245, percentage: 19 },
-        { name: 'PE Routines', count: 789, percentage: 12 },
-        { name: 'AI Assistant', count: 423, percentage: 6 }
+        { name: "Scanner", count: 2341, percentage: 35 },
+        { name: "Health Diary", count: 1892, percentage: 28 },
+        { name: "Progress Tracking", count: 1245, percentage: 19 },
+        { name: "PE Routines", count: 789, percentage: 12 },
+        { name: "AI Assistant", count: 423, percentage: 6 },
       ],
       deviceBreakdown: [
-        { device: 'Mobile', count: 745, percentage: 60 },
-        { device: 'Desktop', count: 372, percentage: 30 },
-        { device: 'Tablet', count: 130, percentage: 10 }
+        { device: "Mobile", count: 745, percentage: 60 },
+        { device: "Desktop", count: 372, percentage: 30 },
+        { device: "Tablet", count: 130, percentage: 10 },
       ],
       performanceMetrics: [
-        { metric: 'Page Load Time', value: 1.2, unit: 's', status: 'good' },
-        { metric: 'First Contentful Paint', value: 0.8, unit: 's', status: 'good' },
-        { metric: 'Time to Interactive', value: 2.1, unit: 's', status: 'warning' },
-        { metric: 'Largest Contentful Paint', value: 1.8, unit: 's', status: 'good' },
-        { metric: 'Cumulative Layout Shift', value: 0.05, unit: '', status: 'good' }
+        { metric: "Page Load Time", value: 1.2, unit: "s", status: "good" },
+        { metric: "First Contentful Paint", value: 0.8, unit: "s", status: "good" },
+        { metric: "Time to Interactive", value: 2.1, unit: "s", status: "warning" },
+        { metric: "Largest Contentful Paint", value: 1.8, unit: "s", status: "good" },
+        { metric: "Cumulative Layout Shift", value: 0.05, unit: "", status: "good" },
       ],
       topFeatures: [
-        { feature: 'Photo Scanner', usage: 892, trend: 'up', change: 12 },
-        { feature: 'Measurement Log', usage: 654, trend: 'up', change: 8 },
-        { feature: 'Health Diary', usage: 543, trend: 'stable', change: 2 },
-        { feature: 'Progress Charts', usage: 421, trend: 'up', change: 15 },
-        { feature: 'AI Chat', usage: 312, trend: 'down', change: -5 }
+        { feature: "Photo Scanner", usage: 892, trend: "up", change: 12 },
+        { feature: "Measurement Log", usage: 654, trend: "up", change: 8 },
+        { feature: "Health Diary", usage: 543, trend: "stable", change: 2 },
+        { feature: "Progress Charts", usage: 421, trend: "up", change: 15 },
+        { feature: "AI Chat", usage: 312, trend: "down", change: -5 },
       ],
       errorMetrics: [
-        { type: 'API Errors', count: 23, lastOccurred: '2 hours ago' },
-        { type: 'Auth Failures', count: 12, lastOccurred: '1 day ago' },
-        { type: 'Upload Errors', count: 8, lastOccurred: '3 hours ago' },
-        { type: 'Network Timeouts', count: 5, lastOccurred: '6 hours ago' }
+        { type: "API Errors", count: 23, lastOccurred: "2 hours ago" },
+        { type: "Auth Failures", count: 12, lastOccurred: "1 day ago" },
+        { type: "Upload Errors", count: 8, lastOccurred: "3 hours ago" },
+        { type: "Network Timeouts", count: 5, lastOccurred: "6 hours ago" },
       ],
       userRetention: [
-        { period: 'Day 1', rate: 100 },
-        { period: 'Day 7', rate: 68 },
-        { period: 'Day 14', rate: 52 },
-        { period: 'Day 30', rate: 41 },
-        { period: 'Day 60', rate: 34 },
-        { period: 'Day 90', rate: 28 }
-      ]
+        { period: "Day 1", rate: 100 },
+        { period: "Day 7", rate: 68 },
+        { period: "Day 14", rate: 52 },
+        { period: "Day 30", rate: 41 },
+        { period: "Day 60", rate: 34 },
+        { period: "Day 90", rate: 28 },
+      ],
+    };
+  }, [timeRange]);
+
+  const processAnalyticsData = useCallback(
+    (overview: any, trends: any, usage: any): AnalyticsData => {
+      const fallback = generateMockData();
+
+      const normalizedOverview =
+        overview && typeof overview === "object"
+          ? {
+              totalUsers: Number(
+                overview.total_users ?? overview.totalUsers ?? fallback.overview.totalUsers,
+              ),
+              activeUsers: Number(
+                overview.active_users ?? overview.activeUsers ?? fallback.overview.activeUsers,
+              ),
+              newUsers: Number(
+                overview.new_users ?? overview.newUsers ?? fallback.overview.newUsers,
+              ),
+              totalScans: Number(
+                overview.total_scans ?? overview.totalScans ?? fallback.overview.totalScans,
+              ),
+              averageSessionDuration: Number(
+                overview.avg_session_minutes ??
+                  overview.average_session_duration ??
+                  overview.averageSessionDuration ??
+                  fallback.overview.averageSessionDuration,
+              ),
+              bounceRate: Number(
+                overview.bounce_rate ?? overview.bounceRate ?? fallback.overview.bounceRate,
+              ),
+            }
+          : fallback.overview;
+
+      const normalizedTrends =
+        Array.isArray(trends) && trends.length > 0
+          ? trends.map((row: any) => ({
+              date: String(row.date ?? row.day ?? row.created_at ?? row.timestamp ?? ""),
+              users: Number(row.users ?? row.user_count ?? row.active_users ?? 0),
+              scans: Number(row.scans ?? row.scan_count ?? 0),
+              sessions: Number(row.sessions ?? row.session_count ?? 0),
+            }))
+          : fallback.trends;
+
+      const usageEvents = Array.isArray(usage) ? usage : [];
+      const usageTotals = usageEvents.reduce<Record<string, number>>((acc, row: any) => {
+        const name = String(row.event_name ?? row.name ?? "unknown");
+        acc[name] = (acc[name] ?? 0) + 1;
+        return acc;
+      }, {});
+      const totalUsage = Object.values(usageTotals).reduce((sum, val) => sum + val, 0);
+      const featureUsage =
+        totalUsage > 0
+          ? Object.entries(usageTotals)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 8)
+              .map(([name, count]) => ({
+                name,
+                count,
+                percentage: Math.round((count / totalUsage) * 100),
+              }))
+          : fallback.featureUsage;
+
+      return {
+        ...fallback,
+        overview: normalizedOverview,
+        trends: normalizedTrends,
+        featureUsage,
+      };
+    },
+    [generateMockData],
+  );
+
+  const fetchAnalytics = useCallback(async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      // Calculate date range
+      const days = getDaysForRange(timeRange);
+      const startDate = subDays(new Date(), days);
+
+      // Fetch user analytics (personal or admin-level)
+      const usageQuery = supabase
+        .from("analytics_events")
+        .select("event_name, created_at")
+        .gte("created_at", startDate.toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1000);
+      const usageResPromise = isAdmin ? usageQuery : usageQuery.eq("user_id", user.id);
+
+      const [overviewRes, trendsRes, usageRes] = await Promise.all([
+        // Overview stats
+        supabase.rpc("get_analytics_overview", {
+          p_user_id: isAdmin ? null : user.id,
+          p_start_date: startDate.toISOString(),
+          p_end_date: new Date().toISOString(),
+        }),
+        // Trends data
+        supabase.rpc("get_analytics_trends", {
+          p_user_id: isAdmin ? null : user.id,
+          p_start_date: startDate.toISOString(),
+          p_end_date: new Date().toISOString(),
+        }),
+        // Feature usage
+        usageResPromise,
+      ]);
+
+      // Process and aggregate data
+      const processedData = processAnalyticsData(overviewRes.data, trendsRes.data, usageRes.data);
+
+      setData(processedData);
+    } catch (error) {
+      logger.error("Failed to fetch analytics", { error });
+      // Use mock data for demonstration
+      setData(generateMockData());
+    } finally {
+      setLoading(false);
     }
-  }
+  }, [user, timeRange, isAdmin, processAnalyticsData, generateMockData]);
+
+  // Fetch analytics data
+  useEffect(() => {
+    void fetchAnalytics();
+  }, [fetchAnalytics]);
 
   const handleRefresh = async () => {
-    setRefreshing(true)
-    await fetchAnalytics()
-    setRefreshing(false)
-  }
+    setRefreshing(true);
+    await fetchAnalytics();
+    setRefreshing(false);
+  };
 
   const handleExport = () => {
-    if (!data) return
+    if (!data) return;
 
     const exportData = {
       exportedAt: new Date().toISOString(),
       timeRange,
-      ...data
-    }
+      ...data,
+    };
 
     const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: 'application/json'
-    })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `analytics-${format(new Date(), 'yyyy-MM-dd')}.json`
-    link.click()
-    URL.revokeObjectURL(url)
-  }
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `analytics-${format(new Date(), "yyyy-MM-dd")}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
-  const StatCard = ({ 
-    title, 
-    value, 
-    change, 
-    icon: Icon, 
-    trend 
-  }: { 
-    title: string
-    value: string | number
-    change?: number
-    icon: any
-    trend?: 'up' | 'down' | 'stable'
+  const StatCard = ({
+    title,
+    value,
+    change,
+    icon: Icon,
+    trend,
+  }: {
+    title: string;
+    value: string | number;
+    change?: number;
+    icon: any;
+    trend?: "up" | "down" | "stable";
   }) => (
     <Card>
       <CardContent className="p-4">
@@ -316,13 +381,19 @@ export const AnalyticsDashboard = ({
             <p className="text-sm text-muted-foreground">{title}</p>
             <p className="text-2xl font-bold">{value}</p>
             {change !== undefined && (
-              <div className={cn(
-                'flex items-center text-xs mt-1',
-                trend === 'up' ? 'text-success' : trend === 'down' ? 'text-destructive' : 'text-muted-foreground'
-              )}>
-                {trend === 'up' ? (
+              <div
+                className={cn(
+                  "flex items-center text-xs mt-1",
+                  trend === "up"
+                    ? "text-success"
+                    : trend === "down"
+                      ? "text-destructive"
+                      : "text-muted-foreground",
+                )}
+              >
+                {trend === "up" ? (
                   <ArrowUpRight className="w-3 h-3 mr-1" />
-                ) : trend === 'down' ? (
+                ) : trend === "down" ? (
                   <ArrowDownRight className="w-3 h-3 mr-1" />
                 ) : null}
                 {Math.abs(change)}% from last period
@@ -335,7 +406,7 @@ export const AnalyticsDashboard = ({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 
   if (loading) {
     return (
@@ -347,7 +418,7 @@ export const AnalyticsDashboard = ({
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (!data) {
@@ -363,20 +434,20 @@ export const AnalyticsDashboard = ({
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
-    <div className={cn('space-y-6', className)}>
+    <div className={cn("space-y-6", className)}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <BarChart3 className="w-6 h-6 text-primary" />
-            {isAdmin ? 'Admin Analytics' : 'Your Analytics'}
+            {isAdmin ? "Admin Analytics" : "Your Analytics"}
           </h2>
           <p className="text-muted-foreground">
-            {isAdmin ? 'Platform-wide metrics and insights' : 'Your personal usage statistics'}
+            {isAdmin ? "Platform-wide metrics and insights" : "Your personal usage statistics"}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -393,13 +464,8 @@ export const AnalyticsDashboard = ({
               ))}
             </SelectContent>
           </Select>
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            <RefreshCw className={cn('w-4 h-4', refreshing && 'animate-spin')} />
+          <Button variant="outline" size="icon" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw className={cn("w-4 h-4", refreshing && "animate-spin")} />
           </Button>
           <Button variant="outline" size="icon" onClick={handleExport}>
             <Download className="w-4 h-4" />
@@ -505,9 +571,9 @@ export const AnalyticsDashboard = ({
                     <YAxis stroke="hsl(var(--muted-foreground))" />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
                       }}
                     />
                     <Legend />
@@ -595,9 +661,9 @@ export const AnalyticsDashboard = ({
                       <YAxis stroke="hsl(var(--muted-foreground))" />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
                         }}
                       />
                       <Bar dataKey="rate" fill="#8884d8" radius={[4, 4, 0, 0]} />
@@ -620,7 +686,7 @@ export const AnalyticsDashboard = ({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {data.featureUsage.map((feature) => (
+                {data.featureUsage.map(feature => (
                   <div key={feature.name} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{feature.name}</span>
@@ -651,9 +717,7 @@ export const AnalyticsDashboard = ({
                     className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-lg font-bold text-muted-foreground">
-                        #{i + 1}
-                      </span>
+                      <span className="text-lg font-bold text-muted-foreground">#{i + 1}</span>
                       <span className="font-medium">{feature.feature}</span>
                     </div>
                     <div className="flex items-center gap-3">
@@ -662,17 +726,17 @@ export const AnalyticsDashboard = ({
                       </span>
                       <Badge
                         variant={
-                          feature.trend === 'up'
-                            ? 'default'
-                            : feature.trend === 'down'
-                            ? 'destructive'
-                            : 'secondary'
+                          feature.trend === "up"
+                            ? "default"
+                            : feature.trend === "down"
+                              ? "destructive"
+                              : "secondary"
                         }
                         className="flex items-center gap-1"
                       >
-                        {feature.trend === 'up' ? (
+                        {feature.trend === "up" ? (
                           <ArrowUpRight className="w-3 h-3" />
-                        ) : feature.trend === 'down' ? (
+                        ) : feature.trend === "down" ? (
                           <ArrowDownRight className="w-3 h-3" />
                         ) : null}
                         {Math.abs(feature.change)}%
@@ -693,29 +757,25 @@ export const AnalyticsDashboard = ({
                 <Zap className="w-5 h-5" />
                 Core Web Vitals
               </CardTitle>
-              <CardDescription>
-                Key performance metrics for user experience
-              </CardDescription>
+              <CardDescription>Key performance metrics for user experience</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {data.performanceMetrics.map((metric) => (
+                {data.performanceMetrics.map(metric => (
                   <Card key={metric.metric} className="bg-muted/30">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-muted-foreground">
-                          {metric.metric}
-                        </span>
+                        <span className="text-sm text-muted-foreground">{metric.metric}</span>
                         <Badge
                           variant={
-                            metric.status === 'good'
-                              ? 'default'
-                              : metric.status === 'warning'
-                              ? 'secondary'
-                              : 'destructive'
+                            metric.status === "good"
+                              ? "default"
+                              : metric.status === "warning"
+                                ? "secondary"
+                                : "destructive"
                           }
                         >
-                          {metric.status === 'good' ? (
+                          {metric.status === "good" ? (
                             <CheckCircle className="w-3 h-3 mr-1" />
                           ) : (
                             <AlertTriangle className="w-3 h-3 mr-1" />
@@ -746,13 +806,11 @@ export const AnalyticsDashboard = ({
                   <AlertTriangle className="w-5 h-5 text-warning" />
                   Error Tracking
                 </CardTitle>
-                <CardDescription>
-                  Recent errors and issues to investigate
-                </CardDescription>
+                <CardDescription>Recent errors and issues to investigate</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {data.errorMetrics.map((error) => (
+                  {data.errorMetrics.map(error => (
                     <div
                       key={error.type}
                       className="flex items-center justify-between p-3 rounded-lg border"
@@ -778,5 +836,5 @@ export const AnalyticsDashboard = ({
         )}
       </Tabs>
     </div>
-  )
-}
+  );
+};

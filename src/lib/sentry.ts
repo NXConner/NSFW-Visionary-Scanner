@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/react";
 import type { Metric } from "web-vitals";
+import { APP_NAME } from "@/config/brand";
 
 // Initialize Sentry for error tracking and performance monitoring
 export const initSentry = () => {
@@ -39,7 +40,7 @@ export const initSentry = () => {
 
   // Set tags for better error categorization
   Sentry.setTag("app_version", import.meta.env.VITE_APP_VERSION || "unknown");
-  Sentry.setTag("app_name", "MorphoScan Pro");
+  Sentry.setTag("app_name", APP_NAME);
 };
 
 // Performance monitoring helper

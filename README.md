@@ -1,13 +1,18 @@
-# MorphoScan Pro
+# Visionary Scanner Suite
 
 AI-assisted morphology scanning, analytics, and exporting for highly sensitive health data. This repository hosts the Vite + React + TypeScript single-page application plus the supporting tooling required for a production-ready, security-first deployment.
+
+**Edition naming**
+
+- **MorphoScan Pro**: SFW/store-facing build.
+- **NSFW Visionary Scanner**: direct/distribution build with adult content enabled.
 
 ---
 
 ## Project Scope & Ownership
 
 - This is a personal project owned and maintained by the repository author.
-- It is **not** related to any pavement or pavement performance suite.
+- Canonical product family: **Visionary Scanner Suite** (MorphoScan Pro + NSFW Visionary Scanner).
 - The domain focus is health/NSFW scanning, analytics, and content delivery.
 
 ---
@@ -41,8 +46,8 @@ AI-assisted morphology scanning, analytics, and exporting for highly sensitive h
 
 ## Containerization
 
-- **Build**: `docker build -t morphoscan-pro:latest .`
-- **Run (single container)**: `docker run -p 4173:4173 --env-file .env morphoscan-pro:latest`
+- **Build**: `docker build -t visionary-scanner-suite:latest .`
+- **Run (single container)**: `docker run -p 4173:4173 --env-file .env visionary-scanner-suite:latest`
 - **Run full stack**: `docker compose up --build`
   - `app` service serves the built SPA through `npm run preview`.
   - `db` spins up a local PostgreSQL instance that mirrors Supabase schemas for migration testing.

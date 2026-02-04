@@ -235,10 +235,10 @@ export type ExtendedTableName =
 /**
  * Get a query builder for extended tables that aren't in generated types.
  * This provides a controlled escape hatch instead of scattering `as any` throughout the codebase.
- * 
+ *
  * @param tableName - Name of the extended table
  * @returns Query builder for the specified table
- * 
+ *
  * @example
  * const { data } = await fromExtended("active_sessions")
  *   .select("*")
@@ -247,7 +247,6 @@ export type ExtendedTableName =
 export function fromExtended(tableName: ExtendedTableName) {
   // Controlled type assertion for known extended tables only
   // This centralizes the `as any` pattern to a single location
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (supabase as any).from(tableName);
 }
 

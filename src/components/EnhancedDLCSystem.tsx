@@ -3,13 +3,13 @@
  * Modular DLC, bundles, previews, streaming, downloads, content library organization, updates, and backups
  */
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   getDLCPacks,
   getDLCBundles,
@@ -21,86 +21,96 @@ import {
   type DLCBundle,
   type DLCPurchase,
   type DLCDownloadQueueItem,
-  type DLCUpdate
-} from '@/lib/enhancedDLCSystem'
-import { hasNSFWContent, isSFW } from '@/lib/featureFlags'
-import { Package, ShoppingCart, Download, RefreshCw, CheckCircle2, Loader2, Lock, Star, TrendingUp } from 'lucide-react'
-import { toast } from 'sonner'
+  type DLCUpdate,
+} from "@/lib/enhancedDLCSystem";
+import { hasNSFWContent, isSFW } from "@/lib/featureFlags";
+import {
+  Package,
+  ShoppingCart,
+  Download,
+  RefreshCw,
+  CheckCircle2,
+  Loader2,
+  Lock,
+  Star,
+  TrendingUp,
+} from "lucide-react";
+import { toast } from "sonner";
 
 export const EnhancedDLCSystem = () => {
-  const [activeTab, setActiveTab] = useState('packs')
-  const [loading, setLoading] = useState(false)
-  const [packs, setPacks] = useState<DLCPack[]>([])
-  const [bundles, setBundles] = useState<DLCBundle[]>([])
-  const [purchases, setPurchases] = useState<DLCPurchase[]>([])
-  const [downloadQueue, setDownloadQueue] = useState<DLCDownloadQueueItem[]>([])
-  const [updates, setUpdates] = useState<DLCUpdate[]>([])
-  const [nsfwAvailable, setNsfwAvailable] = useState(false)
-  const [isCheckingNsfw, setIsCheckingNsfw] = useState(true)
+  const [activeTab, setActiveTab] = useState("packs");
+  const [loading, setLoading] = useState(false);
+  const [packs, setPacks] = useState<DLCPack[]>([]);
+  const [bundles, setBundles] = useState<DLCBundle[]>([]);
+  const [purchases, setPurchases] = useState<DLCPurchase[]>([]);
+  const [downloadQueue, setDownloadQueue] = useState<DLCDownloadQueueItem[]>([]);
+  const [updates, setUpdates] = useState<DLCUpdate[]>([]);
+  const [nsfwAvailable, setNsfwAvailable] = useState(false);
+  const [isCheckingNsfw, setIsCheckingNsfw] = useState(true);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      switch (activeTab) {
+        case "packs": {
+          const packsData = await getDLCPacks();
+          setPacks(packsData);
+          break;
+        }
+        case "bundles": {
+          const bundlesData = await getDLCBundles();
+          setBundles(bundlesData);
+          break;
+        }
+        case "purchases": {
+          const purchasesData = await getDLCPurchases();
+          setPurchases(purchasesData);
+          break;
+        }
+        case "downloads": {
+          const queueData = await getDownloadQueue();
+          setDownloadQueue(queueData);
+          break;
+        }
+        case "updates": {
+          const updatesData = await getDLCUpdates();
+          setUpdates(updatesData);
+          break;
+        }
+      }
+    } catch (error) {
+      toast.error("Failed to load DLC data");
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     const checkNsfw = async () => {
-      setIsCheckingNsfw(true)
-      const available = await hasNSFWContent()
-      setNsfwAvailable(available)
-      setIsCheckingNsfw(false)
-    }
-    checkNsfw()
-  }, [])
+      setIsCheckingNsfw(true);
+      const available = await hasNSFWContent();
+      setNsfwAvailable(available);
+      setIsCheckingNsfw(false);
+    };
+    void checkNsfw();
+  }, []);
 
   useEffect(() => {
     if (nsfwAvailable) {
-      loadData()
+      void loadData();
     }
-  }, [activeTab, nsfwAvailable])
-
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      switch (activeTab) {
-        case 'packs': {
-          const packsData = await getDLCPacks()
-          setPacks(packsData)
-          break
-        }
-        case 'bundles': {
-          const bundlesData = await getDLCBundles()
-          setBundles(bundlesData)
-          break
-        }
-        case 'purchases': {
-          const purchasesData = await getDLCPurchases()
-          setPurchases(purchasesData)
-          break
-        }
-        case 'downloads': {
-          const queueData = await getDownloadQueue()
-          setDownloadQueue(queueData)
-          break
-        }
-        case 'updates': {
-          const updatesData = await getDLCUpdates()
-          setUpdates(updatesData)
-          break
-        }
-      }
-    } catch (error) {
-      toast.error('Failed to load DLC data')
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [activeTab, nsfwAvailable, loadData]);
 
   const handlePurchase = async (packId: string) => {
     try {
-      const success = await purchaseDLC(packId)
+      const success = await purchaseDLC(packId);
       if (success) {
-        await loadData()
+        await loadData();
       }
     } catch (error) {
-      toast.error('Failed to start purchase')
+      toast.error("Failed to start purchase");
     }
-  }
+  };
 
   if (isCheckingNsfw) {
     return (
@@ -112,7 +122,7 @@ export const EnhancedDLCSystem = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (isSFW() || !nsfwAvailable) {
@@ -131,7 +141,7 @@ export const EnhancedDLCSystem = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -164,7 +174,10 @@ export const EnhancedDLCSystem = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {packs.map(pack => (
-                    <Card key={pack.id} className="glass-card border-border/50 hover:border-primary/50 transition-colors">
+                    <Card
+                      key={pack.id}
+                      className="glass-card border-border/50 hover:border-primary/50 transition-colors"
+                    >
                       <CardHeader>
                         <div className="flex items-start justify-between">
                           <CardTitle className="text-lg">{pack.pack_name}</CardTitle>
@@ -174,7 +187,9 @@ export const EnhancedDLCSystem = () => {
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">{pack.item_count} items</span>
+                          <span className="text-sm text-muted-foreground">
+                            {pack.item_count} items
+                          </span>
                           <span className="text-lg font-semibold">${pack.price.toFixed(2)}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -188,10 +203,7 @@ export const EnhancedDLCSystem = () => {
                             {pack.sales_count} sales
                           </span>
                         </div>
-                        <Button
-                          className="w-full"
-                          onClick={() => handlePurchase(pack.id)}
-                        >
+                        <Button className="w-full" onClick={() => handlePurchase(pack.id)}>
                           <ShoppingCart className="w-4 h-4 mr-2" />
                           Purchase
                         </Button>
@@ -215,23 +227,25 @@ export const EnhancedDLCSystem = () => {
                         <div className="flex items-start justify-between">
                           <CardTitle>{bundle.bundle_name}</CardTitle>
                           {bundle.discount_percentage && (
-                            <Badge variant="default">
-                              {bundle.discount_percentage}% OFF
-                            </Badge>
+                            <Badge variant="default">{bundle.discount_percentage}% OFF</Badge>
                           )}
                         </div>
                         <CardDescription>{bundle.description}</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">{bundle.pack_count} packs</span>
+                          <span className="text-sm text-muted-foreground">
+                            {bundle.pack_count} packs
+                          </span>
                           <div className="flex items-center gap-2">
                             {bundle.original_price && (
                               <span className="text-sm line-through text-muted-foreground">
                                 ${bundle.original_price.toFixed(2)}
                               </span>
                             )}
-                            <span className="text-lg font-semibold">${bundle.bundle_price.toFixed(2)}</span>
+                            <span className="text-lg font-semibold">
+                              ${bundle.bundle_price.toFixed(2)}
+                            </span>
                           </div>
                         </div>
                         <Button className="w-full">Purchase Bundle</Button>
@@ -244,9 +258,7 @@ export const EnhancedDLCSystem = () => {
 
             <TabsContent value="purchases" className="space-y-4">
               {purchases.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No purchases yet
-                </div>
+                <div className="text-center py-12 text-muted-foreground">No purchases yet</div>
               ) : (
                 <div className="space-y-2">
                   {purchases.map(purchase => (
@@ -259,8 +271,8 @@ export const EnhancedDLCSystem = () => {
                               Purchased: {new Date(purchase.purchased_at).toLocaleDateString()}
                             </p>
                           </div>
-                          <Badge variant={purchase.is_active ? 'default' : 'secondary'}>
-                            {purchase.is_active ? 'Active' : 'Expired'}
+                          <Badge variant={purchase.is_active ? "default" : "secondary"}>
+                            {purchase.is_active ? "Active" : "Expired"}
                           </Badge>
                         </div>
                       </CardContent>
@@ -272,9 +284,7 @@ export const EnhancedDLCSystem = () => {
 
             <TabsContent value="downloads" className="space-y-4">
               {downloadQueue.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No downloads in queue
-                </div>
+                <div className="text-center py-12 text-muted-foreground">No downloads in queue</div>
               ) : (
                 <div className="space-y-2">
                   {downloadQueue.map(item => (
@@ -286,19 +296,23 @@ export const EnhancedDLCSystem = () => {
                             <p className="text-sm text-muted-foreground">{item.content_type}</p>
                           </div>
                           <div className="flex items-center gap-4">
-                            {item.download_status === 'downloading' && (
+                            {item.download_status === "downloading" && (
                               <div className="w-32">
                                 <Progress value={item.download_progress} />
                               </div>
                             )}
-                            {item.download_status === 'completed' && (
+                            {item.download_status === "completed" && (
                               <CheckCircle2 className="w-5 h-5 text-green-500" />
                             )}
-                            <Badge variant={
-                              item.download_status === 'completed' ? 'default' :
-                              item.download_status === 'downloading' ? 'secondary' :
-                              'outline'
-                            }>
+                            <Badge
+                              variant={
+                                item.download_status === "completed"
+                                  ? "default"
+                                  : item.download_status === "downloading"
+                                    ? "secondary"
+                                    : "outline"
+                              }
+                            >
                               {item.download_status}
                             </Badge>
                           </div>
@@ -312,9 +326,7 @@ export const EnhancedDLCSystem = () => {
 
             <TabsContent value="updates" className="space-y-4">
               {updates.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No updates available
-                </div>
+                <div className="text-center py-12 text-muted-foreground">No updates available</div>
               ) : (
                 <div className="space-y-2">
                   {updates.map(update => (
@@ -325,9 +337,7 @@ export const EnhancedDLCSystem = () => {
                             <p className="font-medium">Version {update.version_number}</p>
                             <p className="text-sm text-muted-foreground">{update.update_type}</p>
                           </div>
-                          {update.is_required && (
-                            <Badge variant="default">Required</Badge>
-                          )}
+                          {update.is_required && <Badge variant="default">Required</Badge>}
                         </div>
                       </CardContent>
                     </Card>
@@ -339,6 +349,5 @@ export const EnhancedDLCSystem = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
-
+  );
+};

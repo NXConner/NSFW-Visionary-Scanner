@@ -2,7 +2,7 @@
 
 **Purpose**: Single source-of-truth for completing everything still implied by the current `docs/` folder.
 
-**Important**: `docs/` previously mixed product names/eras (**MorphoScan Pro**, **GrowthTracker**, **Visionary Scanner**). This master plan treats **MorphoScan Pro** (per `README.md`) as canonical.
+**Important**: `docs/` previously mixed product names/eras (**MorphoScan Pro**, **GrowthTracker**, **Visionary Scanner**). This master plan treats **Visionary Scanner Suite** as canonical, with **MorphoScan Pro** (SFW/store) and **NSFW Visionary Scanner** (direct/NSFW) as the supported editions.
 
 **Docs housekeeping (already started)**: historical/duplicate docs were moved to `deleted files/no-longer-needed/docs/archive/2025-12-16/` for manual review/removal.
 

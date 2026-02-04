@@ -7,6 +7,7 @@ import { emitOpenCommandPalette } from "@/lib/appEvents";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useAuth } from "@/contexts/AuthContext";
 import { Crown, Search, Shield } from "lucide-react";
+import { APP_SHORT_NAME } from "@/config/brand";
 
 export function AppTopBar(props: {
   activeTab: string;
@@ -28,7 +29,7 @@ export function AppTopBar(props: {
           onClick={() => onTabChange("home")}
           aria-label="Go to home"
         >
-          <span className="neon-text">MorphoScan</span>
+          <span className="neon-text">{APP_SHORT_NAME}</span>
         </Button>
 
         <div className="hidden md:flex flex-1">

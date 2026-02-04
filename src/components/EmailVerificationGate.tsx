@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
+import { APP_NAME } from "@/config/brand";
 
 interface EmailVerificationGateProps {
   children: React.ReactNode;
@@ -15,7 +16,8 @@ export const EmailVerificationGate = ({
   children,
   requireVerification = true,
 }: EmailVerificationGateProps) => {
-  const { user, loading, isSuperAdmin, hasFullAccess, allFeaturesUnlocked, rolesLoading } = useAuth();
+  const { user, loading, isSuperAdmin, hasFullAccess, allFeaturesUnlocked, rolesLoading } =
+    useAuth();
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(true);
 
@@ -129,7 +131,7 @@ export const EmailVerificationGate = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-center text-muted-foreground">
-            Please verify your email address to access all features of MorphoScan Pro.
+            Please verify your email address to access all features of {APP_NAME}.
           </p>
 
           <EmailVerificationBanner
