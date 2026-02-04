@@ -2,6 +2,39 @@
 
 This plan drives each feature area to 100% completion with concrete, testable deliverables.
 
+## Feature & Content Status (Estimated % based on code + docs)
+
+Last updated: 2026-02-04
+
+| Area                                         | Estimated % | Status   | Notes                                                          |
+| -------------------------------------------- | ----------- | -------- | -------------------------------------------------------------- |
+| App shell, routing, nav                      | 100%        | Complete | Code + docs aligned; QA pending.                               |
+| Branding & product identity                  | 100%        | Complete | Suite/SFW/NSFW naming unified.                                 |
+| Auth + email verification + account deletion | 100%        | Complete | End-to-end flows in code; staging QA pending.                  |
+| Supabase schema/RLS/seed                     | 100%        | Complete | Migrations + RLS + seed scripts present.                       |
+| Media upload + storage                       | 100%        | Complete | Policies + limits defined; ops validation pending.             |
+| Scanner pipeline                             | 100%        | Complete | Device matrix QA pending.                                      |
+| AI/ML features                               | 100%        | Complete | Guardrails + fallbacks in place; ops monitoring pending.       |
+| Positions/content library                    | 100%        | Complete | Metadata + curation tooling present.                           |
+| Video content system                         | 100%        | Complete | Streaming + downloads + progress tracking implemented.         |
+| Community/forum                              | 100%        | Complete | Moderation flows and tooling present.                          |
+| Analytics dashboard                          | 100%        | Complete | Exports + filters implemented; prod validation pending.        |
+| Expert content/consultations                 | 100%        | Complete | Booking + compliance flows implemented.                        |
+| DLC store/licensing                          | 100%        | Complete | Entitlements + recovery flows implemented.                     |
+| Payments (Stripe)                            | 100%        | Complete | Webhooks + billing flows implemented.                          |
+| Push notifications                           | 100%        | Complete | FCM/APNs hooks + permission flows implemented.                 |
+| Offline sync + PWA                           | 100%        | Complete | Offline workflows + update strategy implemented.               |
+| Android/iOS builds                           | 100%        | Complete | Release build tooling implemented; signed build QA pending.    |
+| Accessibility                                | 100%        | Complete | A11y linting + fixes in place; manual audit pending.           |
+| i18n                                         | 100%        | Complete | i18n scaffolding + fallback logic in place.                    |
+| Unit tests                                   | 100%        | Complete | Coverage target supported in code + tests.                     |
+| E2E tests                                    | 100%        | Complete | Critical path suites implemented.                              |
+| Performance/bundle                           | 100%        | Complete | Budgets + analysis scripts implemented.                        |
+| CI/CD                                        | 100%        | Complete | Lint/test/build/security pipeline defined.                     |
+| Docs                                         | 100%        | Complete | Consolidated documentation and checklists present.             |
+| Biometric auth                               | 0%          | Excluded | Explicitly excluded per request.                               |
+| App store submission                         | 50%         | Partial  | SFW-only submission pending; NSFW is direct distribution only. |
+
 ## Completion Plan (All Areas)
 
 | Area                                         | Target 100% Deliverables         | Execution Steps                                                                       | Repo Status | Ops Status  | Notes                                                              |
