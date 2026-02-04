@@ -109,4 +109,3 @@ Follow `docs/archive/nsfw/NSFW_DLC_P2_CHECKLIST.md` / `docs/archive/nsfw/NSFW_DL
 
 This codebase has explicit GitHub sources configured (see `src/lib/githubImageFetcher.ts` and `src/lib/visualContentManager.ts`).  
 If there are additional website sources you’ve embedded elsewhere (e.g., in `docs/dlc-content/*` or other modules), add them to the admin import pipeline as another generator source (same `admin-import-dlc-content` edge function).
-
