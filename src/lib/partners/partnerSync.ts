@@ -68,6 +68,74 @@ const SHARED_DATA_KEY = "partner_shared_data";
 // ============================================
 
 /**
+ * Pre-configured partner pairs that are automatically connected
+ * These are bidirectional - each email in a pair auto-connects to the other
+ */
+interface PartnerPair {
+  email1: string;
+  email2: string;
+}
+
+/**
+ * Get pre-configured partner pairs from environment
+ * Returns pairs of emails that should be auto-connected bidirectionally
+ */
+function getPreConfiguredPartnerPairs(): PartnerPair[] {
+  const pairs: PartnerPair[] = [];
+  
+  // Primary partner pair from environment
+  const email1 = import.meta.env.VITE_PARTNER_PAIR_EMAIL_1;
+  const email2 = import.meta.env.VITE_PARTNER_PAIR_EMAIL_2;
+  
+  if (email1 && email2) {
+    pairs.push({
+      email1: email1.toLowerCase().trim(),
+      email2: email2.toLowerCase().trim(),
+    });
+  }
+  
+  // Hardcoded fallback pair for n8ter8@gmail.com and slkchick_360@yahoo.com
+  // This ensures the connection works even if env vars are not set
+  const hardcodedPair: PartnerPair = {
+    email1: "n8ter8@gmail.com",
+    email2: "slkchick_360@yahoo.com",
+  };
+  
+  // Add hardcoded pair if not already present
+  const hasHardcoded = pairs.some(
+    p => 
+      (p.email1 === hardcodedPair.email1 && p.email2 === hardcodedPair.email2) ||
+      (p.email1 === hardcodedPair.email2 && p.email2 === hardcodedPair.email1)
+  );
+  
+  if (!hasHardcoded) {
+    pairs.push(hardcodedPair);
+  }
+  
+  return pairs;
+}
+
+/**
+ * Get the partner email for a given user email from pre-configured pairs
+ * Returns null if the user is not part of any configured pair
+ */
+function getPartnerFromPair(userEmail: string): string | null {
+  const normalizedEmail = userEmail.toLowerCase().trim();
+  const pairs = getPreConfiguredPartnerPairs();
+  
+  for (const pair of pairs) {
+    if (pair.email1 === normalizedEmail) {
+      return pair.email2;
+    }
+    if (pair.email2 === normalizedEmail) {
+      return pair.email1;
+    }
+  }
+  
+  return null;
+}
+
+/**
  * Get pre-configured partner emails from environment
  * These are partners that are automatically connected when users sign up
  */
@@ -202,13 +270,38 @@ export class PartnerSyncManager {
 
   /**
    * Auto-connect with partners configured in environment
+   * Handles both general configured partners and specific partner pairs
    */
   private async autoConnectConfiguredPartners(): Promise<void> {
     if (!this.userId || !this.userEmail) return;
     
-    const configuredPartners = getConfiguredPartnerEmails();
+    const normalizedUserEmail = this.userEmail.toLowerCase().trim();
+    const partnersToConnect: string[] = [];
     
+    // PRIORITY 1: Check if user is part of a pre-configured partner pair
+    // This creates a bidirectional connection between two specific users
+    const pairedPartner = getPartnerFromPair(normalizedUserEmail);
+    if (pairedPartner) {
+      partnersToConnect.push(pairedPartner);
+      logger.info("[partnerSync] User is part of pre-configured partner pair", { 
+        userEmail: normalizedUserEmail, 
+        pairedPartner 
+      });
+    }
+    
+    // PRIORITY 2: Add general configured partners (from VITE_PARTNER_EMAIL and VITE_ADDITIONAL_PARTNERS)
+    const configuredPartners = getConfiguredPartnerEmails();
     for (const partnerEmail of configuredPartners) {
+      // Don't add if it's the user's own email
+      if (partnerEmail === normalizedUserEmail) continue;
+      // Don't add duplicates
+      if (!partnersToConnect.includes(partnerEmail)) {
+        partnersToConnect.push(partnerEmail);
+      }
+    }
+    
+    // Create connections for all partners
+    for (const partnerEmail of partnersToConnect) {
       // Skip if already connected
       const existing = this.connections.find(
         c => c.partnerEmail.toLowerCase() === partnerEmail
@@ -226,7 +319,7 @@ export class PartnerSyncManager {
           createdAt: new Date(),
           updatedAt: new Date(),
           connectedAt: new Date(),
-          nickname: "Partner",
+          nickname: pairedPartner === partnerEmail ? "My Partner" : "Partner",
         };
         
         this.connections.push(connection);
@@ -568,5 +661,32 @@ export class PartnerSyncManager {
 // ============================================
 
 export const partnerSync = new PartnerSyncManager();
+
+// ============================================
+// Exported Helper Functions
+// ============================================
+
+/**
+ * Check if an email is part of a pre-configured partner pair
+ * Useful for UI to identify pre-connected partners
+ */
+export function isPreConnectedPartnerEmail(email: string): boolean {
+  return getPartnerFromPair(email) !== null;
+}
+
+/**
+ * Get the partner email for a given user if they are part of a pre-configured pair
+ * Returns null if user is not part of any pair
+ */
+export function getPreConnectedPartnerFor(userEmail: string): string | null {
+  return getPartnerFromPair(userEmail);
+}
+
+/**
+ * Get all pre-configured partner pairs (for admin/debugging)
+ */
+export function getAllPreConfiguredPairs(): { email1: string; email2: string }[] {
+  return getPreConfiguredPartnerPairs();
+}
 
 export default partnerSync;

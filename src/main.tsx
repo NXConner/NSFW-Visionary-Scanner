@@ -6,6 +6,12 @@ import { initializeSecurity, generateCSPHeader } from "./lib/security";
 import { initStorageMonitoring } from "./lib/storageErrorHandler";
 import { installConsoleInterceptor } from "./lib/logger";
 import { registerPwaIfAllowed } from "./pwa/register";
+import {
+  initializeCapacitor,
+  hideSplashScreen,
+  isNative,
+  installMobileErrorHandler,
+} from "./lib/capacitor";
 
 // === AGGRESSIVE STARTUP OPTIMIZATION ===
 // Prevent infinite loading in pop-out preview / iframe scenarios
@@ -105,19 +111,46 @@ const deferInit = (fn: () => void) => {
   setTimeout(() => safeInit(fn), 0);
 };
 
-// 4. Initialize React app IMMEDIATELY (do not block on non-critical init)
+// 4. Initialize Capacitor for mobile (non-blocking)
+if (isNative()) {
+  // Install mobile error handlers immediately
+  safeInit(installMobileErrorHandler);
+  // Initialize Capacitor (async, non-blocking)
+  initializeCapacitor().catch((err) => {
+    console.warn("[Main] Capacitor init error (non-fatal):", err);
+  });
+}
+
+// 5. Initialize React app IMMEDIATELY (do not block on non-critical init)
 const rootEl = document.getElementById("root");
 if (rootEl) {
   try {
     const root = createRoot(rootEl);
     root.render(<App />);
+    
+    // Hide splash screen after React renders (for Capacitor)
+    if (isNative()) {
+      // Give React a moment to render, then hide splash
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          hideSplashScreen().catch((err) => {
+            console.warn("[Main] Failed to hide splash:", err);
+          });
+        }, 100);
+      });
+    }
   } catch (err) {
     // Emergency fallback: show error message instead of infinite loader
+    // Also hide splash screen on error so user sees the error
+    if (isNative()) {
+      hideSplashScreen().catch(() => {});
+    }
     rootEl.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;">
+      <div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;background:#0a0a0a;">
         <div style="text-align:center;padding:2rem;">
-          <p style="color:#666;">Failed to load application</p>
-          <button onclick="location.reload()" style="margin-top:1rem;padding:0.5rem 1rem;cursor:pointer;">
+          <p style="color:#f87171;font-weight:600;">Failed to load application</p>
+          <p style="color:#666;margin-top:0.5rem;font-size:14px;">Please try again or reinstall the app</p>
+          <button onclick="location.reload()" style="margin-top:1rem;padding:0.5rem 1rem;cursor:pointer;background:#8B5CF6;color:white;border:none;border-radius:8px;">
             Reload
           </button>
         </div>
@@ -126,10 +159,14 @@ if (rootEl) {
   }
 }
 
-// 5. Watchdog: if React doesn't mount, never show a blank screen
+// 6. Watchdog: if React doesn't mount, never show a blank screen
 setTimeout(() => {
   try {
     hideLoader();
+    // Also hide splash screen on mobile if app didn't load
+    if (isNative()) {
+      hideSplashScreen().catch(() => {});
+    }
     const el = document.getElementById("root");
     if (!el) return;
     if (el.childElementCount > 0) return;
@@ -137,15 +174,15 @@ setTimeout(() => {
     if (el.getAttribute("data-boot-fallback") === "1") return;
     el.setAttribute("data-boot-fallback", "1");
     el.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;padding:2rem;">
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;padding:2rem;background:#0a0a0a;">
         <div style="max-width:520px;text-align:center;">
-          <p style="margin:0 0 0.5rem;color:#111;font-size:18px;font-weight:600;">App didn’t finish loading</p>
-          <p style="margin:0 0 1rem;color:#666;line-height:1.4;">
-            This is usually caused by a stale preview cache or a blocked storage/service worker state.
+          <p style="margin:0 0 0.5rem;color:#f5f5f5;font-size:18px;font-weight:600;">App didn't finish loading</p>
+          <p style="margin:0 0 1rem;color:#999;line-height:1.4;">
+            This is usually caused by a stale cache or a blocked storage state.
           </p>
           <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;">
-            <button onclick="location.reload()" style="padding:0.5rem 1rem;cursor:pointer;">Reload</button>
-            <button onclick="try{localStorage.clear()}catch(e){}; try{sessionStorage.clear()}catch(e){}; location.reload()" style="padding:0.5rem 1rem;cursor:pointer;">
+            <button onclick="location.reload()" style="padding:0.5rem 1rem;cursor:pointer;background:#8B5CF6;color:white;border:none;border-radius:8px;">Reload</button>
+            <button onclick="try{localStorage.clear()}catch(e){}; try{sessionStorage.clear()}catch(e){}; location.reload()" style="padding:0.5rem 1rem;cursor:pointer;background:#374151;color:white;border:none;border-radius:8px;">
               Clear Storage + Reload
             </button>
           </div>

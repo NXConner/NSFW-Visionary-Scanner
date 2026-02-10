@@ -64,8 +64,10 @@
     "dlc:download-mit-positions": "tsx scripts/download-mit-positions-assets.ts",
     "dlc:build-mit-positions-csv": "tsx scripts/build-mit-positions-import.ts",
     "addons:validate-registry": "tsx scripts/validate-addon-registry.ts",
-    "android:sync": "cross-env NODE_ENV=production npx cap sync android",
-    "android:build": "cd android && ./gradlew.bat assembleRelease && cd ..",
+    "android:sync": "cross-env NODE_ENV=production CAPACITOR_BUILD=1 npx cap sync android",
+    "android:build": "cd android && ./gradlew assembleRelease && cd ..",
+    "android:build:full": "npm run build:capacitor && npm run android:sync && npm run android:build",
+    "build:capacitor": "cross-env NODE_ENV=production CAPACITOR_BUILD=1 vite build",
     "verify:production": "powershell -ExecutionPolicy Bypass -File scripts/verify-production-readiness.ps1"
   },
   "dependencies": {
@@ -77,6 +79,8 @@
     "@capacitor/ios": "^7.4.4",
     "@capacitor/local-notifications": "^7.0.3",
     "@capacitor/push-notifications": "^7.0.3",
+    "@capacitor/splash-screen": "^7.0.4",
+    "@capacitor/status-bar": "^7.0.4",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",

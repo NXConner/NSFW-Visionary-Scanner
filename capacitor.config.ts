@@ -45,10 +45,12 @@ const config: CapacitorConfig = {
 
   plugins: {
     SplashScreen: {
-      launchShowDuration: 2000,
+      launchShowDuration: 0, // We'll hide it manually after app loads
+      launchAutoHide: false, // Don't auto-hide - we control this in JS
+      launchFadeOutDuration: 300,
       backgroundColor: "#0a0a0a",
       androidScaleType: "CENTER_CROP",
-      showSpinner: false,
+      showSpinner: true,
       iosSpinnerStyle: "small",
       spinnerColor: "#8B5CF6",
     },
