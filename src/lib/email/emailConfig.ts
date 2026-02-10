@@ -26,6 +26,23 @@ export interface EmailConfig {
   };
 }
 
+/**
+ * Pre-verified email whitelist
+ * These emails are treated as automatically verified and bypass email verification checks
+ */
+export const preVerifiedEmailWhitelist: string[] = [
+  'n8ter8@gmail.com',
+  'slkchick_360@yahoo.com',
+];
+
+/**
+ * Check if an email is in the pre-verified whitelist
+ */
+export function isEmailPreVerified(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return preVerifiedEmailWhitelist.includes(email.toLowerCase());
+}
+
 // Get configuration from environment variables
 export const emailConfig: EmailConfig = {
   appName: 'MorphoScan Pro',

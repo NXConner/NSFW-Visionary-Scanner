@@ -19,6 +19,7 @@ import {
   getLastUserId,
 } from "@/lib/auth/userPersistence";
 import { EmailService } from "@/lib/email";
+import { isEmailPreVerified } from "@/lib/email/emailConfig";
 
 interface AuthContextType {
   user: User | null;
@@ -355,9 +356,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // Check if user's email is verified
+  // Returns true if email is in pre-verified whitelist OR confirmed via Supabase Auth
   const isEmailVerified = useMemo(() => {
+    // Check whitelist first
+    if (isEmailPreVerified(user?.email)) {
+      return true;
+    }
     return user?.email_confirmed_at !== null && user?.email_confirmed_at !== undefined;
-  }, [user?.email_confirmed_at]);
+  }, [user?.email_confirmed_at, user?.email]);
 
   // Compute super admin properties based on database-driven role check
   const superAdminProps = useMemo(() => ({

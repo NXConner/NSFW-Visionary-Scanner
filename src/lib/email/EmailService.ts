@@ -6,7 +6,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
-import { emailConfig, getEmailRedirectUrl } from './emailConfig';
+import { emailConfig, getEmailRedirectUrl, isEmailPreVerified } from './emailConfig';
 import {
   verificationEmailTemplate,
   passwordResetEmailTemplate,
@@ -270,6 +270,9 @@ export const EmailService = {
 
   /**
    * Check if user's email is verified
+   * Returns true if:
+   * 1. Email is in the pre-verified whitelist, OR
+   * 2. Email has been confirmed via Supabase Auth
    */
   async checkEmailVerificationStatus(userId?: string): Promise<boolean> {
     try {
@@ -278,6 +281,11 @@ export const EmailService = {
       
       // Check if this is the user we're looking for (or current user)
       if (userId && user.id !== userId) return false;
+      
+      // Check if email is in the pre-verified whitelist
+      if (isEmailPreVerified(user.email)) {
+        return true;
+      }
       
       return user.email_confirmed_at !== null;
     } catch {
