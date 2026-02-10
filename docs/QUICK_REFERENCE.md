@@ -433,7 +433,8 @@ npm run format:write
 
 - `docs/PRODUCTION_READY_SUMMARY.md` - Production status
 - `docs/reports/FINAL_OPTIMIZATION_SUMMARY.md` - Optimization details
-- `docs/tracking/IMPLEMENTATION_TRACKER.md` - Progress tracker
+- `docs/tracking/PROJECT_TRACKER.md` - Canonical tracker entrypoint
+- `docs/tracking/PROJECT_REMAINING_WORK.md` - Current remaining work
 
 ---
 

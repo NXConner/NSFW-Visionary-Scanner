@@ -1,11 +1,5 @@
 # Implementation Tracker - Quick Reference
 
-> [!WARNING]
-> This file is retained for historical reference only.
-> Use `docs/tracking/PROJECT_TRACKER.md` as the tracker entrypoint and
-> `docs/tracking/PROJECT_REMAINING_WORK.md` for current actionable work.
-> Archived snapshot: `deleted files/no-longer-needed/docs/tracking/archive/2026-02-10/IMPLEMENTATION_TRACKER.md`.
-
 ## Quick Status Overview
 
 **Overall Progress**: 100% Complete (Automated Tasks)  

@@ -183,7 +183,8 @@ Supporting scripts:
 ### Reports & Status
 
 - **Optimization Summary**: `docs/reports/FINAL_OPTIMIZATION_SUMMARY.md` - Performance optimizations
-- **Implementation Tracker**: `docs/tracking/IMPLEMENTATION_TRACKER.md` - Project progress
+- **Canonical Tracker**: `docs/tracking/PROJECT_TRACKER.md` - single status source entrypoint
+- **Remaining Work**: `docs/tracking/PROJECT_REMAINING_WORK.md` - current launch blockers and manual steps
 
 ---
 

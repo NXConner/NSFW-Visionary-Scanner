@@ -163,3 +163,4 @@ Canonical doc: `docs/archive/nsfw/NSFW_DLC_REMAINING_WORK.md`
 ## 4) Historical docs archive
 
 - `deleted files/no-longer-needed/docs/archive/2025-12-16/` (moved out of `/docs` because it’s no longer needed for active work)
+- `deleted files/no-longer-needed/root-status-archive/2026-02-10/` (stale root-level status/checklist docs archived)

@@ -11,7 +11,7 @@ This guide helps you immediately begin implementing the master plan.
 ### Actions
 - [ ] Review `MASTER_IMPLEMENTATION_PLAN.md`
 - [ ] Review `IMPLEMENTATION_PLAN_SUMMARY.md`
-- [ ] Review `IMPLEMENTATION_TRACKER.md`
+- [ ] Review `docs/tracking/PROJECT_TRACKER.md`
 - [ ] Approve plan and timeline
 - [ ] Assign team members
 - [ ] Set up project management tools
@@ -279,7 +279,7 @@ This guide helps you immediately begin implementing the master plan.
 
 ### Documentation
 - `MASTER_IMPLEMENTATION_PLAN.md` - Complete plan
-- `IMPLEMENTATION_TRACKER.md` - Tracking dashboard
+- `docs/tracking/PROJECT_TRACKER.md` - Tracking dashboard
 - `IMPLEMENTATION_PLAN_SUMMARY.md` - Executive summary
 - Source documents (7 files) - Detailed requirements
 

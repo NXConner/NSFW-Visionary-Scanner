@@ -1,17 +1,5 @@
 # Documentation Index - NSFW Visionary Scanner
 
-> [!WARNING]
-> This document contains legacy references and is retained for historical context.
-> Canonical docs to use now:
-> - `docs/tracking/PROJECT_TRACKER.md`
-> - `docs/tracking/PROJECT_REMAINING_WORK.md`
-> - `docs/tracking/CONSOLIDATED_DOCS_MASTER.md`
-> - `docs/guides/setup/SETUP_GUIDE.md`
-> - `docs/guides/testing/PRODUCTION_TESTING_GUIDE.md`
->
-> Archived pre-cleanup copy:
-> `deleted files/no-longer-needed/root-status-archive/2026-02-10/DOCUMENTATION_INDEX.md`
-
 ## 📚 Complete Documentation Guide
 
 This index helps you find the right documentation for your needs.

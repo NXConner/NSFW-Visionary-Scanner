@@ -266,11 +266,11 @@ VITE_DISTRIBUTION_CHANNEL=direct
 
 ## 📚 Documentation
 
-- `COMPLETE_SETUP_GUIDE.md` - Detailed setup instructions
-- `NSFW_BRANCH_COMPLETE_ANALYSIS.md` - Feature analysis
-- `MISSING_FEATURES_IMPLEMENTATION_COMPLETE.md` - Implementation details
-- `FINAL_IMPLEMENTATION_SUMMARY.md` - Complete summary
-- `INTEGRATION_COMPLETE.md` - Integration status
+- `docs/tracking/PROJECT_TRACKER.md` - canonical tracker entrypoint
+- `docs/tracking/PROJECT_REMAINING_WORK.md` - current remaining work
+- `docs/tracking/CONSOLIDATED_DOCS_MASTER.md` - consolidated finish checklist
+- `docs/guides/setup/SETUP_GUIDE.md` - setup instructions
+- `docs/guides/testing/PRODUCTION_TESTING_GUIDE.md` - production QA matrix
 
 ---
 

@@ -1,11 +1,5 @@
 # All Tasks Consolidated - Complete List
 
-> [!WARNING]
-> This file is retained for historical reference only.
-> Use `docs/tracking/PROJECT_TRACKER.md` and `docs/tracking/PROJECT_REMAINING_WORK.md`
-> for current, canonical status and remaining tasks.
-> Archived snapshot: `deleted files/no-longer-needed/docs/tracking/archive/2026-02-10/ALL_TASKS_CONSOLIDATED.md`.
-
 ## ✅ COMPLETED TASKS
 
 ### 1. Payment Integration ✅
