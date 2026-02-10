@@ -149,23 +149,24 @@ The following files are required for the DLC system:
 
 ### Step 1: Run Database Migrations
 
-**Option A: Using SQL Script (Recommended)**
+**Option A: Using Supabase CLI Migrations (Recommended)**
+
+```powershell
+# Start local Supabase services (if needed)
+npm run db:start
+
+# Apply migrations from supabase/migrations/
+npm run db:push
+```
+
+Then verify all required DLC tables and policies were created.
+
+**Option B: Dashboard SQL (Manual)**
 
 1. Open Supabase Dashboard
 2. Go to SQL Editor
-3. Copy and paste the contents of `COMPLETE_SUPABASE_SETUP.sql`
-4. Run the script
-5. Verify all tables are created
-
-**Option B: Using Migration Tool**
-
-```powershell
-# Install migration tool if needed
-npm install -g node-pg-migrate
-
-# Run migrations
-npm run db:migrate
-```
+3. Run the needed files from `supabase/migrations/` in order
+4. Verify all tables are created
 
 ### Step 2: Verify Tables
 
@@ -1420,7 +1421,8 @@ project-root/
 
 ### Documentation Files
 - `DLC_FEATURE_DESCRIPTION.md` - Complete feature description
-- `COMPLETE_SUPABASE_SETUP.sql` - Database setup script
+- `supabase/migrations/*.sql` - Canonical database setup scripts
+- `exports/full_schema_export.sql` - Reference schema snapshot
 - `API_REFERENCE.md` - API documentation
 
 ### Code Examples
