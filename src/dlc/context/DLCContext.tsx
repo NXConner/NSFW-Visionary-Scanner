@@ -125,9 +125,23 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
   const [storeState, setStoreState] = useState<DLCStoreState | null>(null);
   const [availableUpdates, setAvailableUpdates] = useState<DLCUpdate[]>([]);
   // SUPER ADMIN: Initialize with cached status to prevent age verification flash
-  const [isAgeVerified, setIsAgeVerified] = useState(
-    DEV_BYPASS_AGE_VERIFICATION || cachedSuperAdminStatus,
-  );
+  // Also check localStorage for persisted age verification
+  const [isAgeVerified, setIsAgeVerified] = useState(() => {
+    if (DEV_BYPASS_AGE_VERIFICATION || cachedSuperAdminStatus) return true;
+    // Check localStorage for persisted age verification
+    try {
+      const stored = localStorage.getItem("dlc_age_verified_v1");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.verified && parsed.expiresAt && new Date(parsed.expiresAt) > new Date()) {
+          return true;
+        }
+      }
+    } catch {
+      // ignore localStorage errors
+    }
+    return false;
+  });
   // SUPER ADMIN: Initialize with cached status to prevent locked feature flash
   const [adminOverrideActive, setAdminOverrideActive] = useState(cachedSuperAdminStatus);
   const [adminNsfwMasterEnabled, setAdminNsfwMasterEnabled] = useState(cachedSuperAdminStatus);

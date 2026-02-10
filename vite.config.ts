@@ -233,6 +233,7 @@ export default defineConfig(({ mode }) => {
     // Reduced from 1500 to 500 to catch large chunks early and encourage better code splitting
     chunkSizeWarningLimit: 500,
   },
+  cacheDir: "node_modules/.vite",
   optimizeDeps: {
     include: [
       "react",

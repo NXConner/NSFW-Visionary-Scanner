@@ -12,10 +12,10 @@
       "filters": [],
       "attributes": [],
       "versionCode": 1,
-      "versionName": "1.0.0",
+      "versionName": "1.0",
       "outputFile": "app-debug.apk"
     }
   ],
   "elementType": "File",
-  "minSdkVersionForDexing": 22
+  "minSdkVersionForDexing": 23
 }

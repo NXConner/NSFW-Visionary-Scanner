@@ -89,11 +89,14 @@ let stripePromise: Promise<Stripe | null> | null = null;
 export const getStripe = (): Promise<Stripe | null> => {
   if (!stripePromise) {
     const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-    if (publishableKey) {
+    if (publishableKey && publishableKey !== "pk_test_placeholder") {
       stripePromise = loadStripe(publishableKey);
     } else {
       stripePromise = Promise.resolve(null);
-      logger.warn("Stripe publishable key not found", { component: "stripe" });
+      // Only log warning in development to avoid console noise in production
+      if (import.meta.env.DEV) {
+        logger.warn("Stripe publishable key not configured - payment features disabled", { component: "stripe" });
+      }
     }
   }
   return stripePromise;

@@ -165,24 +165,54 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // Check for existing session with 1s timeout
+    // Check for existing session with 3s timeout (increased from 1s for better reliability)
     const checkSession = async () => {
       try {
         const result = await Promise.race([
           supabase.auth.getSession(),
           new Promise<{ data: { session: null } }>(resolve =>
-            setTimeout(() => resolve({ data: { session: null } }), 1000),
+            setTimeout(() => resolve({ data: { session: null } }), 3000),
           ),
         ]);
 
         if (!mounted) return;
-        setSession(result.data.session);
-        setUser(result.data.session?.user ?? null);
         
-        // Load super admin status from database
-        await loadSuperAdminStatus(result.data.session?.user?.id ?? null);
+        // If we got a session, use it
+        if (result.data.session) {
+          setSession(result.data.session);
+          setUser(result.data.session.user);
+          // Persist session data for future restores
+          persistUserData(result.data.session.user, wasRememberMeSelected());
+          // Load super admin status from database
+          await loadSuperAdminStatus(result.data.session.user.id);
+        } else {
+          // No session from Supabase - check if we have persisted user data
+          // This can help show UI quickly while session refreshes
+          const lastUserId = getLastUserId();
+          if (lastUserId) {
+            // We had a previous session - try to refresh
+            try {
+              const { data: refreshData } = await supabase.auth.refreshSession();
+              if (refreshData.session && mounted) {
+                setSession(refreshData.session);
+                setUser(refreshData.session.user);
+                await loadSuperAdminStatus(refreshData.session.user.id);
+                return;
+              }
+            } catch {
+              // Refresh failed - session is truly gone
+            }
+          }
+          setSession(null);
+          setUser(null);
+          await loadSuperAdminStatus(null);
+        }
       } catch {
         // Ignore errors - fallback will handle
+        if (mounted) {
+          setSession(null);
+          setUser(null);
+        }
       } finally {
         if (mounted) setLoading(false);
       }

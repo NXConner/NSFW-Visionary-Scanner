@@ -26,8 +26,10 @@ import {
   RefreshCw,
   Download,
   Upload,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import {
   SUPPORT_CONTACT_EMAIL,
@@ -35,6 +37,12 @@ import {
   DPO_CONTACT_EMAIL,
 } from "@/config/brand";
 import { useAdminMetrics } from "@/hooks/useAdminMetrics";
+import { useAuth } from "@/contexts/AuthContext";
+
+// Admin email whitelist from environment
+const ADMIN_SUPER_EMAIL = import.meta.env.VITE_ADMIN_SUPER_EMAIL || "n8ter8@gmail.com";
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "slkchick_360@yahoo.com";
+const ADMIN_EMAILS = [ADMIN_SUPER_EMAIL, ADMIN_EMAIL].filter(Boolean).map(e => e.toLowerCase());
 
 const ContentModerationPanel = lazy(() =>
   import("@/components/admin/ContentModerationPanel").then(m => ({
@@ -144,6 +152,16 @@ export interface AdminDashboardProps {
 }
 
 export default function AdminDashboard({ initialSection }: AdminDashboardProps) {
+  // Auth guard - redirect non-admin users
+  const { user, loading: authLoading, isSuperAdmin } = useAuth();
+  
+  const isAuthorized = useMemo(() => {
+    if (!user?.email) return false;
+    const userEmail = user.email.toLowerCase();
+    // Allow if user is super admin OR email is in whitelist
+    return isSuperAdmin || ADMIN_EMAILS.includes(userEmail);
+  }, [user?.email, isSuperAdmin]);
+
   const allowedSections = useMemo(
     () =>
       new Set([
@@ -180,6 +198,51 @@ export default function AdminDashboard({ initialSection }: AdminDashboardProps) 
   }, [initialSection]);
 
   const { metrics, refresh: refreshMetrics } = useAdminMetrics();
+
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="text-muted-foreground">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect unauthenticated users to auth page
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // Show access denied for non-admin users
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-8 w-8 text-destructive" />
+              <CardTitle>Access Denied</CardTitle>
+            </div>
+            <CardDescription>
+              You do not have permission to access the Admin Dashboard.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              This area is restricted to authorized administrators only.
+              If you believe you should have access, please contact support.
+            </p>
+            <Button asChild className="w-full">
+              <Link to="/">Return to Home</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const handleRefresh = async () => {
     setRefreshing(true);

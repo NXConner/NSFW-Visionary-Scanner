@@ -17,6 +17,8 @@ import { getDLCUpdates } from "@/lib/enhancedDLCSystem";
 const LOCAL_INSTALLED_KEY = "dlc_installed_packages_v1";
 const UPDATE_SOURCE_KEY = "dlc_update_source_v1";
 const UPDATE_SOURCE_ACK_KEY = "dlc_update_source_ack_v1";
+const AGE_VERIFICATION_KEY = "dlc_age_verified_v1";
+const AGE_VERIFICATION_EXPIRY_DAYS = 365; // Age verification valid for 1 year
 
 const safeLocalStorage = () => (typeof window !== "undefined" ? window.localStorage : null);
 
@@ -44,6 +46,41 @@ const setLocalInstalledPackages = (ids: string[]): void => {
 
 const getDefaultUpdateSource = (): "store" | "website" =>
   getDistributionChannel() === "store" ? "store" : "website";
+
+// Age verification localStorage helpers
+const getLocalAgeVerification = (): { verified: boolean; expiresAt: string } | null => {
+  try {
+    const storage = safeLocalStorage();
+    if (!storage) return null;
+    const raw = storage.getItem(AGE_VERIFICATION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Check expiry
+    if (parsed.expiresAt && new Date(parsed.expiresAt) < new Date()) {
+      storage.removeItem(AGE_VERIFICATION_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const setLocalAgeVerification = (verified: boolean): void => {
+  try {
+    const storage = safeLocalStorage();
+    if (!storage) return;
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + AGE_VERIFICATION_EXPIRY_DAYS);
+    storage.setItem(AGE_VERIFICATION_KEY, JSON.stringify({
+      verified,
+      verifiedAt: new Date().toISOString(),
+      expiresAt: expiresAt.toISOString(),
+    }));
+  } catch {
+    // ignore
+  }
+};
 
 class DLCManager {
   private storeState: DLCStoreState = {
@@ -406,8 +443,15 @@ class DLCManager {
 
   async verifyAge(age: number, consent: boolean): Promise<boolean> {
     if (!consent || age < 18) return false;
+    
+    // Always store in localStorage first for persistence
+    setLocalAgeVerification(true);
+    
     const { data: auth } = await supabase.auth.getUser();
-    if (!auth.user) return false;
+    if (!auth.user) {
+      // Even without auth, localStorage verification is valid
+      return true;
+    }
 
     try {
       await supabase.from("dlc_age_verifications").upsert(
@@ -422,14 +466,21 @@ class DLCManager {
       );
       return true;
     } catch (error) {
-      logger.warn("DLCManager: Age verification failed", {
+      logger.warn("DLCManager: Age verification DB save failed, using localStorage", {
         error: error instanceof Error ? error.message : "Unknown error",
       });
-      return false;
+      // Return true since localStorage persistence succeeded
+      return true;
     }
   }
 
   async isAgeVerified(): Promise<boolean> {
+    // Check localStorage first (faster, works offline)
+    const localVerification = getLocalAgeVerification();
+    if (localVerification?.verified) {
+      return true;
+    }
+    
     try {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) return false;
@@ -440,10 +491,22 @@ class DLCManager {
         .maybeSingle();
       if (error || !data) return false;
       if (data.expires_at && new Date(data.expires_at) < new Date()) return false;
-      return Boolean(data.is_verified);
+      
+      const verified = Boolean(data.is_verified);
+      // Sync to localStorage if verified in DB
+      if (verified) {
+        setLocalAgeVerification(true);
+      }
+      return verified;
     } catch {
       return false;
     }
+  }
+  
+  // Synchronous check for localStorage age verification (for immediate UI decisions)
+  isAgeVerifiedSync(): boolean {
+    const localVerification = getLocalAgeVerification();
+    return localVerification?.verified ?? false;
   }
 
   getUpdateSource(): "store" | "website" {

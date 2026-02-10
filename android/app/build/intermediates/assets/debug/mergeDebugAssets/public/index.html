@@ -89,6 +89,63 @@
       }
     </script>
 
+    <!-- Compatibility polyfills for older Android WebView -->
+    <script>
+      (function () {
+        var g;
+        if (typeof globalThis !== "undefined") {
+          g = globalThis;
+        } else if (typeof self !== "undefined") {
+          g = self;
+          try {
+            self.globalThis = self;
+          } catch (_) {}
+        } else if (typeof window !== "undefined") {
+          g = window;
+          try {
+            window.globalThis = window;
+          } catch (_) {}
+        } else if (typeof global !== "undefined") {
+          g = global;
+          try {
+            global.globalThis = global;
+          } catch (_) {}
+        } else {
+          g = {};
+        }
+
+        if (typeof g.TextEncoder === "undefined") {
+          g.TextEncoder = function TextEncoder() {};
+          g.TextEncoder.prototype.encode = function (str) {
+            var input = str == null ? "" : String(str);
+            var utf8 = unescape(encodeURIComponent(input));
+            var result = new Uint8Array(utf8.length);
+            for (var i = 0; i < utf8.length; i++) {
+              result[i] = utf8.charCodeAt(i);
+            }
+            return result;
+          };
+        }
+
+        if (typeof g.TextDecoder === "undefined") {
+          g.TextDecoder = function TextDecoder() {};
+          g.TextDecoder.prototype.decode = function (input) {
+            if (!input) return "";
+            var bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+            var str = "";
+            for (var i = 0; i < bytes.length; i++) {
+              str += String.fromCharCode(bytes[i]);
+            }
+            try {
+              return decodeURIComponent(escape(str));
+            } catch (_) {
+              return str;
+            }
+          };
+        }
+      })();
+    </script>
+
     <!-- Critical loading styles -->
     <style>
       #app-loader {
@@ -133,14 +190,14 @@
         }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-SozzGMHS.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/vendor-ui-ZTCCpIh7.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-3d-Xwkyjf5v.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-DPNqat4l.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-supabase-CNZTj68w.js">
+    <script type="module" crossorigin src="/assets/index-C7eNDOwF.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-ui-Cv5DgTnD.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-3d-yVyOiYCZ.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-B2bvS2R3.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-supabase-Dw77XAUt.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor-stripe-CTPV_1UD.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor-motion-CK5u3raq.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-B6VksonU.css">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-motion-BMICHcj6.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-BT6Ajdsy.css">
   <link rel="manifest" href="/manifest.webmanifest"></head>
 
   <body>

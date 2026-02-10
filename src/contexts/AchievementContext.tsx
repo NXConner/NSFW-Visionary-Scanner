@@ -36,6 +36,7 @@ import { useSettings } from '@/contexts/settings';
 
 export interface AchievementContextValue {
   // State
+  isLoading: boolean;
   unlockedAchievements: UnlockedAchievement[];
   milestoneProgress: MilestoneProgress[];
   stats: AchievementStats;
@@ -81,6 +82,7 @@ export function AchievementProvider({ children }: AchievementProviderProps) {
   const achievementSettings = settings.achievements;
 
   const [manager] = useState(() => getAchievementManager());
+  const [isLoading, setIsLoading] = useState(true);
   const [unlockedAchievements, setUnlockedAchievements] = useState<UnlockedAchievement[]>([]);
   const [milestoneProgress, setMilestoneProgress] = useState<MilestoneProgress[]>([]);
   const [stats, setStats] = useState<AchievementStats>(() => manager.getStats());
@@ -90,19 +92,38 @@ export function AchievementProvider({ children }: AchievementProviderProps) {
 
   // Initialize and subscribe to events
   useEffect(() => {
-    // Load initial state
-    setUnlockedAchievements(manager.getUnlockedAchievements());
-    setMilestoneProgress(manager.getAllMilestoneProgress());
-    setStats(manager.getStats());
-    setTotalPoints(manager.getTotalPoints());
+    let mounted = true;
+    
+    // Timeout fallback to ensure loading completes within 2 seconds
+    const loadingTimeout = setTimeout(() => {
+      if (mounted) {
+        setIsLoading(false);
+      }
+    }, 2000);
+    
+    try {
+      // Load initial state
+      setUnlockedAchievements(manager.getUnlockedAchievements());
+      setMilestoneProgress(manager.getAllMilestoneProgress());
+      setStats(manager.getStats());
+      setTotalPoints(manager.getTotalPoints());
 
-    // Check for unnotified achievements on load
-    const unnotified = manager.getUnnotifiedAchievements();
-    if (unnotified.length > 0 && achievementSettings?.showNotifications) {
-      const achievement = getAchievement(unnotified[0].achievementId);
-      if (achievement) {
-        setRecentlyUnlocked(achievement);
-        setShowingToast(true);
+      // Check for unnotified achievements on load
+      const unnotified = manager.getUnnotifiedAchievements();
+      if (unnotified.length > 0 && achievementSettings?.showNotifications) {
+        const achievement = getAchievement(unnotified[0].achievementId);
+        if (achievement) {
+          setRecentlyUnlocked(achievement);
+          setShowingToast(true);
+        }
+      }
+    } catch (error) {
+      console.error('[AchievementProvider] Failed to load initial state:', error);
+    } finally {
+      // Mark loading as complete
+      if (mounted) {
+        setIsLoading(false);
+        clearTimeout(loadingTimeout);
       }
     }
 
@@ -137,6 +158,8 @@ export function AchievementProvider({ children }: AchievementProviderProps) {
     });
 
     return () => {
+      mounted = false;
+      clearTimeout(loadingTimeout);
       unsubscribe();
     };
   }, [manager, achievementSettings?.showNotifications]);
@@ -209,6 +232,7 @@ export function AchievementProvider({ children }: AchievementProviderProps) {
 
   const value: AchievementContextValue = {
     // State
+    isLoading,
     unlockedAchievements,
     milestoneProgress,
     stats,

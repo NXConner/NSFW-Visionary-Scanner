@@ -91,6 +91,10 @@ export function PartnerConnectionCard({
         <CardDescription>
           {t("partnerSync.connection.subtitle")}
         </CardDescription>
+        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+          <Shield className="w-3 h-3" />
+          {t("partnerSync.connection.autoConnectNote")}
+        </p>
       </CardHeader>
       <CardContent className="space-y-6">
         {connection ? (

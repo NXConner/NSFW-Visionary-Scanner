@@ -124,7 +124,7 @@ export const en: TranslationDictionary = {
 
   "partnerSync.connection.title": "Partner Sync",
   "partnerSync.connection.subtitle":
-    "Connect with a partner for shared progress, thought pings, date nights, and position picks.",
+    "Connect with a partner for shared progress, thought pings, date nights, and position picks. Pre-configured admin partners are automatically connected.",
   "partnerSync.connection.connected": "Connected",
   "partnerSync.connection.accepted": "Accepted",
   "partnerSync.connection.partnerId": "Partner ID",
@@ -163,6 +163,8 @@ export const en: TranslationDictionary = {
   "partnerSync.connection.privacyTitle": "Privacy & Security",
   "partnerSync.connection.privacyCopy":
     "Partner data stays protected. You control what is shared and can revoke access at any time.",
+  "partnerSync.connection.autoConnectNote":
+    "Auto-connection is enabled for pre-configured admin email pairs. These partners are automatically linked when they sign in.",
 
   "partnerSync.pings.composeTitle": "Thought Pings",
   "partnerSync.pings.composeSubtitle": "Send a quick ping to share what is on your mind.",

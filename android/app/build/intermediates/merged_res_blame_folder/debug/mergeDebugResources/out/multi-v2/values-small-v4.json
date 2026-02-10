@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.morphoscan.pro.app-mergeDebugResources-44:/values-small-v4/values-small-v4.xml",
+            "outputFile": "com.morphoscan.pro.app-mergeDebugResources-45:/values-small-v4/values-small-v4.xml",
             "map": [
                 {
-                    "source": "/home/ubuntu/.gradle/caches/transforms-4/efbfceb1e3fccb52c282b08389ec947e/transformed/material-1.11.0/res/values-small-v4/values-small-v4.xml",
+                    "source": "/home/ubuntu/.gradle/caches/8.11.1/transforms/a63b4def3f126a1584608cf719a55f7b/transformed/material-1.12.0/res/values-small-v4/values-small-v4.xml",
                     "from": {
                         "startLines": "2,3,4,5",
                         "startColumns": "4,4,4,4",
