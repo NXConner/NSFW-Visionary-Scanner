@@ -9,7 +9,7 @@
 - [ ] `20251206000000_dlc_licenses_and_pricing.sql`
 - [ ] `20251207000024_enhanced_dlc_system.sql`
 
-**Action**: Copy from NSFW branch or use `COMPLETE_SUPABASE_SETUP.sql`
+**Action**: Copy from NSFW branch or run `npm run db:push` to apply `supabase/migrations/`
 
 ---
 
@@ -218,7 +218,7 @@ STRIPE_WEBHOOK_SECRET=your_webhook_secret
 npm install
 
 # 2. Run database migrations
-npm run db:migrate
+npm run db:push
 
 # 3. Deploy Edge Functions
 npm run deploy:functions

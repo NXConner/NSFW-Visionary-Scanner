@@ -1,0 +1,80 @@
+# Root Cleanup Archive Manifest (2026-02-10)
+
+This archive contains root-level files/folders reviewed as no longer needed for
+active development and moved out of the repository root to reduce clutter.
+
+## Keep using these canonical sources
+
+- `README.md` (project entrypoint)
+- `CHANGELOG.md`
+- `CONTRIBUTING.md`
+- `docs/tracking/CONSOLIDATED_DOCS_MASTER.md`
+- `docs/tracking/PROJECT_TRACKER.md`
+- `docs/tracking/PROJECT_REMAINING_WORK.md`
+- `supabase/migrations/*.sql` (database schema source of truth)
+
+## Archived root status/history docs
+
+- `2K_QUALITY_SUPPORT.md`
+- `ACCOUNT_DELETION_COMPLETE.md`
+- `ANDROID_BUILD_COMPLETE.md`
+- `ANDROID_BUILD_STATUS.md`
+- `BRANCH_ANALYSIS.md`
+- `BRANCH_DIFFERENCES_SUMMARY.md`
+- `BRANCH_MERGE_COMPLETE.md`
+- `BRANCH_MERGE_FINAL.md`
+- `BRANCH_MERGE_SUMMARY.md`
+- `BRANCH_SETUP_INSTRUCTIONS.md`
+- `BUG_FIXES_COMPLETE.md`
+- `COMPLETE_IMPLEMENTATION_CHECKLIST.md`
+- `COMPREHENSIVE_REPO_ANALYSIS_AND_STRATEGY.md`
+- `CONTINUATION_SUMMARY.md`
+- `CREATE_REPO_INSTRUCTIONS.md`
+- `CURRENT_FEATURE_EXPANSIONS.md`
+- `DATA_RETENTION_COMPLETE.md`
+- `DOCUMENTATION_INDEX.md`
+- `EMAIL_VERIFICATION_COMPLETE.md`
+- `ENHANCEMENTS_AND_UTILITIES.md`
+- `FEATURE_PRIORITY_MATRIX.md`
+- `FEATURE_RECOMMENDATIONS.md`
+- `FEATURE_RECOMMENDATIONS_SUMMARY.md`
+- `FINAL_BRANCH_STATUS.md`
+- `FINAL_PROCEED_SUMMARY.md`
+- `FIXES_APPLIED.md`
+- `GITHUB_REPO_COMPARISON_ANALYSIS.md`
+- `GITHUB_REPO_SETUP.md`
+- `GRADLE_FIXES.md`
+- `IMPLEMENTATION_PLAN_SUMMARY.md`
+- `IMPLEMENTATION_PROGRESS.md`
+- `IMPLEMENTATION_SUMMARY.md`
+- `IMPLEMENTATION_SUMMARY_THREE_VERSIONS.md`
+- `INTEGRATION_COMPLETE.md`
+- `MASTER_IMPLEMENTATION_PLAN.md`
+- `NSFW_BRANCH_COMPLETE_ANALYSIS.md`
+- `NSFW_FEATURES_SUMMARY.md`
+- `NSFW_INTEGRATION_COMPLETE.md`
+- `NSFW_QUICK_WINS.md`
+- `NSFW_VERSION_RECOMMENDATIONS.md`
+- `NSFW_VISUAL_ENHANCEMENT_SUMMARY.md`
+- `PAYMENT_INTEGRATION_COMPLETE.md`
+- `PROCEED_COMPLETION_SUMMARY.md`
+- `PUSH_NOTIFICATION_BACKEND_COMPLETE.md`
+- `QUICK_START_GUIDE.md`
+- `RATE_LIMITING_COMPLETE.md`
+- `REMAINING_WORK_SUMMARY.md`
+- `REPOSITORY_SETUP_COMPLETE.md`
+- `REPO_COMPARISON_ANALYSIS.md`
+- `TOP_FEATURE_RECOMMENDATIONS.md`
+- `VISUAL_CONTENT_IMPLEMENTATION_COMPLETE.md`
+
+## Archived root temp/backup files
+
+- `.tmp_nxconner_capacitor.config.ts`
+- `.tmp_nxconner_package.json`
+- `ANDROID_BUILD_READY.txt`
+- `COMPLETE_SUPABASE_SETUP.sql`
+- `tsconfig.json.backup`
+
+## Archived folder
+
+- `DontNeed/` (legacy docs/archive + generated artifacts)
