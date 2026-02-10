@@ -19,3 +19,4 @@ This file used to contain a long, mixed-era “GrowthTracker” status report. I
 ## Notes
 
 - Historical/duplicate docs were moved to `deleted files/no-longer-needed/docs/archive/2025-12-16/` for manual review/removal.
+- Additional stale root status docs were archived to `deleted files/no-longer-needed/root-status-archive/2026-02-10/`.
