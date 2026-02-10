@@ -18,12 +18,15 @@ import {
   wasRememberMeSelected,
   getLastUserId,
 } from "@/lib/auth/userPersistence";
+import { EmailService } from "@/lib/email";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   rolesLoading: boolean; // Separate loading state for super admin role check
+  // Email Verification
+  isEmailVerified: boolean;
   // Super Admin Properties (database-driven)
   isSuperAdmin: boolean;
   role: "super_admin" | "user";
@@ -43,6 +46,9 @@ interface AuthContextType {
   signInWithApple: () => Promise<{ error: Error | null }>;
   linkSocialAccount: (provider: "google" | "apple") => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  // Email Methods
+  resendVerificationEmail: () => Promise<{ error: Error | null }>;
+  sendPasswordResetEmail: (email: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -316,6 +322,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // Email verification methods
+  const resendVerificationEmail = useCallback(async () => {
+    if (!user?.email) {
+      return { error: new Error("No email address found") };
+    }
+    try {
+      const result = await EmailService.sendVerificationEmail(user.email);
+      if (!result.success) {
+        return { error: new Error(result.error || "Failed to send verification email") };
+      }
+      analytics.trackUserAction("auth_verification_email_resent", "auth");
+      return { error: null };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      return { error: new Error(errorMessage) };
+    }
+  }, [user?.email]);
+
+  const sendPasswordResetEmail = useCallback(async (email: string) => {
+    try {
+      const result = await EmailService.sendPasswordResetEmail(email);
+      if (!result.success) {
+        return { error: new Error(result.error || "Failed to send password reset email") };
+      }
+      analytics.trackUserAction("auth_password_reset_requested", "auth");
+      return { error: null };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      return { error: new Error(errorMessage) };
+    }
+  }, []);
+
+  // Check if user's email is verified
+  const isEmailVerified = useMemo(() => {
+    return user?.email_confirmed_at !== null && user?.email_confirmed_at !== undefined;
+  }, [user?.email_confirmed_at]);
+
   // Compute super admin properties based on database-driven role check
   const superAdminProps = useMemo(() => ({
     isSuperAdmin,
@@ -333,6 +376,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       session,
       loading,
       rolesLoading,
+      // Email Verification
+      isEmailVerified,
       // Super Admin Properties (database-driven)
       isSuperAdmin: superAdminProps.isSuperAdmin,
       role: superAdminProps.role as "super_admin" | "user",
@@ -348,12 +393,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signInWithApple,
       linkSocialAccount,
       signOut,
+      // Email Methods
+      resendVerificationEmail,
+      sendPasswordResetEmail,
     }),
     [
       user,
       session,
       loading,
       rolesLoading,
+      isEmailVerified,
       superAdminProps,
       signIn,
       signUp,
@@ -361,6 +410,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signInWithApple,
       linkSocialAccount,
       signOut,
+      resendVerificationEmail,
+      sendPasswordResetEmail,
     ],
   );
 
