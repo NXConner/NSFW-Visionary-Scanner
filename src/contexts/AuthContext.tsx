@@ -12,6 +12,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { analytics } from "@/lib/analytics";
 import { logger } from "@/lib/logger";
 import { checkSuperAdminRole, clearSuperAdminCache, isSuperAdminCached } from "@/lib/superAdmin";
+import { 
+  persistUserData, 
+  clearPersistedUserData, 
+  wasRememberMeSelected,
+  getLastUserId,
+} from "@/lib/auth/userPersistence";
 
 interface AuthContextType {
   user: User | null;
@@ -132,6 +138,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       try {
         if (event === "SIGNED_IN" && session?.user?.id) {
+          // Persist user data for session restoration
+          persistUserData(session.user, wasRememberMeSelected());
           analytics.trackUserAction("auth_signed_in", "auth", {
             provider: session.user?.app_metadata?.provider,
           });
@@ -139,6 +147,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (event === "SIGNED_OUT") {
           analytics.trackUserAction("auth_signed_out", "auth");
           clearSuperAdminCache();
+          clearPersistedUserData();
+        }
+        if (event === "TOKEN_REFRESHED" && session?.user) {
+          // Update persisted data with fresh session
+          persistUserData(session.user, wasRememberMeSelected());
         }
       } catch {
         // ignore analytics errors
