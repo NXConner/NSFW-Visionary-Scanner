@@ -1,0 +1,191 @@
+#!/usr/bin/env node
+
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, "..");
+const mode = parseMode(process.argv.slice(2));
+
+dotenv.config({ path: path.join(repoRoot, ".env") });
+
+function parseMode(args) {
+  const modeArg = args.find((arg) => arg.startsWith("--mode="));
+  const raw = (modeArg ? modeArg.split("=")[1] : "auto").toLowerCase();
+  if (!["auto", "local", "remote"].includes(raw)) {
+    console.error(
+      `Invalid mode "${raw}". Use one of: auto, local, remote (e.g. --mode=remote).`,
+    );
+    process.exit(1);
+  }
+  return raw;
+}
+
+function run(command, args, options = {}) {
+  const result = spawnSync(command, args, {
+    cwd: repoRoot,
+    encoding: "utf8",
+    ...options,
+  });
+
+  const stdout = result.stdout ?? "";
+  const stderr = result.stderr ?? "";
+  const output = `${stdout}${stderr}`.trim();
+
+  return {
+    ok: result.status === 0,
+    status: result.status ?? 1,
+    output,
+  };
+}
+
+function commandExists(command) {
+  const result = run("bash", ["-lc", `command -v ${command}`], {
+    stdio: "ignore",
+  });
+  return result.ok;
+}
+
+function dockerAvailable() {
+  if (!commandExists("docker")) {
+    return false;
+  }
+  const result = run("docker", ["info"], { stdio: "ignore" });
+  return result.ok;
+}
+
+function firstSetEnv(keys) {
+  for (const key of keys) {
+    const value = process.env[key];
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+  return "";
+}
+
+function runSupabase(args, description) {
+  console.log(`\n${description}`);
+  console.log(`> npx supabase ${args.join(" ")}`);
+  const result = run("npx", ["supabase", ...args]);
+  if (result.output) {
+    console.log(result.output);
+  }
+  return result;
+}
+
+function runLocalMigration() {
+  return runSupabase(
+    ["migration", "up", "--yes"],
+    "Applying pending migrations to local Supabase database...",
+  );
+}
+
+function runRemoteMigration() {
+  const dbUrl = firstSetEnv([
+    "SUPABASE_DB_URL",
+    "DATABASE_URL",
+    "SUPABASE_DATABASE_URL",
+  ]);
+
+  if (dbUrl) {
+    const result = runSupabase(
+      ["db", "push", "--db-url", dbUrl, "--yes", "--include-all"],
+      "Applying migrations using explicit database URL...",
+    );
+    if (result.ok) {
+      return result;
+    }
+  } else {
+    const password = firstSetEnv(["SUPABASE_DB_PASSWORD", "POSTGRES_PASSWORD"]);
+    const args = ["db", "push", "--linked", "--yes", "--include-all"];
+    if (password) {
+      args.push("--password", password);
+    }
+    const result = runSupabase(
+      args,
+      "Applying migrations to linked remote Supabase project...",
+    );
+    if (result.ok) {
+      return result;
+    }
+  }
+
+  console.error("\nUnable to apply migrations remotely.");
+  console.error("Set one of the following and run again:");
+  console.error("  1) SUPABASE_DB_URL (preferred full Postgres connection URL)");
+  console.error(
+    "  2) SUPABASE_DB_PASSWORD (with linked project and Supabase access token/login)",
+  );
+  console.error(
+    "If you need local migrations, install/start Docker and use --mode=local.",
+  );
+  process.exit(1);
+}
+
+function isExpectedLocalConnectivityError(output) {
+  if (!output) return false;
+  const haystack = output.toLowerCase();
+  return (
+    haystack.includes("connection refused") ||
+    haystack.includes("cannot connect to the docker daemon") ||
+    haystack.includes("failed to connect to postgres")
+  );
+}
+
+function ensureSupabaseCli() {
+  if (!commandExists("npx")) {
+    console.error("npx is required to run Supabase CLI.");
+    process.exit(1);
+  }
+}
+
+function main() {
+  process.chdir(repoRoot);
+  ensureSupabaseCli();
+
+  console.log(`Migration mode: ${mode}`);
+
+  if (mode === "local") {
+    if (!dockerAvailable()) {
+      console.error(
+        "Docker is unavailable. Local migrations require Docker. Use --mode=remote instead.",
+      );
+      process.exit(1);
+    }
+    const result = runLocalMigration();
+    process.exit(result.ok ? 0 : result.status);
+  }
+
+  if (mode === "remote") {
+    const result = runRemoteMigration();
+    process.exit(result.ok ? 0 : result.status);
+  }
+
+  if (dockerAvailable()) {
+    const localResult = runLocalMigration();
+    if (localResult.ok) {
+      process.exit(0);
+    }
+    if (!isExpectedLocalConnectivityError(localResult.output)) {
+      process.exit(localResult.status);
+    }
+    console.warn(
+      "\nLocal migration failed due connectivity/runtime issue. Falling back to remote migration...",
+    );
+  } else {
+    console.warn(
+      "\nDocker is not available. Falling back to remote migration path...",
+    );
+  }
+
+  const remoteResult = runRemoteMigration();
+  process.exit(remoteResult.ok ? 0 : remoteResult.status);
+}
+
+main();
