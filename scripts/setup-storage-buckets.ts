@@ -35,9 +35,17 @@ const buckets = [
   {
     id: "user-uploads",
     name: "user-uploads",
-    public: true,
+    public: false,
     fileSizeLimit: 100 * 1024 * 1024, // 100MB
-    allowedMimeTypes: null, // Allow all for development
+    allowedMimeTypes: [
+      "application/json",
+      "text/csv",
+      "text/plain",
+      "application/pdf",
+      "application/zip",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
+    ],
   },
   {
     id: "videos",
@@ -63,16 +71,21 @@ const buckets = [
   {
     id: "screenshots",
     name: "screenshots",
-    public: true,
-    fileSizeLimit: 10 * 1024 * 1024, // 10MB
-    allowedMimeTypes: ["image/jpeg", "image/png"],
+    public: false,
+    fileSizeLimit: 50 * 1024 * 1024, // 50MB
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
   },
   {
     id: "recordings",
     name: "recordings",
     public: false, // Private by default
-    fileSizeLimit: 500 * 1024 * 1024, // 500MB
-    allowedMimeTypes: ["video/mp4", "video/webm"],
+    fileSizeLimit: 5 * 1024 * 1024 * 1024, // 5GB
+    allowedMimeTypes: [
+      "video/mp4",
+      "video/webm",
+      "video/quicktime",
+      "application/octet-stream",
+    ],
   },
   {
     id: "expert-content",
@@ -103,25 +116,39 @@ const buckets = [
 async function setupBuckets() {
   console.log("Setting up Supabase Storage buckets...\n");
 
+  const { data: existing, error: checkError } = await supabase.storage.listBuckets();
+  if (checkError) {
+    console.error("✗ Failed to list existing buckets:", checkError.message);
+    process.exit(1);
+  }
+  const existingMap = new Map((existing || []).map(b => [b.id, b]));
+
   for (const bucket of buckets) {
     try {
-      // Check if bucket exists
-      const { data: existing, error: checkError } = await supabase.storage.listBuckets();
-
-      const exists = existing?.some(b => b.id === bucket.id);
-
-      if (exists) {
-        console.log(`✓ Bucket "${bucket.id}" already exists`);
+      const existingBucket = existingMap.get(bucket.id);
+      if (existingBucket) {
+        // Keep bucket configuration aligned (idempotent).
+        const wantsMimeTypes = bucket.allowedMimeTypes || undefined;
+        const { error: updateError } = await supabase.storage.updateBucket(bucket.id, {
+          public: bucket.public,
+          fileSizeLimit: bucket.fileSizeLimit,
+          allowedMimeTypes: wantsMimeTypes,
+        });
+        if (updateError) {
+          console.error(`✗ Failed to update bucket "${bucket.id}":`, updateError.message);
+        } else {
+          console.log(
+            `✓ Bucket "${bucket.id}" already exists (ensured ${bucket.public ? "public" : "private"})`,
+          );
+        }
         continue;
       }
 
-      // Create bucket
-      const { data, error } = await supabase.storage.createBucket(bucket.id, {
+      const { error } = await supabase.storage.createBucket(bucket.id, {
         public: bucket.public,
         fileSizeLimit: bucket.fileSizeLimit,
         allowedMimeTypes: bucket.allowedMimeTypes || undefined,
       });
-
       if (error) {
         console.error(`✗ Failed to create bucket "${bucket.id}":`, error.message);
       } else {
@@ -133,7 +160,9 @@ async function setupBuckets() {
   }
 
   console.log("\n✅ Bucket setup complete!");
-  console.log("\nNext: Set up RLS policies in Supabase Dashboard → Storage → Policies");
+  console.log(
+    "\nNext: apply RLS policies (prefer via migrations) and validate storage access paths.",
+  );
 }
 
 setupBuckets().catch(console.error);

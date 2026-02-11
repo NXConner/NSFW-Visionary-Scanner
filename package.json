@@ -32,6 +32,7 @@
     "db:diff": "supabase db diff",
     "db:types": "supabase gen types typescript --local > src/integrations/supabase/types.ts",
     "db:types:check": "node scripts/check-supabase-types.mjs",
+    "db:types:remote:check": "node scripts/check-supabase-types-remote.mjs",
     "db:migrate:legacy": "node-pg-migrate -m supabase/migrations up",
     "db:rollback:legacy": "node-pg-migrate -m supabase/migrations down --steps 1",
     "db:create:legacy": "node-pg-migrate -m supabase/migrations create",
