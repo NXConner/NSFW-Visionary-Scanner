@@ -42,6 +42,10 @@ jobs:
 
       - name: Run E2E tests
         run: npm run test:e2e
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_APP_ENV: ci
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
