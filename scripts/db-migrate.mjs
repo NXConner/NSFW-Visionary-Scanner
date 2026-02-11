@@ -69,9 +69,21 @@ function firstSetEnv(keys) {
   return "";
 }
 
+function redactSupabaseArgs(args) {
+  const redacted = [...args];
+  const sensitiveFlags = new Set(["--db-url", "--password", "--token"]);
+  for (let i = 0; i < redacted.length; i += 1) {
+    if (sensitiveFlags.has(redacted[i]) && i + 1 < redacted.length) {
+      redacted[i + 1] = "<redacted>";
+      i += 1;
+    }
+  }
+  return redacted;
+}
+
 function runSupabase(args, description) {
   console.log(`\n${description}`);
-  console.log(`> npx supabase ${args.join(" ")}`);
+  console.log(`> npx supabase ${redactSupabaseArgs(args).join(" ")}`);
   const result = run("npx", ["supabase", ...args]);
   if (result.output) {
     console.log(result.output);
@@ -97,6 +109,14 @@ function readProjectRefFromConfig() {
   return match?.[1]?.trim() ?? "";
 }
 
+function buildDirectDbUrlFromPassword({ projectRef, password }) {
+  const url = new URL(
+    `postgresql://postgres@db.${projectRef}.supabase.co:5432/postgres`,
+  );
+  url.password = password;
+  return url.toString();
+}
+
 function runRemoteMigration() {
   const dbUrl = firstSetEnv([
     "SUPABASE_DB_URL",
@@ -114,6 +134,21 @@ function runRemoteMigration() {
     }
   } else {
     const password = firstSetEnv(["SUPABASE_DB_PASSWORD", "POSTGRES_PASSWORD"]);
+
+    // Prefer a Docker-less remote push that does NOT require Supabase API auth:
+    // if the DB password is provided, we can construct the direct DB URL from project ref.
+    const projectRef = readProjectRefFromConfig();
+    if (password && projectRef) {
+      const directDbUrl = buildDirectDbUrlFromPassword({ projectRef, password });
+      const result = runSupabase(
+        ["db", "push", "--db-url", directDbUrl, "--yes", "--include-all"],
+        `Applying migrations using SUPABASE_DB_PASSWORD + project ref (${projectRef})...`,
+      );
+      if (result.ok) {
+        return result;
+      }
+    }
+
     const args = ["db", "push", "--linked", "--yes", "--include-all"];
     if (password) {
       args.push("--password", password);
@@ -158,7 +193,7 @@ function runRemoteMigration() {
   console.error("Set one of the following and run again:");
   console.error("  1) SUPABASE_DB_URL (preferred full Postgres connection URL)");
   console.error(
-    "  2) SUPABASE_DB_PASSWORD (with linked project and Supabase access token/login)",
+    "  2) SUPABASE_DB_PASSWORD (preferred; works with project_id in supabase/config.toml)",
   );
   console.error(
     "  3) SUPABASE_ACCESS_TOKEN if Supabase CLI is not already authenticated",
