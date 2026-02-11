@@ -86,6 +86,17 @@ function runLocalMigration() {
   );
 }
 
+function readProjectRefFromConfig() {
+  const configPath = path.join(repoRoot, "supabase", "config.toml");
+  if (!fs.existsSync(configPath)) {
+    return "";
+  }
+
+  const configContent = fs.readFileSync(configPath, "utf8");
+  const match = configContent.match(/^\s*project_id\s*=\s*"([^"]+)"/m);
+  return match?.[1]?.trim() ?? "";
+}
+
 function runRemoteMigration() {
   const dbUrl = firstSetEnv([
     "SUPABASE_DB_URL",
@@ -107,10 +118,37 @@ function runRemoteMigration() {
     if (password) {
       args.push("--password", password);
     }
-    const result = runSupabase(
+    let result = runSupabase(
       args,
       "Applying migrations to linked remote Supabase project...",
     );
+    if (
+      !result.ok &&
+      result.output
+        .toLowerCase()
+        .includes("cannot find project ref. have you run supabase link?")
+    ) {
+      const projectRef = readProjectRefFromConfig();
+      if (projectRef) {
+        const linkArgs = ["link", "--project-ref", projectRef, "--yes"];
+        if (password) {
+          linkArgs.push("--password", password);
+        }
+
+        const linkResult = runSupabase(
+          linkArgs,
+          `Linking Supabase CLI to project ${projectRef}...`,
+        );
+
+        if (linkResult.ok) {
+          result = runSupabase(
+            args,
+            "Retrying migration push to linked remote project...",
+          );
+        }
+      }
+    }
+
     if (result.ok) {
       return result;
     }
@@ -121,6 +159,9 @@ function runRemoteMigration() {
   console.error("  1) SUPABASE_DB_URL (preferred full Postgres connection URL)");
   console.error(
     "  2) SUPABASE_DB_PASSWORD (with linked project and Supabase access token/login)",
+  );
+  console.error(
+    "  3) SUPABASE_ACCESS_TOKEN if Supabase CLI is not already authenticated",
   );
   console.error(
     "If you need local migrations, install/start Docker and use --mode=local.",
