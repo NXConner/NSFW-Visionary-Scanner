@@ -53,6 +53,8 @@
     "optimize:all": "npm run perf:audit && npm run a11y:audit && npm run analyze:bundle",
     "preflight:all": "npm run check:production && npm run check:pre-submission && npm run optimize:all",
     "verify:sfw:bundle": "node scripts/verify-sfw-bundle.mjs dist",
+    "release:remote:ops": "node scripts/run-remote-release-ops.mjs",
+    "release:secrets:provision": "node scripts/provision-release-secrets.mjs",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
