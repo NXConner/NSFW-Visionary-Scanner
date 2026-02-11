@@ -16,6 +16,9 @@ Use an environment file outside git (example: `.env.staging.local`) and run:
 Template: `config/release/release.secrets.template.env`
 
 ```bash
+# 0) Run in-repo release readiness gates (writes JSON report artifact)
+npm run check:release-readiness -- --report-file artifacts/release-readiness-report.json
+
 # 1) Provision GitHub + Supabase secrets from env file
 npm run release:secrets:provision -- --environment staging --env-file .env.staging.local --repo OWNER/REPO
 

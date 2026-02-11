@@ -48,6 +48,7 @@
     "a11y:audit": "node scripts/accessibility-audit.js",
     "check:production": "node scripts/production-readiness-check.js",
     "check:pre-submission": "node scripts/pre-submission-checklist.js",
+    "check:release-readiness": "node scripts/release-readiness-check.mjs",
     "perf:load": "k6 run -e BASE_URL=\"http://localhost:4173\" performance-tests/load-test.js",
     "perf:nsfw-media": "k6 run performance-tests/nsfw-media-load-test.js",
     "optimize:all": "npm run perf:audit && npm run a11y:audit && npm run analyze:bundle",

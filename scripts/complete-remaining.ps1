@@ -13,7 +13,8 @@ param(
     [switch]$SkipDocs,
     [switch]$SkipDlcValidation,
     [switch]$SkipAudit,
-    [switch]$SkipPerf
+    [switch]$SkipPerf,
+    [switch]$SkipReleaseReadiness
 )
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
@@ -120,6 +121,7 @@ if (-not $SkipDlcValidation) {
 
 # Security / audit
 Run-Step -Name "npm audit" -Action { npm run scan:vuln } -Skip:$SkipAudit -SkipReason "flagged"
+Run-Step -Name "release readiness gate" -Action { npm run check:release-readiness } -Skip:$SkipReleaseReadiness -SkipReason "flagged"
 
 # Perf / a11y (optional)
 if (-not $SkipPerf) {

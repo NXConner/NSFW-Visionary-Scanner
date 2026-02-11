@@ -60,6 +60,12 @@ function checkFileExists(filePath, description) {
   return exists;
 }
 
+function checkAnyFileExists(filePaths, description, severity = "error") {
+  const found = filePaths.some(filePath => fs.existsSync(path.join(__dirname, "..", filePath)));
+  check(description, found, severity);
+  return found;
+}
+
 function checkEnvVar(varName, description) {
   const value = process.env[varName];
   check(description, !!value, "warning");
@@ -193,7 +199,10 @@ async function runPreSubmissionChecklist() {
 
   checkFileExists("android/app/build.gradle", "Android build config exists");
   checkFileExists("ios/App/App.xcodeproj", "iOS project exists");
-  checkFileExists("capacitor.config.ts", "Capacitor config exists");
+  checkAnyFileExists(
+    ["capacitor.config.ts", "capacitor.config.json"],
+    "Capacitor config exists (.ts or .json)",
+  );
 
   // 9. App Store Assets
   log("\n9. App Store Assets", COLORS.bright);

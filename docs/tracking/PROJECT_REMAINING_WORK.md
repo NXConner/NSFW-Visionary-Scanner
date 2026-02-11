@@ -27,6 +27,26 @@ For deeper supporting docs, see:
 - **Prod build**: ✅ Verified
 
 > Run automation: `pwsh -File scripts/complete-remaining.ps1`
+>
+> Run release gate: `npm run check:release-readiness -- --report-file artifacts/release-readiness-report.json`
+
+### Automated verification coverage (repo-side)
+
+The following can now be validated directly from this repository:
+
+- Secrets hygiene + tracked-file checks (`.env`, Firebase, gradle local files)
+- Production-only switches (PWA registration guards + Capacitor config checks)
+- Supabase readiness artifacts (migrations, RLS audit docs, key edge functions)
+- NSFW/Stripe/Push wiring artifacts (migrations/functions/docs/env inventory)
+- CI/CD deploy gate wiring + manual deploy rollback-by-ref coverage
+- Observability baseline (Sentry scrubbing hooks + logger redaction)
+- A11y/perf/mobile artifact readiness (scripts, tests, guides, build assets)
+
+Use:
+
+```powershell
+npm run check:release-readiness -- --report-file artifacts/release-readiness-report.json
+```
 
 ---
 
@@ -50,7 +70,7 @@ For deeper supporting docs, see:
   - [ ] `DATABASE_URL` (**server-only**)
 - [ ] **Confirm production-only switches are correct**
   - [ ] PWA service worker behavior is correct on real domains (see `src/pwa/register.ts`)
-  - [ ] No dev server URL is set for production Capacitor builds (see `capacitor.config.ts`)
+  - [ ] No dev server URL is set for production Capacitor builds (see `capacitor.config.json`)
 
 ### 2) Supabase production readiness (security + data protection)
 
@@ -176,7 +196,6 @@ Canonical doc: `docs/guides/integrations/notifications/FCM_SETUP.md`
 ### 8) Performance + reliability
 
 - [ ] Run load test (k6): `npm run perf:load` (see `docs/guides/testing/LOAD_TESTING.md`)
-- [ ] Run load test (k6): `npm run perf:load` (see `docs/guides/testing/LOAD_TESTING.md`)
 - [ ] Confirm target budgets:
   - [ ] Cold start time (web + mobile)
   - [ ] Scanner performance (FPS, memory)
@@ -207,7 +226,6 @@ Canonical doc: `docs/guides/build/MOBILE_BUILD_GUIDE.md`
 
 ### 11) Store listing + compliance
 
-- [ ] Confirm store-safe content for SFW/store builds (see `docs/product/store/app-store-listing.md`)
 - [ ] Confirm store-safe content for SFW/store builds (see `docs/product/store/app-store-listing.md`)
 - [ ] Verify privacy policy + terms URLs are correct and live
 - [ ] Verify age rating / questionnaires match actual shipped build behavior

@@ -5,6 +5,7 @@ node_modules/
 # Build outputs
 dist/
 build/
+artifacts/
 
 # Test outputs
 coverage/
@@ -35,6 +36,7 @@ ios/App/App/GoogleService-Info.plist
 
 # Android signing / keystores (local-only)
 android/keystore.properties
+android/gradle.properties
 android/app/release.keystore
 **/*.jks
 **/*.keystore
