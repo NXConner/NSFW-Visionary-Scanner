@@ -293,32 +293,97 @@ export const AnalyticsDashboard = ({ className, isAdmin = false }: AnalyticsDash
 
       // Fetch user analytics (personal or admin-level)
       const usageQuery = supabase
-        .from("analytics_events")
-        .select("event_name, created_at")
+        .from("app_analytics_events")
+        .select("user_id, session_id, event_name, created_at")
         .gte("created_at", startDate.toISOString())
         .order("created_at", { ascending: false })
-        .limit(1000);
+        .limit(5000);
       const usageResPromise = isAdmin ? usageQuery : usageQuery.eq("user_id", user.id);
 
-      const [overviewRes, trendsRes, usageRes] = await Promise.all([
-        // Overview stats
-        supabase.rpc("get_analytics_overview", {
-          p_user_id: isAdmin ? null : user.id,
-          p_start_date: startDate.toISOString(),
-          p_end_date: new Date().toISOString(),
-        }),
-        // Trends data
-        supabase.rpc("get_analytics_trends", {
-          p_user_id: isAdmin ? null : user.id,
-          p_start_date: startDate.toISOString(),
-          p_end_date: new Date().toISOString(),
-        }),
-        // Feature usage
-        usageResPromise,
-      ]);
+      const { data: usageRows, error: usageError } = await usageResPromise;
+      if (usageError) throw usageError;
+
+      const usageEvents = Array.isArray(usageRows) ? usageRows : [];
+
+      // Build overview/trends in the client to avoid requiring RPCs that may not exist in all envs.
+      const sessionToTimes = new Map<string, { min: number; max: number; count: number }>();
+      const userIds = new Set<string>();
+      const scanEventNames = new Set(["scan", "scan_completed", "scanner_completed", "scan_saved"]);
+
+      for (const row of usageEvents as any[]) {
+        const sessionId = typeof row.session_id === "string" ? row.session_id : "";
+        const userId = typeof row.user_id === "string" ? row.user_id : "";
+        if (userId) userIds.add(userId);
+
+        const t = row.created_at ? Date.parse(String(row.created_at)) : NaN;
+        if (sessionId && Number.isFinite(t)) {
+          const existing = sessionToTimes.get(sessionId);
+          if (!existing) sessionToTimes.set(sessionId, { min: t, max: t, count: 1 });
+          else {
+            existing.min = Math.min(existing.min, t);
+            existing.max = Math.max(existing.max, t);
+            existing.count += 1;
+          }
+        }
+      }
+
+      const sessionCount = sessionToTimes.size;
+      const bouncedSessions = Array.from(sessionToTimes.values()).filter(v => v.count <= 1).length;
+      const avgSessionMinutes =
+        sessionCount > 0
+          ? Math.round(
+              Array.from(sessionToTimes.values()).reduce(
+                (sum, v) => sum + Math.max(0, v.max - v.min),
+                0,
+              ) /
+                sessionCount /
+                60000,
+            )
+          : 0;
+
+      const totalScans = usageEvents.filter((row: any) => {
+        const name = String(row.event_name ?? "").toLowerCase();
+        return name.includes("scan") || scanEventNames.has(name);
+      }).length;
+
+      const computedOverview = {
+        total_users: isAdmin ? userIds.size : 1,
+        active_users: isAdmin ? userIds.size : 1,
+        new_users: 0,
+        total_scans: totalScans,
+        average_session_duration: avgSessionMinutes,
+        bounce_rate: sessionCount > 0 ? Math.round((bouncedSessions / sessionCount) * 100) : 0,
+      };
+
+      const byDay = new Map<string, { users: Set<string>; sessions: Set<string>; scans: number }>();
+      for (const row of usageEvents as any[]) {
+        const created = row.created_at ? new Date(String(row.created_at)) : null;
+        if (!created || Number.isNaN(created.getTime())) continue;
+        const dayKey = format(created, "yyyy-MM-dd");
+        const entry = byDay.get(dayKey) ?? {
+          users: new Set<string>(),
+          sessions: new Set<string>(),
+          scans: 0,
+        };
+        const userId = typeof row.user_id === "string" ? row.user_id : "";
+        const sessionId = typeof row.session_id === "string" ? row.session_id : "";
+        if (userId) entry.users.add(userId);
+        if (sessionId) entry.sessions.add(sessionId);
+        const name = String(row.event_name ?? "").toLowerCase();
+        if (name.includes("scan") || scanEventNames.has(name)) entry.scans += 1;
+        byDay.set(dayKey, entry);
+      }
+      const computedTrends = Array.from(byDay.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([date, v]) => ({
+          date,
+          users: v.users.size,
+          scans: v.scans,
+          sessions: v.sessions.size,
+        }));
 
       // Process and aggregate data
-      const processedData = processAnalyticsData(overviewRes.data, trendsRes.data, usageRes.data);
+      const processedData = processAnalyticsData(computedOverview, computedTrends, usageEvents);
 
       setData(processedData);
     } catch (error) {

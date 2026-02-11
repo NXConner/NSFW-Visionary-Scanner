@@ -229,14 +229,36 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
 
   private reportToService = async (error: Error, details: ErrorInfo) => {
     try {
-      // Report to backend error tracking
-      await supabase.from("error_logs").insert({
-        error_type: details.type,
-        message: details.message,
-        stack: details.stack,
-        component_stack: details.componentStack,
-        url: details.url,
-        user_agent: details.userAgent,
+      // Report to backend error tracking.
+      // Use the existing privacy-consented first-party analytics table to avoid relying on
+      // optional error-log tables that may not exist in every environment.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+      if (!userId) return;
+
+      await supabase.from("app_analytics_events").insert({
+        user_id: userId,
+        session_id: null,
+        event_name: "client_error",
+        event_category: "error",
+        event_action: "error_boundary",
+        event_label: details.type,
+        event_value: 1,
+        properties: {
+          message: details.message,
+          stack: details.stack ?? null,
+          componentStack: details.componentStack ?? null,
+          url: details.url,
+          userAgent: details.userAgent,
+        },
+        page_path:
+          typeof window !== "undefined" ? window.location.pathname + window.location.search : null,
+        referrer: typeof document !== "undefined" ? document.referrer || null : null,
+        user_agent: details.userAgent ?? null,
+        device_platform: typeof navigator !== "undefined" ? navigator.platform || null : null,
+        app_version: import.meta.env.VITE_APP_VERSION ?? null,
+        app_build: import.meta.env.VITE_APP_VERSION ?? null,
+        distribution_channel: import.meta.env.VITE_DISTRIBUTION_CHANNEL ?? null,
         created_at: details.timestamp.toISOString(),
       });
     } catch (reportError) {
@@ -282,13 +304,38 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     this.setState({ isReporting: true });
 
     try {
-      await supabase.from("user_error_reports").insert({
-        error_type: errorDetails.type,
-        message: errorDetails.message,
-        stack: errorDetails.stack,
-        additional_info: additionalInfo,
-        user_email: email,
-        url: errorDetails.url,
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+      if (!userId) {
+        toast.error("Please sign in before submitting a report.");
+        this.setState({ isReporting: false });
+        return;
+      }
+
+      await supabase.from("app_analytics_events").insert({
+        user_id: userId,
+        session_id: null,
+        event_name: "user_error_report",
+        event_category: "error",
+        event_action: "user_report",
+        event_label: errorDetails.type,
+        event_value: 1,
+        properties: {
+          message: errorDetails.message,
+          stack: errorDetails.stack ?? null,
+          additionalInfo: additionalInfo || null,
+          contactEmail: email || null,
+          url: errorDetails.url,
+        },
+        page_path:
+          typeof window !== "undefined" ? window.location.pathname + window.location.search : null,
+        referrer: typeof document !== "undefined" ? document.referrer || null : null,
+        user_agent: errorDetails.userAgent ?? null,
+        device_platform: typeof navigator !== "undefined" ? navigator.platform || null : null,
+        app_version: import.meta.env.VITE_APP_VERSION ?? null,
+        app_build: import.meta.env.VITE_APP_VERSION ?? null,
+        distribution_channel: import.meta.env.VITE_DISTRIBUTION_CHANNEL ?? null,
+        created_at: new Date().toISOString(),
       });
 
       this.setState({ reportSubmitted: true, isReporting: false });
