@@ -91,10 +91,8 @@ class MockIntersectionObserver implements IntersectionObserver {
   }
 }
 
-// @ts-expect-error - available at runtime via globalThis
 globalThis.IntersectionObserver = MockIntersectionObserver;
 if (w) {
-  // @ts-expect-error - available at runtime on Window
   w.IntersectionObserver = MockIntersectionObserver;
 }
 
@@ -107,10 +105,8 @@ class MockResizeObserver implements ResizeObserver {
   unobserve(): void {}
 }
 
-// @ts-expect-error - available at runtime via globalThis
 globalThis.ResizeObserver = MockResizeObserver;
 if (w) {
-  // @ts-expect-error - available at runtime on Window
   w.ResizeObserver = MockResizeObserver;
 }
 
