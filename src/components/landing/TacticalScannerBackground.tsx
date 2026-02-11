@@ -159,29 +159,24 @@ export const TacticalScannerBackground = () => {
             </div>
           </div>
 
-          {/* Center scanner icon - MUCH larger and more prominent */}
+          {/* Center scanner icon - square profile + wider footprint */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative">
-              {/* Multiple glow layers for depth */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 rounded-full bg-primary/30 blur-3xl" />
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div
-                  className="w-48 h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 rounded-full bg-primary/20 blur-2xl animate-pulse"
-                  style={{ animationDuration: "3s" }}
-                />
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div
-                  className="w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 rounded-full bg-primary/25 animate-ping"
-                  style={{ animationDuration: "4s" }}
-                />
-              </div>
+            <div className="relative flex h-[18rem] w-[18rem] items-center justify-center md:h-[24rem] md:w-[24rem] lg:h-[30rem] lg:w-[30rem]">
+              {/* Layered square glow for cleaner icon silhouette */}
+              <div className="absolute inset-0 rounded-[1.75rem] bg-primary/30 blur-3xl" />
+              <div
+                className="absolute inset-[8%] rounded-[1.5rem] bg-primary/20 blur-2xl animate-pulse"
+                style={{ animationDuration: "3s" }}
+              />
+              <div
+                className="absolute inset-[16%] rounded-[1.25rem] bg-primary/25 animate-ping"
+                style={{ animationDuration: "4s" }}
+              />
+              <div className="absolute inset-[12%] rounded-2xl border border-primary/45 shadow-[0_0_40px_hsl(var(--primary)/0.35),inset_0_0_28px_hsl(var(--primary)/0.2)]" />
 
               {/* Main icon with enhanced visibility */}
               <Scan
-                className={`relative h-40 w-40 md:h-56 md:w-56 lg:h-72 lg:w-72 text-primary drop-shadow-[0_0_60px_hsl(var(--primary))] transition-all duration-200 ${isInteracting ? "scale-105" : ""} ${glitchActive ? "translate-x-1" : ""}`}
+                className={`relative h-44 w-44 md:h-64 md:w-64 lg:h-80 lg:w-80 text-primary drop-shadow-[0_0_60px_hsl(var(--primary))] transition-all duration-200 ${isInteracting ? "scale-105" : ""} ${glitchActive ? "translate-x-1" : ""}`}
                 style={{ filter: "drop-shadow(0 0 40px hsl(var(--primary)))" }}
               />
             </div>
