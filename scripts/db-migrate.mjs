@@ -117,6 +117,29 @@ function buildDirectDbUrlFromPassword({ projectRef, password }) {
   return url.toString();
 }
 
+function buildPoolerDbUrlFromPassword({ projectRef, password, poolerHost }) {
+  const url = new URL(`postgresql://postgres@${poolerHost}:6543/postgres`);
+  // For pooler connections, the tenant is encoded in the username.
+  // Supabase format: <db_user>.<project_ref> (e.g. postgres.<ref>)
+  url.username = `postgres.${projectRef}`;
+  url.password = password;
+  return url.toString();
+}
+
+function isNetworkUnreachable(output) {
+  return (
+    typeof output === "string" &&
+    output.toLowerCase().includes("network is unreachable")
+  );
+}
+
+function isTenantOrUserNotFound(output) {
+  return (
+    typeof output === "string" &&
+    output.toLowerCase().includes("tenant or user not found")
+  );
+}
+
 function runRemoteMigration() {
   const dbUrl = firstSetEnv([
     "SUPABASE_DB_URL",
@@ -146,6 +169,77 @@ function runRemoteMigration() {
       );
       if (result.ok) {
         return result;
+      }
+
+      // Some environments (like CI containers) have no IPv6 routing, and Supabase direct DB host
+      // may be IPv6-only. Fall back to trying pooler endpoints across common regions.
+      //
+      // We only do this when it looks like an IPv6 routing issue or the pooler tenant is not found
+      // (wrong region), to avoid noisy retries for bad passwords.
+      if (isNetworkUnreachable(result.output) || isTenantOrUserNotFound(result.output)) {
+        const poolerRegions = [
+          // AWS regions Supabase commonly offers (ordered roughly by adoption).
+          "us-east-1",
+          "us-east-2",
+          "us-west-1",
+          "us-west-2",
+          "ca-central-1",
+          "eu-west-1",
+          "eu-west-2",
+          "eu-west-3",
+          "eu-central-1",
+          "eu-north-1",
+          "eu-south-1",
+          "ap-south-1",
+          "ap-southeast-1",
+          "ap-southeast-2",
+          "ap-southeast-3",
+          "ap-northeast-1",
+          "ap-northeast-2",
+          "ap-northeast-3",
+          "sa-east-1",
+          "me-south-1",
+          "af-south-1",
+        ];
+
+        // Supabase runs multiple pooler clusters per region (e.g. aws-0, aws-1).
+        const poolerClusters = ["aws-0", "aws-1"];
+
+        const poolerHosts = poolerClusters.flatMap((cluster) =>
+          poolerRegions.map((region) => `${cluster}-${region}.pooler.supabase.com`),
+        );
+
+        for (const poolerHost of poolerHosts) {
+          const poolerDbUrl = buildPoolerDbUrlFromPassword({
+            projectRef,
+            password,
+            poolerHost,
+          });
+
+          const attempt = runSupabase(
+            ["db", "push", "--db-url", poolerDbUrl, "--yes", "--include-all"],
+            `Retrying via pooler host ${poolerHost}...`,
+          );
+
+          if (attempt.ok) {
+            return attempt;
+          }
+
+          // Keep scanning for wrong-region and common connectivity/DNS issues.
+          // Break early only for errors that likely indicate a real credentials problem.
+          const out = (attempt.output ?? "").toLowerCase();
+          const isDnsError =
+            out.includes("no such host") || out.includes("hostname resolving error");
+          const isConnectivityError = isNetworkUnreachable(out) || out.includes("dial error");
+          const isWrongRegion = isTenantOrUserNotFound(out);
+
+          if (isWrongRegion || isDnsError || isConnectivityError) {
+            continue;
+          }
+
+          // Example of a hard error where further scanning won't help (password wrong, etc.)
+          break;
+        }
       }
     }
 
