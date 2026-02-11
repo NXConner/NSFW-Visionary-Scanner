@@ -40,6 +40,7 @@ For deeper supporting docs, see:
   - [ ] `ios/App/App/GoogleService-Info.plist` is local-only
   - [ ] `android/gradle.properties` is local-only
 - [ ] **Provision secrets via your hosting/secrets manager** (see `docs/security/secrets/secrets-manager.md`)
+  - [ ] Optional automation: `npm run release:secrets:provision -- --environment <staging|production> --env-file <file> --repo <owner/repo>`
   - [ ] `VITE_SUPABASE_URL`
   - [ ] `VITE_SUPABASE_PUBLISHABLE_KEY`
   - [ ] `VITE_APP_ENV` (`staging`/`production`)
@@ -64,6 +65,7 @@ For deeper supporting docs, see:
 - [ ] **Migrations**
   - [ ] Apply `supabase/migrations/*.sql` to the production project
     - [ ] Prefer: `npm run db:migrate:remote -- --dry-run` then `npm run db:migrate:remote`
+    - [ ] Optional one-command helper: `npm run release:remote:ops -- --env-file <file> --apply --types-check`
   - [ ] Verify types match schema:
     - [ ] Local mirror: `npm run db:types:check` (requires local Supabase)
     - [ ] Remote project: `npm run db:types:remote:check` (requires Supabase CLI auth)

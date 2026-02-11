@@ -11,6 +11,7 @@ MorphoScan Pro must never embed production secrets into the repository, Docker i
    - Install the manager's CLI (e.g., `doppler` or `vault`).
    - Authenticate once and run the app through the CLI wrapper (`doppler run -- npm run dev`).
    - Avoid committing `.env`; rely on templates (`.env.example`) for documentation only.
+   - For release provisioning automation, use `npm run release:secrets:provision -- --environment <staging|production> --env-file <private-file> --repo <owner/repo>`.
 
 ## Doppler Example
 

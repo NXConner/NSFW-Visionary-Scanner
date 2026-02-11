@@ -9,6 +9,23 @@ This runbook covers the remaining manual/external steps:
 
 ---
 
+## Quickstart (no local `.env` required)
+
+Use an environment file outside git (example: `.env.staging.local`) and run:
+
+Template: `config/release/release.secrets.template.env`
+
+```bash
+# 1) Provision GitHub + Supabase secrets from env file
+npm run release:secrets:provision -- --environment staging --env-file .env.staging.local --repo OWNER/REPO
+
+# 2) Dry-run migrations, optional apply, optional remote types check
+npm run release:remote:ops -- --env-file .env.staging.local --types-check
+npm run release:remote:ops -- --env-file .env.staging.local --apply --types-check
+```
+
+---
+
 ## 1) Supabase staging/prod: apply migrations + audit
 
 ### 1.1 Apply migrations (recommended: dry-run first)
@@ -23,6 +40,10 @@ SUPABASE_DB_URL="postgresql://..." npm run db:migrate:remote -- --dry-run
 
 # Apply (push migrations)
 SUPABASE_DB_URL="postgresql://..." npm run db:migrate:remote
+
+# Alternative (no env export): pass credentials by CLI flags
+npm run db:migrate:remote -- --dry-run --db-url="postgresql://..." --project-ref="your-project-ref"
+npm run db:migrate:remote -- --db-url="postgresql://..." --project-ref="your-project-ref"
 ```
 
 #### PowerShell
@@ -34,6 +55,10 @@ npm run db:migrate:remote -- --dry-run
 
 # Apply
 npm run db:migrate:remote
+
+# Alternative (no env export): pass credentials by CLI flags
+npm run db:migrate:remote -- --dry-run --db-url="postgresql://..." --project-ref="your-project-ref"
+npm run db:migrate:remote -- --db-url="postgresql://..." --project-ref="your-project-ref"
 ```
 
 ### 1.2 RLS/storage audit (Supabase SQL editor)
@@ -130,6 +155,12 @@ For CI deploy jobs (see `.github/workflows/ci.yml`):
 
 - `PRODUCTION_DEPLOY_ENABLED` = `true`
 - `PRODUCTION_DEPLOY_COMMAND` = your deploy command
+
+Automation command:
+
+```bash
+npm run release:secrets:provision -- --environment production --env-file .env.production.local --repo OWNER/REPO
+```
 
 ---
 
