@@ -3,7 +3,7 @@
  * React hook for voice guidance control
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   VoiceGuidanceEngine,
   getVoiceGuidanceEngine,
@@ -12,8 +12,8 @@ import {
   type GuidanceEvent,
   type SequenceCondition,
   type SequenceType,
-} from '@/lib/voiceGuidance';
-import { useSettings } from '@/contexts/settings';
+} from "@/lib/voiceGuidance";
+import { useSettings } from "@/contexts/settings";
 
 export interface UseVoiceGuidanceOptions {
   autoInitialize?: boolean;
@@ -51,12 +51,12 @@ export interface UseVoiceGuidanceReturn {
   updateSettings: (settings: Partial<VoiceGuidanceSettings>) => void;
   toggleEnabled: () => void;
   setVolume: (volume: number) => void;
-  setSpeed: (speed: VoiceGuidanceSettings['speed']) => void;
-  setVoice: (voice: VoiceGuidanceSettings['voice']) => void;
+  setSpeed: (speed: VoiceGuidanceSettings["speed"]) => void;
+  setVoice: (voice: VoiceGuidanceSettings["voice"]) => void;
 }
 
 export function useVoiceGuidance(
-  options: UseVoiceGuidanceOptions = {}
+  options: UseVoiceGuidanceOptions = {},
 ): UseVoiceGuidanceReturn {
   const {
     autoInitialize = true,
@@ -68,82 +68,102 @@ export function useVoiceGuidance(
   } = options;
 
   const { settings: appSettings, updateVoiceGuidance } = useSettings();
-  
+
   const engineRef = useRef<VoiceGuidanceEngine | null>(null);
-  
+
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isSequenceActive, setIsSequenceActive] = useState(false);
-  const [sequenceState, setSequenceState] = useState<SequenceState | null>(null);
-  const [localSettings, setLocalSettings] = useState<VoiceGuidanceSettings>(() => ({
-    enabled: appSettings.voiceGuidance?.enabled ?? true,
-    speed: appSettings.voiceGuidance?.speed ?? 'normal',
-    voice: appSettings.voiceGuidance?.voice ?? 'default',
-    volume: appSettings.voiceGuidance?.volume ?? 80,
-    announceSteps: appSettings.voiceGuidance?.announceSteps ?? true,
-    announceMeasurements: appSettings.voiceGuidance?.announceMeasurements ?? true,
-    announceErrors: appSettings.voiceGuidance?.announceErrors ?? true,
-    useShortPrompts: false,
-    soundEffectsEnabled: true,
-  }));
+  const [sequenceState, setSequenceState] = useState<SequenceState | null>(
+    null,
+  );
+  const [localSettings, setLocalSettings] = useState<VoiceGuidanceSettings>(
+    () => ({
+      enabled: appSettings.voiceGuidance?.enabled ?? true,
+      speed: appSettings.voiceGuidance?.speed ?? "normal",
+      voice: appSettings.voiceGuidance?.voice ?? "default",
+      volume: appSettings.voiceGuidance?.volume ?? 80,
+      announceSteps: appSettings.voiceGuidance?.announceSteps ?? true,
+      announceMeasurements:
+        appSettings.voiceGuidance?.announceMeasurements ?? true,
+      announceErrors: appSettings.voiceGuidance?.announceErrors ?? true,
+      useShortPrompts: false,
+      soundEffectsEnabled: true,
+    }),
+  );
 
   // Initialize engine
   useEffect(() => {
     if (autoInitialize) {
       engineRef.current = getVoiceGuidanceEngine(localSettings);
-      
+
       if (conditionChecker) {
         engineRef.current.setConditionChecker(conditionChecker);
       }
 
       // Subscribe to events
-      const unsubscribe = engineRef.current.subscribe((event: GuidanceEvent) => {
-        switch (event.type) {
-          case 'speech_start':
-            setIsSpeaking(true);
-            onSpeechStart?.((event.data as { text: string }).text);
-            break;
+      const unsubscribe = engineRef.current.subscribe(
+        (event: GuidanceEvent) => {
+          switch (event.type) {
+            case "speech_start":
+              setIsSpeaking(true);
+              onSpeechStart?.((event.data as { text: string }).text);
+              break;
 
-          case 'speech_end':
-            setIsSpeaking(false);
-            onSpeechEnd?.((event.data as { text: string }).text);
-            break;
+            case "speech_end":
+              setIsSpeaking(false);
+              onSpeechEnd?.((event.data as { text: string }).text);
+              break;
 
-          case 'sequence_start':
-            setIsSequenceActive(true);
-            break;
+            case "sequence_start":
+              setIsSequenceActive(true);
+              break;
 
-          case 'sequence_step':
-            setSequenceState(engineRef.current?.getSequenceState() || null);
-            break;
+            case "sequence_step":
+              setSequenceState(engineRef.current?.getSequenceState() || null);
+              break;
 
-          case 'sequence_complete':
-            setIsSequenceActive(false);
-            setSequenceState(null);
-            onSequenceComplete?.((event.data as { sequence: string }).sequence);
-            break;
+            case "sequence_complete":
+              setIsSequenceActive(false);
+              setSequenceState(null);
+              onSequenceComplete?.(
+                (event.data as { sequence: string }).sequence,
+              );
+              break;
 
-          case 'sequence_cancel':
-            setIsSequenceActive(false);
-            setSequenceState(null);
-            break;
+            case "sequence_cancel":
+              setIsSequenceActive(false);
+              setSequenceState(null);
+              break;
 
-          case 'action_required':
-            const actionData = event.data as { action: string; step: unknown };
-            onActionRequired?.(actionData.action, actionData.step);
-            break;
+            case "action_required": {
+              const actionData = event.data as {
+                action: string;
+                step: unknown;
+              };
+              onActionRequired?.(actionData.action, actionData.step);
+              break;
+            }
 
-          case 'sequence_pause':
-          case 'sequence_resume':
-            setSequenceState(engineRef.current?.getSequenceState() || null);
-            break;
-        }
-      });
+            case "sequence_pause":
+            case "sequence_resume":
+              setSequenceState(engineRef.current?.getSequenceState() || null);
+              break;
+          }
+        },
+      );
 
       return () => {
         unsubscribe();
       };
     }
-  }, [autoInitialize, conditionChecker, onSpeechStart, onSpeechEnd, onSequenceComplete, onActionRequired]);
+  }, [
+    autoInitialize,
+    conditionChecker,
+    onSpeechStart,
+    onSpeechEnd,
+    onSequenceComplete,
+    onActionRequired,
+  ]);
 
   // Sync settings with app settings
   useEffect(() => {
@@ -158,7 +178,7 @@ export function useVoiceGuidance(
         announceErrors: appSettings.voiceGuidance.announceErrors,
       };
       engineRef.current.updateSettings(newSettings);
-      setLocalSettings(prev => ({ ...prev, ...newSettings }));
+      setLocalSettings((prev) => ({ ...prev, ...newSettings }));
     }
   }, [appSettings.voiceGuidance]);
 
@@ -213,21 +233,24 @@ export function useVoiceGuidance(
     engineRef.current?.advanceSequence(success);
   }, []);
 
-  const updateSettings = useCallback((settings: Partial<VoiceGuidanceSettings>) => {
-    engineRef.current?.updateSettings(settings);
-    setLocalSettings(prev => ({ ...prev, ...settings }));
+  const updateSettings = useCallback(
+    (settings: Partial<VoiceGuidanceSettings>) => {
+      engineRef.current?.updateSettings(settings);
+      setLocalSettings((prev) => ({ ...prev, ...settings }));
 
-    // Persist to app settings
-    updateVoiceGuidance({
-      enabled: settings.enabled,
-      speed: settings.speed,
-      voice: settings.voice,
-      volume: settings.volume,
-      announceSteps: settings.announceSteps,
-      announceMeasurements: settings.announceMeasurements,
-      announceErrors: settings.announceErrors,
-    });
-  }, [updateVoiceGuidance]);
+      // Persist to app settings
+      updateVoiceGuidance({
+        enabled: settings.enabled,
+        speed: settings.speed,
+        voice: settings.voice,
+        volume: settings.volume,
+        announceSteps: settings.announceSteps,
+        announceMeasurements: settings.announceMeasurements,
+        announceErrors: settings.announceErrors,
+      });
+    },
+    [updateVoiceGuidance],
+  );
 
   const toggleEnabled = useCallback(() => {
     const newEnabled = !localSettings.enabled;
@@ -238,17 +261,26 @@ export function useVoiceGuidance(
     }
   }, [localSettings.enabled, updateSettings, stop, stopSequence]);
 
-  const setVolume = useCallback((volume: number) => {
-    updateSettings({ volume: Math.max(0, Math.min(100, volume)) });
-  }, [updateSettings]);
+  const setVolume = useCallback(
+    (volume: number) => {
+      updateSettings({ volume: Math.max(0, Math.min(100, volume)) });
+    },
+    [updateSettings],
+  );
 
-  const setSpeed = useCallback((speed: VoiceGuidanceSettings['speed']) => {
-    updateSettings({ speed });
-  }, [updateSettings]);
+  const setSpeed = useCallback(
+    (speed: VoiceGuidanceSettings["speed"]) => {
+      updateSettings({ speed });
+    },
+    [updateSettings],
+  );
 
-  const setVoice = useCallback((voice: VoiceGuidanceSettings['voice']) => {
-    updateSettings({ voice });
-  }, [updateSettings]);
+  const setVoice = useCallback(
+    (voice: VoiceGuidanceSettings["voice"]) => {
+      updateSettings({ voice });
+    },
+    [updateSettings],
+  );
 
   return {
     // State
