@@ -1,6 +1,6 @@
 # Current Project Status
 
-**Last Updated:** 2026-01-31  
+**Last Updated:** 2026-02-11  
 **Overall Progress:** In progress (external integrations + content import pending)
 
 ## ✅ Completed This Session
@@ -20,6 +20,11 @@
 
 - ✅ Migration: `20260201090000_nsfw_consent_policies.sql`
 - ✅ New NSFW utilities: consent, progress, bookmarks
+
+### Testing & Quality Gates
+
+- ✅ Vitest configured for jsdom + shared setup (`src/test/setup.ts`)
+- ✅ Lint / format / typecheck / unit tests verified locally
 
 ## 📌 Remaining Work (High Level)
 
@@ -42,7 +47,8 @@ pwsh -File scripts/complete-remaining.ps1
 
 ## Notes
 
-- Lint/tests/build were not executed during this update.
+- Lint/format/typecheck/unit tests were executed during this update.
+- E2E tests + prod build were not executed during this update.
 - External integrations (Stripe, FCM, Supabase prod) remain manual.
 
 ---

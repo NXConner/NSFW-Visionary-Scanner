@@ -1,6 +1,6 @@
 # MorphoScan Pro — Remaining Work (Project-Wide)
 
-**Last updated**: 2026-01-31
+**Last updated**: 2026-02-11
 
 This document is the **single actionable checklist** of what still needs to be done across the entire repository to reach a true **public release** (web + mobile + monetization + ops).
 
@@ -18,10 +18,10 @@ For deeper supporting docs, see:
 
 ## Current status snapshot (repo gates)
 
-- **Lint**: ⏳ Not verified in this update
-- **Format**: ⏳ Not verified in this update
-- **Typecheck**: ⏳ Not verified in this update
-- **Unit tests**: ⏳ Not verified in this update
+- **Lint**: ✅ Verified (warnings present)
+- **Format**: ✅ Verified
+- **Typecheck**: ✅ Verified
+- **Unit tests**: ✅ Verified
 - **E2E tests**: ⏳ Not verified in this update
 - **Prod build**: ⏳ Not verified in this update
 
