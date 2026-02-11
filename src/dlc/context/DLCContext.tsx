@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
-import { dlcManager, DLCManager } from "../core";
+import { dlcManager } from "../core";
 import { dlcRegistry } from "../core/DLCRegistry";
 import { licenseValidator } from "../core/LicenseValidator";
 import { supabase } from "@/integrations/supabase/client";

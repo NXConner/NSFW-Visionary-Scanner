@@ -26,7 +26,7 @@ export async function getNSFWForumCategories(): Promise<NSFWForumCategory[]> {
     const { data, error } = await supabase
       .from("nsfw_forum_categories")
       .select("*")
-      .order("last_activity_at", { ascending: false, nullsLast: true });
+      .order("last_activity_at", { ascending: false });
 
     if (error) {
       logger.error("Error fetching categories", { error: error.message });
@@ -180,7 +180,7 @@ export async function getNSFWForumThreads(
         .select("*")
         .eq("is_approved", true)
         .order("is_pinned", { ascending: false })
-        .order("last_reply_at", { ascending: false, nullsLast: true })
+        .order("last_reply_at", { ascending: false })
         .order("created_at", { ascending: false });
 
     let query = baseQuery();
@@ -354,6 +354,24 @@ export interface NSFWSupportGroup {
   updated_at: string;
 }
 
+export async function getNSFWSupportGroups(): Promise<NSFWSupportGroup[]> {
+  try {
+    const { data, error } = await fromExtended("nsfw_support_groups")
+      .select("*")
+      .order("last_activity_at", { ascending: false });
+
+    if (error) {
+      logger.error("Error fetching support groups", { error: error.message });
+      return [];
+    }
+
+    return (data || []) as NSFWSupportGroup[];
+  } catch (error) {
+    logger.error("Error in getNSFWSupportGroups", { error });
+    return [];
+  }
+}
+
 export async function createNSFWSupportGroup(
   groupName: string,
   description: string,
@@ -387,17 +405,77 @@ export async function createNSFWSupportGroup(
     }
 
     // Add creator as admin member
-    await fromExtended("nsfw_support_group_members").insert({
-      group_id: data.id,
-      user_id: user.id,
-      role: "admin",
-    });
+    const memberAttempts: Array<Record<string, unknown>> = [
+      { group_id: data.id, user_id: user.id, role: "admin" },
+      { group_id: data.id, user_id: user.id },
+    ];
+    for (const payload of memberAttempts) {
+      const { error: memberError } = await fromExtended("nsfw_support_group_members").insert(
+        payload,
+      );
+      if (!memberError) break;
+    }
 
     toast.success("Support group created!");
     return data as NSFWSupportGroup;
   } catch (error) {
     logger.error("Error in createNSFWSupportGroup", { error });
     return null;
+  }
+}
+
+export async function joinNSFWSupportGroup(
+  groupId: string,
+  params?: { isAnonymous?: boolean },
+): Promise<boolean> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Please sign in to join a support group");
+      return false;
+    }
+
+    // Already a member?
+    const existing = await fromExtended("nsfw_support_group_members")
+      .select("id")
+      .eq("group_id", groupId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!existing.error && existing.data?.id) {
+      toast.success("You're already a member");
+      return true;
+    }
+
+    const attempts: Array<Record<string, unknown>> = [
+      {
+        group_id: groupId,
+        user_id: user.id,
+        role: "member",
+        is_anonymous: Boolean(params?.isAnonymous),
+      },
+      { group_id: groupId, user_id: user.id, role: "member" },
+      { group_id: groupId, user_id: user.id },
+    ];
+
+    let lastError: string | null = null;
+    for (const payload of attempts) {
+      const { error } = await fromExtended("nsfw_support_group_members").insert(payload);
+      if (!error) {
+        toast.success("Joined support group!");
+        return true;
+      }
+      lastError = error.message;
+    }
+
+    logger.error("Error joining support group", { error: lastError ?? "Unknown error" });
+    toast.error("Failed to join support group");
+    return false;
+  } catch (error) {
+    logger.error("Error in joinNSFWSupportGroup", { error });
+    toast.error("Failed to join support group");
+    return false;
   }
 }
 
@@ -438,5 +516,54 @@ export async function getNSFWCommunityChallenges(): Promise<NSFWCommunityChallen
   } catch (error) {
     logger.error("Error in getNSFWCommunityChallenges", { error });
     return [];
+  }
+}
+
+export async function joinNSFWCommunityChallenge(
+  challengeId: string,
+  isAnonymous: boolean = true,
+): Promise<boolean> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Please sign in to join a challenge");
+      return false;
+    }
+
+    // If already joined, treat as success.
+    const existing = await fromExtended("nsfw_challenge_participants")
+      .select("id")
+      .eq("challenge_id", challengeId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!existing.error && existing.data?.id) {
+      toast.success("You're already participating");
+      return true;
+    }
+
+    const attempts: Array<Record<string, unknown>> = [
+      { challenge_id: challengeId, user_id: user.id, is_anonymous: Boolean(isAnonymous) },
+      { challenge_id: challengeId, user_id: user.id },
+    ];
+
+    let lastError: string | null = null;
+    for (const payload of attempts) {
+      const { error } = await fromExtended("nsfw_challenge_participants").insert(payload);
+      if (!error) {
+        toast.success("Joined challenge!");
+        return true;
+      }
+      lastError = error.message;
+    }
+
+    logger.error("Error joining challenge", { error: lastError ?? "Unknown error" });
+    toast.error("Failed to join challenge");
+    return false;
+  } catch (error) {
+    logger.error("Error in joinNSFWCommunityChallenge", { error });
+    toast.error("Failed to join challenge");
+    return false;
   }
 }

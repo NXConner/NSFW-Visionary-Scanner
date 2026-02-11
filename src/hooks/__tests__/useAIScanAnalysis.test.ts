@@ -12,7 +12,7 @@ vi.mock("../../integrations/supabase/client", () => ({
   },
 }));
 
-const mockSupabase = vi.mocked(supabase);
+const invokeMock = supabase.functions.invoke as unknown as ReturnType<typeof vi.fn>;
 
 describe("useAIScanAnalysis", () => {
   beforeEach(() => {
@@ -33,7 +33,7 @@ describe("useAIScanAnalysis", () => {
       disclaimer: "Test disclaimer",
     };
 
-    mockSupabase.functions.invoke.mockResolvedValue({
+    invokeMock.mockResolvedValue({
       data: mockAnalysisPayload,
       error: null,
     });
@@ -52,7 +52,7 @@ describe("useAIScanAnalysis", () => {
       expect(result.current.error).toBeNull();
     });
 
-    expect(mockSupabase.functions.invoke).toHaveBeenCalledWith("ai-scan-analysis", {
+    expect(invokeMock).toHaveBeenCalledWith("ai-scan-analysis", {
       body: { imageBase64: scanData },
     });
   });
@@ -60,7 +60,7 @@ describe("useAIScanAnalysis", () => {
   it("should handle analysis errors", async () => {
     const mockError = { message: "Analysis failed" };
 
-    mockSupabase.functions.invoke.mockResolvedValue({
+    invokeMock.mockResolvedValue({
       data: null,
       error: mockError,
     });
@@ -78,7 +78,7 @@ describe("useAIScanAnalysis", () => {
   });
 
   it("should handle network errors", async () => {
-    mockSupabase.functions.invoke.mockRejectedValue(new Error("Network error"));
+    invokeMock.mockRejectedValue(new Error("Network error"));
 
     const { result } = renderHook(() => useAIScanAnalysis({ saveToHistory: false }));
     const scanData = "data:image/jpeg;base64,base64-image-data";
@@ -102,11 +102,7 @@ describe("useAIScanAnalysis", () => {
 
   it("should validate scan data", async () => {
     const { result } = renderHook(() => useAIScanAnalysis({ saveToHistory: false }));
-    const invalidScanData = {
-      length: -5,
-      circumference: 10.0,
-      curvature: 20,
-    };
+    const invalidScanData = { imageBase64: "" };
 
     result.current.analyzeScan(invalidScanData);
 
@@ -116,6 +112,6 @@ describe("useAIScanAnalysis", () => {
     });
 
     // Should not call the API
-    expect(mockSupabase.functions.invoke).not.toHaveBeenCalled();
+    expect(invokeMock).not.toHaveBeenCalled();
   });
 });

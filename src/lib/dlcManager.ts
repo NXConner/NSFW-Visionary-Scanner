@@ -60,8 +60,13 @@ export const hasDLCLicense = async (userId?: string): Promise<boolean> => {
     }
 
     // Check if license is expired
-    if (data.expiration_date) {
-      const expirationDate = new Date(data.expiration_date);
+    const expirationCandidate =
+      (data as any).expires_at ??
+      (data as any).expiration_date ??
+      (data as any).subscription_end ??
+      null;
+    if (expirationCandidate) {
+      const expirationDate = new Date(expirationCandidate);
       if (expirationDate < new Date()) {
         logger.warn("DLC license expired", { userId: targetUserId, expirationDate });
         return false;
@@ -121,24 +126,35 @@ async function importPublicKey(pemKey: string): Promise<CryptoKey> {
 /**
  * Verify license signature using ECDSA
  */
-const verifyLicenseSignature = async (license: any): Promise<boolean> => {
+export const verifyLicenseSignature = async (license: any): Promise<boolean> => {
   try {
     if (!license.signature || !license.license_key || !license.user_id) {
       return false;
     }
 
-    // Create the message that was signed (deterministic format)
-    const message = JSON.stringify({
-      license_key: license.license_key,
-      user_id: license.user_id,
-      purchase_date: license.purchase_date,
-      expiration_date: license.expiration_date || null,
-      content_version: license.content_version,
-    });
+    // Create the message that was signed (deterministic format).
+    // We support multiple historical schemas by trying a small set of canonical payload shapes.
+    const purchaseDate =
+      license.purchase_date ?? license.activated_at ?? license.created_at ?? null;
+    const expirationDate =
+      license.expiration_date ?? license.expires_at ?? license.subscription_end ?? null;
 
-    // Encode message to bytes
-    const encoder = new TextEncoder();
-    const data = encoder.encode(message);
+    const messageCandidates = [
+      {
+        license_key: license.license_key,
+        user_id: license.user_id,
+        purchase_date: purchaseDate,
+        expiration_date: expirationDate,
+        content_version: license.content_version,
+      },
+      {
+        license_key: license.license_key,
+        user_id: license.user_id,
+        activated_at: license.activated_at ?? null,
+        expires_at: license.expires_at ?? null,
+        content_version: license.content_version,
+      },
+    ].map(m => JSON.stringify(m));
 
     // Decode signature from base64
     const signatureBytes = Uint8Array.from(atob(license.signature), c => c.charCodeAt(0));
@@ -146,16 +162,26 @@ const verifyLicenseSignature = async (license: any): Promise<boolean> => {
     // Import public key
     const publicKey = await importPublicKey(LICENSE_PUBLIC_KEY);
 
-    // Verify signature
-    const isValid = await crypto.subtle.verify(
-      {
-        name: "ECDSA",
-        hash: { name: "SHA-256" },
-      },
-      publicKey,
-      signatureBytes,
-      data,
-    );
+    // Verify signature (accept the first passing schema variant).
+    let isValid = false;
+    for (const message of messageCandidates) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(message);
+      // eslint-disable-next-line no-await-in-loop
+      const ok = await crypto.subtle.verify(
+        {
+          name: "ECDSA",
+          hash: { name: "SHA-256" },
+        },
+        publicKey,
+        signatureBytes,
+        data,
+      );
+      if (ok) {
+        isValid = true;
+        break;
+      }
+    }
 
     logger.info("License signature verification", {
       licenseKey: license.license_key?.substring(0, 8) + "...",
@@ -216,10 +242,30 @@ export const activateDLCLicense = async (
       id: data.license.id,
       userId: user.id,
       licenseKey,
-      purchaseDate: new Date(data.license.purchase_date),
-      expirationDate: data.license.expiration_date
-        ? new Date(data.license.expiration_date)
-        : undefined,
+      purchaseDate: new Date(
+        data.license.purchase_date ??
+          data.license.purchaseDate ??
+          data.license.activated_at ??
+          data.license.activatedAt ??
+          data.license.created_at ??
+          data.license.createdAt ??
+          new Date().toISOString(),
+      ),
+      expirationDate:
+        (data.license.expiration_date ??
+        data.license.expirationDate ??
+        data.license.expires_at ??
+        data.license.expiresAt ??
+        data.license.subscription_end ??
+        null)
+          ? new Date(
+              data.license.expiration_date ??
+                data.license.expirationDate ??
+                data.license.expires_at ??
+                data.license.expiresAt ??
+                data.license.subscription_end,
+            )
+          : undefined,
       deviceId: deviceId || data.license.device_id,
       contentVersion: data.license.content_version,
       signature: data.license.signature,
@@ -291,14 +337,22 @@ export const getDLCLicense = async (): Promise<DLCLicense | null> => {
       id: data.id,
       userId: data.user_id,
       licenseKey: data.license_key,
-      purchaseDate: new Date(data.purchase_date),
-      expirationDate: data.expiration_date ? new Date(data.expiration_date) : undefined,
+      purchaseDate: new Date(
+        (data as any).purchase_date ??
+          (data as any).activated_at ??
+          data.created_at ??
+          new Date().toISOString(),
+      ),
+      expirationDate:
+        ((data as any).expiration_date ?? (data as any).expires_at ?? null)
+          ? new Date((data as any).expiration_date ?? (data as any).expires_at)
+          : undefined,
       deviceId: data.device_id,
       contentVersion: data.content_version,
       signature: data.signature,
       isActive: data.is_active,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
+      createdAt: new Date(data.created_at ?? new Date().toISOString()),
+      updatedAt: new Date(data.updated_at ?? data.created_at ?? new Date().toISOString()),
     };
 
     // Cache in local storage
@@ -374,6 +428,7 @@ export const downloadDLCContent = async (
     const { downloadAndInstallDLC } = await import("./contentPackage");
 
     const result = await downloadAndInstallDLC(
+      data?.licenses?.[0]?.packageId || "dlc",
       data.package.downloadUrl,
       data.package.checksum,
       progress => {

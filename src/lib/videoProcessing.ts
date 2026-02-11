@@ -554,7 +554,9 @@ export async function recordVideo(
     // Return a handle that includes the recorder
     return null; // Caller should use VideoRecorder class directly
   } catch (error) {
-    logger.error("Error in recordVideo:", error);
+    logger.error("Error in recordVideo", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     toast.error("Failed to start recording");
     return null;
   }
@@ -611,12 +613,14 @@ export async function uploadRecordedVideo(
       .eq("session_id", sessionId);
 
     if (error) {
-      logger.error("Error updating video recording:", error);
+      logger.error("Error updating video recording", { error: error.message });
     }
 
     return resolvedUrl;
   } catch (error) {
-    logger.error("Error in uploadRecordedVideo:", error);
+    logger.error("Error in uploadRecordedVideo", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     toast.error("Failed to upload video");
     return null;
   }

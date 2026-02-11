@@ -72,8 +72,8 @@ type NotificationAction =
 interface NotificationContextValue extends NotificationState {
   // Actions
   addNotification: (
-    notification: Omit<Notification, "id" | "timestamp" | "read" | "dismissed"> &
-      Partial<Pick<Notification, "id" | "timestamp" | "read" | "dismissed">>,
+    notification: Omit<Notification, "id" | "timestamp" | "read" | "dismissed" | "persistent"> &
+      Partial<Pick<Notification, "id" | "timestamp" | "read" | "dismissed" | "persistent">>,
   ) => string;
   removeNotification: (id: string) => void;
   markAsRead: (id: string) => void;
@@ -320,8 +320,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Actions
   const addNotification = useCallback(
     (
-      notification: Omit<Notification, "id" | "timestamp" | "read" | "dismissed"> &
-        Partial<Pick<Notification, "id" | "timestamp" | "read" | "dismissed">>,
+      notification: Omit<Notification, "id" | "timestamp" | "read" | "dismissed" | "persistent"> &
+        Partial<Pick<Notification, "id" | "timestamp" | "read" | "dismissed" | "persistent">>,
     ): string => {
       if (!state.preferences.enabled) return "";
       if (!state.preferences.typeSettings[notification.type]) return "";

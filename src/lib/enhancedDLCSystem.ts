@@ -57,13 +57,15 @@ export async function getDLCPacks(packType?: DLCPack["pack_type"]): Promise<DLCP
     const { data, error } = await query;
 
     if (error) {
-      logger.error("Error fetching DLC packs:", error);
+      logger.error("Error fetching DLC packs", { error: error.message });
       return [];
     }
 
     return (data || []) as DLCPack[];
   } catch (error) {
-    logger.error("Error in getDLCPacks:", error);
+    logger.error("Error in getDLCPacks", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
 }
@@ -101,13 +103,15 @@ export async function getDLCBundles(): Promise<DLCBundle[]> {
       .order("sales_count", { ascending: false });
 
     if (error) {
-      logger.error("Error fetching bundles:", error);
+      logger.error("Error fetching bundles", { error: error.message });
       return [];
     }
 
     return (data || []) as DLCBundle[];
   } catch (error) {
-    logger.error("Error in getDLCBundles:", error);
+    logger.error("Error in getDLCBundles", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
 }
@@ -116,17 +120,22 @@ export async function getDLCBundles(): Promise<DLCBundle[]> {
 
 export interface DLCPurchase {
   id: string;
-  pack_id: string;
+  pack_id: string | null;
   user_id: string;
-  purchase_type: "one_time" | "subscription";
+  purchase_type: string;
   price_paid: number;
-  payment_intent_id: string | null;
-  access_granted_at: string;
+  stripe_payment_intent_id: string | null;
+  stripe_subscription_id: string | null;
+  access_granted_at: string | null;
   access_expires_at: string | null;
-  is_active: boolean;
-  download_enabled: boolean;
-  stream_enabled: boolean;
-  purchased_at: string;
+  is_active: boolean | null;
+  download_enabled: boolean | null;
+  stream_enabled: boolean | null;
+  purchased_at: string | null;
+  refunded_at: string | null;
+  currency: string | null;
+  bundle_id: string | null;
+  created_at: string | null;
 }
 
 export async function purchaseDLC(packId: string): Promise<boolean> {
@@ -161,7 +170,7 @@ export async function purchaseDLC(packId: string): Promise<boolean> {
     );
 
     if (sessionError) {
-      logger.error("Error creating checkout:", sessionError);
+      logger.error("Error creating checkout", { error: sessionError.message });
       toast.error("Failed to start purchase");
       return false;
     }
@@ -173,7 +182,9 @@ export async function purchaseDLC(packId: string): Promise<boolean> {
 
     return true;
   } catch (error) {
-    logger.error("Error in purchaseDLC:", error);
+    logger.error("Error in purchaseDLC", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return false;
   }
 }
@@ -193,13 +204,15 @@ export async function getDLCPurchases(): Promise<DLCPurchase[]> {
       .order("purchased_at", { ascending: false });
 
     if (error) {
-      logger.error("Error fetching purchases:", error);
+      logger.error("Error fetching purchases", { error: error.message });
       return [];
     }
 
-    return (data || []) as DLCPurchase[];
+    return (data || []) as unknown as DLCPurchase[];
   } catch (error) {
-    logger.error("Error in getDLCPurchases:", error);
+    logger.error("Error in getDLCPurchases", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
 }
@@ -259,7 +272,7 @@ export async function addToDownloadQueue(
       .single();
 
     if (error) {
-      logger.error("Error adding to queue:", error);
+      logger.error("Error adding to queue", { error: error.message });
       toast.error("Failed to add to download queue");
       return null;
     }
@@ -267,7 +280,9 @@ export async function addToDownloadQueue(
     toast.success("Added to download queue!");
     return data as DLCDownloadQueueItem;
   } catch (error) {
-    logger.error("Error in addToDownloadQueue:", error);
+    logger.error("Error in addToDownloadQueue", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -287,13 +302,15 @@ export async function getDownloadQueue(): Promise<DLCDownloadQueueItem[]> {
       .order("queued_at", { ascending: true });
 
     if (error) {
-      logger.error("Error fetching download queue:", error);
+      logger.error("Error fetching download queue", { error: error.message });
       return [];
     }
 
     return (data || []) as DLCDownloadQueueItem[];
   } catch (error) {
-    logger.error("Error in getDownloadQueue:", error);
+    logger.error("Error in getDownloadQueue", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
 }
@@ -332,13 +349,15 @@ export async function getDLCUpdates(packId?: string): Promise<DLCUpdate[]> {
     const { data, error } = await query;
 
     if (error) {
-      logger.error("Error fetching updates:", error);
+      logger.error("Error fetching updates", { error: error.message });
       return [];
     }
 
     return (data || []) as DLCUpdate[];
   } catch (error) {
-    logger.error("Error in getDLCUpdates:", error);
+    logger.error("Error in getDLCUpdates", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
 }

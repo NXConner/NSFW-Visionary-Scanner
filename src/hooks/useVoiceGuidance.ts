@@ -65,7 +65,7 @@ export function useVoiceGuidance(options: UseVoiceGuidanceOptions = {}): UseVoic
     onActionRequired,
   } = options;
 
-  const { settings: appSettings, updateVoiceGuidance } = useSettings();
+  const { voiceGuidance: appVoiceGuidance, setVoiceGuidance } = useSettings();
 
   const engineRef = useRef<VoiceGuidanceEngine | null>(null);
 
@@ -73,13 +73,13 @@ export function useVoiceGuidance(options: UseVoiceGuidanceOptions = {}): UseVoic
   const [isSequenceActive, setIsSequenceActive] = useState(false);
   const [sequenceState, setSequenceState] = useState<SequenceState | null>(null);
   const [localSettings, setLocalSettings] = useState<VoiceGuidanceSettings>(() => ({
-    enabled: appSettings.voiceGuidance?.enabled ?? true,
-    speed: appSettings.voiceGuidance?.speed ?? "normal",
-    voice: appSettings.voiceGuidance?.voice ?? "default",
-    volume: appSettings.voiceGuidance?.volume ?? 80,
-    announceSteps: appSettings.voiceGuidance?.announceSteps ?? true,
-    announceMeasurements: appSettings.voiceGuidance?.announceMeasurements ?? true,
-    announceErrors: appSettings.voiceGuidance?.announceErrors ?? true,
+    enabled: appVoiceGuidance.enabled ?? true,
+    speed: appVoiceGuidance.speed ?? "normal",
+    voice: appVoiceGuidance.voice ?? "default",
+    volume: appVoiceGuidance.volume ?? 80,
+    announceSteps: appVoiceGuidance.announceSteps ?? true,
+    announceMeasurements: appVoiceGuidance.announceMeasurements ?? true,
+    announceErrors: appVoiceGuidance.announceErrors ?? true,
     useShortPrompts: false,
     soundEffectsEnabled: true,
   }));
@@ -156,20 +156,19 @@ export function useVoiceGuidance(options: UseVoiceGuidanceOptions = {}): UseVoic
 
   // Sync settings with app settings
   useEffect(() => {
-    if (appSettings.voiceGuidance && engineRef.current) {
-      const newSettings: Partial<VoiceGuidanceSettings> = {
-        enabled: appSettings.voiceGuidance.enabled,
-        speed: appSettings.voiceGuidance.speed,
-        voice: appSettings.voiceGuidance.voice,
-        volume: appSettings.voiceGuidance.volume,
-        announceSteps: appSettings.voiceGuidance.announceSteps,
-        announceMeasurements: appSettings.voiceGuidance.announceMeasurements,
-        announceErrors: appSettings.voiceGuidance.announceErrors,
-      };
-      engineRef.current.updateSettings(newSettings);
-      setLocalSettings(prev => ({ ...prev, ...newSettings }));
-    }
-  }, [appSettings.voiceGuidance]);
+    if (!engineRef.current) return;
+    const newSettings: Partial<VoiceGuidanceSettings> = {
+      enabled: appVoiceGuidance.enabled,
+      speed: appVoiceGuidance.speed,
+      voice: appVoiceGuidance.voice,
+      volume: appVoiceGuidance.volume,
+      announceSteps: appVoiceGuidance.announceSteps,
+      announceMeasurements: appVoiceGuidance.announceMeasurements,
+      announceErrors: appVoiceGuidance.announceErrors,
+    };
+    engineRef.current.updateSettings(newSettings);
+    setLocalSettings(prev => ({ ...prev, ...newSettings }));
+  }, [appVoiceGuidance]);
 
   // Update condition checker when it changes
   useEffect(() => {
@@ -228,7 +227,7 @@ export function useVoiceGuidance(options: UseVoiceGuidanceOptions = {}): UseVoic
       setLocalSettings(prev => ({ ...prev, ...settings }));
 
       // Persist to app settings
-      updateVoiceGuidance({
+      setVoiceGuidance({
         enabled: settings.enabled,
         speed: settings.speed,
         voice: settings.voice,
@@ -238,7 +237,7 @@ export function useVoiceGuidance(options: UseVoiceGuidanceOptions = {}): UseVoic
         announceErrors: settings.announceErrors,
       });
     },
-    [updateVoiceGuidance],
+    [setVoiceGuidance],
   );
 
   const toggleEnabled = useCallback(() => {

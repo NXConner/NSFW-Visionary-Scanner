@@ -84,13 +84,15 @@ export async function getExpertProfiles(
     const { data, error } = await query;
 
     if (error) {
-      logger.error("Error fetching experts:", error);
+      logger.error("Error fetching experts", { error: error.message });
       return [];
     }
 
     return (data || []) as ExpertProfile[];
   } catch (error) {
-    logger.error("Error in getExpertProfiles:", error);
+    logger.error("Error in getExpertProfiles", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
 }
@@ -118,13 +120,15 @@ export async function getExpertArticles(
     const { data, error } = await query;
 
     if (error) {
-      logger.error("Error fetching articles:", error);
+      logger.error("Error fetching articles", { error: error.message });
       return [];
     }
 
     return (data || []) as ExpertArticle[];
   } catch (error) {
-    logger.error("Error in getExpertArticles:", error);
+    logger.error("Error in getExpertArticles", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
 }
@@ -180,7 +184,7 @@ export async function bookConsultation(
       .single();
 
     if (error) {
-      logger.error("Error booking consultation:", error);
+      logger.error("Error booking consultation", { error: error.message });
       toast.error("Failed to book consultation");
       return null;
     }
@@ -202,13 +206,15 @@ export async function bookConsultation(
     );
 
     if (paymentError) {
-      logger.error("Error creating payment:", paymentError);
+      logger.error("Error creating payment", { error: paymentError.message });
     }
 
     toast.success("Consultation booked! Please complete payment.");
     return data as ExpertConsultation;
   } catch (error) {
-    logger.error("Error in bookConsultation:", error);
+    logger.error("Error in bookConsultation", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     toast.error("Failed to book consultation");
     return null;
   }
@@ -237,7 +243,7 @@ export async function submitExpertQuestion(
     });
 
     if (error) {
-      logger.error("Error submitting question:", error);
+      logger.error("Error submitting question", { error: error.message });
       toast.error("Failed to submit question");
       return false;
     }
@@ -245,7 +251,9 @@ export async function submitExpertQuestion(
     toast.success("Question submitted!");
     return true;
   } catch (error) {
-    logger.error("Error in submitExpertQuestion:", error);
+    logger.error("Error in submitExpertQuestion", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return false;
   }
 }
@@ -274,7 +282,7 @@ export async function rateExpert(
       .eq("user_id", user.id);
 
     if (error) {
-      logger.error("Error rating expert:", error);
+      logger.error("Error rating expert", { error: error.message });
       toast.error("Failed to submit rating");
       return false;
     }
@@ -301,7 +309,9 @@ export async function rateExpert(
     toast.success("Rating submitted!");
     return true;
   } catch (error) {
-    logger.error("Error in rateExpert:", error);
+    logger.error("Error in rateExpert", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return false;
   }
 }

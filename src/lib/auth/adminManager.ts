@@ -219,7 +219,7 @@ export async function checkAdminRole(
       .eq("user_id", userId);
 
     if (!roleError && roleData && roleData.length > 0) {
-      const roles = roleData.map(r => r.role);
+      const roles = roleData.map(r => String(r.role));
 
       if (roles.includes("super_admin")) {
         setCachedStatus(userId, true, "super_admin");

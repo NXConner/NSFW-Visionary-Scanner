@@ -50,13 +50,15 @@ function selectCameraState(
   if (!switches.length) {
     return { activeIndex: fallbackIndex, prevIndex: fallbackIndex, transition: "cut", progress: 1 };
   }
-  let prev = {
+  const initial: CameraSwitchEvent = {
+    id: "initial",
     cameraIndex: fallbackIndex,
     atSeconds: 0,
     transition: "cut",
     transitionDurationMs: 0,
   };
-  let current = prev;
+  let prev: CameraSwitchEvent = initial;
+  let current: CameraSwitchEvent = initial;
   for (const s of switches) {
     if (s.atSeconds <= t) {
       prev = current;
@@ -307,16 +309,16 @@ export async function renderMulticamTimeline(params: {
       applyMasks(ctx, timeline.masks || [], t, width, height);
 
       gains.forEach(g => (g.gain.value = 0));
-      if (active && active.gain) active.gain.value = 1;
+      if (active && active.gain) active.gain.gain.value = 1;
       if (transition === "crossfade" && prev && prev.gain && active && prev !== active) {
-        prev.gain.value = 1 - transitionProgress;
-        active.gain.value = transitionProgress;
+        prev.gain.gain.value = 1 - transitionProgress;
+        active.gain.gain.value = transitionProgress;
       }
       if (transition === "dip_to_black" && prev && prev.gain && active && prev !== active) {
         const fade =
           transitionProgress < 0.5 ? 1 - transitionProgress / 0.5 : transitionProgress / 0.5;
-        prev.gain.value = 1 - fade;
-        active.gain.value = fade;
+        prev.gain.gain.value = 1 - fade;
+        active.gain.gain.value = fade;
       }
 
       params.onProgress?.({

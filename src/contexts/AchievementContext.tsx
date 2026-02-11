@@ -80,8 +80,7 @@ export interface AchievementProviderProps {
 }
 
 export function AchievementProvider({ children }: AchievementProviderProps) {
-  const { settings } = useSettings();
-  const achievementSettings = settings.achievements;
+  const { achievements: achievementSettings } = useSettings();
 
   const [manager] = useState(() => getAchievementManager());
   const [isLoading, setIsLoading] = useState(true);

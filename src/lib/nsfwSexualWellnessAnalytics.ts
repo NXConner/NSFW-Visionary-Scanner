@@ -59,7 +59,7 @@ export async function trackSexualFunction(
       .single();
 
     if (error) {
-      logger.error("Error tracking function:", error);
+      logger.error("Error tracking function", { error: error.message });
       toast.error("Failed to track function");
       return null;
     }
@@ -67,7 +67,9 @@ export async function trackSexualFunction(
     toast.success("Function tracked!");
     return data as NSFWSexualFunctionTracking;
   } catch (error) {
-    logger.error("Error in trackSexualFunction:", error);
+    logger.error("Error in trackSexualFunction", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -98,13 +100,15 @@ export async function getSexualFunctionTracking(
     const { data, error } = await query;
 
     if (error) {
-      logger.error("Error fetching function tracking:", error);
+      logger.error("Error fetching function tracking", { error: error.message });
       return [];
     }
 
     return (data || []) as NSFWSexualFunctionTracking[];
   } catch (error) {
-    logger.error("Error in getSexualFunctionTracking:", error);
+    logger.error("Error in getSexualFunctionTracking", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
 }
@@ -151,7 +155,7 @@ export async function trackLibido(
       .single();
 
     if (error) {
-      logger.error("Error tracking libido:", error);
+      logger.error("Error tracking libido", { error: error.message });
       toast.error("Failed to track libido");
       return null;
     }
@@ -159,7 +163,9 @@ export async function trackLibido(
     toast.success("Libido tracked!");
     return data as NSFWLibidoTracking;
   } catch (error) {
-    logger.error("Error in trackLibido:", error);
+    logger.error("Error in trackLibido", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -209,7 +215,7 @@ export async function trackSatisfaction(
       .single();
 
     if (error) {
-      logger.error("Error tracking satisfaction:", error);
+      logger.error("Error tracking satisfaction", { error: error.message });
       toast.error("Failed to track satisfaction");
       return null;
     }
@@ -217,7 +223,9 @@ export async function trackSatisfaction(
     toast.success("Satisfaction tracked!");
     return data as NSFWSatisfactionTracking;
   } catch (error) {
-    logger.error("Error in trackSatisfaction:", error);
+    logger.error("Error in trackSatisfaction", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -268,7 +276,7 @@ export async function trackFrequency(
       .single();
 
     if (error) {
-      logger.error("Error tracking frequency:", error);
+      logger.error("Error tracking frequency", { error: error.message });
       toast.error("Failed to track frequency");
       return null;
     }
@@ -276,7 +284,9 @@ export async function trackFrequency(
     toast.success("Frequency tracked!");
     return data as NSFWFrequencyTracking;
   } catch (error) {
-    logger.error("Error in trackFrequency:", error);
+    logger.error("Error in trackFrequency", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -322,7 +332,7 @@ export async function calculateWellnessScore(
     });
 
     if (error) {
-      logger.error("Error calculating wellness score:", error);
+      logger.error("Error calculating wellness score", { error: error.message });
       toast.error("Failed to calculate wellness score");
       return null;
     }
@@ -333,20 +343,22 @@ export async function calculateWellnessScore(
       .insert({
         user_id: user.id,
         calculation_date: new Date().toISOString().split("T")[0],
-        calculation_period_days,
+        calculation_period_days: calculationPeriodDays,
         ...data,
       })
       .select()
       .single();
 
     if (saveError) {
-      logger.error("Error saving wellness score:", saveError);
+      logger.error("Error saving wellness score", { error: saveError.message });
       return null;
     }
 
     return score as NSFWWellnessScore;
   } catch (error) {
-    logger.error("Error in calculateWellnessScore:", error);
+    logger.error("Error in calculateWellnessScore", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -365,13 +377,15 @@ export async function getWellnessScores(): Promise<NSFWWellnessScore[]> {
       .order("calculated_at", { ascending: false });
 
     if (error) {
-      logger.error("Error fetching wellness scores:", error);
+      logger.error("Error fetching wellness scores", { error: error.message });
       return [];
     }
 
     return (data || []) as NSFWWellnessScore[];
   } catch (error) {
-    logger.error("Error in getWellnessScores:", error);
+    logger.error("Error in getWellnessScores", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
 }

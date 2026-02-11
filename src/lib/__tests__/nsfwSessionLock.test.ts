@@ -8,7 +8,7 @@ import {
 } from "@/lib/nsfwSessionLock";
 import { DEFAULT_NSFW_PRIVACY_SETTINGS } from "@/lib/nsfwPrivacySettings";
 
-const appendAuditLogEntry = vi.fn(async () => null);
+const appendAuditLogEntry = vi.fn(async (_payload: unknown) => null);
 
 vi.mock("@/lib/auditLogStorage", () => ({
   appendAuditLogEntry: (payload: unknown) => appendAuditLogEntry(payload),
