@@ -1,5 +1,14 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bar, BarChart, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { BarChart3, TrendingUp } from "lucide-react";
 
 interface AnalyticsSeriesPoint {
@@ -45,7 +54,13 @@ export function AdminAnalyticsCharts({ series, topEvents, loading }: AdminAnalyt
                   <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip />
-                  <Line type="monotone" dataKey="count" stroke="#0ea5e9" strokeWidth={2} dot={false} />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#0ea5e9"
+                    strokeWidth={2}
+                    dot={false}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             )}

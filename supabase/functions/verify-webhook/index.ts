@@ -116,13 +116,13 @@ serve(async req => {
       ok = false;
     }
 
-  const rateLimitResponse = await applyRateLimit({
-    req,
-    endpoint: "verify-webhook",
-    ...DEFAULT_EDGE_RATE_LIMIT,
-    headers: corsHeaders,
-  });
-  if (rateLimitResponse) return rateLimitResponse;
+    const rateLimitResponse = await applyRateLimit({
+      req,
+      endpoint: "verify-webhook",
+      ...DEFAULT_EDGE_RATE_LIMIT,
+      headers: corsHeaders,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
 
     await supabaseAdmin.from("webhook_deliveries").insert({
       webhook_id,

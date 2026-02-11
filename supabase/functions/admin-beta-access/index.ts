@@ -70,13 +70,13 @@ serve(async req => {
       });
     }
 
-  const rateLimitResponse = await applyRateLimit({
-    req,
-    endpoint: "admin-beta-access",
-    ...DEFAULT_EDGE_RATE_LIMIT,
-    headers: corsHeaders,
-  });
-  if (rateLimitResponse) return rateLimitResponse;
+    const rateLimitResponse = await applyRateLimit({
+      req,
+      endpoint: "admin-beta-access",
+      ...DEFAULT_EDGE_RATE_LIMIT,
+      headers: corsHeaders,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
 
     const token = authHeader.replace("Bearer ", "");
 

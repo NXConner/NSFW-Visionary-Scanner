@@ -1,6 +1,6 @@
 /**
  * Landmark Curvature Overlay Component
- * 
+ *
  * Visualizes 4-point landmark detection and curvature angle
  * based on PMC10150132 methodology.
  */
@@ -8,10 +8,10 @@
 import { memo, useMemo } from "react";
 import { motion } from "framer-motion";
 import type { LandmarkCurvatureResult } from "@/scanner/processing/steps/landmarkCurvature";
-import { 
-  generateCurvatureVisualization, 
+import {
+  generateCurvatureVisualization,
   getCurvatureTypeLabel,
-  getCurvatureClinicalNote 
+  getCurvatureClinicalNote,
 } from "@/scanner/processing/steps/curvatureVisualization";
 
 export interface LandmarkCurvatureOverlayProps {
@@ -49,7 +49,7 @@ const LandmarkMarker = memo(function LandmarkMarker({
   delay?: number;
 }) {
   const isDistal = type.startsWith("D");
-  
+
   return (
     <motion.g
       initial={{ scale: 0, opacity: 0 }}
@@ -131,7 +131,7 @@ const AxisLine = memo(function AxisLine({
         points={`${x2},${y2} ${x2 - 6},${y2 - 4} ${x2 - 6},${y2 + 4}`}
         fill={color}
         opacity={0.8}
-        transform={`rotate(${Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI}, ${x2}, ${y2})`}
+        transform={`rotate(${(Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI}, ${x2}, ${y2})`}
       />
     </motion.g>
   );
@@ -159,13 +159,7 @@ const AngleArc = memo(function AngleArc({
       transition={{ delay: 0.5, duration: 0.3 }}
     >
       {/* Arc path */}
-      <path
-        d={path}
-        fill="none"
-        stroke={color}
-        strokeWidth={width + 1}
-        strokeLinecap="round"
-      />
+      <path d={path} fill="none" stroke={color} strokeWidth={width + 1} strokeLinecap="round" />
       {/* Angle label */}
       <g>
         <rect
@@ -206,7 +200,7 @@ export const LandmarkCurvatureOverlay = memo(function LandmarkCurvatureOverlay({
   // Calculate scale factors for coordinate transformation
   const scaleX = containerWidth / imageWidth;
   const scaleY = containerHeight / imageHeight;
-  
+
   const visualization = useMemo(() => {
     if (!result) return null;
     return generateCurvatureVisualization(result, {
@@ -227,8 +221,8 @@ export const LandmarkCurvatureOverlay = memo(function LandmarkCurvatureOverlay({
 
   return (
     <div className="absolute inset-0 pointer-events-none z-20">
-      <svg 
-        width={containerWidth} 
+      <svg
+        width={containerWidth}
         height={containerHeight}
         className="absolute inset-0"
         style={{ overflow: "visible" }}
@@ -313,19 +307,18 @@ export const LandmarkCurvatureOverlay = memo(function LandmarkCurvatureOverlay({
           ${compact ? "p-2" : "p-3"} max-w-xs`}
       >
         <div className="flex items-center gap-2 mb-1">
-          <div 
+          <div
             className={`${compact ? "w-2 h-2" : "w-3 h-3"} rounded-full`}
-            style={{ 
-              backgroundColor: result.confidence > 0.7 
-                ? "hsl(var(--primary))" 
-                : "hsl(45, 100%, 50%)" 
+            style={{
+              backgroundColor:
+                result.confidence > 0.7 ? "hsl(var(--primary))" : "hsl(45, 100%, 50%)",
             }}
           />
           <span className={`font-semibold ${compact ? "text-xs" : "text-sm"}`}>
             {getCurvatureTypeLabel(result.curvatureType)}
           </span>
         </div>
-        
+
         <div className={`${compact ? "text-[10px]" : "text-xs"} text-muted-foreground space-y-0.5`}>
           <div className="flex justify-between gap-4">
             <span>Angle:</span>
@@ -335,9 +328,7 @@ export const LandmarkCurvatureOverlay = memo(function LandmarkCurvatureOverlay({
           </div>
           <div className="flex justify-between gap-4">
             <span>Direction:</span>
-            <span className="font-mono capitalize text-foreground">
-              {result.direction}
-            </span>
+            <span className="font-mono capitalize text-foreground">{result.direction}</span>
           </div>
           <div className="flex justify-between gap-4">
             <span>Confidence:</span>
@@ -363,9 +354,7 @@ export const LandmarkCurvatureOverlay = memo(function LandmarkCurvatureOverlay({
           className="absolute top-4 left-4 right-4 bg-muted/80 backdrop-blur-sm 
             rounded-lg p-3 border border-border/50"
         >
-          <p className="text-xs text-muted-foreground">
-            {clinicalNote}
-          </p>
+          <p className="text-xs text-muted-foreground">{clinicalNote}</p>
         </motion.div>
       )}
     </div>

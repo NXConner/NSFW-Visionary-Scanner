@@ -9,10 +9,10 @@ import {
   analyzeTrend,
   detectAnomalies,
   calculateStatistics,
-} from './trendAnalysis';
+} from "./trendAnalysis";
 
-export type RiskLevel = 'low' | 'moderate' | 'elevated' | 'high';
-export type RiskCategory = 'trend' | 'variability' | 'anomaly' | 'consistency' | 'threshold';
+export type RiskLevel = "low" | "moderate" | "elevated" | "high";
+export type RiskCategory = "trend" | "variability" | "anomaly" | "consistency" | "threshold";
 
 export interface RiskFactor {
   category: RiskCategory;
@@ -54,25 +54,25 @@ export interface HealthMetricConfig {
 // Default health metric configurations
 export const DEFAULT_METRIC_CONFIGS: Record<string, HealthMetricConfig> = {
   measurement_length: {
-    metricId: 'measurement_length',
-    name: 'Length Measurement',
-    unit: 'cm',
+    metricId: "measurement_length",
+    name: "Length Measurement",
+    unit: "cm",
     thresholds: {},
     trendImportance: 0.7,
     variabilityImportance: 0.5,
   },
   measurement_circumference: {
-    metricId: 'measurement_circumference',
-    name: 'Circumference',
-    unit: 'cm',
+    metricId: "measurement_circumference",
+    name: "Circumference",
+    unit: "cm",
     thresholds: {},
     trendImportance: 0.6,
     variabilityImportance: 0.4,
   },
   health_score: {
-    metricId: 'health_score',
-    name: 'Health Score',
-    unit: 'points',
+    metricId: "health_score",
+    name: "Health Score",
+    unit: "points",
     thresholds: {
       warningLow: 40,
       criticalLow: 20,
@@ -87,13 +87,10 @@ export const DEFAULT_METRIC_CONFIGS: Record<string, HealthMetricConfig> = {
 /**
  * Calculate variability risk score
  */
-function calculateVariabilityRisk(
-  dataPoints: DataPoint[],
-  config: HealthMetricConfig
-): RiskFactor {
+function calculateVariabilityRisk(dataPoints: DataPoint[], config: HealthMetricConfig): RiskFactor {
   const values = dataPoints.map(d => d.value);
   const stats = calculateStatistics(values);
-  
+
   // Coefficient of variation (normalized standard deviation)
   const cv = stats.mean !== 0 ? (stats.standardDeviation / stats.mean) * 100 : 0;
 
@@ -107,11 +104,12 @@ function calculateVariabilityRisk(
   else score = 100;
 
   return {
-    category: 'variability',
-    name: 'Measurement Variability',
-    description: cv > 15 
-      ? 'High variability in measurements detected' 
-      : 'Measurements are reasonably consistent',
+    category: "variability",
+    name: "Measurement Variability",
+    description:
+      cv > 15
+        ? "High variability in measurements detected"
+        : "Measurements are reasonably consistent",
     score,
     weight: config.variabilityImportance,
     details: {
@@ -125,33 +123,30 @@ function calculateVariabilityRisk(
 /**
  * Calculate trend-based risk
  */
-function calculateTrendRisk(
-  trend: TrendResult,
-  config: HealthMetricConfig
-): RiskFactor {
+function calculateTrendRisk(trend: TrendResult, config: HealthMetricConfig): RiskFactor {
   let score = 0;
-  let description = 'Trend is within normal parameters';
+  let description = "Trend is within normal parameters";
 
   // Significant decreasing trend might indicate concern
-  if (trend.direction === 'decreasing' && trend.strength !== 'none') {
+  if (trend.direction === "decreasing" && trend.strength !== "none") {
     if (trend.percentChange < -20) {
       score = 80;
-      description = 'Significant decreasing trend detected';
+      description = "Significant decreasing trend detected";
     } else if (trend.percentChange < -10) {
       score = 50;
-      description = 'Moderate decreasing trend detected';
+      description = "Moderate decreasing trend detected";
     } else {
       score = 25;
-      description = 'Slight decreasing trend detected';
+      description = "Slight decreasing trend detected";
     }
-  } else if (trend.direction === 'fluctuating') {
+  } else if (trend.direction === "fluctuating") {
     score = 40;
-    description = 'Inconsistent pattern in measurements';
+    description = "Inconsistent pattern in measurements";
   }
 
   return {
-    category: 'trend',
-    name: 'Trend Analysis',
+    category: "trend",
+    name: "Trend Analysis",
     description,
     score,
     weight: config.trendImportance,
@@ -169,30 +164,29 @@ function calculateTrendRisk(
  */
 function calculateAnomalyRisk(dataPoints: DataPoint[]): RiskFactor {
   const anomalyResult = detectAnomalies(dataPoints);
-  const anomalyRate = dataPoints.length > 0 
-    ? (anomalyResult.anomalies.length / dataPoints.length) * 100 
-    : 0;
+  const anomalyRate =
+    dataPoints.length > 0 ? (anomalyResult.anomalies.length / dataPoints.length) * 100 : 0;
 
   let score = 0;
-  let description = 'No significant anomalies detected';
+  let description = "No significant anomalies detected";
 
-  const severeCount = anomalyResult.anomalies.filter(a => a.severity === 'severe').length;
-  const moderateCount = anomalyResult.anomalies.filter(a => a.severity === 'moderate').length;
+  const severeCount = anomalyResult.anomalies.filter(a => a.severity === "severe").length;
+  const moderateCount = anomalyResult.anomalies.filter(a => a.severity === "moderate").length;
 
   if (severeCount > 0) {
-    score = 70 + (severeCount * 10);
+    score = 70 + severeCount * 10;
     description = `${severeCount} severe anomaly(ies) detected`;
   } else if (moderateCount > 0) {
-    score = 40 + (moderateCount * 10);
+    score = 40 + moderateCount * 10;
     description = `${moderateCount} moderate anomaly(ies) detected`;
   } else if (anomalyResult.anomalies.length > 0) {
-    score = 20 + (anomalyResult.anomalies.length * 5);
-    description = 'Minor anomalies detected';
+    score = 20 + anomalyResult.anomalies.length * 5;
+    description = "Minor anomalies detected";
   }
 
   return {
-    category: 'anomaly',
-    name: 'Anomaly Detection',
+    category: "anomaly",
+    name: "Anomaly Detection",
     description,
     score: Math.min(100, score),
     weight: 0.8,
@@ -211,9 +205,9 @@ function calculateAnomalyRisk(dataPoints: DataPoint[]): RiskFactor {
 function calculateConsistencyRisk(dataPoints: DataPoint[]): RiskFactor {
   if (dataPoints.length < 2) {
     return {
-      category: 'consistency',
-      name: 'Measurement Consistency',
-      description: 'Insufficient data for consistency analysis',
+      category: "consistency",
+      name: "Measurement Consistency",
+      description: "Insufficient data for consistency analysis",
       score: 50,
       weight: 0.3,
       details: { dataPoints: dataPoints.length },
@@ -233,24 +227,24 @@ function calculateConsistencyRisk(dataPoints: DataPoint[]): RiskFactor {
   const maxGap = Math.max(...gaps);
 
   let score = 0;
-  let description = 'Measurements are taken consistently';
+  let description = "Measurements are taken consistently";
 
   if (avgGap > 14) {
     score = 60;
-    description = 'Measurements are taken infrequently';
+    description = "Measurements are taken infrequently";
   } else if (avgGap > 7) {
     score = 30;
-    description = 'Consider more frequent measurements';
+    description = "Consider more frequent measurements";
   }
 
   if (maxGap > 30) {
     score = Math.max(score, 50);
-    description = 'Large gaps in measurement history';
+    description = "Large gaps in measurement history";
   }
 
   return {
-    category: 'consistency',
-    name: 'Measurement Frequency',
+    category: "consistency",
+    name: "Measurement Frequency",
     description,
     score,
     weight: 0.3,
@@ -267,7 +261,7 @@ function calculateConsistencyRisk(dataPoints: DataPoint[]): RiskFactor {
  */
 function calculateThresholdRisk(
   dataPoints: DataPoint[],
-  config: HealthMetricConfig
+  config: HealthMetricConfig,
 ): RiskFactor | null {
   const thresholds = config.thresholds;
   if (!thresholds || Object.keys(thresholds).length === 0) {
@@ -278,34 +272,34 @@ function calculateThresholdRisk(
   const avgRecent = recentValues.reduce((a, b) => a + b, 0) / recentValues.length;
 
   let score = 0;
-  let description = 'Values are within acceptable range';
+  let description = "Values are within acceptable range";
 
   // Check against thresholds
   if (thresholds.criticalLow !== undefined && avgRecent < thresholds.criticalLow) {
     score = 100;
-    description = 'Values are critically low';
+    description = "Values are critically low";
   } else if (thresholds.criticalHigh !== undefined && avgRecent > thresholds.criticalHigh) {
     score = 100;
-    description = 'Values are critically high';
+    description = "Values are critically high";
   } else if (thresholds.warningLow !== undefined && avgRecent < thresholds.warningLow) {
     score = 60;
-    description = 'Values are below recommended range';
+    description = "Values are below recommended range";
   } else if (thresholds.warningHigh !== undefined && avgRecent > thresholds.warningHigh) {
     score = 60;
-    description = 'Values are above recommended range';
+    description = "Values are above recommended range";
   } else if (thresholds.optimalMin !== undefined && thresholds.optimalMax !== undefined) {
     if (avgRecent >= thresholds.optimalMin && avgRecent <= thresholds.optimalMax) {
       score = 0;
-      description = 'Values are in optimal range';
+      description = "Values are in optimal range";
     } else {
       score = 20;
-      description = 'Values are outside optimal range';
+      description = "Values are outside optimal range";
     }
   }
 
   return {
-    category: 'threshold',
-    name: 'Threshold Check',
+    category: "threshold",
+    name: "Threshold Check",
     description,
     score,
     weight: 1.0,
@@ -325,27 +319,37 @@ function generateRecommendations(riskFactors: RiskFactor[]): string[] {
   for (const factor of riskFactors) {
     if (factor.score > 50) {
       switch (factor.category) {
-        case 'trend':
-          recommendations.push('Monitor the current trend closely and consider consulting a healthcare provider if it continues.');
+        case "trend":
+          recommendations.push(
+            "Monitor the current trend closely and consider consulting a healthcare provider if it continues.",
+          );
           break;
-        case 'variability':
-          recommendations.push('Try to maintain consistent measurement conditions (time of day, technique) for more reliable tracking.');
+        case "variability":
+          recommendations.push(
+            "Try to maintain consistent measurement conditions (time of day, technique) for more reliable tracking.",
+          );
           break;
-        case 'anomaly':
-          recommendations.push('Review any unusual measurements and verify they were taken correctly.');
+        case "anomaly":
+          recommendations.push(
+            "Review any unusual measurements and verify they were taken correctly.",
+          );
           break;
-        case 'consistency':
-          recommendations.push('Try to take measurements more regularly for better trend analysis.');
+        case "consistency":
+          recommendations.push(
+            "Try to take measurements more regularly for better trend analysis.",
+          );
           break;
-        case 'threshold':
-          recommendations.push('Some values are outside recommended ranges. Consider consulting a healthcare professional.');
+        case "threshold":
+          recommendations.push(
+            "Some values are outside recommended ranges. Consider consulting a healthcare professional.",
+          );
           break;
       }
     }
   }
 
   if (recommendations.length === 0) {
-    recommendations.push('Continue with your current measurement routine. Everything looks good!');
+    recommendations.push("Continue with your current measurement routine. Everything looks good!");
   }
 
   return [...new Set(recommendations)]; // Remove duplicates
@@ -355,10 +359,10 @@ function generateRecommendations(riskFactors: RiskFactor[]): string[] {
  * Determine overall risk level
  */
 function determineRiskLevel(score: number): RiskLevel {
-  if (score < 25) return 'low';
-  if (score < 50) return 'moderate';
-  if (score < 75) return 'elevated';
-  return 'high';
+  if (score < 25) return "low";
+  if (score < 50) return "moderate";
+  if (score < 75) return "elevated";
+  return "high";
 }
 
 /**
@@ -366,16 +370,16 @@ function determineRiskLevel(score: number): RiskLevel {
  */
 export function assessRisk(
   dataPoints: DataPoint[],
-  metricId: string = 'measurement_length'
+  metricId: string = "measurement_length",
 ): RiskAssessment {
-  const config = DEFAULT_METRIC_CONFIGS[metricId] || DEFAULT_METRIC_CONFIGS['measurement_length'];
+  const config = DEFAULT_METRIC_CONFIGS[metricId] || DEFAULT_METRIC_CONFIGS["measurement_length"];
 
   if (dataPoints.length < 3) {
     return {
       overallScore: 0,
-      riskLevel: 'low',
+      riskLevel: "low",
       riskFactors: [],
-      recommendations: ['Take more measurements to enable trend and risk analysis.'],
+      recommendations: ["Take more measurements to enable trend and risk analysis."],
       confidence: 0,
       assessmentDate: new Date().toISOString(),
       dataPointsAnalyzed: dataPoints.length,
@@ -398,7 +402,7 @@ export function assessRisk(
 
   // Calculate weighted overall score
   const totalWeight = riskFactors.reduce((sum, f) => sum + f.weight, 0);
-  const weightedSum = riskFactors.reduce((sum, f) => sum + (f.score * f.weight), 0);
+  const weightedSum = riskFactors.reduce((sum, f) => sum + f.score * f.weight, 0);
   const overallScore = totalWeight > 0 ? weightedSum / totalWeight : 0;
 
   // Calculate confidence based on data quality
@@ -420,10 +424,15 @@ export function assessRisk(
  */
 export function getRiskLevelColor(level: RiskLevel): string {
   switch (level) {
-    case 'low': return '#22C55E'; // green
-    case 'moderate': return '#F59E0B'; // amber
-    case 'elevated': return '#EF4444'; // red-orange
-    case 'high': return '#DC2626'; // red
-    default: return '#9CA3AF'; // gray
+    case "low":
+      return "#22C55E"; // green
+    case "moderate":
+      return "#F59E0B"; // amber
+    case "elevated":
+      return "#EF4444"; // red-orange
+    case "high":
+      return "#DC2626"; // red
+    default:
+      return "#9CA3AF"; // gray
   }
 }

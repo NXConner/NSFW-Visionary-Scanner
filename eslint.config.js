@@ -12,6 +12,8 @@ export default tseslint.config(
       "**/dist/**",
       "**/build/**",
       "**/coverage/**",
+      "**/playwright-report/**",
+      "**/test-results/**",
       "**/.vite/**",
       "**/.turbo/**",
       "**/.cache/**",
@@ -56,10 +58,7 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
 
       // Keep fast-refresh safe in dev; only warns so pre-commit doesn't block.
-      "react-refresh/only-export-components": [
-        "warn",
-        { allowConstantExport: true },
-      ],
+      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
 
       // A11y plugin is installed; start with a small, low-noise subset.
       // (Full recommended set can be enabled later once the codebase is clean.)

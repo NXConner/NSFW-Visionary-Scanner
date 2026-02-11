@@ -144,8 +144,8 @@ export async function createTimeLapseComparison(
   if (scanErr) throw scanErr;
 
   const scanList = (scans ?? []) as Record<string, unknown>[];
-  const start = scanList.find((s) => s.id === startScanId);
-  const end = scanList.find((s) => s.id === endScanId);
+  const start = scanList.find(s => s.id === startScanId);
+  const end = scanList.find(s => s.id === endScanId);
   if (!start || !end) throw new Error("Start or end scan not found");
 
   const lengthChange =

@@ -3,7 +3,7 @@
  *
  * These are used to ensure store builds do NOT bundle NSFW routes/modules/strings at all.
  * Keep logic simple and purely based on `import.meta.env` so Rollup can dead-code-eliminate.
- * 
+ *
  * Two distribution variants:
  * 1. SFW Store Build - For App Store/Play Store distribution (no adult content)
  * 2. NSFW Web Build - Direct web download with full adult content enabled
@@ -12,7 +12,9 @@
 export type AppVersion = "sfw" | "nsfw";
 export type DistributionChannel = "store" | "direct";
 
-export const BUILD_APP_VERSION = (import.meta.env.VITE_APP_VERSION || "nsfw") as AppVersion | string;
+export const BUILD_APP_VERSION = (import.meta.env.VITE_APP_VERSION || "nsfw") as
+  | AppVersion
+  | string;
 export const BUILD_DISTRIBUTION_CHANNEL = (import.meta.env.VITE_DISTRIBUTION_CHANNEL ||
   "direct") as DistributionChannel | string;
 
@@ -44,5 +46,5 @@ export const BUILD_ALLOW_ADULT_BUNDLE =
 export const BUILD_VARIANT = BUILD_IS_STORE
   ? "store-sfw"
   : BUILD_IS_NSFW
-  ? "direct-nsfw"
-  : "direct-sfw";
+    ? "direct-nsfw"
+    : "direct-sfw";

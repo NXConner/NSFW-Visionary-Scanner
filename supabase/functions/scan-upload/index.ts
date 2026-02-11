@@ -41,13 +41,13 @@ serve(async req => {
       });
     }
 
-  const rateLimitResponse = await applyRateLimit({
-    req,
-    endpoint: "scan-upload",
-    ...DEFAULT_EDGE_RATE_LIMIT,
-    headers: corsHeaders,
-  });
-  if (rateLimitResponse) return rateLimitResponse;
+    const rateLimitResponse = await applyRateLimit({
+      req,
+      endpoint: "scan-upload",
+      ...DEFAULT_EDGE_RATE_LIMIT,
+      headers: corsHeaders,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
 
     const token = authHeader.replace("Bearer ", "");
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -115,4 +115,3 @@ serve(async req => {
     });
   }
 });
-

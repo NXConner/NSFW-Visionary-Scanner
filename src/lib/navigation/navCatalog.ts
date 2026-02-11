@@ -84,8 +84,20 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { id: "video-capture", label: "Video Capture", icon: Video, kind: "tab" },
       { id: "photo-editor", label: "Photo Editor", icon: ImageIcon, kind: "tab" },
       { id: "advanced-reporting", label: "Reports", icon: FileText, kind: "tab" },
-      { id: "enhanced-diary", label: "Enhanced Diary", icon: BookOpen, kind: "tab", premiumOnly: true },
-      { id: "advanced-routines", label: "Advanced Routines", icon: Sparkles, kind: "tab", premiumOnly: true },
+      {
+        id: "enhanced-diary",
+        label: "Enhanced Diary",
+        icon: BookOpen,
+        kind: "tab",
+        premiumOnly: true,
+      },
+      {
+        id: "advanced-routines",
+        label: "Advanced Routines",
+        icon: Sparkles,
+        kind: "tab",
+        premiumOnly: true,
+      },
     ],
   },
   {

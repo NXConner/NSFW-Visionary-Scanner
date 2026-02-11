@@ -4,9 +4,7 @@ import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 import type { SexPosition } from "./types";
 
-function mapGalleryCategoryToLibrary(
-  category: string,
-): SexPosition["position_category"] {
+function mapGalleryCategoryToLibrary(category: string): SexPosition["position_category"] {
   const c = String(category || "").toLowerCase();
   if (c === "romantic" || c === "tantric") return "romantic";
   if (c === "acrobatic") return "acrobatic";
@@ -80,7 +78,8 @@ export async function getSexPositions(
         description: r.description ?? null,
         instructions: null,
         tips: null,
-        required_flexibility: (r.required_flexibility as SexPosition["required_flexibility"]) ?? null,
+        required_flexibility:
+          (r.required_flexibility as SexPosition["required_flexibility"]) ?? null,
         tags: r.tags ?? null,
         best_for: r.best_for ?? null,
         image_url,
@@ -135,8 +134,10 @@ export async function savePosition(
       return true;
     }
 
-    const { error } = await fromExtended("nsfw_positions_favorites")
-      .upsert({ user_id: user.id, position_id: positionId }, { onConflict: "user_id,position_id" });
+    const { error } = await fromExtended("nsfw_positions_favorites").upsert(
+      { user_id: user.id, position_id: positionId },
+      { onConflict: "user_id,position_id" },
+    );
     if (error) {
       logger.error("Error favoriting position", { error: error.message });
       toast.error("Failed to update favorite");

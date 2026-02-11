@@ -18,7 +18,11 @@ const corsHeaders = {
 const ADULT_RATINGS = new Set(["18+", "adult", "explicit", "nsfw"]);
 
 const isAdultRating = (rating?: string | null): boolean =>
-  ADULT_RATINGS.has(String(rating || "").trim().toLowerCase());
+  ADULT_RATINGS.has(
+    String(rating || "")
+      .trim()
+      .toLowerCase(),
+  );
 
 serve(async req => {
   // Handle CORS preflight

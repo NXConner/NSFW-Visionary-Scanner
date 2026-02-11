@@ -1,16 +1,16 @@
 /**
  * Email Templates
- * 
+ *
  * HTML email templates for various transactional emails.
  * These templates follow email best practices with inline styles for compatibility.
  */
 
-import { emailConfig } from './emailConfig';
+import { emailConfig } from "./emailConfig";
 
 /**
  * Base email template wrapper with consistent styling
  */
-function baseTemplate(content: string, previewText: string = ''): string {
+function baseTemplate(content: string, previewText: string = ""): string {
   const year = new Date().getFullYear();
   return `<!DOCTYPE html>
 <html lang="en">
@@ -25,7 +25,7 @@ function baseTemplate(content: string, previewText: string = ''): string {
   </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: #0a0a0a;">
-  ${previewText ? `<div style="display: none; max-height: 0; overflow: hidden;">${previewText}</div>` : ''}
+  ${previewText ? `<div style="display: none; max-height: 0; overflow: hidden;">${previewText}</div>` : ""}
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0a0a0a;">
     <tr>
       <td style="padding: 40px 20px;">
@@ -61,7 +61,7 @@ function baseTemplate(content: string, previewText: string = ''): string {
 /**
  * Button component for emails
  */
-function emailButton(text: string, url: string, color: string = '#f97316'): string {
+function emailButton(text: string, url: string, color: string = "#f97316"): string {
   return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 24px auto;">
       <tr>
         <td style="border-radius: 8px; background: ${color};">
@@ -90,7 +90,7 @@ export function verificationEmailTemplate(verificationLink: string): string {
       <p style="margin: 0 0 32px; color: rgba(255, 255, 255, 0.7); font-size: 15px; line-height: 1.6;">
         Please verify your email address to access all features.
       </p>
-      ${emailButton('Verify Email', verificationLink)}
+      ${emailButton("Verify Email", verificationLink)}
       <p style="margin: 24px 0 0; color: rgba(255, 255, 255, 0.5); font-size: 13px;">
         This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.
       </p>
@@ -112,7 +112,7 @@ export function passwordResetEmailTemplate(resetLink: string): string {
       <p style="margin: 0 0 32px; color: rgba(255, 255, 255, 0.7); font-size: 15px; line-height: 1.6;">
         We received a request to reset your password. Click the button below to create a new password.
       </p>
-      ${emailButton('Reset Password', resetLink, '#3b82f6')}
+      ${emailButton("Reset Password", resetLink, "#3b82f6")}
       <p style="margin: 24px 0 0; color: rgba(255, 255, 255, 0.5); font-size: 13px;">
         This link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.
       </p>
@@ -146,7 +146,7 @@ export function welcomeEmailTemplate(userName: string): string {
           <li>Access premium features</li>
         </ul>
       </div>
-      ${emailButton('Get Started', emailConfig.appUrl, '#10b981')}
+      ${emailButton("Get Started", emailConfig.appUrl, "#10b981")}
     </div>`;
   return baseTemplate(content, `Welcome to ${emailConfig.appName}, ${userName}!`);
 }
@@ -163,7 +163,7 @@ export function notificationEmailTemplate(subject: string, content: string): str
         ${content}
       </div>
       <div style="margin-top: 32px; text-align: center;">
-        ${emailButton('View in App', emailConfig.appUrl, '#6366f1')}
+        ${emailButton("View in App", emailConfig.appUrl, "#6366f1")}
       </div>
     </div>`;
   return baseTemplate(emailContent, subject);
@@ -186,7 +186,7 @@ export function partnerInviteEmailTemplate(inviterName: string, inviteLink: stri
       <p style="margin: 0 0 32px; color: rgba(255, 255, 255, 0.7); font-size: 15px; line-height: 1.6;">
         Accept the invitation to share data and track progress together.
       </p>
-      ${emailButton('Accept Invitation', inviteLink, '#ec4899')}
+      ${emailButton("Accept Invitation", inviteLink, "#ec4899")}
       <p style="margin: 24px 0 0; color: rgba(255, 255, 255, 0.5); font-size: 13px;">
         This invitation will expire in 7 days. If you don't know this person, you can safely ignore this email.
       </p>

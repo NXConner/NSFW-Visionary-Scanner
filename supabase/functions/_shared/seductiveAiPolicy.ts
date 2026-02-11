@@ -40,7 +40,8 @@ const BLOCK_RULES: PolicyRule[] = [
       "young girl",
       "young boy",
     ],
-    message: "I cannot engage with anything involving minors. Let's keep this adult and consensual.",
+    message:
+      "I cannot engage with anything involving minors. Let's keep this adult and consensual.",
   },
   {
     id: "nonconsensual",
@@ -154,7 +155,10 @@ export function buildPolicyResponse(result: PolicyResult, mode: PolicyMode): str
   return "I can only engage in adult, consensual, and safe conversations.";
 }
 
-export function enforceResponseSafety(text: string, mode: PolicyMode): {
+export function enforceResponseSafety(
+  text: string,
+  mode: PolicyMode,
+): {
   text: string;
   policy: PolicyResult;
   modified: boolean;

@@ -1,5 +1,5 @@
 // API Access Manager with Webhooks
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 export interface APIKey {
   id: string;
@@ -15,14 +15,14 @@ export interface APIKey {
   usageCount: number;
 }
 
-export type APIScope = 
-  | 'read:scans'
-  | 'write:scans'
-  | 'read:measurements'
-  | 'read:health'
-  | 'write:health'
-  | 'read:profile'
-  | 'webhooks:manage';
+export type APIScope =
+  | "read:scans"
+  | "write:scans"
+  | "read:measurements"
+  | "read:health"
+  | "write:health"
+  | "read:profile"
+  | "webhooks:manage";
 
 export interface Webhook {
   id: string;
@@ -37,20 +37,20 @@ export interface Webhook {
   headers?: Record<string, string>;
 }
 
-export type WebhookEvent = 
-  | 'scan.created'
-  | 'scan.completed'
-  | 'measurement.created'
-  | 'health.updated'
-  | 'achievement.unlocked'
-  | 'medication.reminder';
+export type WebhookEvent =
+  | "scan.created"
+  | "scan.completed"
+  | "measurement.created"
+  | "health.updated"
+  | "achievement.unlocked"
+  | "medication.reminder";
 
 export interface WebhookDelivery {
   id: string;
   webhookId: string;
   event: WebhookEvent;
   payload: any;
-  status: 'pending' | 'success' | 'failed';
+  status: "pending" | "success" | "failed";
   statusCode?: number;
   response?: string;
   timestamp: string;
@@ -66,9 +66,9 @@ export interface APIUsageStats {
   avgResponseTime: number;
 }
 
-const KEYS_STORAGE = 'api_keys';
-const WEBHOOKS_STORAGE = 'api_webhooks';
-const DELIVERIES_STORAGE = 'webhook_deliveries';
+const KEYS_STORAGE = "api_keys";
+const WEBHOOKS_STORAGE = "api_webhooks";
+const DELIVERIES_STORAGE = "webhook_deliveries";
 
 export class APIAccessManager {
   private keys: Map<string, APIKey> = new Map();
@@ -99,7 +99,7 @@ export class APIAccessManager {
         this.deliveries = JSON.parse(deliveriesData);
       }
     } catch (e) {
-      console.error('Failed to load API data:', e);
+      console.error("Failed to load API data:", e);
     }
   }
 
@@ -110,7 +110,7 @@ export class APIAccessManager {
       localStorage.setItem(DELIVERIES_STORAGE, JSON.stringify(this.deliveries.slice(-100)));
       this.notifyListeners();
     } catch (e) {
-      console.error('Failed to save API data:', e);
+      console.error("Failed to save API data:", e);
     }
   }
 
@@ -125,18 +125,23 @@ export class APIAccessManager {
 
   // API Keys
   private generateAPIKey(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let key = '';
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let key = "";
     for (let i = 0; i < 32; i++) {
       key += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return key;
   }
 
-  createAPIKey(name: string, scopes: APIScope[], rateLimit: number = 60, expiresInDays?: number): APIKey {
+  createAPIKey(
+    name: string,
+    scopes: APIScope[],
+    rateLimit: number = 60,
+    expiresInDays?: number,
+  ): APIKey {
     const key = this.generateAPIKey();
     const prefix = key.substring(0, 8);
-    
+
     const apiKey: APIKey = {
       id: uuidv4(),
       name,
@@ -145,11 +150,11 @@ export class APIAccessManager {
       scopes,
       rateLimit,
       createdAt: new Date().toISOString(),
-      expiresAt: expiresInDays 
-        ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString() 
+      expiresAt: expiresInDays
+        ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString()
         : undefined,
       isActive: true,
-      usageCount: 0
+      usageCount: 0,
     };
 
     this.keys.set(apiKey.id, apiKey);
@@ -160,7 +165,7 @@ export class APIAccessManager {
   getAPIKeys(): APIKey[] {
     return Array.from(this.keys.values()).map(k => ({
       ...k,
-      key: `${k.prefix}${'*'.repeat(24)}` // Mask the key
+      key: `${k.prefix}${"*".repeat(24)}`, // Mask the key
     }));
   }
 
@@ -168,17 +173,20 @@ export class APIAccessManager {
     const key = this.keys.get(id);
     if (!key) return undefined;
     if (includeFullKey) return key;
-    return { ...key, key: `${key.prefix}${'*'.repeat(24)}` };
+    return { ...key, key: `${key.prefix}${"*".repeat(24)}` };
   }
 
-  updateAPIKey(id: string, updates: Partial<Pick<APIKey, 'name' | 'scopes' | 'rateLimit' | 'isActive'>>): APIKey | null {
+  updateAPIKey(
+    id: string,
+    updates: Partial<Pick<APIKey, "name" | "scopes" | "rateLimit" | "isActive">>,
+  ): APIKey | null {
     const key = this.keys.get(id);
     if (!key) return null;
 
     const updated = { ...key, ...updates };
     this.keys.set(id, updated);
     this.save();
-    return { ...updated, key: `${updated.prefix}${'*'.repeat(24)}` };
+    return { ...updated, key: `${updated.prefix}${"*".repeat(24)}` };
   }
 
   revokeAPIKey(id: string): boolean {
@@ -201,15 +209,15 @@ export class APIAccessManager {
 
   validateAPIKey(key: string): { valid: boolean; apiKey?: APIKey; error?: string } {
     const apiKey = Array.from(this.keys.values()).find(k => k.key === key);
-    
+
     if (!apiKey) {
-      return { valid: false, error: 'Invalid API key' };
+      return { valid: false, error: "Invalid API key" };
     }
     if (!apiKey.isActive) {
-      return { valid: false, error: 'API key is inactive' };
+      return { valid: false, error: "API key is inactive" };
     }
     if (apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date()) {
-      return { valid: false, error: 'API key has expired' };
+      return { valid: false, error: "API key has expired" };
     }
 
     // Update usage
@@ -223,15 +231,20 @@ export class APIAccessManager {
 
   // Webhooks
   private generateWebhookSecret(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let secret = 'whsec_';
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let secret = "whsec_";
     for (let i = 0; i < 32; i++) {
       secret += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return secret;
   }
 
-  createWebhook(name: string, url: string, events: WebhookEvent[], headers?: Record<string, string>): Webhook {
+  createWebhook(
+    name: string,
+    url: string,
+    events: WebhookEvent[],
+    headers?: Record<string, string>,
+  ): Webhook {
     const webhook: Webhook = {
       id: uuidv4(),
       name,
@@ -241,7 +254,7 @@ export class APIAccessManager {
       isActive: true,
       createdAt: new Date().toISOString(),
       failureCount: 0,
-      headers
+      headers,
     };
 
     this.webhooks.set(webhook.id, webhook);
@@ -257,7 +270,10 @@ export class APIAccessManager {
     return this.webhooks.get(id);
   }
 
-  updateWebhook(id: string, updates: Partial<Pick<Webhook, 'name' | 'url' | 'events' | 'isActive' | 'headers'>>): Webhook | null {
+  updateWebhook(
+    id: string,
+    updates: Partial<Pick<Webhook, "name" | "url" | "events" | "isActive" | "headers">>,
+  ): Webhook | null {
     const webhook = this.webhooks.get(id);
     if (!webhook) return null;
 
@@ -284,9 +300,7 @@ export class APIAccessManager {
   }
 
   async triggerWebhook(event: WebhookEvent, payload: any): Promise<void> {
-    const webhooks = this.getWebhooks().filter(wh => 
-      wh.isActive && wh.events.includes(event)
-    );
+    const webhooks = this.getWebhooks().filter(wh => wh.isActive && wh.events.includes(event));
 
     for (const webhook of webhooks) {
       const delivery: WebhookDelivery = {
@@ -294,8 +308,8 @@ export class APIAccessManager {
         webhookId: webhook.id,
         event,
         payload,
-        status: 'pending',
-        timestamp: new Date().toISOString()
+        status: "pending",
+        timestamp: new Date().toISOString(),
       };
 
       try {
@@ -303,18 +317,18 @@ export class APIAccessManager {
         // In production, this would be an actual HTTP request
         // For now, we simulate the delivery
         await new Promise(resolve => setTimeout(resolve, 100));
-        
-        delivery.status = 'success';
+
+        delivery.status = "success";
         delivery.statusCode = 200;
         delivery.duration = Date.now() - startTime;
-        
+
         webhook.lastTriggeredAt = new Date().toISOString();
         webhook.failureCount = 0;
       } catch (error: any) {
-        delivery.status = 'failed';
+        delivery.status = "failed";
         delivery.response = error.message;
         webhook.failureCount++;
-        
+
         // Disable webhook after 10 consecutive failures
         if (webhook.failureCount >= 10) {
           webhook.isActive = false;
@@ -339,27 +353,27 @@ export class APIAccessManager {
   // Test webhook
   async testWebhook(id: string): Promise<WebhookDelivery> {
     const webhook = this.webhooks.get(id);
-    if (!webhook) throw new Error('Webhook not found');
+    if (!webhook) throw new Error("Webhook not found");
 
     const delivery: WebhookDelivery = {
       id: uuidv4(),
       webhookId: webhook.id,
-      event: 'scan.created',
-      payload: { test: true, message: 'This is a test webhook delivery' },
-      status: 'pending',
-      timestamp: new Date().toISOString()
+      event: "scan.created",
+      payload: { test: true, message: "This is a test webhook delivery" },
+      status: "pending",
+      timestamp: new Date().toISOString(),
     };
 
     try {
       const startTime = Date.now();
       // Simulated delivery
       await new Promise(resolve => setTimeout(resolve, 200));
-      
-      delivery.status = 'success';
+
+      delivery.status = "success";
       delivery.statusCode = 200;
       delivery.duration = Date.now() - startTime;
     } catch (error: any) {
-      delivery.status = 'failed';
+      delivery.status = "failed";
       delivery.response = error.message;
     }
 
@@ -371,7 +385,7 @@ export class APIAccessManager {
   // Stats
   getUsageStats(): APIUsageStats {
     const allKeys = Array.from(this.keys.values());
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
     const thisMonth = new Date().toISOString().substring(0, 7);
 
     return {
@@ -380,31 +394,63 @@ export class APIAccessManager {
       requestsThisMonth: 0,
       topEndpoints: [],
       errorRate: 0,
-      avgResponseTime: 0
+      avgResponseTime: 0,
     };
   }
 
   // Scopes
   getAvailableScopes(): { scope: APIScope; name: string; description: string }[] {
     return [
-      { scope: 'read:scans', name: 'Read Scans', description: 'Access scan history and results' },
-      { scope: 'write:scans', name: 'Write Scans', description: 'Create and modify scans' },
-      { scope: 'read:measurements', name: 'Read Measurements', description: 'Access measurement data' },
-      { scope: 'read:health', name: 'Read Health', description: 'Access health predictions and trends' },
-      { scope: 'write:health', name: 'Write Health', description: 'Create health entries' },
-      { scope: 'read:profile', name: 'Read Profile', description: 'Access profile information' },
-      { scope: 'webhooks:manage', name: 'Manage Webhooks', description: 'Create and manage webhooks' }
+      { scope: "read:scans", name: "Read Scans", description: "Access scan history and results" },
+      { scope: "write:scans", name: "Write Scans", description: "Create and modify scans" },
+      {
+        scope: "read:measurements",
+        name: "Read Measurements",
+        description: "Access measurement data",
+      },
+      {
+        scope: "read:health",
+        name: "Read Health",
+        description: "Access health predictions and trends",
+      },
+      { scope: "write:health", name: "Write Health", description: "Create health entries" },
+      { scope: "read:profile", name: "Read Profile", description: "Access profile information" },
+      {
+        scope: "webhooks:manage",
+        name: "Manage Webhooks",
+        description: "Create and manage webhooks",
+      },
     ];
   }
 
   getAvailableEvents(): { event: WebhookEvent; name: string; description: string }[] {
     return [
-      { event: 'scan.created', name: 'Scan Created', description: 'When a new scan is initiated' },
-      { event: 'scan.completed', name: 'Scan Completed', description: 'When a scan finishes processing' },
-      { event: 'measurement.created', name: 'Measurement Created', description: 'When a new measurement is recorded' },
-      { event: 'health.updated', name: 'Health Updated', description: 'When health data is updated' },
-      { event: 'achievement.unlocked', name: 'Achievement Unlocked', description: 'When user unlocks an achievement' },
-      { event: 'medication.reminder', name: 'Medication Reminder', description: 'When a medication reminder triggers' }
+      { event: "scan.created", name: "Scan Created", description: "When a new scan is initiated" },
+      {
+        event: "scan.completed",
+        name: "Scan Completed",
+        description: "When a scan finishes processing",
+      },
+      {
+        event: "measurement.created",
+        name: "Measurement Created",
+        description: "When a new measurement is recorded",
+      },
+      {
+        event: "health.updated",
+        name: "Health Updated",
+        description: "When health data is updated",
+      },
+      {
+        event: "achievement.unlocked",
+        name: "Achievement Unlocked",
+        description: "When user unlocks an achievement",
+      },
+      {
+        event: "medication.reminder",
+        name: "Medication Reminder",
+        description: "When a medication reminder triggers",
+      },
     ];
   }
 }

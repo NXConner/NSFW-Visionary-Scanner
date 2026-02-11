@@ -74,4 +74,3 @@ Social login is already wired in:
 - Verify all redirect URLs match exactly
 - Check Apple/Google app verification status
 - Confirm Supabase Auth provider is enabled
-

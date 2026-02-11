@@ -1,12 +1,13 @@
 # MorphoScan Pro — Remaining Work (Project-Wide)
 
-**Last updated**: 2026-01-31
+**Last updated**: 2026-02-11
 
 This document is the **single actionable checklist** of what still needs to be done across the entire repository to reach a true **public release** (web + mobile + monetization + ops).
 
 For deeper supporting docs, see:
 
 - `docs/tracking/CONSOLIDATED_DOCS_MASTER.md` (canonical finish plan)
+- `docs/operations/EXTERNAL_RELEASE_TASKS_RUNBOOK.md` (staging/prod runbook for remaining external tasks)
 - `docs/guides/testing/PRODUCTION_TESTING_GUIDE.md` (device QA matrix)
 - `docs/guides/integrations/payments/STRIPE_SETUP_GUIDE.md` (payments)
 - `docs/guides/integrations/notifications/FCM_SETUP.md` (push)
@@ -18,12 +19,12 @@ For deeper supporting docs, see:
 
 ## Current status snapshot (repo gates)
 
-- **Lint**: ⏳ Not verified in this update
-- **Format**: ⏳ Not verified in this update
-- **Typecheck**: ⏳ Not verified in this update
-- **Unit tests**: ⏳ Not verified in this update
-- **E2E tests**: ⏳ Not verified in this update
-- **Prod build**: ⏳ Not verified in this update
+- **Lint**: ✅ Verified (warnings present)
+- **Format**: ✅ Verified
+- **Typecheck**: ✅ Verified
+- **Unit tests**: ✅ Verified
+- **E2E tests**: ✅ Verified
+- **Prod build**: ✅ Verified
 
 > Run automation: `pwsh -File scripts/complete-remaining.ps1`
 
@@ -39,6 +40,7 @@ For deeper supporting docs, see:
   - [ ] `ios/App/App/GoogleService-Info.plist` is local-only
   - [ ] `android/gradle.properties` is local-only
 - [ ] **Provision secrets via your hosting/secrets manager** (see `docs/security/secrets/secrets-manager.md`)
+  - [ ] Optional automation: `npm run release:secrets:provision -- --environment <staging|production> --env-file <file> --repo <owner/repo>`
   - [ ] `VITE_SUPABASE_URL`
   - [ ] `VITE_SUPABASE_PUBLISHABLE_KEY`
   - [ ] `VITE_APP_ENV` (`staging`/`production`)
@@ -59,9 +61,14 @@ For deeper supporting docs, see:
 - [ ] **RLS + policies audit**
 - [ ] Run through `docs/security/rls/RLS_AUDIT_CHECKLIST.md` for all PII/health/payment/device tables
   - [ ] Confirm storage buckets are private where appropriate and require signed URLs
+  - [ ] Run `docs/security/rls/RLS_STORAGE_AUDIT_QUERIES.sql` in Supabase SQL editor
 - [ ] **Migrations**
   - [ ] Apply `supabase/migrations/*.sql` to the production project
-  - [ ] Verify `npm run db:types:check` passes against production schema (or staging mirror)
+    - [ ] Prefer: `npm run db:migrate:remote -- --dry-run` then `npm run db:migrate:remote`
+    - [ ] Optional one-command helper: `npm run release:remote:ops -- --env-file <file> --apply --types-check`
+  - [ ] Verify types match schema:
+    - [ ] Local mirror: `npm run db:types:check` (requires local Supabase)
+    - [ ] Remote project: `npm run db:types:remote:check` (requires Supabase CLI auth)
 - [ ] **Backups + retention**
   - [ ] Confirm backup/restore procedure
   - [ ] Validate account deletion + retention cleanup jobs (edge functions) behave correctly
@@ -137,6 +144,7 @@ Canonical doc: `docs/guides/integrations/notifications/FCM_SETUP.md`
 - [ ] **Define rollback**
   - [ ] Versioned artifacts (docker tags or static build versions)
   - [ ] One-command rollback documented
+  - [ ] Optional: use `.github/workflows/manual-deploy.yml` to redeploy an older ref/SHA
 
 ### 6) Observability + incident readiness
 

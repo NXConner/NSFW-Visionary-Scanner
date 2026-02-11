@@ -1,1 +1,1 @@
-export { CustomizableDashboard } from './CustomizableDashboard';
+export { CustomizableDashboard } from "./CustomizableDashboard";

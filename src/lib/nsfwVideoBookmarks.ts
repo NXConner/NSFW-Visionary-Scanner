@@ -39,10 +39,7 @@ export async function getNsfwBookmarkedVideos(limit: number = 50): Promise<NSFWV
   }
 }
 
-export async function setNsfwVideoBookmark(
-  videoId: string,
-  bookmarked: boolean,
-): Promise<boolean> {
+export async function setNsfwVideoBookmark(videoId: string, bookmarked: boolean): Promise<boolean> {
   try {
     const {
       data: { user },

@@ -3,4 +3,4 @@
  * Augmented Reality utilities and calculations
  */
 
-export * from './measurementCalculations';
+export * from "./measurementCalculations";

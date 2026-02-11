@@ -51,10 +51,7 @@ export function usePartnerConsent(connectionId: string | null) {
     [consents, currentUserId],
   );
 
-  const needsConsent = useMemo(
-    () => !myConsent || Boolean(myConsent.revoked_at),
-    [myConsent],
-  );
+  const needsConsent = useMemo(() => !myConsent || Boolean(myConsent.revoked_at), [myConsent]);
 
   const partnerNeedsConsent = useMemo(
     () => !partnerConsent || Boolean(partnerConsent.revoked_at),

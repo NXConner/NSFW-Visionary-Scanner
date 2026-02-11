@@ -58,21 +58,21 @@ export const ProfileSection = () => {
   useEffect(() => {
     const loadProfile = async () => {
       if (!user) return;
-      
+
       // Set defaults from user object first
       setProfile(prev => ({
         ...prev,
         email: user.email || "",
         name: user.user_metadata?.display_name || user.email?.split("@")[0] || "User",
       }));
-      
+
       // Then fetch from profiles table
       const { data, error } = await supabase
         .from("profiles")
         .select("display_name")
         .eq("user_id", user.id)
         .single();
-      
+
       if (!error && data) {
         setProfile(prev => ({
           ...prev,
@@ -81,41 +81,41 @@ export const ProfileSection = () => {
         }));
       }
     };
-    
+
     loadProfile();
   }, [user]);
 
   // Save profile to database
   const handleSaveProfile = async () => {
     if (!user) return;
-    
+
     setIsSaving(true);
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ 
+        .update({
           display_name: profile.screenName || profile.name,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq("user_id", user.id);
-      
+
       if (error) throw error;
-      
+
       // Also update user metadata
       await supabase.auth.updateUser({
-        data: { display_name: profile.screenName || profile.name }
+        data: { display_name: profile.screenName || profile.name },
       });
-      
+
       toast({
         title: "Profile updated",
         description: "Your screen name has been saved successfully.",
       });
-      
+
       setProfile(prev => ({
         ...prev,
         name: profile.screenName || prev.name,
       }));
-      
+
       setIsEditing(false);
     } catch (error) {
       console.error("Failed to save profile:", error);
@@ -289,7 +289,10 @@ export const ProfileSection = () => {
                       {isEditing ? (
                         <div className="space-y-4">
                           <div>
-                            <Label htmlFor="profile-screen-name" className="text-sm text-muted-foreground">
+                            <Label
+                              htmlFor="profile-screen-name"
+                              className="text-sm text-muted-foreground"
+                            >
                               Screen Name / Username
                             </Label>
                             <Input
@@ -301,11 +304,15 @@ export const ProfileSection = () => {
                               maxLength={30}
                             />
                             <p className="text-xs text-muted-foreground mt-1">
-                              This is how you'll appear to others ({30 - (profile.screenName?.length || 0)} characters left)
+                              This is how you'll appear to others (
+                              {30 - (profile.screenName?.length || 0)} characters left)
                             </p>
                           </div>
                           <div>
-                            <Label htmlFor="profile-email" className="text-sm text-muted-foreground">
+                            <Label
+                              htmlFor="profile-email"
+                              className="text-sm text-muted-foreground"
+                            >
                               Email
                             </Label>
                             <Input
@@ -316,7 +323,10 @@ export const ProfileSection = () => {
                             />
                           </div>
                           <div>
-                            <Label htmlFor="profile-phone" className="text-sm text-muted-foreground">
+                            <Label
+                              htmlFor="profile-phone"
+                              className="text-sm text-muted-foreground"
+                            >
                               Phone (optional)
                             </Label>
                             <Input
@@ -343,8 +353,8 @@ export const ProfileSection = () => {
                                 "Save Changes"
                               )}
                             </Button>
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               onClick={() => setIsEditing(false)}
                               disabled={isSaving}
                             >

@@ -38,22 +38,22 @@ npm run dev
 
 ### Required Variables
 
-| Variable | Description | Source |
-|----------|-------------|--------|
-| `VITE_SUPABASE_URL` | Supabase project URL | Lovable Cloud → Settings → API |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon key | Lovable Cloud → Settings → API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-only) | Lovable Cloud → Settings → API |
+| Variable                        | Description                             | Source                         |
+| ------------------------------- | --------------------------------------- | ------------------------------ |
+| `VITE_SUPABASE_URL`             | Supabase project URL                    | Lovable Cloud → Settings → API |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon key                       | Lovable Cloud → Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Supabase service role key (server-only) | Lovable Cloud → Settings → API |
 
 ### Optional Variables
 
-| Variable | Description | When Needed |
-|----------|-------------|-------------|
-| `STRIPE_SECRET_KEY` | Stripe secret key | Payment processing |
-| `STRIPE_PUBLISHABLE_KEY` | Stripe publishable key | Client-side payments |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature | Webhook verification |
-| `RLS_TEST_EMAIL` | Test user email | RLS integration tests |
-| `RLS_TEST_PASSWORD` | Test user password | RLS integration tests |
-| `PARTNER_SYNC_SEED_FILE` | Path to partner sync seed data | Partner sync tests |
+| Variable                 | Description                    | When Needed           |
+| ------------------------ | ------------------------------ | --------------------- |
+| `STRIPE_SECRET_KEY`      | Stripe secret key              | Payment processing    |
+| `STRIPE_PUBLISHABLE_KEY` | Stripe publishable key         | Client-side payments  |
+| `STRIPE_WEBHOOK_SECRET`  | Stripe webhook signature       | Webhook verification  |
+| `RLS_TEST_EMAIL`         | Test user email                | RLS integration tests |
+| `RLS_TEST_PASSWORD`      | Test user password             | RLS integration tests |
+| `PARTNER_SYNC_SEED_FILE` | Path to partner sync seed data | Partner sync tests    |
 
 ## Quality Gates
 
@@ -151,14 +151,17 @@ See [Mobile Build Guide](./guides/build/MOBILE_BUILD_GUIDE.md) for:
 ### Common Issues
 
 **Build fails with chunk size warnings**
+
 - Large chunks are expected for heavy libraries (recharts, three.js, TensorFlow)
 - These are code-split and lazy-loaded; warnings don't affect functionality
 
 **Docker daemon not running**
+
 - Required for `npm run db:start`, `npm run db:reset`, `npm run db:types`
 - Start Docker Desktop or the Docker service
 
 **npm audit vulnerabilities**
+
 - Upstream dependencies may have vulnerabilities
 - Review with `npm audit` and update where safe
 - Most are in dev dependencies and don't affect production

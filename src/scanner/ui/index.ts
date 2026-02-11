@@ -9,4 +9,3 @@ export * from "./state";
 // ScannerExperience is the canonical entry point and should be imported directly
 // when building route components, not re-exported here.
 // import { ScannerExperience } from "@/scanner/ui/ScannerExperience";
-

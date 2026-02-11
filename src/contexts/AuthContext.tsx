@@ -12,9 +12,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { analytics } from "@/lib/analytics";
 import { logger } from "@/lib/logger";
 import { checkSuperAdminRole, clearSuperAdminCache, isSuperAdminCached } from "@/lib/superAdmin";
-import { 
-  persistUserData, 
-  clearPersistedUserData, 
+import {
+  persistUserData,
+  clearPersistedUserData,
   wasRememberMeSelected,
   getLastUserId,
 } from "@/lib/auth/userPersistence";
@@ -75,7 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   // SUPER ADMIN EARLY UNLOCK: Use module-level cached value as initial state
   // This ensures isSuperAdmin is TRUE from the very first render for returning super admins
   const [isSuperAdmin, setIsSuperAdmin] = useState(INITIAL_SUPER_ADMIN_STATUS);
@@ -95,19 +95,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setRolesLoading(false);
       return;
     }
-    
+
     // Store user ID for cache lookup on next app load
     try {
       localStorage.setItem("lovable_last_user_id", userId);
     } catch {
       // localStorage may not be available
     }
-    
+
     try {
       // Race against timeout to prevent hanging forever
       const isSuper = await Promise.race([
         checkSuperAdminRole(userId),
-        new Promise<boolean>((resolve) => setTimeout(() => resolve(isSuperAdminCached(userId)), 2000)),
+        new Promise<boolean>(resolve =>
+          setTimeout(() => resolve(isSuperAdminCached(userId)), 2000),
+        ),
       ]);
       setIsSuperAdmin(isSuper);
     } catch (err) {
@@ -139,7 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      
+
       // Load super admin status from database
       loadSuperAdminStatus(session?.user?.id ?? null);
 
@@ -176,7 +178,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         ]);
 
         if (!mounted) return;
-        
+
         // If we got a session, use it
         if (result.data.session) {
           setSession(result.data.session);
@@ -396,15 +398,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [user?.email_confirmed_at, user?.email]);
 
   // Compute super admin properties based on database-driven role check
-  const superAdminProps = useMemo(() => ({
-    isSuperAdmin,
-    role: isSuperAdmin ? "super_admin" : "user",
-    subscription: isSuperAdmin ? "tier3_premium_lifetime" : "free",
-    subscriptionStatus: isSuperAdmin ? "active" : "inactive",
-    allFeaturesUnlocked: isSuperAdmin,
-    badge: isSuperAdmin ? "Super Admin" : null,
-    hasFullAccess: isSuperAdmin,
-  }), [isSuperAdmin]);
+  const superAdminProps = useMemo(
+    () => ({
+      isSuperAdmin,
+      role: isSuperAdmin ? "super_admin" : "user",
+      subscription: isSuperAdmin ? "tier3_premium_lifetime" : "free",
+      subscriptionStatus: isSuperAdmin ? "active" : "inactive",
+      allFeaturesUnlocked: isSuperAdmin,
+      badge: isSuperAdmin ? "Super Admin" : null,
+      hasFullAccess: isSuperAdmin,
+    }),
+    [isSuperAdmin],
+  );
 
   const contextValue = useMemo(
     () => ({

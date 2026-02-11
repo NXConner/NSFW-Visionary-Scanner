@@ -31,7 +31,11 @@ serve(async req => {
     });
     if (!rate.allowed) {
       return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
-        headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          ...buildRateLimitHeaders(rate),
+          "Content-Type": "application/json",
+        },
         status: 429,
       });
     }
@@ -49,7 +53,11 @@ serve(async req => {
       return new Response(
         JSON.stringify({ message: "No users with medication reminders enabled", sent: 0 }),
         {
-          headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+          headers: {
+            ...corsHeaders,
+            ...buildRateLimitHeaders(rate),
+            "Content-Type": "application/json",
+          },
           status: 200,
         },
       );
@@ -73,7 +81,11 @@ serve(async req => {
       return new Response(
         JSON.stringify({ message: "No medication reminders due for current time window", sent: 0 }),
         {
-          headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+          headers: {
+            ...corsHeaders,
+            ...buildRateLimitHeaders(rate),
+            "Content-Type": "application/json",
+          },
           status: 200,
         },
       );
@@ -122,7 +134,11 @@ serve(async req => {
         notification_response: notificationResponse,
       }),
       {
-        headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          ...buildRateLimitHeaders(rate),
+          "Content-Type": "application/json",
+        },
         status: 200,
       },
     );

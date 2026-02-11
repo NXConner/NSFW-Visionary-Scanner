@@ -47,7 +47,10 @@ class DownloadManager {
       });
 
       if (error) {
-        logger.error("DownloadManager: Failed to get DLC content", { packageId, error: error.message });
+        logger.error("DownloadManager: Failed to get DLC content", {
+          packageId,
+          error: error.message,
+        });
         return null;
       }
 
@@ -171,9 +174,7 @@ class DownloadManager {
   }
 
   getActiveDownloads(): DownloadProgress[] {
-    return this.getDownloads().filter(
-      d => d.status === "pending" || d.status === "downloading",
-    );
+    return this.getDownloads().filter(d => d.status === "pending" || d.status === "downloading");
   }
 
   async isContentCached(packageId: string): Promise<boolean> {

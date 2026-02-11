@@ -146,9 +146,7 @@ const buildFeaturesForPackage = (packageId: string): DLCFeature[] => {
 const buildPackage = (packageId: string, index: number): DLCPackage => {
   const meta = PACKAGE_META[packageId];
   const moduleIds = MODULE_PACKAGE_MAP[packageId] || [];
-  const fallbackName = moduleIds.length
-    ? DLC_MODULES[moduleIds[0]]?.name || packageId
-    : packageId;
+  const fallbackName = moduleIds.length ? DLC_MODULES[moduleIds[0]]?.name || packageId : packageId;
   return {
     packageId,
     packageName: meta?.packageName || fallbackName,

@@ -1,17 +1,17 @@
 // Deno type declarations for Supabase Edge Functions
 declare namespace Deno {
   export namespace env {
-    export function get(key: string): string | undefined
+    export function get(key: string): string | undefined;
   }
 }
 
-declare function serve(handler: (req: Request) => Promise<Response> | Response): void
+declare function serve(handler: (req: Request) => Promise<Response> | Response): void;
 
 // Allow importing from URLs
-declare module 'https://*' {
-  const content: any
-  export const serve: any
-  export const createClient: any
-  export default content
-  export = content
+declare module "https://*" {
+  const content: any;
+  export const serve: any;
+  export const createClient: any;
+  export default content;
+  export = content;
 }

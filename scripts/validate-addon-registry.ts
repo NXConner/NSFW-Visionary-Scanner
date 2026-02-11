@@ -45,8 +45,12 @@ async function main() {
   const dbIds = new Set(db.map(r => r.addon_id));
   const codeIds = new Set(ADDON_MANIFESTS.map(m => m.id));
 
-  const missingInDb = Array.from(codeIds).filter(id => !dbIds.has(id)).sort();
-  const extraInDb = Array.from(dbIds).filter(id => !codeIds.has(id)).sort();
+  const missingInDb = Array.from(codeIds)
+    .filter(id => !dbIds.has(id))
+    .sort();
+  const extraInDb = Array.from(dbIds)
+    .filter(id => !codeIds.has(id))
+    .sort();
 
   const mismatches: Array<{ id: string; fields: Record<string, { db: unknown; code: unknown }> }> =
     [];

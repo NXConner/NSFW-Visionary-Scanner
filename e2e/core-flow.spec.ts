@@ -12,7 +12,8 @@ test.describe("Core navigation flow (smoke)", () => {
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
 
-    await page.goto("/");
+    // Main app experience lives at /app (root "/" is the marketing/landing page).
+    await page.goto("/app");
     await waitForAppReady(page);
     await expect(page).toHaveTitle(/MorphoScan Pro/);
 
@@ -31,12 +32,12 @@ test.describe("Core navigation flow (smoke)", () => {
       const settingsTab = profileSection.getByRole("tab", { name: "Settings" });
       await settingsTab.scrollIntoViewIfNeeded();
       await settingsTab.click({ force: true });
-      await expect(page.getByText("Appearance")).toBeVisible();
+      await expect(page.getByText("Appearance", { exact: true }).first()).toBeVisible();
       await expect(page.getByText("Theme", { exact: true })).toBeVisible();
-      await expect(page.getByText("Push Notifications")).toBeVisible();
-      await expect(page.getByText("Linked Accounts")).toBeVisible();
-      await expect(page.getByText("Data Retention Policy")).toBeVisible();
-      await expect(page.getByText("Delete Account")).toBeVisible();
+      await expect(page.getByText("Push Notifications", { exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Linked Accounts" })).toBeVisible();
+      await expect(page.getByText("Data Retention Policy", { exact: true }).first()).toBeVisible();
+      await expect(page.getByText("Delete Account", { exact: true }).first()).toBeVisible();
     } else {
       // Mobile layouts may split internal tabs across rows/overflows.
       // Keep the smoke test stable by verifying Profile renders and proceeding.

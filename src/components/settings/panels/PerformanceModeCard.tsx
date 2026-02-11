@@ -201,7 +201,9 @@ export function PerformanceModeCard() {
                 <RadioGroupItem value={mode.id} id={`mode-${mode.id}`} className="mt-1" />
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center gap-2">
-                    <Icon className={`w-4 h-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                    <Icon
+                      className={`w-4 h-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`}
+                    />
                     <Label htmlFor={`mode-${mode.id}`} className="font-medium cursor-pointer">
                       {mode.label}
                     </Label>
@@ -232,8 +234,9 @@ export function PerformanceModeCard() {
 
         <div className="mt-4 p-3 rounded-lg bg-muted/30 border border-border">
           <p className="text-xs text-muted-foreground">
-            <strong>Tip:</strong> Use Performance mode if you experience lag or want to save battery.
-            Visual mode provides the best experience but may affect performance on older devices.
+            <strong>Tip:</strong> Use Performance mode if you experience lag or want to save
+            battery. Visual mode provides the best experience but may affect performance on older
+            devices.
           </p>
         </div>
       </CardContent>

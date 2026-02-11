@@ -40,4 +40,3 @@ export async function queueVideoEdit(req: VideoEditQueueRequest): Promise<VideoE
     return { ok: false, error: message };
   }
 }
-

@@ -53,4 +53,3 @@ export function curvatureFromPolynomial(_fit: CurveFitResult): number {
   void d;
   return 0;
 }
-

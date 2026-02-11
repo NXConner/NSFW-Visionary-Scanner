@@ -104,8 +104,7 @@ export const zh: TranslationDictionary = {
   "partnerSync.common.removeItem": "移除项目",
 
   "partnerSync.connection.title": "伴侣同步",
-  "partnerSync.connection.subtitle":
-    "连接伴侣以共享进度、心意提醒、约会计划和姿势选择。",
+  "partnerSync.connection.subtitle": "连接伴侣以共享进度、心意提醒、约会计划和姿势选择。",
   "partnerSync.connection.connected": "已连接",
   "partnerSync.connection.accepted": "已接受",
   "partnerSync.connection.partnerId": "伴侣ID",
@@ -142,8 +141,7 @@ export const zh: TranslationDictionary = {
   "partnerSync.connection.accept": "接受",
   "partnerSync.connection.decline": "拒绝",
   "partnerSync.connection.privacyTitle": "隐私与安全",
-  "partnerSync.connection.privacyCopy":
-    "伴侣数据将受到保护。您可控制共享并随时撤销访问。",
+  "partnerSync.connection.privacyCopy": "伴侣数据将受到保护。您可控制共享并随时撤销访问。",
 
   "partnerSync.pings.composeTitle": "心意提醒",
   "partnerSync.pings.composeSubtitle": "发送快速提醒分享你的想法。",
@@ -376,48 +374,27 @@ export const zh: TranslationDictionary = {
   "partnerSync.recommendations.datesTitle": "约会之夜",
   "partnerSync.recommendations.positionsTitle": "姿势",
   "partnerSync.recommendations.safetyTitle": "安全与舒适",
-  "partnerSync.recommendations.pings.1":
-    "提醒要简短具体，便于快速回复。",
-  "partnerSync.recommendations.pings.2":
-    "混合俏皮与浪漫语气，避免消息疲劳。",
+  "partnerSync.recommendations.pings.1": "提醒要简短具体，便于快速回复。",
+  "partnerSync.recommendations.pings.2": "混合俏皮与浪漫语气，避免消息疲劳。",
   "partnerSync.recommendations.pings.3": "使用主题对齐预期。",
-  "partnerSync.recommendations.pings.4":
-    "通过回复确认兴趣与边界。",
-  "partnerSync.recommendations.pings.5":
-    "在伴侣安静时段安排发送。",
-  "partnerSync.recommendations.pings.6":
-    "用表情快速确认收到。",
-  "partnerSync.recommendations.dates.1":
-    "把夜晚分为阶段（外出、晚餐、在家）。",
-  "partnerSync.recommendations.dates.2":
-    "提前标注干扰以保持专注。",
-  "partnerSync.recommendations.dates.3":
-    "加入短暂的节奏与舒适度检查。",
-  "partnerSync.recommendations.dates.4":
-    "准备时间、地点或精力的备用计划。",
-  "partnerSync.recommendations.dates.5":
-    "用提醒管理行程与预订。",
-  "partnerSync.recommendations.dates.6":
-    "约会后记录反思以改进。",
-  "partnerSync.recommendations.positions.1":
-    "先选一项共同选择，再加入一项伴侣选择。",
-  "partnerSync.recommendations.positions.2":
-    "用备注说明你喜欢的原因。",
-  "partnerSync.recommendations.positions.3":
-    "混合简单与进阶选项来平衡强度。",
-  "partnerSync.recommendations.positions.4":
-    "标记已尝试的姿势保持列表新鲜。",
-  "partnerSync.recommendations.positions.5":
-    "尝试新内容前先确认安全清单和边界。",
-  "partnerSync.recommendations.positions.6":
-    "用替换建议快速协调替代方案。",
-  "partnerSync.recommendations.safety.1":
-    "开始前确认同意和边界。",
-  "partnerSync.recommendations.safety.2":
-    "约定暂停/停止词进行实时检查。",
-  "partnerSync.recommendations.safety.3":
-    "留出事后照护或放松时间。",
-  "partnerSync.recommendations.safety.4":
-    "用隐私设置控制地点细节。",
+  "partnerSync.recommendations.pings.4": "通过回复确认兴趣与边界。",
+  "partnerSync.recommendations.pings.5": "在伴侣安静时段安排发送。",
+  "partnerSync.recommendations.pings.6": "用表情快速确认收到。",
+  "partnerSync.recommendations.dates.1": "把夜晚分为阶段（外出、晚餐、在家）。",
+  "partnerSync.recommendations.dates.2": "提前标注干扰以保持专注。",
+  "partnerSync.recommendations.dates.3": "加入短暂的节奏与舒适度检查。",
+  "partnerSync.recommendations.dates.4": "准备时间、地点或精力的备用计划。",
+  "partnerSync.recommendations.dates.5": "用提醒管理行程与预订。",
+  "partnerSync.recommendations.dates.6": "约会后记录反思以改进。",
+  "partnerSync.recommendations.positions.1": "先选一项共同选择，再加入一项伴侣选择。",
+  "partnerSync.recommendations.positions.2": "用备注说明你喜欢的原因。",
+  "partnerSync.recommendations.positions.3": "混合简单与进阶选项来平衡强度。",
+  "partnerSync.recommendations.positions.4": "标记已尝试的姿势保持列表新鲜。",
+  "partnerSync.recommendations.positions.5": "尝试新内容前先确认安全清单和边界。",
+  "partnerSync.recommendations.positions.6": "用替换建议快速协调替代方案。",
+  "partnerSync.recommendations.safety.1": "开始前确认同意和边界。",
+  "partnerSync.recommendations.safety.2": "约定暂停/停止词进行实时检查。",
+  "partnerSync.recommendations.safety.3": "留出事后照护或放松时间。",
+  "partnerSync.recommendations.safety.4": "用隐私设置控制地点细节。",
   "partnerSync.preview.subtitle": "用于空状态与布局检查的预览面板。",
 };

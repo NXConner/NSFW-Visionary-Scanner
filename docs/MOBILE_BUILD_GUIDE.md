@@ -4,23 +4,25 @@ This guide covers building GrowthTracker for Android and iOS platforms using Cap
 
 ## App Information
 
-| Property | Value |
-|----------|-------|
-| App Name | GrowthTracker |
-| Bundle ID | app.lovable.0b696f8a6a684651ba80ae9256f5e910 |
-| Version | 1.0.0 |
-| Min Android | API 24 (Android 7.0) |
-| Min iOS | iOS 14.0 |
+| Property    | Value                                        |
+| ----------- | -------------------------------------------- |
+| App Name    | GrowthTracker                                |
+| Bundle ID   | app.lovable.0b696f8a6a684651ba80ae9256f5e910 |
+| Version     | 1.0.0                                        |
+| Min Android | API 24 (Android 7.0)                         |
+| Min iOS     | iOS 14.0                                     |
 
 ## Prerequisites
 
 ### For Android:
+
 - [Node.js](https://nodejs.org/) (v18 or later)
 - [Android Studio](https://developer.android.com/studio)
 - Android SDK (API level 24+)
 - Java JDK 17+
 
 ### For iOS:
+
 - macOS with [Xcode](https://developer.apple.com/xcode/) (14.0+)
 - [CocoaPods](https://cocoapods.org/)
 - Apple Developer Account (for App Store deployment)
@@ -43,11 +45,13 @@ npm install
 ### Option 1: Using Build Script (Recommended)
 
 **Windows:**
+
 ```batch
 scripts\build-android.bat
 ```
 
 **macOS/Linux:**
+
 ```bash
 chmod +x scripts/build-android.sh
 ./scripts/build-android.sh
@@ -70,12 +74,14 @@ npx cap open android
 ```
 
 In Android Studio:
+
 1. Build → Generate Signed Bundle / APK
 2. Select APK or Android App Bundle (AAB)
 3. Create or select signing key
 4. Build Release
 
 ### APK Output Locations
+
 - Debug: `android/app/build/outputs/apk/debug/app-debug.apk`
 - Release: `android/app/build/outputs/apk/release/app-release-unsigned.apk`
 
@@ -108,6 +114,7 @@ npx cap open ios
 ```
 
 In Xcode:
+
 1. Select your development team
 2. Product → Archive
 3. Distribute App → App Store Connect
@@ -184,6 +191,7 @@ cd android
 ```
 
 **Output locations:**
+
 - AAB: `android/app/build/outputs/bundle/release/app-release.aab`
 - APK: `android/app/build/outputs/apk/release/app-release.apk`
 
@@ -223,11 +231,13 @@ cd android
 ### 3. Configure App Icons
 
 In Xcode:
+
 1. Open `ios/App/App/Assets.xcassets`
 2. Select AppIcon
 3. Drag icons to each slot OR use Asset Catalog Creator tool
 
 Required sizes (all PNG, no alpha):
+
 - 1024x1024 (App Store)
 - 180x180 (iPhone @3x)
 - 120x120 (iPhone @2x)
@@ -262,6 +272,7 @@ Required sizes (all PNG, no alpha):
 ### 6. Submit for Review
 
 In App Store Connect:
+
 1. Select your app
 2. Click "+ Version or Platform" if needed
 3. Fill all required fields:
@@ -296,6 +307,7 @@ In App Store Connect:
 ### Android Build Issues
 
 **Gradle sync failed:**
+
 ```bash
 cd android
 ./gradlew clean
@@ -308,6 +320,7 @@ Ensure JAVA_HOME points to JDK 17+
 ### iOS Build Issues
 
 **CocoaPods issues:**
+
 ```bash
 cd ios/App
 pod deintegrate
@@ -315,16 +328,19 @@ pod install --repo-update
 ```
 
 **Signing issues:**
+
 - Ensure valid Apple Developer membership
 - Check provisioning profiles in Xcode
 
 ### Common Issues
 
 **Web app not loading:**
+
 - Check `capacitor.config.ts` server URL
 - For production, remove/comment the server.url setting
 
 **Assets not updating:**
+
 ```bash
 npx cap sync
 ```
@@ -332,7 +348,9 @@ npx cap sync
 ## Environment Configuration
 
 ### Development (Hot Reload)
+
 The `capacitor.config.ts` includes a server URL for development hot reload:
+
 ```typescript
 server: {
   url: 'https://your-preview-url.lovableproject.com',
@@ -341,6 +359,7 @@ server: {
 ```
 
 ### Production Build
+
 Comment out or remove the server config for production builds to use the bundled web app.
 
 ## Resources

@@ -3,8 +3,8 @@
  * Full view of all achievements with filtering and progress
  */
 
-import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Trophy,
   Star,
@@ -16,39 +16,39 @@ import {
   Flame,
   Lock,
   Unlock,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useAchievements } from '@/contexts/AchievementContext';
-import { AchievementBadge } from './AchievementBadge';
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAchievements } from "@/contexts/AchievementContext";
+import { AchievementBadge } from "./AchievementBadge";
 import {
   type Achievement,
   type AchievementCategory,
   type AchievementRarity,
   getRarityColor,
-} from '@/lib/achievements/achievementDefinitions';
-import { type MilestoneProgress, getTierColor } from '@/lib/achievements/milestones';
+} from "@/lib/achievements/achievementDefinitions";
+import { type MilestoneProgress, getTierColor } from "@/lib/achievements/milestones";
 
 export interface AchievementsPanelProps {
   className?: string;
   compact?: boolean;
 }
 
-type ViewMode = 'grid' | 'list';
-type FilterRarity = AchievementRarity | 'all';
-type FilterStatus = 'all' | 'unlocked' | 'locked';
+type ViewMode = "grid" | "list";
+type FilterRarity = AchievementRarity | "all";
+type FilterStatus = "all" | "unlocked" | "locked";
 
 const categoryIcons: Record<AchievementCategory, React.ReactNode> = {
   scanning: <Trophy className="h-4 w-4" />,
@@ -74,11 +74,11 @@ export function AchievementsPanel({ className, compact = false }: AchievementsPa
     getProgress,
   } = useAchievements();
 
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterRarity, setFilterRarity] = useState<FilterRarity>('all');
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
-  const [activeCategory, setActiveCategory] = useState<AchievementCategory | 'all'>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterRarity, setFilterRarity] = useState<FilterRarity>("all");
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [activeCategory, setActiveCategory] = useState<AchievementCategory | "all">("all");
 
   // Filter and sort achievements
   const filteredAchievements = useMemo(() => {
@@ -95,19 +95,19 @@ export function AchievementsPanel({ className, compact = false }: AchievementsPa
       }
 
       // Category filter
-      if (activeCategory !== 'all' && achievement.category !== activeCategory) {
+      if (activeCategory !== "all" && achievement.category !== activeCategory) {
         return false;
       }
 
       // Rarity filter
-      if (filterRarity !== 'all' && achievement.rarity !== filterRarity) {
+      if (filterRarity !== "all" && achievement.rarity !== filterRarity) {
         return false;
       }
 
       // Status filter
       const unlocked = isUnlocked(achievement.id);
-      if (filterStatus === 'unlocked' && !unlocked) return false;
-      if (filterStatus === 'locked' && unlocked) return false;
+      if (filterStatus === "unlocked" && !unlocked) return false;
+      if (filterStatus === "locked" && unlocked) return false;
 
       return true;
     });
@@ -125,7 +125,7 @@ export function AchievementsPanel({ className, compact = false }: AchievementsPa
   }, [filteredAchievements]);
 
   return (
-    <div className={cn('space-y-6', className)}>
+    <div className={cn("space-y-6", className)}>
       {/* Header Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-muted/50 rounded-lg p-4">
@@ -172,16 +172,13 @@ export function AchievementsPanel({ className, compact = false }: AchievementsPa
             <Input
               placeholder="Search achievements..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>
         </div>
 
-        <Select
-          value={filterRarity}
-          onValueChange={(val) => setFilterRarity(val as FilterRarity)}
-        >
+        <Select value={filterRarity} onValueChange={val => setFilterRarity(val as FilterRarity)}>
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Rarity" />
           </SelectTrigger>
@@ -195,10 +192,7 @@ export function AchievementsPanel({ className, compact = false }: AchievementsPa
           </SelectContent>
         </Select>
 
-        <Select
-          value={filterStatus}
-          onValueChange={(val) => setFilterStatus(val as FilterStatus)}
-        >
+        <Select value={filterStatus} onValueChange={val => setFilterStatus(val as FilterStatus)}>
           <SelectTrigger className="w-[130px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -221,18 +215,18 @@ export function AchievementsPanel({ className, compact = false }: AchievementsPa
 
         <div className="flex items-center border rounded-md">
           <Button
-            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+            variant={viewMode === "grid" ? "secondary" : "ghost"}
             size="icon"
             className="h-9 w-9 rounded-none rounded-l-md"
-            onClick={() => setViewMode('grid')}
+            onClick={() => setViewMode("grid")}
           >
             <Grid className="h-4 w-4" />
           </Button>
           <Button
-            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+            variant={viewMode === "list" ? "secondary" : "ghost"}
             size="icon"
             className="h-9 w-9 rounded-none rounded-r-md"
-            onClick={() => setViewMode('list')}
+            onClick={() => setViewMode("list")}
           >
             <List className="h-4 w-4" />
           </Button>
@@ -242,7 +236,7 @@ export function AchievementsPanel({ className, compact = false }: AchievementsPa
       {/* Category Tabs */}
       <Tabs
         value={activeCategory}
-        onValueChange={(val) => setActiveCategory(val as AchievementCategory | 'all')}
+        onValueChange={val => setActiveCategory(val as AchievementCategory | "all")}
       >
         <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="all" className="text-xs">
@@ -272,17 +266,17 @@ export function AchievementsPanel({ className, compact = false }: AchievementsPa
 
         <TabsContent value={activeCategory} className="mt-4">
           <ScrollArea className="h-[500px] pr-4">
-            {viewMode === 'grid' ? (
+            {viewMode === "grid" ? (
               <motion.div
                 className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3"
                 layout
               >
                 <AnimatePresence>
-                  {filteredAchievements.map((achievement) => {
+                  {filteredAchievements.map(achievement => {
                     const unlocked = isUnlocked(achievement.id);
                     const progress = getProgress(achievement.id);
                     const unlockedData = unlockedAchievements.find(
-                      (a) => a.achievementId === achievement.id
+                      a => a.achievementId === achievement.id,
                     );
 
                     return (
@@ -314,11 +308,11 @@ export function AchievementsPanel({ className, compact = false }: AchievementsPa
                       {categoryIcons[category as AchievementCategory]}
                       {category}
                       <Badge variant="secondary" className="ml-auto">
-                        {achievements.filter((a) => isUnlocked(a.id)).length} / {achievements.length}
+                        {achievements.filter(a => isUnlocked(a.id)).length} / {achievements.length}
                       </Badge>
                     </h4>
                     <div className="space-y-2">
-                      {achievements.map((achievement) => {
+                      {achievements.map(achievement => {
                         const unlocked = isUnlocked(achievement.id);
                         const progress = getProgress(achievement.id);
                         const rarityColor = getRarityColor(achievement.rarity);
@@ -327,8 +321,8 @@ export function AchievementsPanel({ className, compact = false }: AchievementsPa
                           <motion.div
                             key={achievement.id}
                             className={cn(
-                              'flex items-center gap-3 p-3 rounded-lg border',
-                              unlocked ? 'bg-muted/30' : 'bg-muted/10 opacity-60'
+                              "flex items-center gap-3 p-3 rounded-lg border",
+                              unlocked ? "bg-muted/30" : "bg-muted/10 opacity-60",
                             )}
                             layout
                           >
@@ -341,18 +335,21 @@ export function AchievementsPanel({ className, compact = false }: AchievementsPa
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="font-medium truncate">
-                                  {achievement.secret && !unlocked ? '???' : achievement.name}
+                                  {achievement.secret && !unlocked ? "???" : achievement.name}
                                 </span>
                                 <span
                                   className="text-xs px-1.5 py-0.5 rounded-full capitalize"
-                                  style={{ backgroundColor: `${rarityColor}20`, color: rarityColor }}
+                                  style={{
+                                    backgroundColor: `${rarityColor}20`,
+                                    color: rarityColor,
+                                  }}
                                 >
                                   {achievement.rarity}
                                 </span>
                               </div>
                               <p className="text-sm text-muted-foreground truncate">
                                 {achievement.secret && !unlocked
-                                  ? 'Secret achievement'
+                                  ? "Secret achievement"
                                   : achievement.description}
                               </p>
                               {!unlocked && progress && (

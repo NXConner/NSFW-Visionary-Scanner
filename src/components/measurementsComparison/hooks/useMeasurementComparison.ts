@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useData } from "@/contexts/DataContext";
-import { fetchCommunityAverages, getPlaceholderCommunityAverages } from "@/lib/measurementsComparison";
+import {
+  fetchCommunityAverages,
+  getPlaceholderCommunityAverages,
+} from "@/lib/measurementsComparison";
 import type {
   CommunityAverages,
   MeasurementPoint,

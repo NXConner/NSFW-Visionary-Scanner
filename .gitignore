@@ -2,6 +2,15 @@
 node_modules/
 .npm
 
+# Build outputs
+dist/
+build/
+
+# Test outputs
+coverage/
+playwright-report/
+test-results/
+
 # SDK  
 android-sdk/
 
@@ -9,3 +18,26 @@ android-sdk/
 .idea/
 *.iml
 .vscode/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.*
+!.env.example
+.env.local
+.env.*.local
+
+# Firebase / Google Services (local-only)
+android/app/google-services.json
+ios/App/App/GoogleService-Info.plist
+
+# Android signing / keystores (local-only)
+android/keystore.properties
+android/app/release.keystore
+**/*.jks
+**/*.keystore
+
+# Large generated files
+*.pdf

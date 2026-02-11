@@ -9,12 +9,18 @@ export async function fetchPositionCategories(): Promise<string[]> {
       .select("category")
       .eq("is_active", true);
     if (error) {
-      logger.info("[positionsGallery/db] Category fetch error, returning empty", { error: error.message });
+      logger.info("[positionsGallery/db] Category fetch error, returning empty", {
+        error: error.message,
+      });
       return [];
     }
     return (
       Array.from(
-        new Set((data || []).map((r: { category?: string }) => String(r.category || "").trim()).filter(Boolean)),
+        new Set(
+          (data || [])
+            .map((r: { category?: string }) => String(r.category || "").trim())
+            .filter(Boolean),
+        ),
       ) as string[]
     ).sort((a, b) => a.localeCompare(b));
   } catch (err) {
@@ -68,24 +74,30 @@ export async function fetchPositionsPage(params: {
     const { data, error, count } = await q;
     if (error) {
       // Log and return empty result to trigger fallback in caller
-      logger.info("[positionsGallery/db] Positions fetch error, returning empty to trigger fallback", { 
-        error: error.message 
-      });
+      logger.info(
+        "[positionsGallery/db] Positions fetch error, returning empty to trigger fallback",
+        {
+          error: error.message,
+        },
+      );
       return { rows: [], count: 0 };
     }
-    
+
     const rows = (data || []) as DbPositionRow[];
     const totalCount = typeof count === "number" ? count : 0;
-    logger.info("[positionsGallery/db] Fetched positions from DB", { 
-      rowCount: rows.length, 
-      totalCount 
+    logger.info("[positionsGallery/db] Fetched positions from DB", {
+      rowCount: rows.length,
+      totalCount,
     });
     return { rows, count: totalCount };
   } catch (err) {
     // Return empty to allow fallback to GitHub catalog
-    logger.info("[positionsGallery/db] Positions fetch exception, returning empty to trigger fallback", { 
-      error: err 
-    });
+    logger.info(
+      "[positionsGallery/db] Positions fetch exception, returning empty to trigger fallback",
+      {
+        error: err,
+      },
+    );
     return { rows: [], count: 0 };
   }
 }

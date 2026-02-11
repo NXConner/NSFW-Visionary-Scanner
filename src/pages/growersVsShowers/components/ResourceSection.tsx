@@ -13,7 +13,12 @@ function ResourceCard({ r }: { r: ExternalResource }) {
           <div className="text-xs text-muted-foreground mt-1">{r.description}</div>
         </div>
         <Button asChild variant="outline" size="sm" className="flex-shrink-0">
-          <a href={r.url} target="_blank" rel="noopener noreferrer" className="gap-2 inline-flex items-center">
+          <a
+            href={r.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="gap-2 inline-flex items-center"
+          >
             Open <ExternalLink className="w-4 h-4" />
           </a>
         </Button>
@@ -61,4 +66,3 @@ export function ResourceSection(props: {
     </section>
   );
 }
-

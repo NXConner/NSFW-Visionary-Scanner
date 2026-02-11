@@ -12,11 +12,7 @@
           "Step 2: Move to intermediate position",
           "Step 3: Transition to advanced position"
         ],
-        "tips": [
-          "Use pillows for support",
-          "Communicate with partner",
-          "Take breaks if needed"
-        ],
+        "tips": ["Use pillows for support", "Communicate with partner", "Take breaks if needed"],
         "image_url": "https://storage.supabase.co/object/public/dlc-content/pack-id/images/pos-001.jpg",
         "video_url": "https://storage.supabase.co/object/public/dlc-content/pack-id/videos/pos-001.mp4",
         "gif_url": "https://storage.supabase.co/object/public/dlc-content/pack-id/gifs/pos-001.gif",
@@ -72,4 +68,3 @@
     ]
   }
 }
-

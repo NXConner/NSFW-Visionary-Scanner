@@ -48,19 +48,19 @@ npm run dlc:import-expert-content -- --file docs/product/dlc/dlc-content/seed/ed
 
 ### MIT positions (download + import)
 
-1) Download MIT illustrations locally (not committed):
+1. Download MIT illustrations locally (not committed):
 
 ```powershell
 npm run dlc:download-mit-positions
 ```
 
-2) Regenerate the CSV (optional, already generated):
+2. Regenerate the CSV (optional, already generated):
 
 ```powershell
 npm run dlc:build-mit-positions-csv
 ```
 
-3) In **Admin → DLC → Content Import → Positions**:
+3. In **Admin → DLC → Content Import → Positions**:
 
 - Select `seed/positions_mit_generated.csv`.
 - Add all downloaded files from `dlc-assets/mit-positions/` as asset uploads.

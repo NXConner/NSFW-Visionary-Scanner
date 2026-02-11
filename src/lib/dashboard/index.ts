@@ -1,2 +1,2 @@
-export * from './DashboardManager';
-export * from './ThemeManager';
+export * from "./DashboardManager";
+export * from "./ThemeManager";

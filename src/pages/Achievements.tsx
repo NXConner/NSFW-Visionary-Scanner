@@ -3,17 +3,17 @@
  * Full page view for achievements and milestones
  */
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Trophy, Star, Target, Flame, Heart, Compass } from 'lucide-react';
-import { AchievementsPanel } from '@/components/achievements/AchievementsPanel';
-import { AchievementToast } from '@/components/achievements/AchievementToast';
-import { useAchievements } from '@/contexts/AchievementContext';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { getTierColor } from '@/lib/achievements/milestones';
+import React from "react";
+import { motion } from "framer-motion";
+import { Trophy, Star, Target, Flame, Heart, Compass } from "lucide-react";
+import { AchievementsPanel } from "@/components/achievements/AchievementsPanel";
+import { AchievementToast } from "@/components/achievements/AchievementToast";
+import { useAchievements } from "@/contexts/AchievementContext";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { getTierColor } from "@/lib/achievements/milestones";
 
 export function AchievementsPage() {
   const {
@@ -40,11 +40,7 @@ export function AchievementsPage() {
       />
 
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <Trophy className="h-8 w-8 text-primary" />
           <h1 className="text-3xl font-bold">Achievements</h1>
@@ -79,26 +75,24 @@ export function AchievementsPage() {
         {/* Milestones Tab */}
         <TabsContent value="milestones">
           <div className="space-y-6">
-            {categories.map((category) => (
+            {categories.map(category => (
               <Card key={category.category}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    {category.category === 'scanning' && <Trophy className="h-5 w-5" />}
-                    {category.category === 'consistency' && <Flame className="h-5 w-5" />}
-                    {category.category === 'health' && <Heart className="h-5 w-5" />}
-                    {category.category === 'exploration' && <Compass className="h-5 w-5" />}
+                    {category.category === "scanning" && <Trophy className="h-5 w-5" />}
+                    {category.category === "consistency" && <Flame className="h-5 w-5" />}
+                    {category.category === "health" && <Heart className="h-5 w-5" />}
+                    {category.category === "exploration" && <Compass className="h-5 w-5" />}
                     {category.name}
                   </CardTitle>
                   <CardDescription>{category.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {category.milestones.map((milestone) => {
-                      const progress = milestoneProgress.find(
-                        (p) => p.milestoneId === milestone.id
-                      );
+                    {category.milestones.map(milestone => {
+                      const progress = milestoneProgress.find(p => p.milestoneId === milestone.id);
                       const tierColor = getTierColor(milestone.tier);
-                      const isCompleted = progress?.status === 'completed';
+                      const isCompleted = progress?.status === "completed";
 
                       return (
                         <div
@@ -124,10 +118,7 @@ export function AchievementsPage() {
                               {milestone.description}
                             </p>
                             <div className="flex items-center gap-2">
-                              <Progress
-                                value={progress?.percentage || 0}
-                                className="flex-1 h-2"
-                              />
+                              <Progress value={progress?.percentage || 0} className="flex-1 h-2" />
                               <span className="text-sm text-muted-foreground">
                                 {progress?.currentValue || 0} / {milestone.targetValue}
                               </span>
@@ -138,7 +129,7 @@ export function AchievementsPage() {
                               <Star size={14} className="text-yellow-500" />
                               <span>
                                 {milestone.rewards
-                                  .filter((r) => r.type === 'points')
+                                  .filter(r => r.type === "points")
                                   .reduce((sum, r) => sum + (r.value as number), 0)}
                               </span>
                             </div>
@@ -208,9 +199,7 @@ export function AchievementsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-4xl font-bold">{stats.totalScans}</div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Scans completed since joining
-                </p>
+                <p className="text-sm text-muted-foreground mt-2">Scans completed since joining</p>
               </CardContent>
             </Card>
 
@@ -232,9 +221,7 @@ export function AchievementsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-4xl font-bold">{stats.healthChecks}</div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Health self-checks completed
-                </p>
+                <p className="text-sm text-muted-foreground mt-2">Health self-checks completed</p>
               </CardContent>
             </Card>
           </div>

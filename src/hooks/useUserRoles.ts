@@ -54,12 +54,15 @@ export const useUserRoles = (): UseUserRolesReturn => {
       // Race against a 2-second timeout to prevent UI blocking
       const userResult = await Promise.race([
         supabase.auth.getUser(),
-        new Promise<{ data: { user: null }; error: null }>((resolve) =>
-          setTimeout(() => resolve({ data: { user: null }, error: null }), 2000)
+        new Promise<{ data: { user: null }; error: null }>(resolve =>
+          setTimeout(() => resolve({ data: { user: null }, error: null }), 2000),
         ),
       ]);
 
-      const { data: { user }, error: userError } = userResult;
+      const {
+        data: { user },
+        error: userError,
+      } = userResult;
 
       if (userError) {
         throw userError;
@@ -90,8 +93,8 @@ export const useUserRoles = (): UseUserRolesReturn => {
       // Database-driven role check with 2s timeout
       const roleResult = await Promise.race([
         supabase.from("user_roles").select("role").eq("user_id", user.id),
-        new Promise<{ data: null; error: { message: string } }>((resolve) =>
-          setTimeout(() => resolve({ data: null, error: { message: "Role check timeout" } }), 2000)
+        new Promise<{ data: null; error: { message: string } }>(resolve =>
+          setTimeout(() => resolve({ data: null, error: { message: "Role check timeout" } }), 2000),
         ),
       ]);
 
@@ -109,11 +112,11 @@ export const useUserRoles = (): UseUserRolesReturn => {
         return;
       }
 
-      const dbRoles = (data?.map((r) => r.role as AppRole) || []).filter(Boolean);
-      
+      const dbRoles = (data?.map(r => r.role as AppRole) || []).filter(Boolean);
+
       // Update cache
       cachedRoles = { userId: user.id, roles: dbRoles, timestamp: now };
-      
+
       setRoles(dbRoles);
       persistRoles(dbRoles);
     } catch (err) {
@@ -158,7 +161,8 @@ export const useUserRoles = (): UseUserRolesReturn => {
 
   // SUPER ADMIN EARLY CHECK: Use cached value for immediate access if available
   // This prevents locked flash during initial load
-  const isSuperAdminCachedValue = roles.includes("super_admin") || 
+  const isSuperAdminCachedValue =
+    roles.includes("super_admin") ||
     (cachedRoles?.userId === user?.id && cachedRoles?.roles.includes("super_admin"));
 
   return {
@@ -167,7 +171,11 @@ export const useUserRoles = (): UseUserRolesReturn => {
     isAdmin: roles.includes("admin") || roles.includes("super_admin") || isSuperAdminCachedValue,
     isSuperAdmin: roles.includes("super_admin") || isSuperAdminCachedValue,
     isPro: roles.includes("pro"),
-    isPremium: roles.includes("admin") || roles.includes("super_admin") || roles.includes("pro") || isSuperAdminCachedValue,
+    isPremium:
+      roles.includes("admin") ||
+      roles.includes("super_admin") ||
+      roles.includes("pro") ||
+      isSuperAdminCachedValue,
     isLoading,
     error,
     refetch: fetchRoles,

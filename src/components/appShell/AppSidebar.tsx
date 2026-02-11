@@ -165,7 +165,7 @@ export function AppSidebar(props: {
 
         {NAV_CATEGORIES.filter(category => category.label !== "Main").map(category => {
           const isNSFWCategory = category.label === "NSFW Content";
-          
+
           // For NSFW category, only show if unlocked (has DLC + age verified OR super admin)
           if (isNSFWCategory && !nsfwUnlocked) {
             // Show a teaser entry to unlock NSFW content
@@ -175,7 +175,10 @@ export function AppSidebar(props: {
                   <SidebarGroupLabel className="flex items-center gap-2">
                     <Flame className="h-4 w-4 text-orange-500" />
                     NSFW Content
-                    <Badge variant="outline" className="ml-auto text-xs bg-orange-500/10 text-orange-500 border-orange-500/30">
+                    <Badge
+                      variant="outline"
+                      className="ml-auto text-xs bg-orange-500/10 text-orange-500 border-orange-500/30"
+                    >
                       Locked
                     </Badge>
                   </SidebarGroupLabel>
@@ -205,14 +208,17 @@ export function AppSidebar(props: {
             }
             return null;
           }
-          
+
           return (
             <SidebarGroup key={category.label}>
               <SidebarGroupLabel className={isNSFWCategory ? "flex items-center gap-2" : undefined}>
                 {isNSFWCategory && <Flame className="h-4 w-4 text-orange-500" />}
                 {category.label}
                 {isNSFWCategory && nsfwUnlocked && (
-                  <Badge variant="outline" className="ml-auto text-xs bg-green-500/10 text-green-500 border-green-500/30">
+                  <Badge
+                    variant="outline"
+                    className="ml-auto text-xs bg-green-500/10 text-green-500 border-green-500/30"
+                  >
                     Unlocked
                   </Badge>
                 )}

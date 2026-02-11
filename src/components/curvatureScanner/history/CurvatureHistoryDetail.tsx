@@ -63,7 +63,9 @@ export function CurvatureHistoryDetail({ session }: { session: CurvatureScanSess
             <div className="text-sm font-medium mb-2">Interpretation settings</div>
             <div className="text-xs text-muted-foreground space-y-1">
               <div>Flip left/right (top view): {interp.flipTopViewLeftRight ? "on" : "off"}</div>
-              <div>Flip dorsal/ventral (side view): {interp.flipSideViewDorsalVentral ? "on" : "off"}</div>
+              <div>
+                Flip dorsal/ventral (side view): {interp.flipSideViewDorsalVentral ? "on" : "off"}
+              </div>
             </div>
           </div>
         ) : null}
@@ -72,18 +74,26 @@ export function CurvatureHistoryDetail({ session }: { session: CurvatureScanSess
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {session.images?.dorsalAnnotated ? (
               <div className="rounded-xl border border-border/50 bg-black/20 overflow-hidden">
-                <img src={session.images.dorsalAnnotated} alt="Dorsal annotated" className="w-full h-full object-contain" />
+                <img
+                  src={session.images.dorsalAnnotated}
+                  alt="Dorsal annotated"
+                  className="w-full h-full object-contain"
+                />
               </div>
             ) : null}
             {session.images?.lateralAnnotated ? (
               <div className="rounded-xl border border-border/50 bg-black/20 overflow-hidden">
-                <img src={session.images.lateralAnnotated} alt="Lateral annotated" className="w-full h-full object-contain" />
+                <img
+                  src={session.images.lateralAnnotated}
+                  alt="Lateral annotated"
+                  className="w-full h-full object-contain"
+                />
               </div>
             ) : null}
           </div>
         ) : null}
 
-        {(session.warnings?.dorsal?.length || session.warnings?.lateral?.length) ? (
+        {session.warnings?.dorsal?.length || session.warnings?.lateral?.length ? (
           <div className="rounded-xl border border-border/50 bg-secondary/15 p-4">
             <div className="text-sm font-medium mb-2">Warnings</div>
             <div className="text-xs text-muted-foreground space-y-2">
@@ -114,4 +124,3 @@ export function CurvatureHistoryDetail({ session }: { session: CurvatureScanSess
     </Card>
   );
 }
-

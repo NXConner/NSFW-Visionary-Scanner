@@ -188,13 +188,13 @@ serve(async req => {
       });
     }
 
-  const rateLimitResponse = await applyRateLimit({
-    req,
-    endpoint: "create-dlc-checkout-session",
-    ...DEFAULT_EDGE_RATE_LIMIT,
-    headers: corsHeaders,
-  });
-  if (rateLimitResponse) return rateLimitResponse;
+    const rateLimitResponse = await applyRateLimit({
+      req,
+      endpoint: "create-dlc-checkout-session",
+      ...DEFAULT_EDGE_RATE_LIMIT,
+      headers: corsHeaders,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Unauthorized");

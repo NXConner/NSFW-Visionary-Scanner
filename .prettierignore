@@ -1,0 +1,20 @@
+# Dependencies / caches
+node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+
+# Android (Capacitor copies built web assets here)
+android/app/src/main/assets/
+android/app/build/
+android/build/
+
+# Archived / historical content (not part of active codebase)
+deleted files/
+
+# Large exports
+exports/

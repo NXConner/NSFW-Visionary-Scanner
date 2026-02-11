@@ -13,7 +13,9 @@ import { ScanTab } from "./tabs/ScanTab";
 import { HistoryTab } from "./tabs/HistoryTab";
 
 function computeOverallConfidence(dorsal?: number, lateral?: number) {
-  const xs = [dorsal, lateral].filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  const xs = [dorsal, lateral].filter(
+    (v): v is number => typeof v === "number" && Number.isFinite(v),
+  );
   if (!xs.length) return 0;
   return Math.round(xs.reduce((a, b) => a + b, 0) / xs.length);
 }
@@ -57,7 +59,8 @@ export function CurvatureScannerSection() {
           lengthCm: flow.lengthCm || flow.lateral.lengthCm || undefined,
           confidence: flow.lateral.confidence,
         },
-        estimatedLengthCm: flow.lengthCm || flow.dorsal.lengthCm || flow.lateral.lengthCm || undefined,
+        estimatedLengthCm:
+          flow.lengthCm || flow.dorsal.lengthCm || flow.lateral.lengthCm || undefined,
         overallConfidence: overall || undefined,
         calibration: flow.calibrationData?.pixelsPerMm
           ? {
@@ -102,7 +105,9 @@ export function CurvatureScannerSection() {
       <div className="container mx-auto max-w-6xl">
         <div className="mb-6 text-center">
           <h1 className="text-3xl font-bold gradient-text">Curvature Scan</h1>
-          <p className="text-muted-foreground mt-1">Local-only dorsal + lateral capture for Peyronie’s self-assessment.</p>
+          <p className="text-muted-foreground mt-1">
+            Local-only dorsal + lateral capture for Peyronie’s self-assessment.
+          </p>
           <div className="mt-3 flex items-center justify-center gap-2">
             <Badge variant="outline" className="bg-background/60">
               Privacy: on-device only
@@ -193,11 +198,12 @@ export function CurvatureScannerSection() {
         onClose={() => flow.setShowCalibration(false)}
         onCalibrationComplete={data => {
           flow.setCalibrationData(data);
-          toast.success("Calibration saved", { description: "Length estimates will use real units." });
+          toast.success("Calibration saved", {
+            description: "Length estimates will use real units.",
+          });
         }}
         videoRef={flow.videoRef}
       />
     </section>
   );
 }
-

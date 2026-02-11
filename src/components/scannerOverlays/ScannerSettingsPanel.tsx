@@ -479,7 +479,9 @@ export const ScannerSettingsPanel = ({
           <div className="space-y-3 p-3 rounded-lg bg-secondary/30 border border-border/50">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Masking Mode</span>
-              <span className="text-xs font-mono text-muted-foreground">{settings.maskingMode}</span>
+              <span className="text-xs font-mono text-muted-foreground">
+                {settings.maskingMode}
+              </span>
             </div>
             <Tabs
               value={settings.maskingMode}
@@ -497,9 +499,7 @@ export const ScannerSettingsPanel = ({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Mask Intensity</span>
-                <span className="text-xs font-mono text-primary">
-                  {settings.maskIntensity}%
-                </span>
+                <span className="text-xs font-mono text-primary">{settings.maskIntensity}%</span>
               </div>
               <Slider
                 value={[settings.maskIntensity]}

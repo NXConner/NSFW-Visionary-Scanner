@@ -27,9 +27,11 @@ export function PartnerSyncInsightsPanel({ connectionId }: PartnerSyncInsightsPa
   const selectionResponses = useMemo(
     () =>
       events.filter(event =>
-        ["position_selection_accepted", "position_selection_declined", "position_selection_tried"].includes(
-          event.event_type,
-        ),
+        [
+          "position_selection_accepted",
+          "position_selection_declined",
+          "position_selection_tried",
+        ].includes(event.event_type),
       ),
     [events],
   );
@@ -65,7 +67,9 @@ export function PartnerSyncInsightsPanel({ connectionId }: PartnerSyncInsightsPa
         </CardHeader>
         <CardContent className="space-y-2">
           {events.length === 0 ? (
-            <div className="text-sm text-muted-foreground">{t("partnerSync.insights.eventsEmpty")}</div>
+            <div className="text-sm text-muted-foreground">
+              {t("partnerSync.insights.eventsEmpty")}
+            </div>
           ) : (
             events.map(event => (
               <div key={event.id} className="text-sm text-muted-foreground">

@@ -86,9 +86,9 @@ Test on minimum 3 devices:
 
 Record results for each device tested:
 
-| Device | OS | Build | Offline | Push | Perf | Battery | Memory | Notes |
-|---|---|---|---|---|---|---|---|---|
-| _TBD_ | _TBD_ | _TBD_ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |  |
+| Device | OS    | Build | Offline | Push | Perf | Battery | Memory | Notes |
+| ------ | ----- | ----- | ------- | ---- | ---- | ------- | ------ | ----- |
+| _TBD_  | _TBD_ | _TBD_ | ⬜      | ⬜   | ⬜   | ⬜      | ⬜     |       |
 
 ### Installation Testing
 
@@ -235,9 +235,9 @@ Test on minimum 3 devices:
 
 Record results for each device tested:
 
-| Device | iOS | Build | Offline | Push | Perf | Battery | Memory | Notes |
-|---|---|---|---|---|---|---|---|---|
-| _TBD_ | _TBD_ | _TBD_ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |  |
+| Device | iOS   | Build | Offline | Push | Perf | Battery | Memory | Notes |
+| ------ | ----- | ----- | ------- | ---- | ---- | ------- | ------ | ----- |
+| _TBD_  | _TBD_ | _TBD_ | ⬜      | ⬜   | ⬜   | ⬜      | ⬜     |       |
 
 ### Installation Testing
 

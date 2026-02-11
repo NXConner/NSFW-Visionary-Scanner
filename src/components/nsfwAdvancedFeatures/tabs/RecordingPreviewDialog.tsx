@@ -1,4 +1,10 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { VideoPlayer } from "@/components/video/VideoPlayer";
 import type { VideoRecordingRow } from "@/lib/videoEditing";
 

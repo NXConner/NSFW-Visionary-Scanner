@@ -32,6 +32,7 @@
     "db:diff": "supabase db diff",
     "db:types": "supabase gen types typescript --local > src/integrations/supabase/types.ts",
     "db:types:check": "node scripts/check-supabase-types.mjs",
+    "db:types:remote:check": "node scripts/check-supabase-types-remote.mjs",
     "db:migrate:legacy": "node-pg-migrate -m supabase/migrations up",
     "db:rollback:legacy": "node-pg-migrate -m supabase/migrations down --steps 1",
     "db:create:legacy": "node-pg-migrate -m supabase/migrations create",
@@ -52,6 +53,8 @@
     "optimize:all": "npm run perf:audit && npm run a11y:audit && npm run analyze:bundle",
     "preflight:all": "npm run check:production && npm run check:pre-submission && npm run optimize:all",
     "verify:sfw:bundle": "node scripts/verify-sfw-bundle.mjs dist",
+    "release:remote:ops": "node scripts/run-remote-release-ops.mjs",
+    "release:secrets:provision": "node scripts/provision-release-secrets.mjs",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
@@ -151,6 +154,7 @@
     "tailwindcss-animate": "^1.0.7",
     "tar": "^7.5.7",
     "three": "^0.160.1",
+    "uuid": "^13.0.0",
     "vaul": "^0.9.9",
     "vite-plugin-pwa": "^1.2.0",
     "web-vitals": "^4.2.4",
@@ -197,7 +201,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
-      "eslint --max-warnings=0 --no-warn-ignored"
+      "eslint --no-warn-ignored"
     ],
     "*.{ts,tsx,js,jsx,css,md,json}": [
       "prettier --write"

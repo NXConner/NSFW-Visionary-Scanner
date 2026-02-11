@@ -3,14 +3,14 @@
  * Utility functions for profile data management and sync
  */
 
-import type { UserProfile } from '@/contexts/ProfileContext';
+import type { UserProfile } from "@/contexts/ProfileContext";
 
 // ======= Types =======
 
 export interface ProfileExport {
   version: string;
   exportedAt: string;
-  profile: Omit<UserProfile, 'pin'>;
+  profile: Omit<UserProfile, "pin">;
   data?: {
     measurements?: unknown[];
     settings?: Record<string, unknown>;
@@ -26,9 +26,9 @@ export interface ProfileImportResult {
 }
 
 export interface ProfileMergeStrategy {
-  measurements: 'replace' | 'merge' | 'skip';
-  settings: 'replace' | 'merge' | 'skip';
-  achievements: 'replace' | 'merge' | 'skip';
+  measurements: "replace" | "merge" | "skip";
+  settings: "replace" | "merge" | "skip";
+  achievements: "replace" | "merge" | "skip";
 }
 
 // ======= Export Functions =======
@@ -39,10 +39,10 @@ export interface ProfileMergeStrategy {
 export function exportProfile(
   profile: UserProfile,
   includeData: boolean = true,
-  data?: ProfileExport['data']
+  data?: ProfileExport["data"],
 ): string {
   const exportData: ProfileExport = {
-    version: '1.0.0',
+    version: "1.0.0",
     exportedAt: new Date().toISOString(),
     profile: {
       id: profile.id,
@@ -64,14 +64,14 @@ export function exportProfile(
 /**
  * Export profile to a downloadable file
  */
-export function downloadProfileExport(profile: UserProfile, data?: ProfileExport['data']): void {
+export function downloadProfileExport(profile: UserProfile, data?: ProfileExport["data"]): void {
   const json = exportProfile(profile, true, data);
-  const blob = new Blob([json], { type: 'application/json' });
+  const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-  
-  const a = document.createElement('a');
+
+  const a = document.createElement("a");
   a.href = url;
-  a.download = `profile-${profile.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.json`;
+  a.download = `profile-${profile.name.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -91,18 +91,18 @@ export function parseProfileImport(jsonString: string): ProfileImportResult {
 
     // Validate version
     if (!data.version) {
-      return { success: false, error: 'Invalid export format: missing version' };
+      return { success: false, error: "Invalid export format: missing version" };
     }
 
     // Validate profile
     if (!data.profile || !data.profile.name) {
-      return { success: false, error: 'Invalid export format: missing profile data' };
+      return { success: false, error: "Invalid export format: missing profile data" };
     }
 
     // Check version compatibility
-    const [major] = data.version.split('.').map(Number);
+    const [major] = data.version.split(".").map(Number);
     if (major > 1) {
-      warnings.push('Export is from a newer version. Some features may not be imported correctly.');
+      warnings.push("Export is from a newer version. Some features may not be imported correctly.");
     }
 
     // Create profile with new ID
@@ -110,7 +110,7 @@ export function parseProfileImport(jsonString: string): ProfileImportResult {
       id: generateProfileId(),
       name: data.profile.name,
       avatar: data.profile.avatar,
-      color: data.profile.color || '#3b82f6',
+      color: data.profile.color || "#3b82f6",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isDefault: false,
@@ -126,7 +126,7 @@ export function parseProfileImport(jsonString: string): ProfileImportResult {
   } catch (error) {
     return {
       success: false,
-      error: `Failed to parse import: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      error: `Failed to parse import: ${error instanceof Error ? error.message : "Unknown error"}`,
     };
   }
 }
@@ -135,16 +135,16 @@ export function parseProfileImport(jsonString: string): ProfileImportResult {
  * Import profile from file
  */
 export async function importProfileFromFile(file: File): Promise<ProfileImportResult> {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const reader = new FileReader();
 
-    reader.onload = (e) => {
+    reader.onload = e => {
       const content = e.target?.result as string;
       resolve(parseProfileImport(content));
     };
 
     reader.onerror = () => {
-      resolve({ success: false, error: 'Failed to read file' });
+      resolve({ success: false, error: "Failed to read file" });
     };
 
     reader.readAsText(file);
@@ -163,27 +163,33 @@ export function generateProfileId(): string {
 /**
  * Validate profile name
  */
-export function validateProfileName(name: string, existingNames: string[]): { valid: boolean; error?: string } {
+export function validateProfileName(
+  name: string,
+  existingNames: string[],
+): { valid: boolean; error?: string } {
   const trimmed = name.trim();
 
   if (!trimmed) {
-    return { valid: false, error: 'Profile name is required' };
+    return { valid: false, error: "Profile name is required" };
   }
 
   if (trimmed.length < 2) {
-    return { valid: false, error: 'Profile name must be at least 2 characters' };
+    return { valid: false, error: "Profile name must be at least 2 characters" };
   }
 
   if (trimmed.length > 30) {
-    return { valid: false, error: 'Profile name must be 30 characters or less' };
+    return { valid: false, error: "Profile name must be 30 characters or less" };
   }
 
   if (!/^[a-zA-Z0-9\s\-_]+$/.test(trimmed)) {
-    return { valid: false, error: 'Profile name can only contain letters, numbers, spaces, hyphens, and underscores' };
+    return {
+      valid: false,
+      error: "Profile name can only contain letters, numbers, spaces, hyphens, and underscores",
+    };
   }
 
   if (existingNames.some(n => n.toLowerCase() === trimmed.toLowerCase())) {
-    return { valid: false, error: 'A profile with this name already exists' };
+    return { valid: false, error: "A profile with this name already exists" };
   }
 
   return { valid: true };
@@ -209,7 +215,7 @@ export function getProfileAvatar(profile: UserProfile): string {
   }
   // Generate a UI Avatars URL
   const initials = getProfileInitials(profile.name);
-  const bgColor = profile.color.replace('#', '');
+  const bgColor = profile.color.replace("#", "");
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${bgColor}&color=fff&bold=true&size=128`;
 }
 
@@ -221,13 +227,13 @@ export function getProfileAvatar(profile: UserProfile): string {
 export function mergeProfileData<T extends Record<string, unknown>>(
   existing: T | undefined,
   incoming: T | undefined,
-  strategy: 'replace' | 'merge' | 'skip'
+  strategy: "replace" | "merge" | "skip",
 ): T | undefined {
-  if (strategy === 'skip') {
+  if (strategy === "skip") {
     return existing;
   }
 
-  if (strategy === 'replace') {
+  if (strategy === "replace") {
     return incoming ?? existing;
   }
 
@@ -244,14 +250,14 @@ export function mergeProfileData<T extends Record<string, unknown>>(
 export function mergeArrayData<T>(
   existing: T[] | undefined,
   incoming: T[] | undefined,
-  strategy: 'replace' | 'merge' | 'skip',
-  getId: (item: T) => string
+  strategy: "replace" | "merge" | "skip",
+  getId: (item: T) => string,
 ): T[] | undefined {
-  if (strategy === 'skip') {
+  if (strategy === "skip") {
     return existing;
   }
 
-  if (strategy === 'replace') {
+  if (strategy === "replace") {
     return incoming ?? existing;
   }
 
@@ -286,7 +292,7 @@ export interface ProfileStats {
  */
 export function calculateProfileStats(
   profile: UserProfile,
-  data?: { measurements?: unknown[]; achievements?: string[] }
+  data?: { measurements?: unknown[]; achievements?: string[] },
 ): ProfileStats {
   const now = new Date();
   const created = new Date(profile.createdAt);

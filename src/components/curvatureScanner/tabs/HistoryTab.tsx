@@ -21,7 +21,12 @@ export function HistoryTab({
   return (
     <div className="grid gap-8 grid-cols-1 lg:grid-cols-[2fr_3fr]">
       <div>
-        <CurvatureHistoryList sessions={sessions} selectedId={selectedSessionId} onSelect={onSelect} onDelete={id => void onDelete(id)} />
+        <CurvatureHistoryList
+          sessions={sessions}
+          selectedId={selectedSessionId}
+          onSelect={onSelect}
+          onDelete={id => void onDelete(id)}
+        />
       </div>
       <div>
         <div className="space-y-6">
@@ -32,4 +37,3 @@ export function HistoryTab({
     </div>
   );
 }
-

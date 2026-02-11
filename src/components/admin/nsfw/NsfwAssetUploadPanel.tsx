@@ -37,11 +37,7 @@ function sanitizeSegment(value: string): string {
     .slice(0, 64);
 }
 
-function buildAssetPath(params: {
-  packageId: string;
-  folder: string;
-  fileName: string;
-}): string {
+function buildAssetPath(params: { packageId: string; folder: string; fileName: string }): string {
   const folder = sanitizeSegment(params.folder);
   const safeName = sanitizeSegment(params.fileName) || "asset.bin";
   const stamp = Date.now();
@@ -86,7 +82,10 @@ export function NsfwAssetUploadPanel(): JSX.Element {
     void loadPackages();
   }, [loadPackages]);
 
-  const canUpload = useMemo(() => packageId && files.length > 0 && !uploading, [packageId, files, uploading]);
+  const canUpload = useMemo(
+    () => packageId && files.length > 0 && !uploading,
+    [packageId, files, uploading],
+  );
 
   const runUpload = useCallback(async () => {
     if (!packageId) {
@@ -153,7 +152,11 @@ export function NsfwAssetUploadPanel(): JSX.Element {
           </div>
           <div className="space-y-1">
             <div className="text-xs text-muted-foreground">Files</div>
-            <Input type="file" multiple onChange={e => setFiles(Array.from(e.target.files || []))} />
+            <Input
+              type="file"
+              multiple
+              onChange={e => setFiles(Array.from(e.target.files || []))}
+            />
           </div>
         </div>
 

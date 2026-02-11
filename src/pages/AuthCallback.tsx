@@ -23,21 +23,24 @@ export const AuthCallback = () => {
       if (status === "loading") {
         logger.warn("Auth callback timed out after 10s");
         // Check if we actually have a session despite the hang
-        supabase.auth.getSession().then(({ data }) => {
-          if (data.session) {
-            setStatus("success");
-            setMessage("Sign in successful! Redirecting...");
-            setTimeout(() => navigate("/"), 500);
-          } else {
+        supabase.auth
+          .getSession()
+          .then(({ data }) => {
+            if (data.session) {
+              setStatus("success");
+              setMessage("Sign in successful! Redirecting...");
+              setTimeout(() => navigate("/"), 500);
+            } else {
+              setStatus("error");
+              setMessage("Sign in timed out. Please try again.");
+              setTimeout(() => navigate("/auth"), 2000);
+            }
+          })
+          .catch(() => {
             setStatus("error");
             setMessage("Sign in timed out. Please try again.");
             setTimeout(() => navigate("/auth"), 2000);
-          }
-        }).catch(() => {
-          setStatus("error");
-          setMessage("Sign in timed out. Please try again.");
-          setTimeout(() => navigate("/auth"), 2000);
-        });
+          });
       }
     }, AUTH_TIMEOUT_MS);
 
@@ -109,7 +112,7 @@ export const AuthCallback = () => {
         if (handledRef.current) return;
         handledRef.current = true;
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        
+
         logger.error("OAuth callback error", { error });
         setStatus("error");
         setMessage(error instanceof Error ? error.message : "Failed to complete sign in");

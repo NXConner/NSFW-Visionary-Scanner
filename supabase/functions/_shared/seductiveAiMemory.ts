@@ -1,4 +1,10 @@
-export type MemoryCategory = "identity" | "preference" | "boundary" | "relationship" | "tone" | "other";
+export type MemoryCategory =
+  | "identity"
+  | "preference"
+  | "boundary"
+  | "relationship"
+  | "tone"
+  | "other";
 
 export type MemoryCue = {
   key: string;
@@ -17,13 +23,32 @@ type MemoryPattern = {
 };
 
 const MEMORY_PATTERNS: MemoryPattern[] = [
-  { key: "name", category: "identity", regex: /\bmy name is ([a-z][a-z' ]{1,32})\b/i, group: 1, confidence: 0.85 },
-  { key: "name", category: "identity", regex: /\bcall me ([a-z][a-z' ]{1,32})\b/i, group: 1, confidence: 0.8 },
-  { key: "pronouns", category: "identity", regex: /\bmy pronouns are ([a-z/\s]{2,30})\b/i, group: 1, confidence: 0.7 },
+  {
+    key: "name",
+    category: "identity",
+    regex: /\bmy name is ([a-z][a-z' ]{1,32})\b/i,
+    group: 1,
+    confidence: 0.85,
+  },
+  {
+    key: "name",
+    category: "identity",
+    regex: /\bcall me ([a-z][a-z' ]{1,32})\b/i,
+    group: 1,
+    confidence: 0.8,
+  },
+  {
+    key: "pronouns",
+    category: "identity",
+    regex: /\bmy pronouns are ([a-z/\s]{2,30})\b/i,
+    group: 1,
+    confidence: 0.7,
+  },
   {
     key: "likes",
     category: "preference",
-    regex: /\b(?:i|i really)\s+(?:like|love|enjoy|prefer|am into|want|fantasize about)\s+([^.!?\n]{3,80})/i,
+    regex:
+      /\b(?:i|i really)\s+(?:like|love|enjoy|prefer|am into|want|fantasize about)\s+([^.!?\n]{3,80})/i,
     group: 1,
     confidence: 0.6,
   },
@@ -37,7 +62,8 @@ const MEMORY_PATTERNS: MemoryPattern[] = [
   {
     key: "avoid",
     category: "boundary",
-    regex: /\b(?:i|i really)\s+(?:do not like|don't like|dislike|hate|am not into|do not want)\s+([^.!?\n]{3,80})/i,
+    regex:
+      /\b(?:i|i really)\s+(?:do not like|don't like|dislike|hate|am not into|do not want)\s+([^.!?\n]{3,80})/i,
     group: 1,
     confidence: 0.7,
   },
@@ -79,7 +105,9 @@ const MEMORY_PATTERNS: MemoryPattern[] = [
 ];
 
 function cleanPhrase(value: string): string {
-  let cleaned = String(value || "").replace(/\s{2,}/g, " ").trim();
+  let cleaned = String(value || "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
   const trimChars = new Set(['"', "'", ":", " "]);
   while (cleaned && trimChars.has(cleaned[0])) {
     cleaned = cleaned.slice(1);
@@ -119,7 +147,11 @@ export function extractMemoryCues(message: string, nowIso: string): MemoryCue[] 
   return cues;
 }
 
-export function mergeMemoryCues(existing: MemoryCue[], next: MemoryCue[], maxItems: number): MemoryCue[] {
+export function mergeMemoryCues(
+  existing: MemoryCue[],
+  next: MemoryCue[],
+  maxItems: number,
+): MemoryCue[] {
   const merged = new Map<string, MemoryCue>();
   for (const cue of existing || []) {
     const key = `${cue.category}:${cue.key}:${cue.value.toLowerCase()}`;

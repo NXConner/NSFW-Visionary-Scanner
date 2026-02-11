@@ -7,7 +7,8 @@ test.describe("Partner sync tab", () => {
   });
 
   test("renders partner sync panels", async ({ page }) => {
-    await page.goto("/");
+    // Main app experience lives at /app (root "/" is the marketing/landing page).
+    await page.goto("/app");
     await waitForAppReady(page);
 
     await page.evaluate(() => {

@@ -3,8 +3,8 @@
  * UI toggle and settings for voice guidance
  */
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Volume2,
   VolumeX,
@@ -17,25 +17,21 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Sheet,
   SheetContent,
@@ -43,9 +39,9 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet';
-import { useVoiceGuidance } from '@/hooks/useVoiceGuidance';
-import type { VoiceGuidanceSettings } from '@/lib/voiceGuidance';
+} from "@/components/ui/sheet";
+import { useVoiceGuidance } from "@/hooks/useVoiceGuidance";
+import type { VoiceGuidanceSettings } from "@/lib/voiceGuidance";
 
 export interface VoiceGuidanceControlsProps {
   className?: string;
@@ -54,16 +50,16 @@ export interface VoiceGuidanceControlsProps {
   onStartGuidedScan?: () => void;
 }
 
-const speedOptions: { value: VoiceGuidanceSettings['speed']; label: string }[] = [
-  { value: 'slow', label: 'Slow' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'fast', label: 'Fast' },
+const speedOptions: { value: VoiceGuidanceSettings["speed"]; label: string }[] = [
+  { value: "slow", label: "Slow" },
+  { value: "normal", label: "Normal" },
+  { value: "fast", label: "Fast" },
 ];
 
-const voiceOptions: { value: VoiceGuidanceSettings['voice']; label: string }[] = [
-  { value: 'default', label: 'Default' },
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' },
+const voiceOptions: { value: VoiceGuidanceSettings["voice"]; label: string }[] = [
+  { value: "default", label: "Default" },
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
 ];
 
 export function VoiceGuidanceControls({
@@ -98,20 +94,20 @@ export function VoiceGuidanceControls({
   };
 
   const handleTestVoice = () => {
-    speakPrompt('inst_welcome');
+    speakPrompt("inst_welcome");
   };
 
   const handleStartGuidedScan = async () => {
-    await startSequence('initial_scan');
+    await startSequence("initial_scan");
     onStartGuidedScan?.();
   };
 
   const handleStartQuickScan = async () => {
-    await startSequence('quick_scan');
+    await startSequence("quick_scan");
   };
 
   const handleStartTutorial = async () => {
-    await startSequence('tutorial');
+    await startSequence("tutorial");
   };
 
   // Compact mode - just a toggle button with popover
@@ -120,19 +116,11 @@ export function VoiceGuidanceControls({
       <Popover>
         <PopoverTrigger asChild>
           <Button
-            variant={isEnabled ? 'default' : 'ghost'}
+            variant={isEnabled ? "default" : "ghost"}
             size="icon"
-            className={cn(
-              'relative',
-              isSpeaking && 'animate-pulse',
-              className
-            )}
+            className={cn("relative", isSpeaking && "animate-pulse", className)}
           >
-            {isEnabled ? (
-              <Volume2 className="h-4 w-4" />
-            ) : (
-              <VolumeX className="h-4 w-4" />
-            )}
+            {isEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             {isSequenceActive && (
               <span className="absolute -top-1 -right-1 h-2 w-2 bg-green-500 rounded-full" />
             )}
@@ -142,10 +130,7 @@ export function VoiceGuidanceControls({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Voice Guidance</Label>
-              <Switch
-                checked={isEnabled}
-                onCheckedChange={handleToggle}
-              />
+              <Switch checked={isEnabled} onCheckedChange={handleToggle} />
             </div>
 
             {isEnabled && (
@@ -186,7 +171,7 @@ export function VoiceGuidanceControls({
 
   // Full mode with all controls
   return (
-    <div className={cn('bg-background rounded-lg border p-4', className)}>
+    <div className={cn("bg-background rounded-lg border p-4", className)}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
@@ -202,17 +187,14 @@ export function VoiceGuidanceControls({
             </Badge>
           )}
         </div>
-        <Switch
-          checked={isEnabled}
-          onCheckedChange={handleToggle}
-        />
+        <Switch checked={isEnabled} onCheckedChange={handleToggle} />
       </div>
 
       <AnimatePresence>
         {isEnabled && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
+            animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
@@ -242,7 +224,7 @@ export function VoiceGuidanceControls({
                 <Label className="text-sm">Speed</Label>
                 <Select
                   value={settings.speed}
-                  onValueChange={(val) => setSpeed(val as VoiceGuidanceSettings['speed'])}
+                  onValueChange={val => setSpeed(val as VoiceGuidanceSettings["speed"])}
                 >
                   <SelectTrigger className="h-9">
                     <SelectValue />
@@ -261,7 +243,7 @@ export function VoiceGuidanceControls({
                 <Label className="text-sm">Voice</Label>
                 <Select
                   value={settings.voice}
-                  onValueChange={(val) => setVoice(val as VoiceGuidanceSettings['voice'])}
+                  onValueChange={val => setVoice(val as VoiceGuidanceSettings["voice"])}
                 >
                   <SelectTrigger className="h-9">
                     <SelectValue />
@@ -285,28 +267,28 @@ export function VoiceGuidanceControls({
                   <Label className="text-xs text-muted-foreground">Steps</Label>
                   <Switch
                     checked={settings.announceSteps}
-                    onCheckedChange={(val) => updateSettings({ announceSteps: val })}
+                    onCheckedChange={val => updateSettings({ announceSteps: val })}
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-muted-foreground">Measurements</Label>
                   <Switch
                     checked={settings.announceMeasurements}
-                    onCheckedChange={(val) => updateSettings({ announceMeasurements: val })}
+                    onCheckedChange={val => updateSettings({ announceMeasurements: val })}
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-muted-foreground">Errors</Label>
                   <Switch
                     checked={settings.announceErrors}
-                    onCheckedChange={(val) => updateSettings({ announceErrors: val })}
+                    onCheckedChange={val => updateSettings({ announceErrors: val })}
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-muted-foreground">Sound Effects</Label>
                   <Switch
                     checked={settings.soundEffectsEnabled}
-                    onCheckedChange={(val) => updateSettings({ soundEffectsEnabled: val })}
+                    onCheckedChange={val => updateSettings({ soundEffectsEnabled: val })}
                   />
                 </div>
               </div>
@@ -318,19 +300,11 @@ export function VoiceGuidanceControls({
                 {!isSequenceActive ? (
                   // Start options
                   <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={handleStartGuidedScan}
-                    >
+                    <Button variant="default" size="sm" onClick={handleStartGuidedScan}>
                       <Play className="h-3 w-3 mr-1" />
                       Guided Scan
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleStartQuickScan}
-                    >
+                    <Button variant="outline" size="sm" onClick={handleStartQuickScan}>
                       Quick Scan
                     </Button>
                     <Button
@@ -347,10 +321,10 @@ export function VoiceGuidanceControls({
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <Badge variant="outline" className="font-normal">
-                        {sequenceState?.sequence.name || 'Active'}
+                        {sequenceState?.sequence.name || "Active"}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        Step {(sequenceState?.currentStepIndex || 0) + 1} of{' '}
+                        Step {(sequenceState?.currentStepIndex || 0) + 1} of{" "}
                         {sequenceState?.sequence.steps.length || 0}
                       </span>
                     </div>
@@ -361,8 +335,11 @@ export function VoiceGuidanceControls({
                         className="h-full bg-primary rounded-full"
                         initial={{ width: 0 }}
                         animate={{
-                          width: `${((sequenceState?.currentStepIndex || 0) + 1) /
-                            (sequenceState?.sequence.steps.length || 1) * 100}%`,
+                          width: `${
+                            (((sequenceState?.currentStepIndex || 0) + 1) /
+                              (sequenceState?.sequence.steps.length || 1)) *
+                            100
+                          }%`,
                         }}
                         transition={{ duration: 0.3 }}
                       />
@@ -371,8 +348,9 @@ export function VoiceGuidanceControls({
                     {/* Current step text */}
                     {sequenceState?.currentStep && (
                       <div className="text-sm text-muted-foreground italic">
-                        &ldquo;{sequenceState.currentStep.customText ||
-                          sequenceState.currentStep.promptId}&rdquo;
+                        &ldquo;
+                        {sequenceState.currentStep.customText || sequenceState.currentStep.promptId}
+                        &rdquo;
                       </div>
                     )}
 

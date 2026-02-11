@@ -3,7 +3,7 @@
  * Implements various image sharpening techniques
  */
 
-export type SharpeningMethod = 'unsharp' | 'laplacian' | 'highpass' | 'adaptive';
+export type SharpeningMethod = "unsharp" | "laplacian" | "highpass" | "adaptive";
 
 export interface SharpeningOptions {
   method: SharpeningMethod;
@@ -22,7 +22,7 @@ export interface SharpeningAnalysis {
 }
 
 const DEFAULT_OPTIONS: SharpeningOptions = {
-  method: 'unsharp',
+  method: "unsharp",
   intensity: 50,
   radius: 1,
   threshold: 0,
@@ -92,7 +92,9 @@ function applyKernel(imageData: ImageData, kernel: number[][]): ImageData {
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      let r = 0, g = 0, b = 0;
+      let r = 0,
+        g = 0,
+        b = 0;
 
       for (let ky = 0; ky < kSize; ky++) {
         for (let kx = 0; kx < kSize; kx++) {
@@ -125,7 +127,7 @@ function applyUnsharpMask(
   imageData: ImageData,
   amount: number,
   radius: number,
-  threshold: number
+  threshold: number,
 ): ImageData {
   const { data, width, height } = imageData;
   const result = new Uint8ClampedArray(data.length);
@@ -162,7 +164,10 @@ function applyGaussianBlur(imageData: ImageData, sigma: number): ImageData {
   const temp = new Uint8ClampedArray(data.length);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      let r = 0, g = 0, b = 0, weightSum = 0;
+      let r = 0,
+        g = 0,
+        b = 0,
+        weightSum = 0;
 
       for (let kx = -halfKernel; kx <= halfKernel; kx++) {
         const px = Math.min(width - 1, Math.max(0, x + kx));
@@ -186,7 +191,10 @@ function applyGaussianBlur(imageData: ImageData, sigma: number): ImageData {
   // Vertical pass
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      let r = 0, g = 0, b = 0, weightSum = 0;
+      let r = 0,
+        g = 0,
+        b = 0,
+        weightSum = 0;
 
       for (let ky = -halfKernel; ky <= halfKernel; ky++) {
         const py = Math.min(height - 1, Math.max(0, y + ky));
@@ -231,7 +239,7 @@ function generateGaussianKernel1D(size: number, sigma: number): number[] {
 function applyAdaptiveSharpening(
   imageData: ImageData,
   intensity: number,
-  threshold: number
+  threshold: number,
 ): ImageData {
   const { data, width, height } = imageData;
   const result = new Uint8ClampedArray(data.length);
@@ -251,19 +259,20 @@ function applyAdaptiveSharpening(
       }
 
       const mean = neighbors.reduce((a, b) => a + b, 0) / neighbors.length;
-      const variance = neighbors.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / neighbors.length;
+      const variance =
+        neighbors.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / neighbors.length;
 
       // Adaptive sharpening amount based on local variance
       const adaptiveAmount = variance > threshold ? intensity / 100 : intensity / 200;
 
       for (let c = 0; c < 3; c++) {
         const center = data[idx + c];
-        const avg = (
-          data[((y - 1) * width + x) * 4 + c] +
-          data[((y + 1) * width + x) * 4 + c] +
-          data[(y * width + (x - 1)) * 4 + c] +
-          data[(y * width + (x + 1)) * 4 + c]
-        ) / 4;
+        const avg =
+          (data[((y - 1) * width + x) * 4 + c] +
+            data[((y + 1) * width + x) * 4 + c] +
+            data[(y * width + (x - 1)) * 4 + c] +
+            data[(y * width + (x + 1)) * 4 + c]) /
+          4;
 
         const sharpened = center + (center - avg) * adaptiveAmount;
         result[idx + c] = Math.min(255, Math.max(0, sharpened));
@@ -295,12 +304,13 @@ function preserveTones(
   original: ImageData,
   sharpened: ImageData,
   preserveHighlights: boolean,
-  preserveShadows: boolean
+  preserveShadows: boolean,
 ): ImageData {
   const result = new Uint8ClampedArray(sharpened.data.length);
 
   for (let i = 0; i < original.data.length; i += 4) {
-    const origLum = 0.299 * original.data[i] + 0.587 * original.data[i + 1] + 0.114 * original.data[i + 2];
+    const origLum =
+      0.299 * original.data[i] + 0.587 * original.data[i + 1] + 0.114 * original.data[i + 2];
 
     let blendFactor = 1;
     if (preserveHighlights && origLum > 200) {
@@ -311,7 +321,8 @@ function preserveTones(
     }
 
     for (let c = 0; c < 3; c++) {
-      result[i + c] = original.data[i + c] * (1 - blendFactor) + sharpened.data[i + c] * blendFactor;
+      result[i + c] =
+        original.data[i + c] * (1 - blendFactor) + sharpened.data[i + c] * blendFactor;
     }
     result[i + 3] = original.data[i + 3];
   }
@@ -324,7 +335,7 @@ function preserveTones(
  */
 export function sharpenImage(
   imageData: ImageData,
-  options: Partial<SharpeningOptions> = {}
+  options: Partial<SharpeningOptions> = {},
 ): ImageData {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
@@ -336,22 +347,22 @@ export function sharpenImage(
   const normalizedIntensity = opts.intensity / 100;
 
   switch (opts.method) {
-    case 'laplacian':
+    case "laplacian":
       result = applyKernel(imageData, LAPLACIAN_KERNEL);
       // Blend based on intensity
       result = blendImages(imageData, result, normalizedIntensity);
       break;
 
-    case 'highpass':
+    case "highpass":
       result = applyKernel(imageData, HIGHPASS_KERNEL);
       result = blendImages(imageData, result, normalizedIntensity);
       break;
 
-    case 'adaptive':
+    case "adaptive":
       result = applyAdaptiveSharpening(imageData, opts.intensity, opts.threshold);
       break;
 
-    case 'unsharp':
+    case "unsharp":
     default:
       result = applyUnsharpMask(imageData, normalizedIntensity, opts.radius, opts.threshold);
       break;

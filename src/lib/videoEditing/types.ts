@@ -115,4 +115,3 @@ export type VideoEditQueueRequest = {
 export type VideoEditQueueResponse =
   | { ok: true; editId: UUID; status: string }
   | { ok: false; error: string };
-

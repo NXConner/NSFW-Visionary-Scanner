@@ -12,4 +12,3 @@ import { ScannerSection } from "@/components/ScannerSection";
 export function ScannerExperience(): React.ReactElement {
   return <ScannerSection />;
 }
-

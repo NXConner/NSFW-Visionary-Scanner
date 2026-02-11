@@ -1,7 +1,7 @@
 import type { ThemePresetId } from "@/design-system";
-import type { 
-  CustomInterfaceColors, 
-  StoredSettings, 
+import type {
+  CustomInterfaceColors,
+  StoredSettings,
   ThemeMode,
   DEFAULT_AR_OVERLAY_SETTINGS,
   DEFAULT_OFFLINE_MODE_SETTINGS,
@@ -125,7 +125,15 @@ export const DEFAULT_SETTINGS: StoredSettings = {
   dashboard: {
     layout: "grid",
     visibleWidgets: ["measurements", "progress", "achievements"],
-    widgetOrder: ["measurements", "progress", "achievements", "health", "calendar", "tips", "goals"],
+    widgetOrder: [
+      "measurements",
+      "progress",
+      "achievements",
+      "health",
+      "calendar",
+      "tips",
+      "goals",
+    ],
     refreshInterval: 30,
     showQuickActions: true,
   },

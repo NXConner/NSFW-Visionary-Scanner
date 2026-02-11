@@ -3,7 +3,7 @@
  * Manages AR measurement state and calculations for the scanner overlay
  */
 
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import {
   DetectionLandmark,
   MeasurementLine,
@@ -20,9 +20,9 @@ import {
   filterLandmarks,
   getPositionStatus,
   calculateCentroid,
-} from '@/lib/ar/measurementCalculations';
-import { useSettings } from '@/contexts/settings';
-import type { AROverlaySensitivity } from '@/contexts/settings/types';
+} from "@/lib/ar/measurementCalculations";
+import { useSettings } from "@/contexts/settings";
+import type { AROverlaySensitivity } from "@/contexts/settings/types";
 
 export interface ARMeasurementState {
   isActive: boolean;
@@ -39,7 +39,7 @@ export interface UseARMeasurementOptions {
   targetBounds?: BoundingBox;
   referencePixels?: number;
   referenceRealWorld?: number;
-  measurementUnit?: 'mm' | 'cm' | 'in';
+  measurementUnit?: "mm" | "cm" | "in";
   onCaptureReady?: () => void;
   onQualityChange?: (quality: QualityMetrics) => void;
 }
@@ -51,11 +51,12 @@ const DEFAULT_TARGET_BOUNDS: BoundingBox = {
   height: 400,
 };
 
-const SENSITIVITY_THRESHOLDS: Record<AROverlaySensitivity, { stability: number; quality: number }> = {
-  low: { stability: 50, quality: 50 },
-  medium: { stability: 70, quality: 65 },
-  high: { stability: 85, quality: 80 },
-};
+const SENSITIVITY_THRESHOLDS: Record<AROverlaySensitivity, { stability: number; quality: number }> =
+  {
+    low: { stability: 50, quality: 50 },
+    medium: { stability: 70, quality: 65 },
+    high: { stability: 85, quality: 80 },
+  };
 
 const DEFAULT_QUALITY_METRICS: QualityMetrics = {
   overall: 0,
@@ -67,8 +68,8 @@ const DEFAULT_QUALITY_METRICS: QualityMetrics = {
 };
 
 const DEFAULT_POSITION_FEEDBACK: PositionFeedback = {
-  status: 'adjust',
-  message: 'Position your device...',
+  status: "adjust",
+  message: "Position your device...",
   adjustments: {},
 };
 
@@ -77,7 +78,7 @@ export function useARMeasurement(options: UseARMeasurementOptions = {}) {
     targetBounds = DEFAULT_TARGET_BOUNDS,
     referencePixels = 100,
     referenceRealWorld = 50,
-    measurementUnit = 'mm',
+    measurementUnit = "mm",
     onCaptureReady,
     onQualityChange,
   } = options;
@@ -85,7 +86,7 @@ export function useARMeasurement(options: UseARMeasurementOptions = {}) {
   // Get AR settings from context
   const settingsContext = useSettings();
   const arSettings = settingsContext?.arOverlay;
-  const sensitivity = arSettings?.sensitivity ?? 'medium';
+  const sensitivity = arSettings?.sensitivity ?? "medium";
   const thresholds = SENSITIVITY_THRESHOLDS[sensitivity];
 
   // State
@@ -110,9 +111,12 @@ export function useARMeasurement(options: UseARMeasurementOptions = {}) {
   // Get smoothing factor based on sensitivity
   const smoothingFactor = useMemo(() => {
     switch (sensitivity) {
-      case 'low': return 0.5;
-      case 'high': return 0.15;
-      default: return 0.3;
+      case "low":
+        return 0.5;
+      case "high":
+        return 0.15;
+      default:
+        return 0.3;
     }
   }, [sensitivity]);
 
@@ -154,112 +158,141 @@ export function useARMeasurement(options: UseARMeasurementOptions = {}) {
   }, []);
 
   // Update landmarks from detection
-  const updateLandmarks = useCallback((newLandmarks: DetectionLandmark[], brightnessData?: number[]) => {
-    if (!state.isActive) return;
+  const updateLandmarks = useCallback(
+    (newLandmarks: DetectionLandmark[], brightnessData?: number[]) => {
+      if (!state.isActive) return;
 
-    frameCountRef.current++;
+      frameCountRef.current++;
 
-    // Apply filtering/smoothing
-    const filteredLandmarks = filterLandmarks(
-      newLandmarks,
-      previousLandmarksRef.current,
-      smoothingFactor
-    );
+      // Apply filtering/smoothing
+      const filteredLandmarks = filterLandmarks(
+        newLandmarks,
+        previousLandmarksRef.current,
+        smoothingFactor,
+      );
 
-    // Calculate current bounding box from landmarks
-    const currentPoints = filteredLandmarks.map(l => l.point);
-    const centroid = calculateCentroid(filteredLandmarks);
-    
-    let currentBounds: BoundingBox = targetBounds;
-    if (currentPoints.length >= 2) {
-      const minX = Math.min(...currentPoints.map(p => p.x));
-      const maxX = Math.max(...currentPoints.map(p => p.x));
-      const minY = Math.min(...currentPoints.map(p => p.y));
-      const maxY = Math.max(...currentPoints.map(p => p.y));
-      currentBounds = {
-        x: minX,
-        y: minY,
-        width: maxX - minX,
-        height: maxY - minY,
-      };
-    }
+      // Calculate current bounding box from landmarks
+      const currentPoints = filteredLandmarks.map(l => l.point);
+      const centroid = calculateCentroid(filteredLandmarks);
 
-    // Assess quality metrics
-    const lighting = assessLightingQuality(brightnessData ?? [128]);
-    const stability = assessStability(previousPointsRef.current, currentPoints);
-    const angle = assessAngleQuality(0, 0, 15); // Placeholder - would need gyro data
-    const distance = Math.min(100, Math.max(0, 100 - Math.abs(
-      (currentBounds.width * currentBounds.height) / (targetBounds.width * targetBounds.height) * 100 - 100
-    )));
-    const focus = filteredLandmarks.length > 0
-      ? Math.round(filteredLandmarks.reduce((sum, l) => sum + l.confidence, 0) / filteredLandmarks.length * 100)
-      : 50;
+      let currentBounds: BoundingBox = targetBounds;
+      if (currentPoints.length >= 2) {
+        const minX = Math.min(...currentPoints.map(p => p.x));
+        const maxX = Math.max(...currentPoints.map(p => p.x));
+        const minY = Math.min(...currentPoints.map(p => p.y));
+        const maxY = Math.max(...currentPoints.map(p => p.y));
+        currentBounds = {
+          x: minX,
+          y: minY,
+          width: maxX - minX,
+          height: maxY - minY,
+        };
+      }
 
-    const qualityMetrics = calculateOverallQuality({
-      lighting,
-      stability,
-      angle,
-      distance,
-      focus,
-    });
+      // Assess quality metrics
+      const lighting = assessLightingQuality(brightnessData ?? [128]);
+      const stability = assessStability(previousPointsRef.current, currentPoints);
+      const angle = assessAngleQuality(0, 0, 15); // Placeholder - would need gyro data
+      const distance = Math.min(
+        100,
+        Math.max(
+          0,
+          100 -
+            Math.abs(
+              ((currentBounds.width * currentBounds.height) /
+                (targetBounds.width * targetBounds.height)) *
+                100 -
+                100,
+            ),
+        ),
+      );
+      const focus =
+        filteredLandmarks.length > 0
+          ? Math.round(
+              (filteredLandmarks.reduce((sum, l) => sum + l.confidence, 0) /
+                filteredLandmarks.length) *
+                100,
+            )
+          : 50;
 
-    // Generate position feedback
-    const positionFeedback = generatePositionFeedback(
-      filteredLandmarks,
+      const qualityMetrics = calculateOverallQuality({
+        lighting,
+        stability,
+        angle,
+        distance,
+        focus,
+      });
+
+      // Generate position feedback
+      const positionFeedback = generatePositionFeedback(
+        filteredLandmarks,
+        targetBounds,
+        currentBounds,
+      );
+
+      // Generate measurement lines
+      const measurementLines = generateMeasurementLines(
+        filteredLandmarks,
+        referencePixels,
+        referenceRealWorld,
+        measurementUnit,
+      );
+
+      // Check stability
+      const isCurrentlyStable = stability >= thresholds.stability;
+      if (isCurrentlyStable) {
+        stabilityCountRef.current++;
+      } else {
+        stabilityCountRef.current = Math.max(0, stabilityCountRef.current - 1);
+      }
+
+      // Need consistent stability over multiple frames
+      const isStable = stabilityCountRef.current >= 5;
+
+      // Check if capture ready
+      const captureReady =
+        isStable &&
+        qualityMetrics.overall >= thresholds.quality &&
+        positionFeedback.status === "good";
+
+      // Update refs for next frame
+      previousLandmarksRef.current = filteredLandmarks;
+      previousPointsRef.current = currentPoints;
+
+      // Call capture ready callback once
+      if (captureReady && !captureReadyCalledRef.current) {
+        captureReadyCalledRef.current = true;
+        onCaptureReady?.();
+      } else if (!captureReady) {
+        captureReadyCalledRef.current = false;
+      }
+
+      // Notify quality change
+      onQualityChange?.(qualityMetrics);
+
+      setState(prev => ({
+        ...prev,
+        landmarks: filteredLandmarks,
+        measurementLines,
+        qualityMetrics,
+        positionFeedback,
+        isStable,
+        captureReady,
+        lastUpdateTime: Date.now(),
+      }));
+    },
+    [
+      state.isActive,
+      smoothingFactor,
       targetBounds,
-      currentBounds
-    );
-
-    // Generate measurement lines
-    const measurementLines = generateMeasurementLines(
-      filteredLandmarks,
       referencePixels,
       referenceRealWorld,
-      measurementUnit
-    );
-
-    // Check stability
-    const isCurrentlyStable = stability >= thresholds.stability;
-    if (isCurrentlyStable) {
-      stabilityCountRef.current++;
-    } else {
-      stabilityCountRef.current = Math.max(0, stabilityCountRef.current - 1);
-    }
-    
-    // Need consistent stability over multiple frames
-    const isStable = stabilityCountRef.current >= 5;
-
-    // Check if capture ready
-    const captureReady = isStable && 
-                        qualityMetrics.overall >= thresholds.quality &&
-                        positionFeedback.status === 'good';
-
-    // Update refs for next frame
-    previousLandmarksRef.current = filteredLandmarks;
-    previousPointsRef.current = currentPoints;
-
-    // Call capture ready callback once
-    if (captureReady && !captureReadyCalledRef.current) {
-      captureReadyCalledRef.current = true;
-      onCaptureReady?.();
-    } else if (!captureReady) {
-      captureReadyCalledRef.current = false;
-    }
-
-    // Notify quality change
-    onQualityChange?.(qualityMetrics);
-
-    setState(prev => ({
-      ...prev,
-      landmarks: filteredLandmarks,
-      measurementLines,
-      qualityMetrics,
-      positionFeedback,
-      isStable,
-      captureReady,
-      lastUpdateTime: Date.now(),
-    }));
-  }, [state.isActive, smoothingFactor, targetBounds, referencePixels, referenceRealWorld, measurementUnit, thresholds, onCaptureReady, onQualityChange]);
+      measurementUnit,
+      thresholds,
+      onCaptureReady,
+      onQualityChange,
+    ],
+  );
 
   // Manually set capture ready state
   const setCaptureReady = useCallback((ready: boolean) => {
@@ -267,25 +300,28 @@ export function useARMeasurement(options: UseARMeasurementOptions = {}) {
   }, []);
 
   // Get color for position status
-  const getStatusColor = useCallback((status: 'good' | 'adjust' | 'poor') => {
+  const getStatusColor = useCallback((status: "good" | "adjust" | "poor") => {
     switch (status) {
-      case 'good': return '#22c55e'; // green-500
-      case 'adjust': return '#eab308'; // yellow-500
-      case 'poor': return '#ef4444'; // red-500
+      case "good":
+        return "#22c55e"; // green-500
+      case "adjust":
+        return "#eab308"; // yellow-500
+      case "poor":
+        return "#ef4444"; // red-500
     }
   }, []);
 
   return {
     // State
     ...state,
-    
+
     // Actions
     start,
     stop,
     reset,
     updateLandmarks,
     setCaptureReady,
-    
+
     // Utilities
     getStatusColor,
     sensitivity,

@@ -87,4 +87,3 @@ export function computeCurvatureDirectionFromCenterline(params: {
   }
   return bestSigned >= 0 ? "dorsal" : "ventral";
 }
-

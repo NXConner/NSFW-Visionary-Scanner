@@ -15,7 +15,7 @@ import { v4 as uuidv4 } from "uuid";
 
 export type PartnerStatus = "pending" | "connected" | "rejected" | "blocked";
 
-export type SharePermission = 
+export type SharePermission =
   | "measurements"
   | "progress"
   | "achievements"
@@ -82,36 +82,36 @@ interface PartnerPair {
  */
 function getPreConfiguredPartnerPairs(): PartnerPair[] {
   const pairs: PartnerPair[] = [];
-  
+
   // Primary partner pair from environment
   const email1 = import.meta.env.VITE_PARTNER_PAIR_EMAIL_1;
   const email2 = import.meta.env.VITE_PARTNER_PAIR_EMAIL_2;
-  
+
   if (email1 && email2) {
     pairs.push({
       email1: email1.toLowerCase().trim(),
       email2: email2.toLowerCase().trim(),
     });
   }
-  
+
   // Hardcoded fallback pair for n8ter8@gmail.com and slkchick_360@yahoo.com
   // This ensures the connection works even if env vars are not set
   const hardcodedPair: PartnerPair = {
     email1: "n8ter8@gmail.com",
     email2: "slkchick_360@yahoo.com",
   };
-  
+
   // Add hardcoded pair if not already present
   const hasHardcoded = pairs.some(
-    p => 
+    p =>
       (p.email1 === hardcodedPair.email1 && p.email2 === hardcodedPair.email2) ||
-      (p.email1 === hardcodedPair.email2 && p.email2 === hardcodedPair.email1)
+      (p.email1 === hardcodedPair.email2 && p.email2 === hardcodedPair.email1),
   );
-  
+
   if (!hasHardcoded) {
     pairs.push(hardcodedPair);
   }
-  
+
   return pairs;
 }
 
@@ -122,7 +122,7 @@ function getPreConfiguredPartnerPairs(): PartnerPair[] {
 function getPartnerFromPair(userEmail: string): string | null {
   const normalizedEmail = userEmail.toLowerCase().trim();
   const pairs = getPreConfiguredPartnerPairs();
-  
+
   for (const pair of pairs) {
     if (pair.email1 === normalizedEmail) {
       return pair.email2;
@@ -131,7 +131,7 @@ function getPartnerFromPair(userEmail: string): string | null {
       return pair.email1;
     }
   }
-  
+
   return null;
 }
 
@@ -141,20 +141,23 @@ function getPartnerFromPair(userEmail: string): string | null {
  */
 function getConfiguredPartnerEmails(): string[] {
   const partners: string[] = [];
-  
+
   // Primary partner email
   const primaryPartner = import.meta.env.VITE_PARTNER_EMAIL;
   if (primaryPartner) {
     partners.push(primaryPartner.toLowerCase().trim());
   }
-  
+
   // Additional partners (comma-separated)
   const additionalPartners = import.meta.env.VITE_ADDITIONAL_PARTNERS;
   if (additionalPartners) {
-    const extras = additionalPartners.split(",").map((e: string) => e.toLowerCase().trim()).filter(Boolean);
+    const extras = additionalPartners
+      .split(",")
+      .map((e: string) => e.toLowerCase().trim())
+      .filter(Boolean);
     partners.push(...extras);
   }
-  
+
   return [...new Set(partners)];
 }
 
@@ -254,17 +257,17 @@ export class PartnerSyncManager {
   async initialize(user: User): Promise<void> {
     this.userId = user.id;
     this.userEmail = user.email || null;
-    
+
     // Load existing connections
     this.connections = getStoredConnections(user.id);
     this.invites = getStoredInvites(user.id);
-    
+
     // Auto-connect with configured partners
     await this.autoConnectConfiguredPartners();
-    
+
     // Check for pending invites
     await this.checkPendingInvites();
-    
+
     logger.info("[partnerSync] Initialized", { userId: user.id });
   }
 
@@ -274,21 +277,21 @@ export class PartnerSyncManager {
    */
   private async autoConnectConfiguredPartners(): Promise<void> {
     if (!this.userId || !this.userEmail) return;
-    
+
     const normalizedUserEmail = this.userEmail.toLowerCase().trim();
     const partnersToConnect: string[] = [];
-    
+
     // PRIORITY 1: Check if user is part of a pre-configured partner pair
     // This creates a bidirectional connection between two specific users
     const pairedPartner = getPartnerFromPair(normalizedUserEmail);
     if (pairedPartner) {
       partnersToConnect.push(pairedPartner);
-      logger.info("[partnerSync] User is part of pre-configured partner pair", { 
-        userEmail: normalizedUserEmail, 
-        pairedPartner 
+      logger.info("[partnerSync] User is part of pre-configured partner pair", {
+        userEmail: normalizedUserEmail,
+        pairedPartner,
       });
     }
-    
+
     // PRIORITY 2: Add general configured partners (from VITE_PARTNER_EMAIL and VITE_ADDITIONAL_PARTNERS)
     const configuredPartners = getConfiguredPartnerEmails();
     for (const partnerEmail of configuredPartners) {
@@ -299,14 +302,12 @@ export class PartnerSyncManager {
         partnersToConnect.push(partnerEmail);
       }
     }
-    
+
     // Create connections for all partners
     for (const partnerEmail of partnersToConnect) {
       // Skip if already connected
-      const existing = this.connections.find(
-        c => c.partnerEmail.toLowerCase() === partnerEmail
-      );
-      
+      const existing = this.connections.find(c => c.partnerEmail.toLowerCase() === partnerEmail);
+
       if (!existing) {
         // Create auto-connection
         const connection: PartnerConnection = {
@@ -321,12 +322,12 @@ export class PartnerSyncManager {
           connectedAt: new Date(),
           nickname: pairedPartner === partnerEmail ? "My Partner" : "Partner",
         };
-        
+
         this.connections.push(connection);
         logger.info("[partnerSync] Auto-connected with configured partner", { partnerEmail });
       }
     }
-    
+
     this.saveConnections();
   }
 
@@ -335,7 +336,7 @@ export class PartnerSyncManager {
    */
   private async checkPendingInvites(): Promise<void> {
     if (!this.userEmail) return;
-    
+
     // In a real implementation, this would query the database
     // For now, we check localStorage for cross-user invites
     // This is a simplified local implementation
@@ -347,21 +348,21 @@ export class PartnerSyncManager {
   async sendInvite(
     toEmail: string,
     permissions: SharePermission[] = ["measurements", "progress"],
-    message?: string
+    message?: string,
   ): Promise<{ success: boolean; error?: string; invite?: PartnerInvite }> {
     if (!this.userId || !this.userEmail) {
       return { success: false, error: "Not authenticated" };
     }
-    
+
     // Check if already connected
     const existing = this.connections.find(
-      c => c.partnerEmail.toLowerCase() === toEmail.toLowerCase()
+      c => c.partnerEmail.toLowerCase() === toEmail.toLowerCase(),
     );
-    
+
     if (existing && existing.status === "connected") {
       return { success: false, error: "Already connected with this partner" };
     }
-    
+
     // Create invite
     const invite: PartnerInvite = {
       id: uuidv4(),
@@ -374,10 +375,10 @@ export class PartnerSyncManager {
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       message,
     };
-    
+
     this.invites.push(invite);
     this.saveInvites();
-    
+
     // Create pending connection
     const connection: PartnerConnection = {
       id: uuidv4(),
@@ -390,14 +391,14 @@ export class PartnerSyncManager {
       updatedAt: new Date(),
       connectedAt: null,
     };
-    
+
     this.connections.push(connection);
     this.saveConnections();
-    
+
     this.notifyListeners();
-    
+
     logger.info("[partnerSync] Invite sent", { toEmail });
-    
+
     return { success: true, invite };
   }
 
@@ -406,30 +407,28 @@ export class PartnerSyncManager {
    */
   async acceptInvite(inviteId: string): Promise<{ success: boolean; error?: string }> {
     const invite = this.invites.find(i => i.id === inviteId);
-    
+
     if (!invite) {
       return { success: false, error: "Invite not found" };
     }
-    
+
     if (invite.status !== "pending") {
       return { success: false, error: "Invite is no longer pending" };
     }
-    
+
     if (new Date() > invite.expiresAt) {
       invite.status = "expired";
       this.saveInvites();
       return { success: false, error: "Invite has expired" };
     }
-    
+
     // Update invite status
     invite.status = "accepted";
     this.saveInvites();
-    
+
     // Create or update connection
-    const existingConnection = this.connections.find(
-      c => c.partnerEmail === invite.fromEmail
-    );
-    
+    const existingConnection = this.connections.find(c => c.partnerEmail === invite.fromEmail);
+
     if (existingConnection) {
       existingConnection.status = "connected";
       existingConnection.connectedAt = new Date();
@@ -449,12 +448,12 @@ export class PartnerSyncManager {
       };
       this.connections.push(connection);
     }
-    
+
     this.saveConnections();
     this.notifyListeners();
-    
+
     logger.info("[partnerSync] Invite accepted", { inviteId });
-    
+
     return { success: true };
   }
 
@@ -463,27 +462,25 @@ export class PartnerSyncManager {
    */
   async rejectInvite(inviteId: string): Promise<{ success: boolean; error?: string }> {
     const invite = this.invites.find(i => i.id === inviteId);
-    
+
     if (!invite) {
       return { success: false, error: "Invite not found" };
     }
-    
+
     invite.status = "rejected";
     this.saveInvites();
-    
+
     // Update connection status
-    const connection = this.connections.find(
-      c => c.partnerEmail === invite.fromEmail
-    );
-    
+    const connection = this.connections.find(c => c.partnerEmail === invite.fromEmail);
+
     if (connection) {
       connection.status = "rejected";
       connection.updatedAt = new Date();
       this.saveConnections();
     }
-    
+
     this.notifyListeners();
-    
+
     return { success: true };
   }
 
@@ -492,17 +489,17 @@ export class PartnerSyncManager {
    */
   async removeConnection(connectionId: string): Promise<{ success: boolean; error?: string }> {
     const index = this.connections.findIndex(c => c.id === connectionId);
-    
+
     if (index === -1) {
       return { success: false, error: "Connection not found" };
     }
-    
+
     this.connections.splice(index, 1);
     this.saveConnections();
     this.notifyListeners();
-    
+
     logger.info("[partnerSync] Connection removed", { connectionId });
-    
+
     return { success: true };
   }
 
@@ -511,19 +508,19 @@ export class PartnerSyncManager {
    */
   updatePermissions(
     connectionId: string,
-    permissions: SharePermission[]
+    permissions: SharePermission[],
   ): { success: boolean; error?: string } {
     const connection = this.connections.find(c => c.id === connectionId);
-    
+
     if (!connection) {
       return { success: false, error: "Connection not found" };
     }
-    
+
     connection.permissions = permissions;
     connection.updatedAt = new Date();
     this.saveConnections();
     this.notifyListeners();
-    
+
     return { success: true };
   }
 
@@ -532,24 +529,23 @@ export class PartnerSyncManager {
    */
   async shareData(
     type: SharePermission,
-    data: any
+    data: any,
   ): Promise<{ success: boolean; sharedWith: string[] }> {
     if (!this.userId) {
       return { success: false, sharedWith: [] };
     }
-    
+
     const sharedWith: string[] = [];
-    
+
     for (const connection of this.connections) {
       if (connection.status !== "connected") continue;
-      
+
       // Check if permission allows this data type
-      const hasPermission = 
-        connection.permissions.includes("all") ||
-        connection.permissions.includes(type);
-      
+      const hasPermission =
+        connection.permissions.includes("all") || connection.permissions.includes(type);
+
       if (!hasPermission) continue;
-      
+
       // Store shared data (in real implementation, this would sync to server)
       const sharedData: SharedData = {
         type,
@@ -557,7 +553,7 @@ export class PartnerSyncManager {
         sharedAt: new Date(),
         fromUserId: this.userId,
       };
-      
+
       // Store for partner to receive
       if (connection.partnerUserId) {
         const partnerData = getStoredSharedData(connection.partnerUserId);
@@ -566,9 +562,9 @@ export class PartnerSyncManager {
         sharedWith.push(connection.partnerEmail);
       }
     }
-    
+
     logger.info("[partnerSync] Data shared", { type, sharedWith });
-    
+
     return { success: true, sharedWith };
   }
 
@@ -577,13 +573,13 @@ export class PartnerSyncManager {
    */
   getSharedData(type?: SharePermission): SharedData[] {
     if (!this.userId) return [];
-    
+
     const allData = getStoredSharedData(this.userId);
-    
+
     if (type) {
       return allData.filter(d => d.type === type);
     }
-    
+
     return allData;
   }
 
@@ -605,9 +601,7 @@ export class PartnerSyncManager {
    * Get pending invites
    */
   getPendingInvites(): PartnerInvite[] {
-    return this.invites.filter(
-      i => i.status === "pending" && new Date() < i.expiresAt
-    );
+    return this.invites.filter(i => i.status === "pending" && new Date() < i.expiresAt);
   }
 
   /**
@@ -615,8 +609,7 @@ export class PartnerSyncManager {
    */
   isConnectedWith(email: string): boolean {
     return this.connections.some(
-      c => c.partnerEmail.toLowerCase() === email.toLowerCase() && 
-           c.status === "connected"
+      c => c.partnerEmail.toLowerCase() === email.toLowerCase() && c.status === "connected",
     );
   }
 

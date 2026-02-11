@@ -72,11 +72,14 @@ const setLocalAgeVerification = (verified: boolean): void => {
     if (!storage) return;
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + AGE_VERIFICATION_EXPIRY_DAYS);
-    storage.setItem(AGE_VERIFICATION_KEY, JSON.stringify({
-      verified,
-      verifiedAt: new Date().toISOString(),
-      expiresAt: expiresAt.toISOString(),
-    }));
+    storage.setItem(
+      AGE_VERIFICATION_KEY,
+      JSON.stringify({
+        verified,
+        verifiedAt: new Date().toISOString(),
+        expiresAt: expiresAt.toISOString(),
+      }),
+    );
   } catch {
     // ignore
   }
@@ -110,7 +113,8 @@ class DLCManager {
     const packageType =
       packType === "bundle" || packType === "subscription" ? packType : "individual";
     const price = Number(row.price ?? row.price_usd ?? 0);
-    const priceType = packageType === "subscription" ? "subscription" : price <= 0 ? "free" : "one-time";
+    const priceType =
+      packageType === "subscription" ? "subscription" : price <= 0 ? "free" : "one-time";
 
     const contentItems = Array.isArray(row.content_items) ? (row.content_items as any[]) : [];
     const downloadUrl =
@@ -127,9 +131,7 @@ class DLCManager {
       fullDescription: row.full_description
         ? String(row.full_description)
         : fallback?.fullDescription,
-      contentRating: row.content_rating
-        ? String(row.content_rating)
-        : fallback?.contentRating,
+      contentRating: row.content_rating ? String(row.content_rating) : fallback?.contentRating,
       version: String(row.version || fallback?.version || "1.0.0"),
       priceUsd: Number.isFinite(price) ? price : fallback?.priceUsd || 0,
       currency: String(row.currency || fallback?.currency || "USD"),
@@ -225,7 +227,11 @@ class DLCManager {
           .eq("user_id", userId)
           .limit(500);
         (purchases || []).forEach((row: any) => {
-          const id = row.package_id ? String(row.package_id) : row.pack_id ? String(row.pack_id) : "";
+          const id = row.package_id
+            ? String(row.package_id)
+            : row.pack_id
+              ? String(row.pack_id)
+              : "";
           if (id) owned.add(id);
         });
       }
@@ -338,9 +344,7 @@ class DLCManager {
     return this.storeState.installations.find(i => i.packageId === packageId);
   }
 
-  async installPackage(
-    packageId: string,
-  ): Promise<{ success: boolean; error?: string }> {
+  async installPackage(packageId: string): Promise<{ success: boolean; error?: string }> {
     if (!this.ownsPackage(packageId)) {
       return { success: false, error: "Package not owned" };
     }
@@ -382,9 +386,7 @@ class DLCManager {
     return { success: true };
   }
 
-  async uninstallPackage(
-    packageId: string,
-  ): Promise<{ success: boolean; error?: string }> {
+  async uninstallPackage(packageId: string): Promise<{ success: boolean; error?: string }> {
     const installed = new Set(this.storeState.installedPackages);
     installed.delete(packageId);
     setLocalInstalledPackages(Array.from(installed));
@@ -443,10 +445,10 @@ class DLCManager {
 
   async verifyAge(age: number, consent: boolean): Promise<boolean> {
     if (!consent || age < 18) return false;
-    
+
     // Always store in localStorage first for persistence
     setLocalAgeVerification(true);
-    
+
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) {
       // Even without auth, localStorage verification is valid
@@ -480,7 +482,7 @@ class DLCManager {
     if (localVerification?.verified) {
       return true;
     }
-    
+
     try {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) return false;
@@ -491,7 +493,7 @@ class DLCManager {
         .maybeSingle();
       if (error || !data) return false;
       if (data.expires_at && new Date(data.expires_at) < new Date()) return false;
-      
+
       const verified = Boolean(data.is_verified);
       // Sync to localStorage if verified in DB
       if (verified) {
@@ -502,7 +504,7 @@ class DLCManager {
       return false;
     }
   }
-  
+
   // Synchronous check for localStorage age verification (for immediate UI decisions)
   isAgeVerifiedSync(): boolean {
     const localVerification = getLocalAgeVerification();
@@ -542,7 +544,10 @@ class DLCManager {
   }
 
   getPackage(packageId: string): DLCPackage | undefined {
-    return this.storeState.packages.find(p => p.packageId === packageId) || dlcRegistry.getPackage(packageId);
+    return (
+      this.storeState.packages.find(p => p.packageId === packageId) ||
+      dlcRegistry.getPackage(packageId)
+    );
   }
 }
 

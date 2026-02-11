@@ -11,19 +11,35 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
 const mode = parseMode(process.argv.slice(2));
+const flags = parseFlags(process.argv.slice(2));
 
 dotenv.config({ path: path.join(repoRoot, ".env") });
 
 function parseMode(args) {
-  const modeArg = args.find((arg) => arg.startsWith("--mode="));
+  const modeArg = args.find(arg => arg.startsWith("--mode="));
   const raw = (modeArg ? modeArg.split("=")[1] : "auto").toLowerCase();
   if (!["auto", "local", "remote"].includes(raw)) {
-    console.error(
-      `Invalid mode "${raw}". Use one of: auto, local, remote (e.g. --mode=remote).`,
-    );
+    console.error(`Invalid mode "${raw}". Use one of: auto, local, remote (e.g. --mode=remote).`);
     process.exit(1);
   }
   return raw;
+}
+
+function parseFlags(args) {
+  const readFlagValue = flagName => {
+    const inline = args.find(arg => arg.startsWith(`${flagName}=`));
+    if (inline) return String(inline.slice(flagName.length + 1)).trim();
+    const idx = args.findIndex(arg => arg === flagName);
+    if (idx >= 0 && idx + 1 < args.length) return String(args[idx + 1] || "").trim();
+    return "";
+  };
+
+  const dryRun = args.includes("--dry-run") || args.includes("--plan");
+  const projectRef = readFlagValue("--project-ref");
+  const dbUrl = readFlagValue("--db-url");
+  const dbPassword = readFlagValue("--db-password");
+  const accessToken = readFlagValue("--access-token");
+  return { dryRun, projectRef, dbUrl, dbPassword, accessToken };
 }
 
 function run(command, args, options = {}) {
@@ -109,10 +125,16 @@ function readProjectRefFromConfig() {
   return match?.[1]?.trim() ?? "";
 }
 
-function buildDirectDbUrlFromPassword({ projectRef, password }) {
-  const url = new URL(
-    `postgresql://postgres@db.${projectRef}.supabase.co:5432/postgres`,
+function resolveProjectRef() {
+  return (
+    flags.projectRef ||
+    firstSetEnv(["SUPABASE_PROJECT_REF", "SUPABASE_PROJECT_ID", "VITE_SUPABASE_PROJECT_ID"]) ||
+    readProjectRefFromConfig()
   );
+}
+
+function buildDirectDbUrlFromPassword({ projectRef, password }) {
+  const url = new URL(`postgresql://postgres@db.${projectRef}.supabase.co:5432/postgres`);
   url.password = password;
   return url.toString();
 }
@@ -127,45 +149,41 @@ function buildPoolerDbUrlFromPassword({ projectRef, password, poolerHost }) {
 }
 
 function isNetworkUnreachable(output) {
-  return (
-    typeof output === "string" &&
-    output.toLowerCase().includes("network is unreachable")
-  );
+  return typeof output === "string" && output.toLowerCase().includes("network is unreachable");
 }
 
 function isTenantOrUserNotFound(output) {
-  return (
-    typeof output === "string" &&
-    output.toLowerCase().includes("tenant or user not found")
-  );
+  return typeof output === "string" && output.toLowerCase().includes("tenant or user not found");
 }
 
 function runRemoteMigration() {
-  const dbUrl = firstSetEnv([
-    "SUPABASE_DB_URL",
-    "DATABASE_URL",
-    "SUPABASE_DATABASE_URL",
-  ]);
+  const dryRunArgs = flags.dryRun ? ["--dry-run"] : [];
+  const dbUrl =
+    flags.dbUrl || firstSetEnv(["SUPABASE_DB_URL", "DATABASE_URL", "SUPABASE_DATABASE_URL"]);
 
   if (dbUrl) {
     const result = runSupabase(
-      ["db", "push", "--db-url", dbUrl, "--yes", "--include-all"],
-      "Applying migrations using explicit database URL...",
+      ["db", "push", "--db-url", dbUrl, ...dryRunArgs, "--yes", "--include-all"],
+      flags.dryRun
+        ? "Previewing migrations using explicit database URL (dry-run)..."
+        : "Applying migrations using explicit database URL...",
     );
     if (result.ok) {
       return result;
     }
   } else {
-    const password = firstSetEnv(["SUPABASE_DB_PASSWORD", "POSTGRES_PASSWORD"]);
+    const password = flags.dbPassword || firstSetEnv(["SUPABASE_DB_PASSWORD", "POSTGRES_PASSWORD"]);
 
     // Prefer a Docker-less remote push that does NOT require Supabase API auth:
     // if the DB password is provided, we can construct the direct DB URL from project ref.
-    const projectRef = readProjectRefFromConfig();
+    const projectRef = resolveProjectRef();
     if (password && projectRef) {
       const directDbUrl = buildDirectDbUrlFromPassword({ projectRef, password });
       const result = runSupabase(
-        ["db", "push", "--db-url", directDbUrl, "--yes", "--include-all"],
-        `Applying migrations using SUPABASE_DB_PASSWORD + project ref (${projectRef})...`,
+        ["db", "push", "--db-url", directDbUrl, ...dryRunArgs, "--yes", "--include-all"],
+        flags.dryRun
+          ? `Previewing migrations using SUPABASE_DB_PASSWORD + project ref (${projectRef}) (dry-run)...`
+          : `Applying migrations using SUPABASE_DB_PASSWORD + project ref (${projectRef})...`,
       );
       if (result.ok) {
         return result;
@@ -205,8 +223,8 @@ function runRemoteMigration() {
         // Supabase runs multiple pooler clusters per region (e.g. aws-0, aws-1).
         const poolerClusters = ["aws-0", "aws-1"];
 
-        const poolerHosts = poolerClusters.flatMap((cluster) =>
-          poolerRegions.map((region) => `${cluster}-${region}.pooler.supabase.com`),
+        const poolerHosts = poolerClusters.flatMap(cluster =>
+          poolerRegions.map(region => `${cluster}-${region}.pooler.supabase.com`),
         );
 
         for (const poolerHost of poolerHosts) {
@@ -217,8 +235,10 @@ function runRemoteMigration() {
           });
 
           const attempt = runSupabase(
-            ["db", "push", "--db-url", poolerDbUrl, "--yes", "--include-all"],
-            `Retrying via pooler host ${poolerHost}...`,
+            ["db", "push", "--db-url", poolerDbUrl, ...dryRunArgs, "--yes", "--include-all"],
+            flags.dryRun
+              ? `Previewing migrations via pooler host ${poolerHost} (dry-run)...`
+              : `Retrying via pooler host ${poolerHost}...`,
           );
 
           if (attempt.ok) {
@@ -244,20 +264,16 @@ function runRemoteMigration() {
     }
 
     const args = ["db", "push", "--linked", "--yes", "--include-all"];
+    if (flags.dryRun) args.push("--dry-run");
     if (password) {
       args.push("--password", password);
     }
-    let result = runSupabase(
-      args,
-      "Applying migrations to linked remote Supabase project...",
-    );
+    let result = runSupabase(args, "Applying migrations to linked remote Supabase project...");
     if (
       !result.ok &&
-      result.output
-        .toLowerCase()
-        .includes("cannot find project ref. have you run supabase link?")
+      result.output.toLowerCase().includes("cannot find project ref. have you run supabase link?")
     ) {
-      const projectRef = readProjectRefFromConfig();
+      const projectRef = resolveProjectRef();
       if (projectRef) {
         const linkArgs = ["link", "--project-ref", projectRef, "--yes"];
         if (password) {
@@ -270,10 +286,7 @@ function runRemoteMigration() {
         );
 
         if (linkResult.ok) {
-          result = runSupabase(
-            args,
-            "Retrying migration push to linked remote project...",
-          );
+          result = runSupabase(args, "Retrying migration push to linked remote project...");
         }
       }
     }
@@ -284,17 +297,18 @@ function runRemoteMigration() {
   }
 
   console.error("\nUnable to apply migrations remotely.");
-  console.error("Set one of the following and run again:");
-  console.error("  1) SUPABASE_DB_URL (preferred full Postgres connection URL)");
+  console.error("Provide one of the following and run again:");
+  console.error("  1) --db-url=<postgres-url> (preferred full Postgres connection URL)");
+  console.error("  2) SUPABASE_DB_URL (env; preferred full Postgres connection URL)");
   console.error(
-    "  2) SUPABASE_DB_PASSWORD (preferred; works with project_id in supabase/config.toml)",
+    "  3) --db-password=<db-password> (works with --project-ref or supabase/config.toml)",
   );
+  console.error("  4) SUPABASE_DB_PASSWORD (env; works with project_id in supabase/config.toml)");
   console.error(
-    "  3) SUPABASE_ACCESS_TOKEN if Supabase CLI is not already authenticated",
+    "  5) --project-ref=<project-ref> or SUPABASE_PROJECT_REF (override config project ref)",
   );
-  console.error(
-    "If you need local migrations, install/start Docker and use --mode=local.",
-  );
+  console.error("  6) --access-token=<token> or SUPABASE_ACCESS_TOKEN if CLI is not authenticated");
+  console.error("If you need local migrations, install/start Docker and use --mode=local.");
   process.exit(1);
 }
 
@@ -318,8 +332,12 @@ function ensureSupabaseCli() {
 function main() {
   process.chdir(repoRoot);
   ensureSupabaseCli();
+  if (flags.accessToken) {
+    process.env.SUPABASE_ACCESS_TOKEN = flags.accessToken;
+  }
 
   console.log(`Migration mode: ${mode}`);
+  if (flags.dryRun) console.log("Dry-run: enabled (no changes will be applied remotely)");
 
   if (mode === "local") {
     if (!dockerAvailable()) {
@@ -349,9 +367,7 @@ function main() {
       "\nLocal migration failed due connectivity/runtime issue. Falling back to remote migration...",
     );
   } else {
-    console.warn(
-      "\nDocker is not available. Falling back to remote migration path...",
-    );
+    console.warn("\nDocker is not available. Falling back to remote migration path...");
   }
 
   const remoteResult = runRemoteMigration();

@@ -94,6 +94,7 @@ Supabase dashboard (Scheduled Functions) or your automation tooling:
 Recommended schedule: **every minute** (each function performs timezone + schedule checks per user).
 
 Notes:
+
 - These functions require `SUPABASE_SERVICE_ROLE_KEY` in the function environment.
 - User preferences are stored in `user_preferences.notification_preferences`.
 - If you disable push reminders in Settings, these functions skip the user automatically.

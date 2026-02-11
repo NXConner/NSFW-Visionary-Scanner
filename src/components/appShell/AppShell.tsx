@@ -22,7 +22,7 @@ function MobileNavPortal(props: { activeTab: string; onTabChange: (tab: string) 
       onTabChange={props.onTabChange}
       onOpenMenu={toggleSidebar}
     />,
-    document.body
+    document.body,
   );
 }
 
@@ -37,7 +37,7 @@ function TopNavPortal(props: { activeTab: string; onTabChange: (tab: string) => 
 
   return createPortal(
     <AppTopBar activeTab={props.activeTab} onTabChange={props.onTabChange} />,
-    document.body
+    document.body,
   );
 }
 
@@ -53,14 +53,12 @@ export function AppShell(props: {
       {/* Portaled to document.body for true fixed positioning */}
       <TopNavPortal activeTab={activeTab} onTabChange={onTabChange} />
       <MobileNavPortal activeTab={activeTab} onTabChange={onTabChange} />
-      
+
       <AppSidebar activeTab={activeTab} onTabChange={onTabChange} />
       <SidebarRail />
-      
+
       <SidebarInset className="flex flex-col min-h-screen w-full">
-        <div className="relative flex-1 pt-14 pb-20 lg:pb-0">
-          {children}
-        </div>
+        <div className="relative flex-1 pt-14 pb-20 lg:pb-0">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

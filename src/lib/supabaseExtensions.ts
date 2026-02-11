@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export type ExtendedTableName =
   | "active_sessions"
+  | "profiles"
   | "intimate_date_proposals"
   | "video_playlists"
   | "playlist_videos"

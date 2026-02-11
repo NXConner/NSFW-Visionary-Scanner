@@ -3,7 +3,7 @@
  * React hook for image enhancement operations
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   ImageEnhancer,
   getImageEnhancer,
@@ -17,7 +17,7 @@ import {
   type ColorCorrectionOptions,
   type ImageAnalysis,
   type HistoryEntry,
-} from '@/lib/imageEnhancement';
+} from "@/lib/imageEnhancement";
 
 export interface UseImageEnhancementOptions {
   autoAnalyze?: boolean;
@@ -46,8 +46,8 @@ export interface UseImageEnhancementReturn {
   undo: () => ImageData | null;
   redo: () => ImageData | null;
   reset: () => ImageData | null;
-  exportImage: (format?: 'png' | 'jpeg' | 'webp', quality?: number) => Promise<Blob>;
-  getSuggestions: () => ReturnType<ImageEnhancer['getSuggestions']>;
+  exportImage: (format?: "png" | "jpeg" | "webp", quality?: number) => Promise<Blob>;
+  getSuggestions: () => ReturnType<ImageEnhancer["getSuggestions"]>;
   getComparisonData: () => { original: ImageData; current: ImageData } | null;
 
   // Quick actions
@@ -58,22 +58,22 @@ export interface UseImageEnhancementReturn {
 }
 
 export function useImageEnhancement(
-  options: UseImageEnhancementOptions = {}
+  options: UseImageEnhancementOptions = {},
 ): UseImageEnhancementReturn {
   const { autoAnalyze = true, onError, onEnhancementComplete } = options;
-  
+
   const enhancerRef = useRef<ImageEnhancer>(getImageEnhancer());
-  
+
   const [state, setState] = useState<EnhancementState>(() => enhancerRef.current.getState());
 
   // Subscribe to enhancer events
   useEffect(() => {
     const enhancer = enhancerRef.current;
-    
-    const unsubscribe = enhancer.subscribe((event) => {
-      if (event.type === 'stateChange') {
+
+    const unsubscribe = enhancer.subscribe(event => {
+      if (event.type === "stateChange") {
         setState(enhancer.getState());
-      } else if (event.type === 'error' && onError) {
+      } else if (event.type === "error" && onError) {
         onError(event.data as Error);
       }
     });
@@ -83,32 +83,27 @@ export function useImageEnhancement(
     };
   }, [onError]);
 
-  const loadImage = useCallback(async (
-    source: HTMLImageElement | HTMLCanvasElement | ImageData | string
-  ) => {
-    try {
-      await enhancerRef.current.loadImage(source);
-    } catch (error) {
-      onError?.(error as Error);
-      throw error;
-    }
-  }, [onError]);
+  const loadImage = useCallback(
+    async (source: HTMLImageElement | HTMLCanvasElement | ImageData | string) => {
+      try {
+        await enhancerRef.current.loadImage(source);
+      } catch (error) {
+        onError?.(error as Error);
+        throw error;
+      }
+    },
+    [onError],
+  );
 
-  const applyNoiseReduction = useCallback(async (
-    opts: Partial<NoiseReductionOptions> = {}
-  ) => {
+  const applyNoiseReduction = useCallback(async (opts: Partial<NoiseReductionOptions> = {}) => {
     return enhancerRef.current.applyNoiseReduction(opts);
   }, []);
 
-  const applySharpening = useCallback(async (
-    opts: Partial<SharpeningOptions> = {}
-  ) => {
+  const applySharpening = useCallback(async (opts: Partial<SharpeningOptions> = {}) => {
     return enhancerRef.current.applySharpening(opts);
   }, []);
 
-  const applyColorCorrection = useCallback(async (
-    opts: Partial<ColorCorrectionOptions> = {}
-  ) => {
+  const applyColorCorrection = useCallback(async (opts: Partial<ColorCorrectionOptions> = {}) => {
     return enhancerRef.current.applyColorCorrection(opts);
   }, []);
 
@@ -116,13 +111,14 @@ export function useImageEnhancement(
     return enhancerRef.current.applyAutoWhiteBalance();
   }, []);
 
-  const applyAutoEnhance = useCallback(async (
-    opts: Partial<AutoEnhanceOptions> = {}
-  ) => {
-    const result = await enhancerRef.current.applyAutoEnhance(opts);
-    onEnhancementComplete?.(result);
-    return result;
-  }, [onEnhancementComplete]);
+  const applyAutoEnhance = useCallback(
+    async (opts: Partial<AutoEnhanceOptions> = {}) => {
+      const result = await enhancerRef.current.applyAutoEnhance(opts);
+      onEnhancementComplete?.(result);
+      return result;
+    },
+    [onEnhancementComplete],
+  );
 
   const undo = useCallback(() => {
     return enhancerRef.current.undo();
@@ -136,12 +132,12 @@ export function useImageEnhancement(
     return enhancerRef.current.reset();
   }, []);
 
-  const exportImage = useCallback(async (
-    format: 'png' | 'jpeg' | 'webp' = 'png',
-    quality = 0.92
-  ) => {
-    return enhancerRef.current.exportImage(format, quality);
-  }, []);
+  const exportImage = useCallback(
+    async (format: "png" | "jpeg" | "webp" = "png", quality = 0.92) => {
+      return enhancerRef.current.exportImage(format, quality);
+    },
+    [],
+  );
 
   const getSuggestions = useCallback(() => {
     return enhancerRef.current.getSuggestions();
@@ -152,11 +148,14 @@ export function useImageEnhancement(
   }, []);
 
   // Quick actions
-  const quickEnhance = useCallback(async (preset: EnhancementPreset = 'auto') => {
-    const result = await enhancerRef.current.applyAutoEnhance({ preset, intensity: 50 });
-    onEnhancementComplete?.(result);
-    return result;
-  }, [onEnhancementComplete]);
+  const quickEnhance = useCallback(
+    async (preset: EnhancementPreset = "auto") => {
+      const result = await enhancerRef.current.applyAutoEnhance({ preset, intensity: 50 });
+      onEnhancementComplete?.(result);
+      return result;
+    },
+    [onEnhancementComplete],
+  );
 
   const adjustBrightness = useCallback(async (value: number) => {
     return enhancerRef.current.applyColorCorrection({ brightness: value });

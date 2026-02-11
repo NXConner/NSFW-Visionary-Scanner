@@ -5,6 +5,7 @@ This guide explains how to set up Stripe products and prices for all three app v
 ## Overview
 
 You need to create separate Stripe products and prices for:
+
 - SFW Store pricing (Google Play / Apple App Store)
 - SFW Direct pricing (Website direct download)
 - NSFW Direct pricing (Website only)
@@ -74,43 +75,43 @@ For each product, create prices as follows:
 
 ### SFW Store Prices
 
-| Product | Type | Amount | Interval | Price ID Variable |
-|---------|------|--------|----------|-------------------|
-| SFW App | One-time | $14.99 | - | `VITE_STRIPE_SFW_APP_STORE_PRICE_ID` |
-| SFW Pro | Recurring | $12.99 | Monthly | `VITE_STRIPE_SFW_PRO_STORE_MONTHLY_PRICE_ID` |
-| SFW Pro | Recurring | $124.99 | Yearly | `VITE_STRIPE_SFW_PRO_STORE_YEARLY_PRICE_ID` |
-| SFW Premium | Recurring | $24.99 | Monthly | `VITE_STRIPE_SFW_PREMIUM_STORE_MONTHLY_PRICE_ID` |
-| SFW Premium | Recurring | $239.99 | Yearly | `VITE_STRIPE_SFW_PREMIUM_STORE_YEARLY_PRICE_ID` |
-| SFW Lifetime | One-time | $299.99 | - | `VITE_STRIPE_SFW_LIFETIME_STORE_PRICE_ID` |
+| Product      | Type      | Amount  | Interval | Price ID Variable                                |
+| ------------ | --------- | ------- | -------- | ------------------------------------------------ |
+| SFW App      | One-time  | $14.99  | -        | `VITE_STRIPE_SFW_APP_STORE_PRICE_ID`             |
+| SFW Pro      | Recurring | $12.99  | Monthly  | `VITE_STRIPE_SFW_PRO_STORE_MONTHLY_PRICE_ID`     |
+| SFW Pro      | Recurring | $124.99 | Yearly   | `VITE_STRIPE_SFW_PRO_STORE_YEARLY_PRICE_ID`      |
+| SFW Premium  | Recurring | $24.99  | Monthly  | `VITE_STRIPE_SFW_PREMIUM_STORE_MONTHLY_PRICE_ID` |
+| SFW Premium  | Recurring | $239.99 | Yearly   | `VITE_STRIPE_SFW_PREMIUM_STORE_YEARLY_PRICE_ID`  |
+| SFW Lifetime | One-time  | $299.99 | -        | `VITE_STRIPE_SFW_LIFETIME_STORE_PRICE_ID`        |
 
 ### SFW Direct Prices
 
-| Product | Type | Amount | Interval | Price ID Variable |
-|---------|------|--------|----------|-------------------|
-| SFW App | One-time | $9.99 | - | `VITE_STRIPE_SFW_APP_DIRECT_PRICE_ID` |
-| SFW Pro | Recurring | $9.99 | Monthly | `VITE_STRIPE_SFW_PRO_DIRECT_MONTHLY_PRICE_ID` |
-| SFW Pro | Recurring | $95.99 | Yearly | `VITE_STRIPE_SFW_PRO_DIRECT_YEARLY_PRICE_ID` |
-| SFW Premium | Recurring | $19.99 | Monthly | `VITE_STRIPE_SFW_PREMIUM_DIRECT_MONTHLY_PRICE_ID` |
-| SFW Premium | Recurring | $191.99 | Yearly | `VITE_STRIPE_SFW_PREMIUM_DIRECT_YEARLY_PRICE_ID` |
-| SFW Lifetime | One-time | $199.99 | - | `VITE_STRIPE_SFW_LIFETIME_DIRECT_PRICE_ID` |
+| Product      | Type      | Amount  | Interval | Price ID Variable                                 |
+| ------------ | --------- | ------- | -------- | ------------------------------------------------- |
+| SFW App      | One-time  | $9.99   | -        | `VITE_STRIPE_SFW_APP_DIRECT_PRICE_ID`             |
+| SFW Pro      | Recurring | $9.99   | Monthly  | `VITE_STRIPE_SFW_PRO_DIRECT_MONTHLY_PRICE_ID`     |
+| SFW Pro      | Recurring | $95.99  | Yearly   | `VITE_STRIPE_SFW_PRO_DIRECT_YEARLY_PRICE_ID`      |
+| SFW Premium  | Recurring | $19.99  | Monthly  | `VITE_STRIPE_SFW_PREMIUM_DIRECT_MONTHLY_PRICE_ID` |
+| SFW Premium  | Recurring | $191.99 | Yearly   | `VITE_STRIPE_SFW_PREMIUM_DIRECT_YEARLY_PRICE_ID`  |
+| SFW Lifetime | One-time  | $199.99 | -        | `VITE_STRIPE_SFW_LIFETIME_DIRECT_PRICE_ID`        |
 
 ### NSFW Direct Prices
 
-| Product | Type | Amount | Interval | Price ID Variable |
-|---------|------|--------|----------|-------------------|
-| NSFW App | One-time | $19.99 | - | `VITE_STRIPE_NSFW_APP_DIRECT_PRICE_ID` |
-| NSFW Pro | Recurring | $14.99 | Monthly | `VITE_STRIPE_NSFW_PRO_DIRECT_MONTHLY_PRICE_ID` |
-| NSFW Pro | Recurring | $143.99 | Yearly | `VITE_STRIPE_NSFW_PRO_DIRECT_YEARLY_PRICE_ID` |
-| NSFW Premium | Recurring | $29.99 | Monthly | `VITE_STRIPE_NSFW_PREMIUM_DIRECT_MONTHLY_PRICE_ID` |
-| NSFW Premium | Recurring | $287.99 | Yearly | `VITE_STRIPE_NSFW_PREMIUM_DIRECT_YEARLY_PRICE_ID` |
-| NSFW Lifetime | One-time | $399.99 | - | `VITE_STRIPE_NSFW_LIFETIME_DIRECT_PRICE_ID` |
+| Product       | Type      | Amount  | Interval | Price ID Variable                                  |
+| ------------- | --------- | ------- | -------- | -------------------------------------------------- |
+| NSFW App      | One-time  | $19.99  | -        | `VITE_STRIPE_NSFW_APP_DIRECT_PRICE_ID`             |
+| NSFW Pro      | Recurring | $14.99  | Monthly  | `VITE_STRIPE_NSFW_PRO_DIRECT_MONTHLY_PRICE_ID`     |
+| NSFW Pro      | Recurring | $143.99 | Yearly   | `VITE_STRIPE_NSFW_PRO_DIRECT_YEARLY_PRICE_ID`      |
+| NSFW Premium  | Recurring | $29.99  | Monthly  | `VITE_STRIPE_NSFW_PREMIUM_DIRECT_MONTHLY_PRICE_ID` |
+| NSFW Premium  | Recurring | $287.99 | Yearly   | `VITE_STRIPE_NSFW_PREMIUM_DIRECT_YEARLY_PRICE_ID`  |
+| NSFW Lifetime | One-time  | $399.99 | -        | `VITE_STRIPE_NSFW_LIFETIME_DIRECT_PRICE_ID`        |
 
 ### DLC Prices
 
-| Product | Type | Amount | Interval | Price ID Variable |
-|---------|------|--------|----------|-------------------|
-| NSFW DLC (Store) | One-time | $24.99 | - | `VITE_STRIPE_NSFW_DLC_STORE_PRICE_ID` |
-| NSFW DLC (Direct) | One-time | $19.99 | - | `VITE_STRIPE_NSFW_DLC_DIRECT_PRICE_ID` |
+| Product           | Type     | Amount | Interval | Price ID Variable                      |
+| ----------------- | -------- | ------ | -------- | -------------------------------------- |
+| NSFW DLC (Store)  | One-time | $24.99 | -        | `VITE_STRIPE_NSFW_DLC_STORE_PRICE_ID`  |
+| NSFW DLC (Direct) | One-time | $19.99 | -        | `VITE_STRIPE_NSFW_DLC_DIRECT_PRICE_ID` |
 
 ## Step 3: Configure Environment Variables
 
@@ -149,11 +150,13 @@ VITE_STRIPE_NSFW_DLC_DIRECT_PRICE_ID=price_xxxxx
 ## Step 4: Test Mode vs Live Mode
 
 ### Test Mode
+
 - Use test API keys: `pk_test_...` and `sk_test_...`
 - Create test products and prices
 - Use test cards: `4242 4242 4242 4242`
 
 ### Live Mode
+
 - Use live API keys: `pk_live_...` and `sk_live_...`
 - Create live products and prices
 - Real payments will be processed
@@ -161,6 +164,7 @@ VITE_STRIPE_NSFW_DLC_DIRECT_PRICE_ID=price_xxxxx
 ## Step 5: Webhook Configuration
 
 Configure Stripe webhooks to handle:
+
 - `customer.subscription.created`
 - `customer.subscription.updated`
 - `customer.subscription.deleted`
@@ -189,22 +193,26 @@ Webhook endpoint: `https://your-project.supabase.co/functions/v1/stripe-webhook`
 6. Add to environment variables
 
 ### Price ID Format
+
 - Test mode: `price_1AbCdEfGhIjKlMnOpQrStUv`
 - Live mode: `price_1AbCdEfGhIjKlMnOpQrStUv`
 
 ## Troubleshooting
 
 ### Price Not Found
+
 - Verify price ID is correct
 - Check if price is in test/live mode matching your API keys
 - Ensure price is active (not archived)
 
 ### Checkout Fails
+
 - Verify Stripe publishable key is set
 - Check webhook endpoint is configured
 - Verify price ID exists in Stripe
 
 ### Webhook Not Receiving Events
+
 - Check webhook endpoint URL is correct
 - Verify webhook secret is set
 - Check Supabase Edge Function logs
@@ -212,9 +220,9 @@ Webhook endpoint: `https://your-project.supabase.co/functions/v1/stripe-webhook`
 ## Next Steps
 
 After Stripe setup:
+
 1. Test all pricing flows
 2. Update database with price IDs
 3. Deploy to staging
 4. Test end-to-end
 5. Deploy to production
-

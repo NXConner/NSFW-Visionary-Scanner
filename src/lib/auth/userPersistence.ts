@@ -96,17 +96,14 @@ function safeSessionStorageSet(key: string, value: string): void {
 /**
  * Persist user data after successful login
  */
-export function persistUserData(
-  user: User,
-  rememberMe: boolean = true
-): void {
+export function persistUserData(user: User, rememberMe: boolean = true): void {
   const data: PersistedUserData = {
     userId: user.id,
     email: user.email || null,
     lastLoginAt: new Date().toISOString(),
     rememberMe,
   };
-  
+
   if (rememberMe) {
     // Use localStorage for persistent storage
     safeLocalStorageSet(STORAGE_KEYS.LAST_USER_ID, user.id);
@@ -119,7 +116,7 @@ export function persistUserData(
     safeSessionStorageSet(STORAGE_KEYS.USER_EMAIL, user.email || "");
     safeLocalStorageSet(STORAGE_KEYS.REMEMBER_ME, "false");
   }
-  
+
   logger.info("[userPersistence] User data persisted", { userId: user.id, rememberMe });
 }
 
@@ -130,7 +127,7 @@ export function getPersistedUserData(): PersistedUserData | null {
   // First check localStorage (remember me)
   const localUserId = safeLocalStorageGet(STORAGE_KEYS.LAST_USER_ID);
   const rememberMe = safeLocalStorageGet(STORAGE_KEYS.REMEMBER_ME) === "true";
-  
+
   if (localUserId && rememberMe) {
     const authStateStr = safeLocalStorageGet(STORAGE_KEYS.AUTH_STATE);
     if (authStateStr) {
@@ -140,7 +137,7 @@ export function getPersistedUserData(): PersistedUserData | null {
         // Fall back to basic data
       }
     }
-    
+
     return {
       userId: localUserId,
       email: safeLocalStorageGet(STORAGE_KEYS.USER_EMAIL),
@@ -148,7 +145,7 @@ export function getPersistedUserData(): PersistedUserData | null {
       rememberMe: true,
     };
   }
-  
+
   // Check sessionStorage
   const sessionUserId = safeSessionStorageGet(STORAGE_KEYS.LAST_USER_ID);
   if (sessionUserId) {
@@ -159,7 +156,7 @@ export function getPersistedUserData(): PersistedUserData | null {
       rememberMe: false,
     };
   }
-  
+
   return null;
 }
 
@@ -167,8 +164,10 @@ export function getPersistedUserData(): PersistedUserData | null {
  * Get the last user ID for cache lookups
  */
 export function getLastUserId(): string | null {
-  return safeLocalStorageGet(STORAGE_KEYS.LAST_USER_ID) ||
-         safeSessionStorageGet(STORAGE_KEYS.LAST_USER_ID);
+  return (
+    safeLocalStorageGet(STORAGE_KEYS.LAST_USER_ID) ||
+    safeSessionStorageGet(STORAGE_KEYS.LAST_USER_ID)
+  );
 }
 
 /**
@@ -185,7 +184,7 @@ export function clearPersistedUserData(): void {
   Object.values(STORAGE_KEYS).forEach(key => {
     safeLocalStorageRemove(key);
   });
-  
+
   // Also clear sessionStorage
   try {
     if (typeof window !== "undefined") {
@@ -196,7 +195,7 @@ export function clearPersistedUserData(): void {
   } catch {
     // sessionStorage may not be available
   }
-  
+
   logger.info("[userPersistence] User data cleared");
 }
 
@@ -231,24 +230,27 @@ export function getUserPreferences(): UserPreferences {
 export async function restoreSession(): Promise<Session | null> {
   try {
     // Try to get existing session from Supabase
-    const { data: { session }, error } = await Promise.race([
+    const {
+      data: { session },
+      error,
+    } = await Promise.race([
       supabase.auth.getSession(),
-      new Promise<{ data: { session: null }, error: null }>((resolve) =>
-        setTimeout(() => resolve({ data: { session: null }, error: null }), 2000)
+      new Promise<{ data: { session: null }; error: null }>(resolve =>
+        setTimeout(() => resolve({ data: { session: null }, error: null }), 2000),
       ),
     ]);
-    
+
     if (error) {
       logger.warn("[userPersistence] Failed to restore session", { error: error.message });
       return null;
     }
-    
+
     if (session?.user) {
       // Re-persist the data to refresh timestamps
       persistUserData(session.user, wasRememberMeSelected());
       return session;
     }
-    
+
     return null;
   } catch (err) {
     logger.error("[userPersistence] Error restoring session", err);
@@ -269,27 +271,27 @@ export function hasPotentialSession(): boolean {
  * Call this once on app startup
  */
 export function initializePersistenceListeners(): () => void {
-  const { data: { subscription } } = supabase.auth.onAuthStateChange(
-    (event, session) => {
-      switch (event) {
-        case "SIGNED_IN":
-          if (session?.user) {
-            persistUserData(session.user, wasRememberMeSelected());
-          }
-          break;
-        case "SIGNED_OUT":
-          clearPersistedUserData();
-          break;
-        case "TOKEN_REFRESHED":
-          if (session?.user) {
-            // Update persisted data with fresh timestamps
-            persistUserData(session.user, wasRememberMeSelected());
-          }
-          break;
-      }
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((event, session) => {
+    switch (event) {
+      case "SIGNED_IN":
+        if (session?.user) {
+          persistUserData(session.user, wasRememberMeSelected());
+        }
+        break;
+      case "SIGNED_OUT":
+        clearPersistedUserData();
+        break;
+      case "TOKEN_REFRESHED":
+        if (session?.user) {
+          // Update persisted data with fresh timestamps
+          persistUserData(session.user, wasRememberMeSelected());
+        }
+        break;
     }
-  );
-  
+  });
+
   return () => subscription.unsubscribe();
 }
 

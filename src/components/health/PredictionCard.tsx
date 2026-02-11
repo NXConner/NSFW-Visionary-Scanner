@@ -3,8 +3,8 @@
  * Displays health predictions with confidence indicators
  */
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React from "react";
+import { motion } from "framer-motion";
 import {
   TrendingUp,
   TrendingDown,
@@ -15,23 +15,18 @@ import {
   Target,
   Calendar,
   BarChart3,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   type Prediction,
   type HealthInsight,
   type TrendResult,
   getRiskLevelColor,
-} from '@/lib/healthPrediction';
+} from "@/lib/healthPrediction";
 
 export interface PredictionCardProps {
   prediction?: Prediction;
@@ -50,10 +45,10 @@ const trendIcons = {
 };
 
 const trendColors = {
-  increasing: '#22C55E',
-  decreasing: '#EF4444',
-  stable: '#6B7280',
-  fluctuating: '#F59E0B',
+  increasing: "#22C55E",
+  decreasing: "#EF4444",
+  stable: "#6B7280",
+  fluctuating: "#F59E0B",
 };
 
 const insightIcons = {
@@ -64,19 +59,25 @@ const insightIcons = {
 };
 
 const insightColors = {
-  info: '#3B82F6',
-  success: '#22C55E',
-  warning: '#F59E0B',
-  alert: '#EF4444',
+  info: "#3B82F6",
+  success: "#22C55E",
+  warning: "#F59E0B",
+  alert: "#EF4444",
 };
 
-function TrendPredictionCard({ prediction, compact }: { prediction: Prediction; compact?: boolean }) {
+function TrendPredictionCard({
+  prediction,
+  compact,
+}: {
+  prediction: Prediction;
+  compact?: boolean;
+}) {
   const Icon = prediction.predictedTrend ? trendIcons[prediction.predictedTrend] : Target;
-  const color = prediction.predictedTrend ? trendColors[prediction.predictedTrend] : '#6B7280';
+  const color = prediction.predictedTrend ? trendColors[prediction.predictedTrend] : "#6B7280";
 
   return (
-    <Card className={cn('overflow-hidden', compact && 'p-3')}>
-      <CardHeader className={cn('pb-2', compact && 'p-0 pb-2')}>
+    <Card className={cn("overflow-hidden", compact && "p-3")}>
+      <CardHeader className={cn("pb-2", compact && "p-0 pb-2")}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Icon className="h-4 w-4" style={{ color }} />
@@ -87,11 +88,11 @@ function TrendPredictionCard({ prediction, compact }: { prediction: Prediction; 
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className={cn(compact && 'p-0')}>
+      <CardContent className={cn(compact && "p-0")}>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-2xl font-bold capitalize" style={{ color }}>
-              {prediction.predictedTrend || 'Unknown'}
+              {prediction.predictedTrend || "Unknown"}
             </span>
             <TooltipProvider>
               <Tooltip>
@@ -117,9 +118,12 @@ function TrendPredictionCard({ prediction, compact }: { prediction: Prediction; 
                 <div key={idx} className="flex items-center gap-2 text-xs">
                   <span
                     className={cn(
-                      'w-2 h-2 rounded-full',
-                      factor.impact === 'positive' ? 'bg-green-500' :
-                      factor.impact === 'negative' ? 'bg-red-500' : 'bg-gray-400'
+                      "w-2 h-2 rounded-full",
+                      factor.impact === "positive"
+                        ? "bg-green-500"
+                        : factor.impact === "negative"
+                          ? "bg-red-500"
+                          : "bg-gray-400",
                     )}
                   />
                   <span className="text-muted-foreground">{factor.name}</span>
@@ -133,10 +137,16 @@ function TrendPredictionCard({ prediction, compact }: { prediction: Prediction; 
   );
 }
 
-function ValuePredictionCard({ prediction, compact }: { prediction: Prediction; compact?: boolean }) {
+function ValuePredictionCard({
+  prediction,
+  compact,
+}: {
+  prediction: Prediction;
+  compact?: boolean;
+}) {
   return (
-    <Card className={cn('overflow-hidden', compact && 'p-3')}>
-      <CardHeader className={cn('pb-2', compact && 'p-0 pb-2')}>
+    <Card className={cn("overflow-hidden", compact && "p-3")}>
+      <CardHeader className={cn("pb-2", compact && "p-0 pb-2")}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Calendar className="h-4 w-4" />
@@ -147,13 +157,14 @@ function ValuePredictionCard({ prediction, compact }: { prediction: Prediction; 
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className={cn(compact && 'p-0')}>
+      <CardContent className={cn(compact && "p-0")}>
         <div className="space-y-2">
           {prediction.predictedRange && (
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground text-sm">Expected range:</span>
               <span className="font-semibold">
-                {prediction.predictedRange.min.toFixed(1)} - {prediction.predictedRange.max.toFixed(1)}
+                {prediction.predictedRange.min.toFixed(1)} -{" "}
+                {prediction.predictedRange.max.toFixed(1)}
               </span>
             </div>
           )}
@@ -176,27 +187,19 @@ function InsightCard({ insight, compact }: { insight: HealthInsight; compact?: b
 
   return (
     <Card
-      className={cn(
-        'overflow-hidden border-l-4',
-        compact && 'p-3'
-      )}
+      className={cn("overflow-hidden border-l-4", compact && "p-3")}
       style={{ borderLeftColor: color }}
     >
-      <CardContent className={cn('pt-4', compact && 'p-0')}>
+      <CardContent className={cn("pt-4", compact && "p-0")}>
         <div className="flex items-start gap-3">
-          <div
-            className="p-2 rounded-full flex-shrink-0"
-            style={{ backgroundColor: `${color}20` }}
-          >
+          <div className="p-2 rounded-full flex-shrink-0" style={{ backgroundColor: `${color}20` }}>
             <Icon className="h-4 w-4" style={{ color }} />
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="font-medium text-sm">{insight.title}</h4>
             <p className="text-sm text-muted-foreground mt-1">{insight.description}</p>
             {insight.suggestedAction && (
-              <p className="text-sm text-primary mt-2">
-                💡 {insight.suggestedAction}
-              </p>
+              <p className="text-sm text-primary mt-2">💡 {insight.suggestedAction}</p>
             )}
           </div>
           <Badge variant="secondary" className="text-xs capitalize">
@@ -213,17 +216,14 @@ function TrendOverviewCard({ trend, compact }: { trend: TrendResult; compact?: b
   const color = trendColors[trend.direction];
 
   return (
-    <Card className={cn('overflow-hidden', compact && 'p-3')}>
-      <CardHeader className={cn('pb-2', compact && 'p-0 pb-2')}>
+    <Card className={cn("overflow-hidden", compact && "p-3")}>
+      <CardHeader className={cn("pb-2", compact && "p-0 pb-2")}>
         <CardTitle className="text-sm font-medium">Trend Overview</CardTitle>
       </CardHeader>
-      <CardContent className={cn(compact && 'p-0')}>
+      <CardContent className={cn(compact && "p-0")}>
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <div
-              className="p-3 rounded-full"
-              style={{ backgroundColor: `${color}20` }}
-            >
+            <div className="p-3 rounded-full" style={{ backgroundColor: `${color}20` }}>
               <Icon className="h-6 w-6" style={{ color }} />
             </div>
             <div>
@@ -271,7 +271,7 @@ export function PredictionCard({
   compact = false,
 }: PredictionCardProps) {
   if (prediction) {
-    if (prediction.type === 'trend') {
+    if (prediction.type === "trend") {
       return <TrendPredictionCard prediction={prediction} compact={compact} />;
     }
     return <ValuePredictionCard prediction={prediction} compact={compact} />;
@@ -286,8 +286,8 @@ export function PredictionCard({
   }
 
   return (
-    <Card className={cn(className, compact && 'p-3')}>
-      <CardContent className={cn('pt-4', compact && 'p-0')}>
+    <Card className={cn(className, compact && "p-3")}>
+      <CardContent className={cn("pt-4", compact && "p-0")}>
         <div className="text-center text-muted-foreground">
           <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p>No prediction data available</p>

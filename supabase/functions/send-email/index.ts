@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { resolveEmailFromEnv, sanitizeNotificationText, sendResendEmail } from "../_shared/email.ts";
+import {
+  resolveEmailFromEnv,
+  sanitizeNotificationText,
+  sendResendEmail,
+} from "../_shared/email.ts";
 import { buildRateLimitHeaders, enforceRateLimit } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
@@ -70,7 +74,11 @@ serve(async req => {
     if (!rate.allowed) {
       return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
         status: 429,
-        headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          ...buildRateLimitHeaders(rate),
+          "Content-Type": "application/json",
+        },
       });
     }
 
@@ -129,7 +137,11 @@ serve(async req => {
 
     return new Response(JSON.stringify({ ok: true, provider, id: sent.id }), {
       status: 200,
-      headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+      headers: {
+        ...corsHeaders,
+        ...buildRateLimitHeaders(rate),
+        "Content-Type": "application/json",
+      },
     });
   } catch (e) {
     console.error("send-email error:", e);

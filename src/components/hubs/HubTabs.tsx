@@ -23,7 +23,9 @@ export function HubTabs({
 }): JSX.Element {
   const tabIds = useMemo(() => tabs.map(t => t.id), [tabs]);
   const defaultTab = tabIds[0] ?? "";
-  const [activeTab, setActiveTab] = useState(initialTab && tabIds.includes(initialTab) ? initialTab : defaultTab);
+  const [activeTab, setActiveTab] = useState(
+    initialTab && tabIds.includes(initialTab) ? initialTab : defaultTab,
+  );
 
   useEffect(() => {
     if (!initialTab) return;
@@ -40,7 +42,9 @@ export function HubTabs({
     <div className="min-h-screen">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">{title}</h1>
-        {activeDescription ? <p className="text-sm text-muted-foreground mt-1">{activeDescription}</p> : null}
+        {activeDescription ? (
+          <p className="text-sm text-muted-foreground mt-1">{activeDescription}</p>
+        ) : null}
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/50 py-3">

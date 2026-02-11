@@ -3,8 +3,8 @@
  * UI for image enhancement controls with before/after comparison
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Wand2,
   Sun,
@@ -24,23 +24,23 @@ import {
   Check,
   AlertCircle,
   Loader2,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { useImageEnhancement } from '@/hooks/useImageEnhancement';
-import type { EnhancementPreset, NoiseReductionLevel } from '@/lib/imageEnhancement';
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { useImageEnhancement } from "@/hooks/useImageEnhancement";
+import type { EnhancementPreset, NoiseReductionLevel } from "@/lib/imageEnhancement";
 
 export interface ImageEnhancementPanelProps {
   imageSource?: HTMLImageElement | HTMLCanvasElement | ImageData | string;
@@ -72,17 +72,17 @@ const defaultControls: EnhancementControls = {
   saturation: 0,
   vibrance: 0,
   temperature: 0,
-  noiseReduction: 'none',
+  noiseReduction: "none",
   sharpening: 0,
 };
 
 const presets: { value: EnhancementPreset; label: string; description: string }[] = [
-  { value: 'auto', label: 'Auto', description: 'Intelligent enhancement' },
-  { value: 'portrait', label: 'Portrait', description: 'Optimized for skin tones' },
-  { value: 'medical', label: 'Medical', description: 'High detail clarity' },
-  { value: 'detailed', label: 'Detailed', description: 'Maximum sharpness' },
-  { value: 'natural', label: 'Natural', description: 'Subtle improvements' },
-  { value: 'vivid', label: 'Vivid', description: 'Enhanced colors' },
+  { value: "auto", label: "Auto", description: "Intelligent enhancement" },
+  { value: "portrait", label: "Portrait", description: "Optimized for skin tones" },
+  { value: "medical", label: "Medical", description: "High detail clarity" },
+  { value: "detailed", label: "Detailed", description: "Maximum sharpness" },
+  { value: "natural", label: "Natural", description: "Subtle improvements" },
+  { value: "vivid", label: "Vivid", description: "Enhanced colors" },
 ];
 
 export function ImageEnhancementPanel({
@@ -115,10 +115,10 @@ export function ImageEnhancementPanel({
   const [controls, setControls] = useState<EnhancementControls>(defaultControls);
   const [showComparison, setShowComparison] = useState(false);
   const [comparisonPosition, setComparisonPosition] = useState(50);
-  const [activeTab, setActiveTab] = useState('quick');
-  const [expandedSection, setExpandedSection] = useState<string | null>('basic');
+  const [activeTab, setActiveTab] = useState("quick");
+  const [expandedSection, setExpandedSection] = useState<string | null>("basic");
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const comparisonCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -143,7 +143,7 @@ export function ImageEnhancementPanel({
       const canvas = canvasRef.current;
       canvas.width = currentImage.width;
       canvas.height = currentImage.height;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.putImageData(currentImage, 0, 0);
       }
@@ -156,33 +156,39 @@ export function ImageEnhancementPanel({
       const canvas = comparisonCanvasRef.current;
       canvas.width = currentImage.width;
       canvas.height = currentImage.height;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       if (ctx) {
         // Draw original on left, enhanced on right
         const splitX = Math.floor(canvas.width * (comparisonPosition / 100));
-        
+
         // Draw original
-        const origCanvas = document.createElement('canvas');
+        const origCanvas = document.createElement("canvas");
         origCanvas.width = originalImage.width;
         origCanvas.height = originalImage.height;
-        const origCtx = origCanvas.getContext('2d')!;
+        const origCtx = origCanvas.getContext("2d")!;
         origCtx.putImageData(originalImage, 0, 0);
         ctx.drawImage(origCanvas, 0, 0, splitX, canvas.height, 0, 0, splitX, canvas.height);
-        
+
         // Draw enhanced
-        const enhCanvas = document.createElement('canvas');
+        const enhCanvas = document.createElement("canvas");
         enhCanvas.width = currentImage.width;
         enhCanvas.height = currentImage.height;
-        const enhCtx = enhCanvas.getContext('2d')!;
+        const enhCtx = enhCanvas.getContext("2d")!;
         enhCtx.putImageData(currentImage, 0, 0);
         ctx.drawImage(
           enhCanvas,
-          splitX, 0, canvas.width - splitX, canvas.height,
-          splitX, 0, canvas.width - splitX, canvas.height
+          splitX,
+          0,
+          canvas.width - splitX,
+          canvas.height,
+          splitX,
+          0,
+          canvas.width - splitX,
+          canvas.height,
         );
 
         // Draw split line
-        ctx.strokeStyle = '#ffffff';
+        ctx.strokeStyle = "#ffffff";
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(splitX, 0);
@@ -201,9 +207,9 @@ export function ImageEnhancementPanel({
     setControls(prev => ({ ...prev, [key]: value }));
 
     // Apply the change
-    if (key === 'noiseReduction') {
+    if (key === "noiseReduction") {
       await applyNoiseReduction({ level: value as NoiseReductionLevel });
-    } else if (key === 'sharpening') {
+    } else if (key === "sharpening") {
       await applySharpening({ intensity: value as number });
     } else {
       await applyColorCorrection({ [key]: value as number });
@@ -215,7 +221,7 @@ export function ImageEnhancementPanel({
   };
 
   const handleExport = async () => {
-    const blob = await exportImage('png');
+    const blob = await exportImage("png");
     onExport?.(blob);
   };
 
@@ -223,35 +229,23 @@ export function ImageEnhancementPanel({
     setExpandedSection(expandedSection === section ? null : section);
   };
 
-  const qualityCategory = analysis?.overall.category || 'unknown';
+  const qualityCategory = analysis?.overall.category || "unknown";
   const qualityScore = analysis?.overall.quality || 0;
 
   return (
-    <div className={cn('bg-background rounded-lg border p-4', className)}>
+    <div className={cn("bg-background rounded-lg border p-4", className)}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Wand2 className="h-5 w-5 text-primary" />
           <h3 className="font-semibold">Image Enhancement</h3>
-          {isProcessing && (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          )}
+          {isProcessing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={undo}
-            disabled={!canUndo || isProcessing}
-          >
+          <Button variant="ghost" size="icon" onClick={undo} disabled={!canUndo || isProcessing}>
             <Undo2 className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={redo}
-            disabled={!canRedo || isProcessing}
-          >
+          <Button variant="ghost" size="icon" onClick={redo} disabled={!canRedo || isProcessing}>
             <Redo2 className="h-4 w-4" />
           </Button>
           <Button
@@ -271,7 +265,13 @@ export function ImageEnhancementPanel({
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-muted-foreground">Image Quality</span>
             <Badge
-              variant={qualityCategory === 'excellent' ? 'default' : qualityCategory === 'good' ? 'secondary' : 'outline'}
+              variant={
+                qualityCategory === "excellent"
+                  ? "default"
+                  : qualityCategory === "good"
+                    ? "secondary"
+                    : "outline"
+              }
             >
               {qualityCategory.charAt(0).toUpperCase() + qualityCategory.slice(1)}
             </Badge>
@@ -279,10 +279,14 @@ export function ImageEnhancementPanel({
           <div className="h-2 bg-muted rounded-full overflow-hidden">
             <motion.div
               className={cn(
-                'h-full rounded-full',
-                qualityScore >= 80 ? 'bg-green-500' :
-                qualityScore >= 60 ? 'bg-yellow-500' :
-                qualityScore >= 40 ? 'bg-orange-500' : 'bg-red-500'
+                "h-full rounded-full",
+                qualityScore >= 80
+                  ? "bg-green-500"
+                  : qualityScore >= 60
+                    ? "bg-yellow-500"
+                    : qualityScore >= 40
+                      ? "bg-orange-500"
+                      : "bg-red-500",
               )}
               initial={{ width: 0 }}
               animate={{ width: `${qualityScore}%` }}
@@ -318,7 +322,9 @@ export function ImageEnhancementPanel({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           {showComparison ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          <Label htmlFor="comparison-toggle" className="text-sm">Before/After</Label>
+          <Label htmlFor="comparison-toggle" className="text-sm">
+            Before/After
+          </Label>
         </div>
         <Switch
           id="comparison-toggle"
@@ -332,7 +338,7 @@ export function ImageEnhancementPanel({
         {showComparison && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
+            animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             className="mb-4 overflow-hidden"
           >
@@ -388,19 +394,23 @@ export function ImageEnhancementPanel({
           <div className="border rounded-md">
             <button
               className="w-full flex items-center justify-between p-3 text-sm font-medium"
-              onClick={() => toggleSection('basic')}
+              onClick={() => toggleSection("basic")}
             >
               <div className="flex items-center gap-2">
                 <Sun className="h-4 w-4" />
                 <span>Basic Adjustments</span>
               </div>
-              {expandedSection === 'basic' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {expandedSection === "basic" ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </button>
             <AnimatePresence>
-              {expandedSection === 'basic' && (
+              {expandedSection === "basic" && (
                 <motion.div
                   initial={{ height: 0 }}
-                  animate={{ height: 'auto' }}
+                  animate={{ height: "auto" }}
                   exit={{ height: 0 }}
                   className="overflow-hidden"
                 >
@@ -412,7 +422,7 @@ export function ImageEnhancementPanel({
                       </div>
                       <Slider
                         value={[controls.brightness]}
-                        onValueChange={([val]) => handleControlChange('brightness', val)}
+                        onValueChange={([val]) => handleControlChange("brightness", val)}
                         min={-100}
                         max={100}
                         step={1}
@@ -426,7 +436,7 @@ export function ImageEnhancementPanel({
                       </div>
                       <Slider
                         value={[controls.contrast]}
-                        onValueChange={([val]) => handleControlChange('contrast', val)}
+                        onValueChange={([val]) => handleControlChange("contrast", val)}
                         min={-100}
                         max={100}
                         step={1}
@@ -440,7 +450,7 @@ export function ImageEnhancementPanel({
                       </div>
                       <Slider
                         value={[controls.exposure]}
-                        onValueChange={([val]) => handleControlChange('exposure', val)}
+                        onValueChange={([val]) => handleControlChange("exposure", val)}
                         min={-100}
                         max={100}
                         step={1}
@@ -457,19 +467,23 @@ export function ImageEnhancementPanel({
           <div className="border rounded-md">
             <button
               className="w-full flex items-center justify-between p-3 text-sm font-medium"
-              onClick={() => toggleSection('color')}
+              onClick={() => toggleSection("color")}
             >
               <div className="flex items-center gap-2">
                 <Palette className="h-4 w-4" />
                 <span>Color</span>
               </div>
-              {expandedSection === 'color' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {expandedSection === "color" ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </button>
             <AnimatePresence>
-              {expandedSection === 'color' && (
+              {expandedSection === "color" && (
                 <motion.div
                   initial={{ height: 0 }}
-                  animate={{ height: 'auto' }}
+                  animate={{ height: "auto" }}
                   exit={{ height: 0 }}
                   className="overflow-hidden"
                 >
@@ -481,7 +495,7 @@ export function ImageEnhancementPanel({
                       </div>
                       <Slider
                         value={[controls.saturation]}
-                        onValueChange={([val]) => handleControlChange('saturation', val)}
+                        onValueChange={([val]) => handleControlChange("saturation", val)}
                         min={-100}
                         max={100}
                         step={1}
@@ -495,7 +509,7 @@ export function ImageEnhancementPanel({
                       </div>
                       <Slider
                         value={[controls.vibrance]}
-                        onValueChange={([val]) => handleControlChange('vibrance', val)}
+                        onValueChange={([val]) => handleControlChange("vibrance", val)}
                         min={-100}
                         max={100}
                         step={1}
@@ -505,11 +519,13 @@ export function ImageEnhancementPanel({
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <Label className="text-xs">Temperature</Label>
-                        <span className="text-xs text-muted-foreground">{controls.temperature}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {controls.temperature}
+                        </span>
                       </div>
                       <Slider
                         value={[controls.temperature]}
-                        onValueChange={([val]) => handleControlChange('temperature', val)}
+                        onValueChange={([val]) => handleControlChange("temperature", val)}
                         min={-100}
                         max={100}
                         step={1}
@@ -526,19 +542,23 @@ export function ImageEnhancementPanel({
           <div className="border rounded-md">
             <button
               className="w-full flex items-center justify-between p-3 text-sm font-medium"
-              onClick={() => toggleSection('detail')}
+              onClick={() => toggleSection("detail")}
             >
               <div className="flex items-center gap-2">
                 <Focus className="h-4 w-4" />
                 <span>Detail</span>
               </div>
-              {expandedSection === 'detail' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {expandedSection === "detail" ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </button>
             <AnimatePresence>
-              {expandedSection === 'detail' && (
+              {expandedSection === "detail" && (
                 <motion.div
                   initial={{ height: 0 }}
-                  animate={{ height: 'auto' }}
+                  animate={{ height: "auto" }}
                   exit={{ height: 0 }}
                   className="overflow-hidden"
                 >
@@ -547,7 +567,7 @@ export function ImageEnhancementPanel({
                       <Label className="text-xs">Noise Reduction</Label>
                       <Select
                         value={controls.noiseReduction}
-                        onValueChange={(val) => handleControlChange('noiseReduction', val)}
+                        onValueChange={val => handleControlChange("noiseReduction", val)}
                         disabled={isProcessing}
                       >
                         <SelectTrigger className="h-8">
@@ -565,11 +585,13 @@ export function ImageEnhancementPanel({
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <Label className="text-xs">Sharpening</Label>
-                        <span className="text-xs text-muted-foreground">{controls.sharpening}%</span>
+                        <span className="text-xs text-muted-foreground">
+                          {controls.sharpening}%
+                        </span>
                       </div>
                       <Slider
                         value={[controls.sharpening]}
-                        onValueChange={([val]) => handleControlChange('sharpening', val)}
+                        onValueChange={([val]) => handleControlChange("sharpening", val)}
                         min={0}
                         max={100}
                         step={1}
@@ -586,11 +608,7 @@ export function ImageEnhancementPanel({
 
       {/* Export Button */}
       <div className="mt-4">
-        <Button
-          className="w-full"
-          onClick={handleExport}
-          disabled={!currentImage || isProcessing}
-        >
+        <Button className="w-full" onClick={handleExport} disabled={!currentImage || isProcessing}>
           <Download className="h-4 w-4 mr-2" />
           Export Enhanced Image
         </Button>

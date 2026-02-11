@@ -181,7 +181,7 @@ const AppContent = () => {
         <Routes>
           {/* Landing page at root */}
           <Route path="/" element={<LandingPage />} />
-          
+
           {/* Main app at /app */}
           <Route
             path="/app"

@@ -36,4 +36,3 @@ describe("NsfwPrivacyControlsCard", () => {
     expect(localStorage.getItem(UNLOCKED_AT_KEY)).toBeNull();
   });
 });
-

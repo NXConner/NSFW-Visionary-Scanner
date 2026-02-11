@@ -95,7 +95,9 @@ export const getStripe = (): Promise<Stripe | null> => {
       stripePromise = Promise.resolve(null);
       // Only log warning in development to avoid console noise in production
       if (import.meta.env.DEV) {
-        logger.warn("Stripe publishable key not configured - payment features disabled", { component: "stripe" });
+        logger.warn("Stripe publishable key not configured - payment features disabled", {
+          component: "stripe",
+        });
       }
     }
   }

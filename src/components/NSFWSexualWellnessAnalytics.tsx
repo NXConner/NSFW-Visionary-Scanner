@@ -62,8 +62,16 @@ import {
   Radar,
 } from "recharts";
 
-export const NSFWSexualWellnessAnalytics = () => {
-  const [activeTab, setActiveTab] = useState("function");
+export type NSFWSexualWellnessAnalyticsTab = "function" | "libido" | "satisfaction" | "wellness";
+
+export const NSFWSexualWellnessAnalytics = ({
+  initialTab,
+}: {
+  initialTab?: NSFWSexualWellnessAnalyticsTab;
+}) => {
+  const [activeTab, setActiveTab] = useState<NSFWSexualWellnessAnalyticsTab>(
+    initialTab ?? "function",
+  );
   const [loading, setLoading] = useState(false);
   const [functionTracking, setFunctionTracking] = useState<NSFWSexualFunctionTracking[]>([]);
   const [wellnessScores, setWellnessScores] = useState<NSFWWellnessScore[]>([]);
@@ -119,6 +127,10 @@ export const NSFWSexualWellnessAnalytics = () => {
     };
     void checkNsfw();
   }, []);
+
+  useEffect(() => {
+    if (initialTab) setActiveTab(initialTab);
+  }, [initialTab]);
 
   useEffect(() => {
     if (nsfwAvailable) {
@@ -229,7 +241,10 @@ export const NSFWSexualWellnessAnalytics = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs
+            value={activeTab}
+            onValueChange={v => setActiveTab(v as NSFWSexualWellnessAnalyticsTab)}
+          >
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="function">Function</TabsTrigger>
               <TabsTrigger value="libido">Libido</TabsTrigger>

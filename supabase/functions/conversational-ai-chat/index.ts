@@ -44,13 +44,13 @@ serve(async req => {
       });
     }
 
-  const rateLimitResponse = await applyRateLimit({
-    req,
-    endpoint: "conversational-ai-chat",
-    ...DEFAULT_EDGE_RATE_LIMIT,
-    headers: corsHeaders,
-  });
-  if (rateLimitResponse) return rateLimitResponse;
+    const rateLimitResponse = await applyRateLimit({
+      req,
+      endpoint: "conversational-ai-chat",
+      ...DEFAULT_EDGE_RATE_LIMIT,
+      headers: corsHeaders,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {

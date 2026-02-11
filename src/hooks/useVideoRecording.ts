@@ -124,6 +124,7 @@ export function useVideoRecording() {
       try {
         const results: Array<{
           cameraIndex: number;
+          bucket: string;
           path: string;
           publicUrl: string;
           sizeBytes: number;

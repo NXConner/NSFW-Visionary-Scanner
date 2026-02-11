@@ -3,14 +3,22 @@
  * Global notification management context
  */
 
-import * as React from 'react';
-import { createContext, useContext, useCallback, useReducer, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import * as React from "react";
+import { createContext, useContext, useCallback, useReducer, useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
 
 // ======= Types =======
 
-export type NotificationType = 'info' | 'success' | 'warning' | 'error' | 'achievement' | 'measurement' | 'reminder' | 'system';
-export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type NotificationType =
+  | "info"
+  | "success"
+  | "warning"
+  | "error"
+  | "achievement"
+  | "measurement"
+  | "reminder"
+  | "system";
+export type NotificationPriority = "low" | "normal" | "high" | "urgent";
 
 export interface Notification {
   id: string;
@@ -50,20 +58,23 @@ interface NotificationState {
 }
 
 type NotificationAction =
-  | { type: 'ADD_NOTIFICATION'; payload: Notification }
-  | { type: 'REMOVE_NOTIFICATION'; payload: string }
-  | { type: 'MARK_READ'; payload: string }
-  | { type: 'MARK_ALL_READ' }
-  | { type: 'DISMISS'; payload: string }
-  | { type: 'DISMISS_ALL' }
-  | { type: 'CLEAR_ALL' }
-  | { type: 'UPDATE_PREFERENCES'; payload: Partial<NotificationPrefs> }
-  | { type: 'SET_OPEN'; payload: boolean }
-  | { type: 'LOAD_STATE'; payload: Partial<NotificationState> };
+  | { type: "ADD_NOTIFICATION"; payload: Notification }
+  | { type: "REMOVE_NOTIFICATION"; payload: string }
+  | { type: "MARK_READ"; payload: string }
+  | { type: "MARK_ALL_READ" }
+  | { type: "DISMISS"; payload: string }
+  | { type: "DISMISS_ALL" }
+  | { type: "CLEAR_ALL" }
+  | { type: "UPDATE_PREFERENCES"; payload: Partial<NotificationPrefs> }
+  | { type: "SET_OPEN"; payload: boolean }
+  | { type: "LOAD_STATE"; payload: Partial<NotificationState> };
 
 interface NotificationContextValue extends NotificationState {
   // Actions
-  addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read' | 'dismissed'> & Partial<Pick<Notification, 'id' | 'timestamp' | 'read' | 'dismissed'>>) => string;
+  addNotification: (
+    notification: Omit<Notification, "id" | "timestamp" | "read" | "dismissed" | "persistent"> &
+      Partial<Pick<Notification, "id" | "timestamp" | "read" | "dismissed" | "persistent">>,
+  ) => string;
   removeNotification: (id: string) => void;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
@@ -73,7 +84,7 @@ interface NotificationContextValue extends NotificationState {
   updatePreferences: (prefs: Partial<NotificationPrefs>) => void;
   setOpen: (open: boolean) => void;
   toggleOpen: () => void;
-  
+
   // Helpers
   notify: (title: string, message: string, type?: NotificationType) => string;
   notifySuccess: (title: string, message: string) => string;
@@ -90,8 +101,8 @@ const DEFAULT_PREFERENCES: NotificationPrefs = {
   sound: true,
   vibration: true,
   quietHoursEnabled: false,
-  quietHoursStart: '22:00',
-  quietHoursEnd: '08:00',
+  quietHoursStart: "22:00",
+  quietHoursEnd: "08:00",
   typeSettings: {
     info: true,
     success: true,
@@ -111,13 +122,16 @@ const initialState: NotificationState = {
   isOpen: false,
 };
 
-const STORAGE_KEY = 'morphoscan_notifications';
+const STORAGE_KEY = "morphoscan_notifications";
 
 // ======= Reducer =======
 
-function notificationReducer(state: NotificationState, action: NotificationAction): NotificationState {
+function notificationReducer(
+  state: NotificationState,
+  action: NotificationAction,
+): NotificationState {
   switch (action.type) {
-    case 'ADD_NOTIFICATION': {
+    case "ADD_NOTIFICATION": {
       const notifications = [action.payload, ...state.notifications].slice(0, 100); // Keep max 100
       return {
         ...state,
@@ -126,7 +140,7 @@ function notificationReducer(state: NotificationState, action: NotificationActio
       };
     }
 
-    case 'REMOVE_NOTIFICATION': {
+    case "REMOVE_NOTIFICATION": {
       const notifications = state.notifications.filter(n => n.id !== action.payload);
       return {
         ...state,
@@ -135,9 +149,9 @@ function notificationReducer(state: NotificationState, action: NotificationActio
       };
     }
 
-    case 'MARK_READ': {
+    case "MARK_READ": {
       const notifications = state.notifications.map(n =>
-        n.id === action.payload ? { ...n, read: true } : n
+        n.id === action.payload ? { ...n, read: true } : n,
       );
       return {
         ...state,
@@ -146,7 +160,7 @@ function notificationReducer(state: NotificationState, action: NotificationActio
       };
     }
 
-    case 'MARK_ALL_READ': {
+    case "MARK_ALL_READ": {
       const notifications = state.notifications.map(n => ({ ...n, read: true }));
       return {
         ...state,
@@ -155,9 +169,9 @@ function notificationReducer(state: NotificationState, action: NotificationActio
       };
     }
 
-    case 'DISMISS': {
+    case "DISMISS": {
       const notifications = state.notifications.map(n =>
-        n.id === action.payload ? { ...n, dismissed: true } : n
+        n.id === action.payload ? { ...n, dismissed: true } : n,
       );
       return {
         ...state,
@@ -166,9 +180,9 @@ function notificationReducer(state: NotificationState, action: NotificationActio
       };
     }
 
-    case 'DISMISS_ALL': {
+    case "DISMISS_ALL": {
       const notifications = state.notifications.map(n =>
-        n.persistent ? n : { ...n, dismissed: true }
+        n.persistent ? n : { ...n, dismissed: true },
       );
       return {
         ...state,
@@ -177,23 +191,23 @@ function notificationReducer(state: NotificationState, action: NotificationActio
       };
     }
 
-    case 'CLEAR_ALL':
+    case "CLEAR_ALL":
       return {
         ...state,
         notifications: state.notifications.filter(n => n.persistent),
         unreadCount: 0,
       };
 
-    case 'UPDATE_PREFERENCES':
+    case "UPDATE_PREFERENCES":
       return {
         ...state,
         preferences: { ...state.preferences, ...action.payload },
       };
 
-    case 'SET_OPEN':
+    case "SET_OPEN":
       return { ...state, isOpen: action.payload };
 
-    case 'LOAD_STATE':
+    case "LOAD_STATE":
       return { ...state, ...action.payload };
 
     default:
@@ -215,7 +229,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (stored) {
         const parsed = JSON.parse(stored);
         dispatch({
-          type: 'LOAD_STATE',
+          type: "LOAD_STATE",
           payload: {
             notifications: parsed.notifications || [],
             preferences: { ...DEFAULT_PREFERENCES, ...parsed.preferences },
@@ -223,7 +237,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         });
       }
     } catch (error) {
-      console.error('Failed to load notifications:', error);
+      console.error("Failed to load notifications:", error);
     }
   }, []);
 
@@ -235,10 +249,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         JSON.stringify({
           notifications: state.notifications,
           preferences: state.preferences,
-        })
+        }),
       );
     } catch (error) {
-      console.error('Failed to persist notifications:', error);
+      console.error("Failed to persist notifications:", error);
     }
   }, [state.notifications, state.preferences]);
 
@@ -248,7 +262,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const now = new Date();
       state.notifications.forEach(n => {
         if (n.expiresAt && new Date(n.expiresAt) < now) {
-          dispatch({ type: 'REMOVE_NOTIFICATION', payload: n.id });
+          dispatch({ type: "REMOVE_NOTIFICATION", payload: n.id });
         }
       });
     }, 60000); // Check every minute
@@ -261,7 +275,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (!state.preferences.quietHoursEnabled) return false;
 
     const now = new Date();
-    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const currentTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
     const { quietHoursStart, quietHoursEnd } = state.preferences;
 
     if (quietHoursStart <= quietHoursEnd) {
@@ -280,14 +294,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
-        
+
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
-        
+
         oscillator.frequency.value = 800;
-        oscillator.type = 'sine';
+        oscillator.type = "sine";
         gainNode.gain.value = 0.1;
-        
+
         oscillator.start();
         oscillator.stop(audioContext.currentTime + 0.1);
       } catch (error) {
@@ -305,10 +319,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Actions
   const addNotification = useCallback(
-    (notification: Omit<Notification, 'id' | 'timestamp' | 'read' | 'dismissed'> & Partial<Pick<Notification, 'id' | 'timestamp' | 'read' | 'dismissed'>>): string => {
-      if (!state.preferences.enabled) return '';
-      if (!state.preferences.typeSettings[notification.type]) return '';
-      if (isQuietHours() && notification.priority !== 'urgent') return '';
+    (
+      notification: Omit<Notification, "id" | "timestamp" | "read" | "dismissed" | "persistent"> &
+        Partial<Pick<Notification, "id" | "timestamp" | "read" | "dismissed" | "persistent">>,
+    ): string => {
+      if (!state.preferences.enabled) return "";
+      if (!state.preferences.typeSettings[notification.type]) return "";
+      if (isQuietHours() && notification.priority !== "urgent") return "";
 
       const id = notification.id || uuidv4();
       const fullNotification: Notification = {
@@ -320,7 +337,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         persistent: notification.persistent ?? false,
       };
 
-      dispatch({ type: 'ADD_NOTIFICATION', payload: fullNotification });
+      dispatch({ type: "ADD_NOTIFICATION", payload: fullNotification });
 
       if (!fullNotification.read) {
         playSound();
@@ -329,78 +346,81 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
       return id;
     },
-    [state.preferences, isQuietHours, playSound, vibrate]
+    [state.preferences, isQuietHours, playSound, vibrate],
   );
 
   const removeNotification = useCallback((id: string) => {
-    dispatch({ type: 'REMOVE_NOTIFICATION', payload: id });
+    dispatch({ type: "REMOVE_NOTIFICATION", payload: id });
   }, []);
 
   const markAsRead = useCallback((id: string) => {
-    dispatch({ type: 'MARK_READ', payload: id });
+    dispatch({ type: "MARK_READ", payload: id });
   }, []);
 
   const markAllAsRead = useCallback(() => {
-    dispatch({ type: 'MARK_ALL_READ' });
+    dispatch({ type: "MARK_ALL_READ" });
   }, []);
 
   const dismiss = useCallback((id: string) => {
-    dispatch({ type: 'DISMISS', payload: id });
+    dispatch({ type: "DISMISS", payload: id });
   }, []);
 
   const dismissAll = useCallback(() => {
-    dispatch({ type: 'DISMISS_ALL' });
+    dispatch({ type: "DISMISS_ALL" });
   }, []);
 
   const clearAll = useCallback(() => {
-    dispatch({ type: 'CLEAR_ALL' });
+    dispatch({ type: "CLEAR_ALL" });
   }, []);
 
   const updatePreferences = useCallback((prefs: Partial<NotificationPrefs>) => {
-    dispatch({ type: 'UPDATE_PREFERENCES', payload: prefs });
+    dispatch({ type: "UPDATE_PREFERENCES", payload: prefs });
   }, []);
 
   const setOpen = useCallback((open: boolean) => {
-    dispatch({ type: 'SET_OPEN', payload: open });
+    dispatch({ type: "SET_OPEN", payload: open });
   }, []);
 
   const toggleOpen = useCallback(() => {
-    dispatch({ type: 'SET_OPEN', payload: !state.isOpen });
+    dispatch({ type: "SET_OPEN", payload: !state.isOpen });
   }, [state.isOpen]);
 
   // Helper methods
   const notify = useCallback(
-    (title: string, message: string, type: NotificationType = 'info') => {
-      return addNotification({ type, title, message, priority: 'normal' });
+    (title: string, message: string, type: NotificationType = "info") => {
+      return addNotification({ type, title, message, priority: "normal" });
     },
-    [addNotification]
+    [addNotification],
   );
 
   const notifySuccess = useCallback(
-    (title: string, message: string) => addNotification({ type: 'success', title, message, priority: 'normal' }),
-    [addNotification]
+    (title: string, message: string) =>
+      addNotification({ type: "success", title, message, priority: "normal" }),
+    [addNotification],
   );
 
   const notifyError = useCallback(
-    (title: string, message: string) => addNotification({ type: 'error', title, message, priority: 'high' }),
-    [addNotification]
+    (title: string, message: string) =>
+      addNotification({ type: "error", title, message, priority: "high" }),
+    [addNotification],
   );
 
   const notifyWarning = useCallback(
-    (title: string, message: string) => addNotification({ type: 'warning', title, message, priority: 'normal' }),
-    [addNotification]
+    (title: string, message: string) =>
+      addNotification({ type: "warning", title, message, priority: "normal" }),
+    [addNotification],
   );
 
   const notifyAchievement = useCallback(
     (title: string, message: string, metadata?: Record<string, unknown>) =>
-      addNotification({ type: 'achievement', title, message, priority: 'high', metadata }),
-    [addNotification]
+      addNotification({ type: "achievement", title, message, priority: "high", metadata }),
+    [addNotification],
   );
 
   const notifyMeasurement = useCallback(
     (title: string, message: string, metadata?: Record<string, unknown>) =>
-      addNotification({ type: 'measurement', title, message, priority: 'normal', metadata }),
-    [addNotification]
+      addNotification({ type: "measurement", title, message, priority: "normal", metadata }),
+    [addNotification],
   );
 
   const value: NotificationContextValue = {
@@ -423,17 +443,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     notifyMeasurement,
   };
 
-  return (
-    <NotificationContext.Provider value={value}>
-      {children}
-    </NotificationContext.Provider>
-  );
+  return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
 }
 
 export function useNotifications() {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
+    throw new Error("useNotifications must be used within a NotificationProvider");
   }
   return context;
 }

@@ -1,24 +1,24 @@
 /**
  * Admin Email Management Panel
- * 
+ *
  * Allows administrators to view sent emails, resend verification emails,
  * and configure email settings.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   AlertCircle,
   CheckCircle,
@@ -34,7 +34,7 @@ import {
   Send,
   Settings,
   XCircle,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -42,39 +42,71 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { EmailService, EmailLogEntry, emailConfig } from '@/lib/email';
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { EmailService, EmailLogEntry, emailConfig } from "@/lib/email";
 
-type EmailType = EmailLogEntry['type'] | 'all';
-type EmailStatus = EmailLogEntry['status'] | 'all';
+type EmailType = EmailLogEntry["type"] | "all";
+type EmailStatus = EmailLogEntry["status"] | "all";
 
-const getTypeBadge = (type: EmailLogEntry['type']) => {
+const getTypeBadge = (type: EmailLogEntry["type"]) => {
   switch (type) {
-    case 'verification':
-      return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 gap-1"><Mail className="w-3 h-3" /> Verification</Badge>;
-    case 'password_reset':
-      return <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 gap-1"><Mail className="w-3 h-3" /> Password Reset</Badge>;
-    case 'welcome':
-      return <Badge className="bg-green-500/20 text-green-400 border-green-500/30 gap-1"><MailCheck className="w-3 h-3" /> Welcome</Badge>;
-    case 'notification':
-      return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 gap-1"><Mail className="w-3 h-3" /> Notification</Badge>;
-    case 'partner_invite':
-      return <Badge className="bg-pink-500/20 text-pink-400 border-pink-500/30 gap-1"><Mail className="w-3 h-3" /> Partner Invite</Badge>;
+    case "verification":
+      return (
+        <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 gap-1">
+          <Mail className="w-3 h-3" /> Verification
+        </Badge>
+      );
+    case "password_reset":
+      return (
+        <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 gap-1">
+          <Mail className="w-3 h-3" /> Password Reset
+        </Badge>
+      );
+    case "welcome":
+      return (
+        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 gap-1">
+          <MailCheck className="w-3 h-3" /> Welcome
+        </Badge>
+      );
+    case "notification":
+      return (
+        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 gap-1">
+          <Mail className="w-3 h-3" /> Notification
+        </Badge>
+      );
+    case "partner_invite":
+      return (
+        <Badge className="bg-pink-500/20 text-pink-400 border-pink-500/30 gap-1">
+          <Mail className="w-3 h-3" /> Partner Invite
+        </Badge>
+      );
     default:
       return <Badge variant="secondary">{type}</Badge>;
   }
 };
 
-const getStatusBadge = (status: EmailLogEntry['status']) => {
+const getStatusBadge = (status: EmailLogEntry["status"]) => {
   switch (status) {
-    case 'sent':
-      return <Badge variant="outline" className="gap-1 border-green-500 text-green-500"><CheckCircle className="w-3 h-3" /> Sent</Badge>;
-    case 'failed':
-      return <Badge variant="outline" className="gap-1 border-red-500 text-red-500"><XCircle className="w-3 h-3" /> Failed</Badge>;
-    case 'pending':
-      return <Badge variant="outline" className="gap-1 border-amber-500 text-amber-500"><Clock className="w-3 h-3" /> Pending</Badge>;
+    case "sent":
+      return (
+        <Badge variant="outline" className="gap-1 border-green-500 text-green-500">
+          <CheckCircle className="w-3 h-3" /> Sent
+        </Badge>
+      );
+    case "failed":
+      return (
+        <Badge variant="outline" className="gap-1 border-red-500 text-red-500">
+          <XCircle className="w-3 h-3" /> Failed
+        </Badge>
+      );
+    case "pending":
+      return (
+        <Badge variant="outline" className="gap-1 border-amber-500 text-amber-500">
+          <Clock className="w-3 h-3" /> Pending
+        </Badge>
+      );
     default:
       return <Badge variant="secondary">{status}</Badge>;
   }
@@ -83,12 +115,12 @@ const getStatusBadge = (status: EmailLogEntry['status']) => {
 export function EmailManagement() {
   const [emailLog, setEmailLog] = useState<EmailLogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<EmailType>('all');
-  const [statusFilter, setStatusFilter] = useState<EmailStatus>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<EmailType>("all");
+  const [statusFilter, setStatusFilter] = useState<EmailStatus>("all");
   const [resendingId, setResendingId] = useState<string | null>(null);
-  const [previewType, setPreviewType] = useState<EmailLogEntry['type'] | null>(null);
-  const [previewHtml, setPreviewHtml] = useState<string>('');
+  const [previewType, setPreviewType] = useState<EmailLogEntry["type"] | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string>("");
 
   // Load email log
   const loadEmailLog = useCallback(() => {
@@ -97,7 +129,7 @@ export function EmailManagement() {
       const log = EmailService.getEmailLog(100);
       setEmailLog(log);
     } catch (error) {
-      toast.error('Failed to load email log');
+      toast.error("Failed to load email log");
     } finally {
       setIsLoading(false);
     }
@@ -112,11 +144,11 @@ export function EmailManagement() {
 
   // Filter emails
   const filteredEmails = emailLog.filter(entry => {
-    const matchesSearch = 
+    const matchesSearch =
       entry.recipientEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
       entry.subject.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === 'all' || entry.type === typeFilter;
-    const matchesStatus = statusFilter === 'all' || entry.status === statusFilter;
+    const matchesType = typeFilter === "all" || entry.type === typeFilter;
+    const matchesStatus = statusFilter === "all" || entry.status === statusFilter;
     return matchesSearch && matchesType && matchesStatus;
   });
 
@@ -129,17 +161,17 @@ export function EmailManagement() {
         toast.success(`Verification email resent to ${email}`);
         loadEmailLog();
       } else {
-        toast.error(result.error || 'Failed to resend email');
+        toast.error(result.error || "Failed to resend email");
       }
     } catch (error) {
-      toast.error('An error occurred while resending email');
+      toast.error("An error occurred while resending email");
     } finally {
       setResendingId(null);
     }
   };
 
   // Show template preview
-  const handlePreviewTemplate = (type: EmailLogEntry['type']) => {
+  const handlePreviewTemplate = (type: EmailLogEntry["type"]) => {
     const html = EmailService.getTemplatePreview(type);
     setPreviewType(type);
     setPreviewHtml(html);
@@ -148,9 +180,9 @@ export function EmailManagement() {
   // Stats
   const stats = {
     total: emailLog.length,
-    sent: emailLog.filter(e => e.status === 'sent').length,
-    failed: emailLog.filter(e => e.status === 'failed').length,
-    verification: emailLog.filter(e => e.type === 'verification').length,
+    sent: emailLog.filter(e => e.status === "sent").length,
+    failed: emailLog.filter(e => e.status === "failed").length,
+    verification: emailLog.filter(e => e.type === "verification").length,
   };
 
   return (
@@ -246,7 +278,7 @@ export function EmailManagement() {
                   disabled={isLoading}
                   className="gap-2"
                 >
-                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
                   Refresh
                 </Button>
               </div>
@@ -258,11 +290,11 @@ export function EmailManagement() {
                   <Input
                     placeholder="Search by email or subject..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={e => setSearchQuery(e.target.value)}
                     className="pl-9 bg-slate-800/50 border-slate-700"
                   />
                 </div>
-                <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as EmailType)}>
+                <Select value={typeFilter} onValueChange={v => setTypeFilter(v as EmailType)}>
                   <SelectTrigger className="w-[180px] bg-slate-800/50 border-slate-700">
                     <Filter className="w-4 h-4 mr-2" />
                     <SelectValue placeholder="Type" />
@@ -276,7 +308,7 @@ export function EmailManagement() {
                     <SelectItem value="partner_invite">Partner Invite</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as EmailStatus)}>
+                <Select value={statusFilter} onValueChange={v => setStatusFilter(v as EmailStatus)}>
                   <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
@@ -304,7 +336,7 @@ export function EmailManagement() {
               ) : (
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-3">
-                    {filteredEmails.map((entry) => (
+                    {filteredEmails.map(entry => (
                       <div
                         key={entry.id}
                         className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-slate-600/50 transition-colors"
@@ -315,10 +347,12 @@ export function EmailManagement() {
                               {getTypeBadge(entry.type)}
                               {getStatusBadge(entry.status)}
                             </div>
-                            <p className="text-white font-medium truncate">{entry.recipientEmail}</p>
+                            <p className="text-white font-medium truncate">
+                              {entry.recipientEmail}
+                            </p>
                             <p className="text-white/60 text-sm truncate">{entry.subject}</p>
                             <p className="text-white/40 text-xs mt-1">
-                              {format(new Date(entry.sentAt), 'MMM d, yyyy h:mm a')}
+                              {format(new Date(entry.sentAt), "MMM d, yyyy h:mm a")}
                             </p>
                             {entry.error && (
                               <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
@@ -327,11 +361,13 @@ export function EmailManagement() {
                               </p>
                             )}
                           </div>
-                          {entry.type === 'verification' && entry.status === 'sent' && (
+                          {entry.type === "verification" && entry.status === "sent" && (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleResendVerification(entry.recipientEmail, entry.id)}
+                              onClick={() =>
+                                handleResendVerification(entry.recipientEmail, entry.id)
+                              }
                               disabled={resendingId === entry.id}
                               className="gap-1"
                             >
@@ -365,7 +401,15 @@ export function EmailManagement() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {(['verification', 'password_reset', 'welcome', 'notification', 'partner_invite'] as const).map((type) => (
+                {(
+                  [
+                    "verification",
+                    "password_reset",
+                    "welcome",
+                    "notification",
+                    "partner_invite",
+                  ] as const
+                ).map(type => (
                   <Dialog key={type}>
                     <DialogTrigger asChild>
                       <Button
@@ -418,7 +462,7 @@ export function EmailManagement() {
                   <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50">
                     <p className="text-white/60 text-sm mb-1">Email Provider</p>
                     <p className="text-white font-medium">
-                      {emailConfig.useSupabaseEmail ? 'Supabase Auth (Built-in)' : 'Custom SMTP'}
+                      {emailConfig.useSupabaseEmail ? "Supabase Auth (Built-in)" : "Custom SMTP"}
                     </p>
                   </div>
                   <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50">
@@ -442,7 +486,8 @@ export function EmailManagement() {
                       <p className="text-blue-400 font-medium">Using Supabase Email Service</p>
                       <p className="text-white/70 text-sm mt-1">
                         Email verification and password reset emails are handled by Supabase Auth.
-                        To customize email templates, go to your Supabase Dashboard &gt; Authentication &gt; Email Templates.
+                        To customize email templates, go to your Supabase Dashboard &gt;
+                        Authentication &gt; Email Templates.
                       </p>
                     </div>
                   </div>
@@ -457,7 +502,7 @@ export function EmailManagement() {
                       <p className="text-white/40">Port:</p>
                       <p className="text-white">{emailConfig.smtp.port}</p>
                       <p className="text-white/40">Secure:</p>
-                      <p className="text-white">{emailConfig.smtp.secure ? 'Yes (TLS)' : 'No'}</p>
+                      <p className="text-white">{emailConfig.smtp.secure ? "Yes (TLS)" : "No"}</p>
                     </div>
                   </div>
                 )}

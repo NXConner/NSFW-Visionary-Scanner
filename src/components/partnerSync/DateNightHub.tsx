@@ -36,10 +36,14 @@ export function DateNightHub({ initialTab = "planner" }: DateNightHubProps) {
       ? activeConnection.partner_id
       : activeConnection.user_id
     : null;
-  
-  const { needsConsent, partnerNeedsConsent, loading: consentLoading } = usePartnerConsent(connectionId);
+
+  const {
+    needsConsent,
+    partnerNeedsConsent,
+    loading: consentLoading,
+  } = usePartnerConsent(connectionId);
   const consentReady = !needsConsent && !partnerNeedsConsent;
-  
+
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const {
@@ -175,7 +179,7 @@ export function DateNightHub({ initialTab = "planner" }: DateNightHubProps) {
       </div>
 
       {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
+      <Tabs value={activeTab} onValueChange={v => setActiveTab(v as typeof activeTab)}>
         <TabsList className="grid w-full grid-cols-3 mb-4">
           <TabsTrigger value="planner" className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
@@ -232,7 +236,7 @@ export function DateNightHub({ initialTab = "planner" }: DateNightHubProps) {
                 </div>
               ) : (
                 <div className="grid gap-3 md:grid-cols-2">
-                  {templates.map((template) => (
+                  {templates.map(template => (
                     <Card key={template.id} className="border border-border/60">
                       <CardContent className="pt-4">
                         <div className="flex items-start justify-between">

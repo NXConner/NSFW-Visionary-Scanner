@@ -53,7 +53,9 @@ export function NSFWTopicsLibrary(): React.ReactElement {
   const [items, setItems] = useState<NsfwTopicLibraryItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<NsfwTopicLibraryItem | null>(null);
   const [revealSelected, setRevealSelected] = useState(false);
-  const [ratingFilter, setRatingFilter] = useState<"all" | "educational" | "demonstrative" | "explicit">("all");
+  const [ratingFilter, setRatingFilter] = useState<
+    "all" | "educational" | "demonstrative" | "explicit"
+  >("all");
 
   // Wait for DLC context to load before showing any restriction UI
   const stillCheckingAccess = dlcContextLoading || topicsLibrary.isLoading;
@@ -303,7 +305,10 @@ export function NSFWTopicsLibrary(): React.ReactElement {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Select value={ratingFilter} onValueChange={v => setRatingFilter(v as typeof ratingFilter)}>
+              <Select
+                value={ratingFilter}
+                onValueChange={v => setRatingFilter(v as typeof ratingFilter)}
+              >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Rating tier" />
                 </SelectTrigger>

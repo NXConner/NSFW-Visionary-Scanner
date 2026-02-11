@@ -1,20 +1,20 @@
 /**
  * Email Service
- * 
+ *
  * Main email service that handles sending various types of transactional emails.
  * Uses Supabase Auth for verification emails and can be extended for custom emails.
  */
 
-import { supabase } from '@/integrations/supabase/client';
-import { emailConfig, getEmailRedirectUrl, isEmailPreVerified } from './emailConfig';
+import { supabase } from "@/integrations/supabase/client";
+import { emailConfig, getEmailRedirectUrl, isEmailPreVerified } from "./emailConfig";
 import {
   verificationEmailTemplate,
   passwordResetEmailTemplate,
   welcomeEmailTemplate,
   notificationEmailTemplate,
   partnerInviteEmailTemplate,
-} from './emailTemplates';
-import { logger } from '@/lib/logger';
+} from "./emailTemplates";
+import { logger } from "@/lib/logger";
 
 export interface EmailResult {
   success: boolean;
@@ -24,10 +24,10 @@ export interface EmailResult {
 
 export interface EmailLogEntry {
   id: string;
-  type: 'verification' | 'password_reset' | 'welcome' | 'notification' | 'partner_invite';
+  type: "verification" | "password_reset" | "welcome" | "notification" | "partner_invite";
   recipientEmail: string;
   subject: string;
-  status: 'sent' | 'failed' | 'pending';
+  status: "sent" | "failed" | "pending";
   sentAt: Date;
   error?: string;
 }
@@ -45,7 +45,7 @@ function generateEmailId(): string {
 /**
  * Log an email event
  */
-function logEmail(entry: Omit<EmailLogEntry, 'id' | 'sentAt'>): EmailLogEntry {
+function logEmail(entry: Omit<EmailLogEntry, "id" | "sentAt">): EmailLogEntry {
   const logEntry: EmailLogEntry = {
     ...entry,
     id: generateEmailId(),
@@ -69,10 +69,10 @@ export const EmailService = {
    */
   async sendVerificationEmail(email: string): Promise<EmailResult> {
     try {
-      const redirectUrl = getEmailRedirectUrl('/auth?verified=true');
-      
+      const redirectUrl = getEmailRedirectUrl("/auth?verified=true");
+
       const { error } = await supabase.auth.resend({
-        type: 'signup',
+        type: "signup",
         email,
         options: {
           emailRedirectTo: redirectUrl,
@@ -81,35 +81,35 @@ export const EmailService = {
 
       if (error) {
         logEmail({
-          type: 'verification',
+          type: "verification",
           recipientEmail: email,
-          subject: 'Email Verification Required',
-          status: 'failed',
+          subject: "Email Verification Required",
+          status: "failed",
           error: error.message,
         });
-        logger.error('Failed to send verification email', { email, error: error.message });
+        logger.error("Failed to send verification email", { email, error: error.message });
         return { success: false, error: error.message };
       }
 
       const logEntry = logEmail({
-        type: 'verification',
+        type: "verification",
         recipientEmail: email,
-        subject: 'Email Verification Required',
-        status: 'sent',
+        subject: "Email Verification Required",
+        status: "sent",
       });
 
-      logger.info('Verification email sent', { email });
+      logger.info("Verification email sent", { email });
       return { success: true, messageId: logEntry.id };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
       logEmail({
-        type: 'verification',
+        type: "verification",
         recipientEmail: email,
-        subject: 'Email Verification Required',
-        status: 'failed',
+        subject: "Email Verification Required",
+        status: "failed",
         error: errorMessage,
       });
-      logger.error('Exception sending verification email', { email, error: errorMessage });
+      logger.error("Exception sending verification email", { email, error: errorMessage });
       return { success: false, error: errorMessage };
     }
   },
@@ -119,43 +119,43 @@ export const EmailService = {
    */
   async sendPasswordResetEmail(email: string): Promise<EmailResult> {
     try {
-      const redirectUrl = getEmailRedirectUrl('/auth?reset=true');
-      
+      const redirectUrl = getEmailRedirectUrl("/auth?reset=true");
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
       });
 
       if (error) {
         logEmail({
-          type: 'password_reset',
+          type: "password_reset",
           recipientEmail: email,
-          subject: 'Reset Your Password',
-          status: 'failed',
+          subject: "Reset Your Password",
+          status: "failed",
           error: error.message,
         });
-        logger.error('Failed to send password reset email', { email, error: error.message });
+        logger.error("Failed to send password reset email", { email, error: error.message });
         return { success: false, error: error.message };
       }
 
       const logEntry = logEmail({
-        type: 'password_reset',
+        type: "password_reset",
         recipientEmail: email,
-        subject: 'Reset Your Password',
-        status: 'sent',
+        subject: "Reset Your Password",
+        status: "sent",
       });
 
-      logger.info('Password reset email sent', { email });
+      logger.info("Password reset email sent", { email });
       return { success: true, messageId: logEntry.id };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
       logEmail({
-        type: 'password_reset',
+        type: "password_reset",
         recipientEmail: email,
-        subject: 'Reset Your Password',
-        status: 'failed',
+        subject: "Reset Your Password",
+        status: "failed",
         error: errorMessage,
       });
-      logger.error('Exception sending password reset email', { email, error: errorMessage });
+      logger.error("Exception sending password reset email", { email, error: errorMessage });
       return { success: false, error: errorMessage };
     }
   },
@@ -169,25 +169,25 @@ export const EmailService = {
     try {
       // Generate template for logging/preview purposes
       const _template = welcomeEmailTemplate(userName);
-      
+
       // In production, this would call a Supabase Edge Function or external API
       // For now, we log it and return success (Supabase handles welcome in verification flow)
       const logEntry = logEmail({
-        type: 'welcome',
+        type: "welcome",
         recipientEmail: email,
         subject: `Welcome to ${emailConfig.appName}!`,
-        status: 'sent',
+        status: "sent",
       });
 
-      logger.info('Welcome email logged', { email, userName });
+      logger.info("Welcome email logged", { email, userName });
       return { success: true, messageId: logEntry.id };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
       logEmail({
-        type: 'welcome',
+        type: "welcome",
         recipientEmail: email,
         subject: `Welcome to ${emailConfig.appName}!`,
-        status: 'failed',
+        status: "failed",
         error: errorMessage,
       });
       return { success: false, error: errorMessage };
@@ -197,27 +197,31 @@ export const EmailService = {
   /**
    * Send notification email
    */
-  async sendNotificationEmail(email: string, subject: string, content: string): Promise<EmailResult> {
+  async sendNotificationEmail(
+    email: string,
+    subject: string,
+    content: string,
+  ): Promise<EmailResult> {
     try {
       const _template = notificationEmailTemplate(subject, content);
-      
+
       // In production, this would use an email service
       const logEntry = logEmail({
-        type: 'notification',
+        type: "notification",
         recipientEmail: email,
         subject,
-        status: 'sent',
+        status: "sent",
       });
 
-      logger.info('Notification email logged', { email, subject });
+      logger.info("Notification email logged", { email, subject });
       return { success: true, messageId: logEntry.id };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
       logEmail({
-        type: 'notification',
+        type: "notification",
         recipientEmail: email,
         subject,
-        status: 'failed',
+        status: "failed",
         error: errorMessage,
       });
       return { success: false, error: errorMessage };
@@ -227,27 +231,31 @@ export const EmailService = {
   /**
    * Send partner invite email
    */
-  async sendPartnerInviteEmail(email: string, inviterName: string, inviteLink: string): Promise<EmailResult> {
+  async sendPartnerInviteEmail(
+    email: string,
+    inviterName: string,
+    inviteLink: string,
+  ): Promise<EmailResult> {
     try {
       const _template = partnerInviteEmailTemplate(inviterName, inviteLink);
-      
+
       // In production, this would use an email service
       const logEntry = logEmail({
-        type: 'partner_invite',
+        type: "partner_invite",
         recipientEmail: email,
         subject: `${inviterName} invited you to ${emailConfig.appName}`,
-        status: 'sent',
+        status: "sent",
       });
 
-      logger.info('Partner invite email logged', { email, inviterName });
+      logger.info("Partner invite email logged", { email, inviterName });
       return { success: true, messageId: logEntry.id };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
       logEmail({
-        type: 'partner_invite',
+        type: "partner_invite",
         recipientEmail: email,
         subject: `${inviterName} invited you to ${emailConfig.appName}`,
-        status: 'failed',
+        status: "failed",
         error: errorMessage,
       });
       return { success: false, error: errorMessage };
@@ -276,17 +284,19 @@ export const EmailService = {
    */
   async checkEmailVerificationStatus(userId?: string): Promise<boolean> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return false;
-      
+
       // Check if this is the user we're looking for (or current user)
       if (userId && user.id !== userId) return false;
-      
+
       // Check if email is in the pre-verified whitelist
       if (isEmailPreVerified(user.email)) {
         return true;
       }
-      
+
       return user.email_confirmed_at !== null;
     } catch {
       return false;
@@ -296,22 +306,25 @@ export const EmailService = {
   /**
    * Get email templates for preview
    */
-  getTemplatePreview(type: EmailLogEntry['type']): string {
+  getTemplatePreview(type: EmailLogEntry["type"]): string {
     const sampleLink = `${emailConfig.appUrl}/sample-link`;
-    
+
     switch (type) {
-      case 'verification':
+      case "verification":
         return verificationEmailTemplate(sampleLink);
-      case 'password_reset':
+      case "password_reset":
         return passwordResetEmailTemplate(sampleLink);
-      case 'welcome':
-        return welcomeEmailTemplate('User');
-      case 'notification':
-        return notificationEmailTemplate('Sample Notification', '<p>This is a sample notification content.</p>');
-      case 'partner_invite':
-        return partnerInviteEmailTemplate('Partner Name', sampleLink);
+      case "welcome":
+        return welcomeEmailTemplate("User");
+      case "notification":
+        return notificationEmailTemplate(
+          "Sample Notification",
+          "<p>This is a sample notification content.</p>",
+        );
+      case "partner_invite":
+        return partnerInviteEmailTemplate("Partner Name", sampleLink);
       default:
-        return '';
+        return "";
     }
   },
 };

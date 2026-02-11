@@ -406,7 +406,8 @@ export const en: TranslationDictionary = {
   "partnerSync.insights.loadMore": "Load more",
 
   "partnerSync.recommendations.title": "Recommendations",
-  "partnerSync.recommendations.subtitle": "Suggestions to make partner sync smoother and more intentional.",
+  "partnerSync.recommendations.subtitle":
+    "Suggestions to make partner sync smoother and more intentional.",
   "partnerSync.recommendations.pingsTitle": "Thought Pings",
   "partnerSync.recommendations.datesTitle": "Date Nights",
   "partnerSync.recommendations.positionsTitle": "Positions",
@@ -415,18 +416,26 @@ export const en: TranslationDictionary = {
     "Keep pings short and specific so your partner can respond quickly.",
   "partnerSync.recommendations.pings.2": "Mix playful and romantic tones to avoid message fatigue.",
   "partnerSync.recommendations.pings.3": "Use themes to align expectations before you meet.",
-  "partnerSync.recommendations.pings.4": "Follow up with a reply to confirm interest and boundaries.",
+  "partnerSync.recommendations.pings.4":
+    "Follow up with a reply to confirm interest and boundaries.",
   "partnerSync.recommendations.pings.5": "Schedule pings when your partner is in quiet hours.",
   "partnerSync.recommendations.pings.6": "Use reactions to acknowledge messages quickly.",
-  "partnerSync.recommendations.dates.1": "Plan the night in segments (night out, dinner, night in).",
-  "partnerSync.recommendations.dates.2": "Call out distractions ahead of time so you can stay focused.",
-  "partnerSync.recommendations.dates.3": "Include a short check-in item to confirm the pace and comfort.",
-  "partnerSync.recommendations.dates.4": "Keep a backup plan for timing, location, or energy changes.",
+  "partnerSync.recommendations.dates.1":
+    "Plan the night in segments (night out, dinner, night in).",
+  "partnerSync.recommendations.dates.2":
+    "Call out distractions ahead of time so you can stay focused.",
+  "partnerSync.recommendations.dates.3":
+    "Include a short check-in item to confirm the pace and comfort.",
+  "partnerSync.recommendations.dates.4":
+    "Keep a backup plan for timing, location, or energy changes.",
   "partnerSync.recommendations.dates.5": "Use reminders for travel time and reservations.",
   "partnerSync.recommendations.dates.6": "Capture reflections after the date to improve next time.",
-  "partnerSync.recommendations.positions.1": "Start with one mutual pick, then add one partner pick.",
-  "partnerSync.recommendations.positions.2": "Use notes to explain what you like about each suggestion.",
-  "partnerSync.recommendations.positions.3": "Balance intensity by mixing easy and advanced options.",
+  "partnerSync.recommendations.positions.1":
+    "Start with one mutual pick, then add one partner pick.",
+  "partnerSync.recommendations.positions.2":
+    "Use notes to explain what you like about each suggestion.",
+  "partnerSync.recommendations.positions.3":
+    "Balance intensity by mixing easy and advanced options.",
   "partnerSync.recommendations.positions.4": "Mark tried positions so your list stays fresh.",
   "partnerSync.recommendations.positions.5":
     "Use safety checklists and boundaries before trying something new.",
@@ -434,6 +443,7 @@ export const en: TranslationDictionary = {
   "partnerSync.recommendations.safety.1": "Confirm consent and boundaries before the night begins.",
   "partnerSync.recommendations.safety.2": "Agree on a pause or stop word for real-time check-ins.",
   "partnerSync.recommendations.safety.3": "Leave room for aftercare or a quiet wind-down.",
-  "partnerSync.recommendations.safety.4": "Use privacy settings to control who sees location details.",
+  "partnerSync.recommendations.safety.4":
+    "Use privacy settings to control who sees location details.",
   "partnerSync.preview.subtitle": "Preview panels with empty states and layout checks.",
 };

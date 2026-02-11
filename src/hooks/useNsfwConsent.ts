@@ -32,9 +32,7 @@ export function useNsfwConsent(requiredFeatureIds: string[]) {
         fetchActiveConsentPolicies(),
         fetchUserConsentEvents(),
       ]);
-      const acceptedKeys = new Set(
-        events.filter(e => !e.revoked_at).map(e => e.policy_key),
-      );
+      const acceptedKeys = new Set(events.filter(e => !e.revoked_at).map(e => e.policy_key));
       setState({ policies, acceptedKeys });
     } finally {
       setLoading(false);

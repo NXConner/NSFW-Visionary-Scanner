@@ -6,7 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { RefreshCw, Loader2, CheckCircle, XCircle, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { fromExtended } from "@/lib/supabaseExtensions";
@@ -59,7 +66,9 @@ export function NsfwModerationQueuePanel(): JSX.Element {
     try {
       const [threadsRes, postsRes, premiumRes] = await Promise.all([
         fromExtended("nsfw_forum_threads")
-          .select("id,thread_title,thread_content,user_id,is_approved,is_locked,is_pinned,created_at")
+          .select(
+            "id,thread_title,thread_content,user_id,is_approved,is_locked,is_pinned,created_at",
+          )
           .order("created_at", { ascending: false })
           .limit(200),
         fromExtended("nsfw_forum_posts")
@@ -67,7 +76,9 @@ export function NsfwModerationQueuePanel(): JSX.Element {
           .order("created_at", { ascending: false })
           .limit(200),
         fromExtended("premium_content_items")
-          .select("id,creator_id,title,content_type,is_active,is_verified,is_approved,moderation_notes,created_at")
+          .select(
+            "id,creator_id,title,content_type,is_active,is_verified,is_approved,moderation_notes,created_at",
+          )
           .order("created_at", { ascending: false })
           .limit(200),
       ]);
@@ -94,7 +105,11 @@ export function NsfwModerationQueuePanel(): JSX.Element {
     const q = query.trim().toLowerCase();
     return threads.filter(t => {
       if (threadFilter === "pending" && t.is_approved) return false;
-      if (q && !t.thread_title.toLowerCase().includes(q) && !t.thread_content.toLowerCase().includes(q)) {
+      if (
+        q &&
+        !t.thread_title.toLowerCase().includes(q) &&
+        !t.thread_content.toLowerCase().includes(q)
+      ) {
         return false;
       }
       return true;
@@ -235,7 +250,9 @@ export function NsfwModerationQueuePanel(): JSX.Element {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => void updateThread(thread.id, { is_locked: !thread.is_locked })}
+                            onClick={() =>
+                              void updateThread(thread.id, { is_locked: !thread.is_locked })
+                            }
                           >
                             {thread.is_locked ? "Unlock" : "Lock"}
                           </Button>
@@ -271,7 +288,9 @@ export function NsfwModerationQueuePanel(): JSX.Element {
                       <TableRow key={post.id}>
                         <TableCell>
                           <div className="text-sm">{post.post_content}</div>
-                          <div className="text-xs text-muted-foreground">Thread: {post.thread_id}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Thread: {post.thread_id}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant={post.is_approved ? "secondary" : "outline"}>
@@ -313,7 +332,9 @@ export function NsfwModerationQueuePanel(): JSX.Element {
                 <Button
                   size="sm"
                   variant={premiumFilter === "takedown" ? "default" : "outline"}
-                  onClick={() => setPremiumFilter(premiumFilter === "takedown" ? "all" : "takedown")}
+                  onClick={() =>
+                    setPremiumFilter(premiumFilter === "takedown" ? "all" : "takedown")
+                  }
                 >
                   Show takedowns
                 </Button>

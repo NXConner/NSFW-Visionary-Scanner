@@ -33,4 +33,3 @@ describe("ScannerActionButtons", () => {
     expect(screen.getByText(/saving blocked by policy/i)).toBeInTheDocument();
   });
 });
-

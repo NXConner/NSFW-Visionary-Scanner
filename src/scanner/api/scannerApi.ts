@@ -1,6 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
-import type { ScanAnalyzeRequest, ScanAnalyzeResponse, ScanHistoryResponse, ScanUploadRequest, ScanUploadResponse } from "./types";
+import type {
+  ScanAnalyzeRequest,
+  ScanAnalyzeResponse,
+  ScanHistoryResponse,
+  ScanUploadRequest,
+  ScanUploadResponse,
+} from "./types";
 
 export async function scanUpload(req: ScanUploadRequest): Promise<ScanUploadResponse> {
   const { data, error } = await supabase.functions.invoke("scan-upload", {
@@ -34,4 +40,3 @@ export async function scanHistory(limit: number = 25): Promise<ScanHistoryRespon
   }
   return data as ScanHistoryResponse;
 }
-

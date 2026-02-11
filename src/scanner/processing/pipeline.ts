@@ -7,10 +7,10 @@ import { estimateCurvatureFromCenterline } from "./steps/curvatureAngle";
 import { polylineLengthPx } from "./steps/lengthEstimation";
 import { estimateGirthFromContour } from "./steps/girthEstimation";
 import { decodeDataUrlToImageBitmap } from "@/scanner/utils/image";
-import { 
-  estimateCurvatureFromLandmarks, 
+import {
+  estimateCurvatureFromLandmarks,
   type LandmarkCurvatureResult,
-  type CurvatureType 
+  type CurvatureType,
 } from "./steps/landmarkCurvature";
 
 export interface PipelineOutput {
@@ -34,8 +34,8 @@ export interface PipelineOutput {
   /** Enhanced landmark-based curvature result */
   landmarkCurvature?: LandmarkCurvatureResult;
   length: { px: number };
-  girth: { 
-    avgWidthPx: number; 
+  girth: {
+    avgWidthPx: number;
     circumferencePx: number;
     maxWidthPx: number;
   } | null;
@@ -57,7 +57,8 @@ export async function runProcessingPipelineFromBitmap(
   const warnings: string[] = [];
 
   // Use smaller default for mobile (768) vs desktop (1024) for better performance
-  const isMobile = typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  const isMobile =
+    typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
   const defaultMaxDim = isMobile ? 640 : 896;
   const maxDim = Math.max(480, Math.min(1536, opts.maxDim ?? defaultMaxDim));
   const { imageData, scale } = await preprocessImageBitmap(bitmap, { maxDim });
@@ -92,19 +93,19 @@ export async function runProcessingPipelineFromBitmap(
 
   // Legacy curvature estimation (centerline-based fallback)
   const legacyCurvature = estimateCurvatureFromCenterline(fit.centerline);
-  
+
   // Enhanced 4-point landmark curvature detection (PMC10150132 method)
   const landmarkCurvature = estimateCurvatureFromLandmarks(
     fit.centerline,
     contour.points,
     width,
-    height
+    height,
   );
-  
+
   // Use landmark method if confident, otherwise fall back to legacy
-  const useLandmarkMethod = landmarkCurvature.confidence > 0.5 && 
-    landmarkCurvature.method === "4-point-landmark";
-  
+  const useLandmarkMethod =
+    landmarkCurvature.confidence > 0.5 && landmarkCurvature.method === "4-point-landmark";
+
   const curvature = {
     angleDeg: useLandmarkMethod ? landmarkCurvature.angleDeg : legacyCurvature.angleDeg,
     direction: useLandmarkMethod ? landmarkCurvature.direction : legacyCurvature.direction,
@@ -114,18 +115,20 @@ export async function runProcessingPipelineFromBitmap(
   };
 
   const lengthPx = polylineLengthPx(fit.centerline);
-  
+
   // Estimate girth/circumference from contour width perpendicular to centerline
   const girthResult = estimateGirthFromContour(fit.centerline, contour.points, {
     sampleCount: 20,
     outlierPercent: 0.15,
   });
-  
-  const girth = girthResult ? {
-    avgWidthPx: girthResult.avgWidthPx,
-    circumferencePx: girthResult.circumferencePx,
-    maxWidthPx: girthResult.maxWidthPx,
-  } : null;
+
+  const girth = girthResult
+    ? {
+        avgWidthPx: girthResult.avgWidthPx,
+        circumferencePx: girthResult.circumferencePx,
+        maxWidthPx: girthResult.maxWidthPx,
+      }
+    : null;
 
   return {
     image: { width, height, downscale: scale },

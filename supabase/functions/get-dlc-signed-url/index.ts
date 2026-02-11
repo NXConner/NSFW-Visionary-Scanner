@@ -18,7 +18,11 @@ type ReqBody = {
 const ADULT_RATINGS = new Set(["18+", "adult", "explicit", "nsfw"]);
 
 const isAdultRating = (rating?: string | null): boolean =>
-  ADULT_RATINGS.has(String(rating || "").trim().toLowerCase());
+  ADULT_RATINGS.has(
+    String(rating || "")
+      .trim()
+      .toLowerCase(),
+  );
 
 async function logAssetAccess(params: {
   supabase: any;
@@ -58,13 +62,13 @@ serve(async req => {
       });
     }
 
-  const rateLimitResponse = await applyRateLimit({
-    req,
-    endpoint: "get-dlc-signed-url",
-    ...DEFAULT_EDGE_RATE_LIMIT,
-    headers: corsHeaders,
-  });
-  if (rateLimitResponse) return rateLimitResponse;
+    const rateLimitResponse = await applyRateLimit({
+      req,
+      endpoint: "get-dlc-signed-url",
+      ...DEFAULT_EDGE_RATE_LIMIT,
+      headers: corsHeaders,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
 
     const token = authHeader.replace("Bearer ", "");
 

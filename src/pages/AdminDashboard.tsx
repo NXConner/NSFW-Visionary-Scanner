@@ -31,11 +31,7 @@ import {
 } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import {
-  SUPPORT_CONTACT_EMAIL,
-  PRIVACY_CONTACT_EMAIL,
-  DPO_CONTACT_EMAIL,
-} from "@/config/brand";
+import { SUPPORT_CONTACT_EMAIL, PRIVACY_CONTACT_EMAIL, DPO_CONTACT_EMAIL } from "@/config/brand";
 import { useAdminMetrics } from "@/hooks/useAdminMetrics";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -154,7 +150,7 @@ export interface AdminDashboardProps {
 export default function AdminDashboard({ initialSection }: AdminDashboardProps) {
   // Auth guard - redirect non-admin users
   const { user, loading: authLoading, isSuperAdmin } = useAuth();
-  
+
   const isAuthorized = useMemo(() => {
     if (!user?.email) return false;
     const userEmail = user.email.toLowerCase();
@@ -232,8 +228,8 @@ export default function AdminDashboard({ initialSection }: AdminDashboardProps) 
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              This area is restricted to authorized administrators only.
-              If you believe you should have access, please contact support.
+              This area is restricted to authorized administrators only. If you believe you should
+              have access, please contact support.
             </p>
             <Button asChild className="w-full">
               <Link to="/">Return to Home</Link>

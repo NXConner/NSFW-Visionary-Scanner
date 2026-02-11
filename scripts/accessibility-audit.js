@@ -159,7 +159,10 @@ function checkInteractiveLabels(content, file) {
     if (closeIndex === -1) continue;
     const inner = content.slice(startIndex, closeIndex);
     if (/\b(aria-label|aria-labelledby)\s*=/.test(openTag)) continue;
-    const text = inner.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+    const text = inner
+      .replace(/<[^>]+>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
     if (text.length > 0) continue;
     addIssue({
       file,

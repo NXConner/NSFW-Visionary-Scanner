@@ -311,9 +311,7 @@ export const NotificationSettings = () => {
                   <FileText className="w-4 h-4" />
                   Weekly Health Report
                 </h4>
-                <p className="text-sm text-muted-foreground">
-                  Schedule a weekly summary reminder.
-                </p>
+                <p className="text-sm text-muted-foreground">Schedule a weekly summary reminder.</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="weekly-day">Day</Label>

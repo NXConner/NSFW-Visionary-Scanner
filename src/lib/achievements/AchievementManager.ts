@@ -104,9 +104,7 @@ export class AchievementManager {
         this.state.unlockedAchievements = new Map(
           Object.entries(parsed.unlockedAchievements || {}),
         );
-        this.state.milestoneProgress = new Map(
-          Object.entries(parsed.milestoneProgress || {}),
-        );
+        this.state.milestoneProgress = new Map(Object.entries(parsed.milestoneProgress || {}));
         this.state.stats = {
           ...this.state.stats,
           ...parsed.stats,
@@ -126,9 +124,7 @@ export class AchievementManager {
   private persist(): void {
     try {
       const toStore = {
-        unlockedAchievements: Object.fromEntries(
-          this.state.unlockedAchievements,
-        ),
+        unlockedAchievements: Object.fromEntries(this.state.unlockedAchievements),
         milestoneProgress: Object.fromEntries(this.state.milestoneProgress),
         stats: {
           ...this.state.stats,
@@ -150,7 +146,7 @@ export class AchievementManager {
   }
 
   private emit(event: AchievementEvent): void {
-    this.listeners.forEach((listener) => listener(event));
+    this.listeners.forEach(listener => listener(event));
   }
 
   // ============ STAT TRACKING ============
@@ -283,9 +279,7 @@ export class AchievementManager {
    * Check achievements of a specific trigger type
    */
   private checkAchievements(triggerType: AchievementTrigger): void {
-    const relevantAchievements = allAchievements.filter(
-      (a) => a.criteria.type === triggerType,
-    );
+    const relevantAchievements = allAchievements.filter(a => a.criteria.type === triggerType);
 
     for (const achievement of relevantAchievements) {
       if (this.state.unlockedAchievements.has(achievement.id)) continue;
@@ -339,13 +333,8 @@ export class AchievementManager {
         if (criteria.additionalConditions?.unit === "days") {
           const created = new Date(this.state.stats.accountCreatedAt);
           const now = new Date();
-          currentValue = Math.floor(
-            (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24),
-          );
-        } else if (
-          criteria.additionalConditions?.before ||
-          criteria.additionalConditions?.after
-        ) {
+          currentValue = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+        } else if (criteria.additionalConditions?.before || criteria.additionalConditions?.after) {
           const hour = new Date().getHours();
           if (criteria.additionalConditions.before) {
             return hour < criteria.threshold;
@@ -373,11 +362,7 @@ export class AchievementManager {
     return this.compare(currentValue, criteria.threshold, comparison);
   }
 
-  private compare(
-    value: number,
-    threshold: number,
-    comparison: string,
-  ): boolean {
+  private compare(value: number, threshold: number, comparison: string): boolean {
     switch (comparison) {
       case "eq":
         return value === threshold;
@@ -442,9 +427,7 @@ export class AchievementManager {
    * Check milestones for a category
    */
   private checkMilestones(category: AchievementCategory): void {
-    const relevantMilestones = allMilestones.filter(
-      (m) => m.category === category,
-    );
+    const relevantMilestones = allMilestones.filter(m => m.category === category);
 
     for (const milestone of relevantMilestones) {
       const currentValue = this.getMilestoneCurrentValue(milestone);
@@ -457,10 +440,7 @@ export class AchievementManager {
       );
 
       // Check if newly completed
-      if (
-        progress.status === "completed" &&
-        existingProgress?.status !== "completed"
-      ) {
+      if (progress.status === "completed" && existingProgress?.status !== "completed") {
         progress.completedAt = new Date().toISOString();
 
         // Award milestone rewards
@@ -600,9 +580,7 @@ export class AchievementManager {
    * Get unnotified achievements
    */
   getUnnotifiedAchievements(): UnlockedAchievement[] {
-    return Array.from(this.state.unlockedAchievements.values()).filter(
-      (a) => !a.notified,
-    );
+    return Array.from(this.state.unlockedAchievements.values()).filter(a => !a.notified);
   }
 
   /**

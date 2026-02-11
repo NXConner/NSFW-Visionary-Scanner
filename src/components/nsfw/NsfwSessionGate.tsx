@@ -44,7 +44,13 @@ export function NsfwSessionGate({
   description?: string;
   children: React.ReactNode;
 }): JSX.Element {
-  const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked, loading: authLoading, rolesLoading } = useAuth();
+  const {
+    isSuperAdmin,
+    hasFullAccess,
+    allFeaturesUnlocked,
+    loading: authLoading,
+    rolesLoading,
+  } = useAuth();
   const { isAdmin, isSuperAdmin: isSuperAdminRole, isLoading: rolesHookLoading } = useUserRoles();
   const { settings } = useNsfwPrivacySettings();
   const {
@@ -69,7 +75,7 @@ export function NsfwSessionGate({
     !requireBiometric && appLock?.enabled && appLock?.pin && appLock.pin.length === 4,
   );
   const canUnlock = hasPin || hasBiometric;
-  
+
   // Combined loading state for access checks
   const stillCheckingAccess = authLoading || rolesLoading || rolesHookLoading || isLoading;
 
@@ -202,9 +208,7 @@ export function NsfwSessionGate({
           </div>
           <CardTitle>{panicActive ? "Panic Lock Active" : title}</CardTitle>
           <CardDescription>
-            {panicActive
-              ? "NSFW access is temporarily locked. Unlock to continue."
-              : description}
+            {panicActive ? "NSFW access is temporarily locked. Unlock to continue." : description}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">

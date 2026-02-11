@@ -27,15 +27,25 @@ import {
 } from "./constants";
 import { isLocalStorageAvailable, safelyParseSettings } from "./localStorage";
 import type {
+  APIAccessSettings,
+  AchievementSettings,
+  AROverlaySettings,
   ColorBlindMode,
   CustomInterfaceColors,
+  DashboardSettings,
   FontFamily,
   FontSize,
+  HealthTrackingSettings,
   MeasurementUnitDisplay,
+  NotificationPreferences,
+  OfflineModeSettings,
   PressureUnitDisplay,
+  ProfileSettings,
   SettingsContextType,
   StoredSettings,
   ThemeMode,
+  ThemeExtendedSettings,
+  VoiceGuidanceSettings,
 } from "./types";
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -56,6 +66,14 @@ function inferExtFromBlobType(blob: Blob): string {
   if (t.includes("webp")) return "webp";
   if (t.includes("jpeg") || t.includes("jpg")) return "jpg";
   return "bin";
+}
+
+function mergeDefined<T extends object>(base: T, patch: Partial<T>): T {
+  const next: any = { ...(base as any) };
+  for (const [k, v] of Object.entries(patch as Record<string, unknown>)) {
+    if (v !== undefined) next[k] = v;
+  }
+  return next as T;
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
@@ -112,6 +130,25 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [uiFxWallpaperMotionEnabled, setUiFxWallpaperMotionEnabledState] = useState<boolean>(
     initial.uiFxWallpaperMotionEnabled,
   );
+  const [arOverlay, setAROverlayState] = useState<AROverlaySettings>(initial.arOverlay);
+  const [offlineMode, setOfflineModeState] = useState<OfflineModeSettings>(initial.offlineMode);
+  const [notificationPreferences, setNotificationPreferencesState] =
+    useState<NotificationPreferences>(initial.notificationPreferences);
+  const [profileSettings, setProfileSettingsState] = useState<ProfileSettings>(
+    initial.profileSettings,
+  );
+  const [voiceGuidance, setVoiceGuidanceState] = useState<VoiceGuidanceSettings>(
+    initial.voiceGuidance,
+  );
+  const [achievements, setAchievementsState] = useState<AchievementSettings>(initial.achievements);
+  const [healthTracking, setHealthTrackingState] = useState<HealthTrackingSettings>(
+    initial.healthTracking,
+  );
+  const [dashboard, setDashboardState] = useState<DashboardSettings>(initial.dashboard);
+  const [themeExtended, setThemeExtendedState] = useState<ThemeExtendedSettings>(
+    initial.themeExtended,
+  );
+  const [apiAccess, setApiAccessState] = useState<APIAccessSettings>(initial.apiAccess);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   const activeWallpaperObjectUrlRef = useRef<string | null>(null);
@@ -175,6 +212,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           uiFxGlowEnabled,
           uiFxRippleEnabled,
           uiFxWallpaperMotionEnabled,
+          arOverlay,
+          offlineMode,
+          notificationPreferences,
+          profileSettings,
+          voiceGuidance,
+          achievements,
+          healthTracking,
+          dashboard,
+          themeExtended,
+          apiAccess,
           ...overrides,
         };
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(payload));
@@ -207,6 +254,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       uiFxGlowEnabled,
       uiFxRippleEnabled,
       uiFxWallpaperMotionEnabled,
+      arOverlay,
+      offlineMode,
+      notificationPreferences,
+      profileSettings,
+      voiceGuidance,
+      achievements,
+      healthTracking,
+      dashboard,
+      themeExtended,
+      apiAccess,
     ],
   );
 
@@ -434,7 +491,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
-    
+
     const colorMap: Record<keyof CustomInterfaceColors, string> = {
       primary: "--primary",
       secondary: "--secondary",
@@ -747,6 +804,120 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [persistSettings],
   );
 
+  const setAROverlay = useCallback(
+    (settings: Partial<AROverlaySettings>) => {
+      setAROverlayState(prev => {
+        const next = mergeDefined(prev, settings);
+        persistSettings({ arOverlay: next });
+        return next;
+      });
+    },
+    [persistSettings],
+  );
+
+  const setOfflineMode = useCallback(
+    (settings: Partial<OfflineModeSettings>) => {
+      setOfflineModeState(prev => {
+        const next = mergeDefined(prev, settings);
+        persistSettings({ offlineMode: next });
+        return next;
+      });
+    },
+    [persistSettings],
+  );
+
+  const setNotificationPreferences = useCallback(
+    (settings: Partial<NotificationPreferences>) => {
+      setNotificationPreferencesState(prev => {
+        const mergedTypes = settings.types ? { ...prev.types, ...settings.types } : prev.types;
+        const next = {
+          ...mergeDefined(prev, settings),
+          types: mergedTypes,
+        } as NotificationPreferences;
+        persistSettings({ notificationPreferences: next });
+        return next;
+      });
+    },
+    [persistSettings],
+  );
+
+  const setProfileSettings = useCallback(
+    (settings: Partial<ProfileSettings>) => {
+      setProfileSettingsState(prev => {
+        const next = mergeDefined(prev, settings);
+        persistSettings({ profileSettings: next });
+        return next;
+      });
+    },
+    [persistSettings],
+  );
+
+  const setVoiceGuidance = useCallback(
+    (settings: Partial<VoiceGuidanceSettings>) => {
+      setVoiceGuidanceState(prev => {
+        const next = mergeDefined(prev, settings);
+        persistSettings({ voiceGuidance: next });
+        return next;
+      });
+    },
+    [persistSettings],
+  );
+
+  const setAchievements = useCallback(
+    (settings: Partial<AchievementSettings>) => {
+      setAchievementsState(prev => {
+        const next = mergeDefined(prev, settings);
+        persistSettings({ achievements: next });
+        return next;
+      });
+    },
+    [persistSettings],
+  );
+
+  const setHealthTracking = useCallback(
+    (settings: Partial<HealthTrackingSettings>) => {
+      setHealthTrackingState(prev => {
+        const next = mergeDefined(prev, settings);
+        persistSettings({ healthTracking: next });
+        return next;
+      });
+    },
+    [persistSettings],
+  );
+
+  const setDashboard = useCallback(
+    (settings: Partial<DashboardSettings>) => {
+      setDashboardState(prev => {
+        const next = mergeDefined(prev, settings);
+        persistSettings({ dashboard: next });
+        return next;
+      });
+    },
+    [persistSettings],
+  );
+
+  const setThemeExtended = useCallback(
+    (settings: Partial<ThemeExtendedSettings>) => {
+      setThemeExtendedState(prev => {
+        const next = mergeDefined(prev, settings);
+        persistSettings({ themeExtended: next });
+        return next;
+      });
+    },
+    [persistSettings],
+  );
+
+  const setAPIAccess = useCallback(
+    (settings: Partial<APIAccessSettings>) => {
+      setApiAccessState(prev => {
+        const next = mergeDefined(prev, settings);
+        persistSettings({ apiAccess: next });
+        return next;
+      });
+    },
+    [persistSettings],
+  );
+
   return (
     <SettingsContext.Provider
       value={{
@@ -797,6 +968,26 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setUiFxRippleEnabled,
         uiFxWallpaperMotionEnabled,
         setUiFxWallpaperMotionEnabled,
+        arOverlay,
+        setAROverlay,
+        offlineMode,
+        setOfflineMode,
+        notificationPreferences,
+        setNotificationPreferences,
+        profileSettings,
+        setProfileSettings,
+        voiceGuidance,
+        setVoiceGuidance,
+        achievements,
+        setAchievements,
+        healthTracking,
+        setHealthTracking,
+        dashboard,
+        setDashboard,
+        themeExtended,
+        setThemeExtended,
+        apiAccess,
+        setAPIAccess,
         isSyncing,
         syncToCloud,
       }}

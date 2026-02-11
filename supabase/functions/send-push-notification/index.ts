@@ -8,7 +8,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-
 serve(async req => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -77,7 +76,11 @@ serve(async req => {
     if (!rate.allowed) {
       return new Response(JSON.stringify({ success: false, error: "Rate limit exceeded" }), {
         status: 429,
-        headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          ...buildRateLimitHeaders(rate),
+          "Content-Type": "application/json",
+        },
       });
     }
 
@@ -120,7 +123,11 @@ serve(async req => {
         results,
       }),
       {
-        headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          ...buildRateLimitHeaders(rate),
+          "Content-Type": "application/json",
+        },
       },
     );
   } catch (error: unknown) {

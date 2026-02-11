@@ -52,7 +52,11 @@ type PositionSelectionComposerProps = {
   }) => Promise<boolean>;
 };
 
-export function PositionSelectionComposer({ positions, loading, onSuggest }: PositionSelectionComposerProps) {
+export function PositionSelectionComposer({
+  positions,
+  loading,
+  onSuggest,
+}: PositionSelectionComposerProps) {
   const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
@@ -72,11 +76,17 @@ export function PositionSelectionComposer({ positions, loading, onSuggest }: Pos
   const [customDescription, setCustomDescription] = useState("");
 
   const categories = useMemo(
-    () => Array.from(new Set(positions.map(p => p.position_category))).filter(Boolean).sort(),
+    () =>
+      Array.from(new Set(positions.map(p => p.position_category)))
+        .filter(Boolean)
+        .sort(),
     [positions],
   );
   const difficulties = useMemo(
-    () => Array.from(new Set(positions.map(p => p.difficulty_level))).filter(Boolean).sort(),
+    () =>
+      Array.from(new Set(positions.map(p => p.difficulty_level)))
+        .filter(Boolean)
+        .sort(),
     [positions],
   );
 
@@ -327,7 +337,9 @@ export function PositionSelectionComposer({ positions, loading, onSuggest }: Pos
         </div>
 
         {filtered.length === 0 ? (
-          <div className="text-sm text-muted-foreground">{t("partnerSync.positions.emptyCatalog")}</div>
+          <div className="text-sm text-muted-foreground">
+            {t("partnerSync.positions.emptyCatalog")}
+          </div>
         ) : (
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {filtered.slice(0, 12).map(position => (
@@ -371,7 +383,11 @@ export function PositionSelectionComposer({ positions, loading, onSuggest }: Pos
               rows={2}
               placeholder={t("partnerSync.positions.customDescription")}
             />
-            <Button variant="outline" onClick={() => void handleSuggest(undefined)} disabled={loading}>
+            <Button
+              variant="outline"
+              onClick={() => void handleSuggest(undefined)}
+              disabled={loading}
+            >
               {t("partnerSync.positions.customSuggest")}
             </Button>
           </CardContent>

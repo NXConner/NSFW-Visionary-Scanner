@@ -65,11 +65,7 @@ export function CropRotatePanel({ state, onChange }: Props) {
           Rotation
         </Label>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => handleRotate(-90)}
-          >
+          <Button variant="outline" size="icon" onClick={() => handleRotate(-90)}>
             <RotateCcw className="w-4 h-4" />
           </Button>
           <Slider
@@ -80,17 +76,11 @@ export function CropRotatePanel({ state, onChange }: Props) {
             step={1}
             className="flex-1"
           />
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => handleRotate(90)}
-          >
+          <Button variant="outline" size="icon" onClick={() => handleRotate(90)}>
             <RotateCw className="w-4 h-4" />
           </Button>
         </div>
-        <div className="text-xs text-muted-foreground text-center">
-          {state.rotation}°
-        </div>
+        <div className="text-xs text-muted-foreground text-center">{state.rotation}°</div>
       </div>
 
       {/* Flip Controls */}

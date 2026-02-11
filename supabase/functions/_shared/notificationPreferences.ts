@@ -80,9 +80,10 @@ const normalizeMedicationSchedule = (
 ): MedicationSchedule | null => {
   if (!value || typeof value !== "object") return fallback;
   const schedule = value as Record<string, unknown>;
-  const name = typeof schedule.name === "string" && schedule.name.trim().length > 0
-    ? schedule.name.trim()
-    : "Medication";
+  const name =
+    typeof schedule.name === "string" && schedule.name.trim().length > 0
+      ? schedule.name.trim()
+      : "Medication";
   return {
     name,
     daysOfWeek: normalizeDaysOfWeek(schedule.daysOfWeek),
@@ -98,14 +99,23 @@ export const normalizeNotificationPreferences = (
   return {
     enabled: typeof raw.enabled === "boolean" ? raw.enabled : base.enabled,
     medicationReminders:
-      typeof raw.medicationReminders === "boolean" ? raw.medicationReminders : base.medicationReminders,
+      typeof raw.medicationReminders === "boolean"
+        ? raw.medicationReminders
+        : base.medicationReminders,
     healthAlerts: typeof raw.healthAlerts === "boolean" ? raw.healthAlerts : base.healthAlerts,
     scanReminders: typeof raw.scanReminders === "boolean" ? raw.scanReminders : base.scanReminders,
     weeklyReports: typeof raw.weeklyReports === "boolean" ? raw.weeklyReports : base.weeklyReports,
-    medicationSchedule: normalizeMedicationSchedule(raw.medicationSchedule, base.medicationSchedule),
+    medicationSchedule: normalizeMedicationSchedule(
+      raw.medicationSchedule,
+      base.medicationSchedule,
+    ),
     healthSchedule: normalizeDailySchedule(raw.healthSchedule, base.healthSchedule),
-    weeklyReportSchedule: normalizeWeeklySchedule(raw.weeklyReportSchedule, base.weeklyReportSchedule),
-    timezone: typeof raw.timezone === "string" && raw.timezone.length > 0 ? raw.timezone : base.timezone,
+    weeklyReportSchedule: normalizeWeeklySchedule(
+      raw.weeklyReportSchedule,
+      base.weeklyReportSchedule,
+    ),
+    timezone:
+      typeof raw.timezone === "string" && raw.timezone.length > 0 ? raw.timezone : base.timezone,
   };
 };
 

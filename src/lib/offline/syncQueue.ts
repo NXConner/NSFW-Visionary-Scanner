@@ -3,11 +3,11 @@
  * Background sync queue for offline mode with retry logic and conflict resolution
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
-export type SyncOperation = 'create' | 'update' | 'delete';
-export type SyncStatus = 'pending' | 'syncing' | 'synced' | 'failed' | 'conflict';
-export type SyncPriority = 'low' | 'normal' | 'high' | 'critical';
+export type SyncOperation = "create" | "update" | "delete";
+export type SyncStatus = "pending" | "syncing" | "synced" | "failed" | "conflict";
+export type SyncPriority = "low" | "normal" | "high" | "critical";
 
 export interface SyncQueueItem {
   id: string;
@@ -44,7 +44,7 @@ export interface SyncQueueConfig {
   baseRetryDelay: number; // ms
   maxRetryDelay: number; // ms
   batchSize: number;
-  conflictResolution: 'local' | 'remote' | 'manual';
+  conflictResolution: "local" | "remote" | "manual";
   persistKey: string;
 }
 
@@ -53,8 +53,8 @@ const DEFAULT_CONFIG: SyncQueueConfig = {
   baseRetryDelay: 1000,
   maxRetryDelay: 60000,
   batchSize: 10,
-  conflictResolution: 'local',
-  persistKey: 'morphoscan_sync_queue',
+  conflictResolution: "local",
+  persistKey: "morphoscan_sync_queue",
 };
 
 export type SyncHandler = (item: SyncQueueItem) => Promise<{
@@ -87,7 +87,7 @@ export class SyncQueue {
     entityId: string,
     operation: SyncOperation,
     data: Record<string, unknown>,
-    priority: SyncPriority = 'normal'
+    priority: SyncPriority = "normal",
   ): string {
     const id = uuidv4();
     const now = new Date().toISOString();
@@ -105,7 +105,7 @@ export class SyncQueue {
         maxRetries: this.config.maxRetries,
         priority,
       },
-      status: 'pending',
+      status: "pending",
     };
 
     // Check for existing item with same entity
@@ -113,16 +113,16 @@ export class SyncQueue {
     if (existingKey) {
       // Merge or replace based on operation
       const existing = this.queue.get(existingKey)!;
-      if (operation === 'delete') {
+      if (operation === "delete") {
         // Delete takes precedence
         this.queue.delete(existingKey);
-        if (existing.operation === 'create') {
+        if (existing.operation === "create") {
           // If we created then deleted, just remove both
           this.persistToStorage();
           this.notifyListeners();
           return id;
         }
-      } else if (operation === 'update' && existing.operation === 'create') {
+      } else if (operation === "update" && existing.operation === "create") {
         // Keep as create with updated data
         existing.data = { ...existing.data, ...data };
         existing.metadata.updatedAt = now;
@@ -169,13 +169,14 @@ export class SyncQueue {
     };
 
     return Array.from(this.queue.values())
-      .filter(item => item.status === 'pending')
+      .filter(item => item.status === "pending")
       .filter(item => {
         if (!item.metadata.nextRetryAt) return true;
         return new Date(item.metadata.nextRetryAt) <= new Date();
       })
       .sort((a, b) => {
-        const priorityDiff = priorityOrder[a.metadata.priority] - priorityOrder[b.metadata.priority];
+        const priorityDiff =
+          priorityOrder[a.metadata.priority] - priorityOrder[b.metadata.priority];
         if (priorityDiff !== 0) return priorityDiff;
         return new Date(a.metadata.createdAt).getTime() - new Date(b.metadata.createdAt).getTime();
       });
@@ -185,14 +186,14 @@ export class SyncQueue {
    * Get all failed items
    */
   getFailed(): SyncQueueItem[] {
-    return Array.from(this.queue.values()).filter(item => item.status === 'failed');
+    return Array.from(this.queue.values()).filter(item => item.status === "failed");
   }
 
   /**
    * Get all items with conflicts
    */
   getConflicts(): SyncQueueItem[] {
-    return Array.from(this.queue.values()).filter(item => item.status === 'conflict');
+    return Array.from(this.queue.values()).filter(item => item.status === "conflict");
   }
 
   /**
@@ -209,7 +210,7 @@ export class SyncQueue {
    */
   clearSynced(): void {
     for (const [id, item] of this.queue) {
-      if (item.status === 'synced') {
+      if (item.status === "synced") {
         this.queue.delete(id);
       }
     }
@@ -241,7 +242,7 @@ export class SyncQueue {
     }, intervalMs);
 
     // Listen for online event
-    window.addEventListener('online', this.handleOnline);
+    window.addEventListener("online", this.handleOnline);
   }
 
   /**
@@ -252,7 +253,7 @@ export class SyncQueue {
       clearInterval(this.syncInterval);
       this.syncInterval = null;
     }
-    window.removeEventListener('online', this.handleOnline);
+    window.removeEventListener("online", this.handleOnline);
   }
 
   private handleOnline = (): void => {
@@ -284,7 +285,7 @@ export class SyncQueue {
           continue;
         }
 
-        item.status = 'syncing';
+        item.status = "syncing";
         item.metadata.attempts++;
         item.metadata.updatedAt = new Date().toISOString();
         this.notifyListeners();
@@ -293,31 +294,31 @@ export class SyncQueue {
           const result = await handler(item);
 
           if (result.success) {
-            item.status = 'synced';
+            item.status = "synced";
             synced++;
           } else if (result.conflict) {
-            item.status = 'conflict';
+            item.status = "conflict";
             item.metadata.conflictData = result.remoteData;
             conflicts++;
           } else {
             if (item.metadata.attempts >= item.metadata.maxRetries) {
-              item.status = 'failed';
-              item.metadata.lastError = result.error || 'Max retries exceeded';
+              item.status = "failed";
+              item.metadata.lastError = result.error || "Max retries exceeded";
               failed++;
             } else {
-              item.status = 'pending';
+              item.status = "pending";
               item.metadata.lastError = result.error;
               item.metadata.nextRetryAt = this.calculateNextRetry(item.metadata.attempts);
             }
           }
         } catch (error) {
           if (item.metadata.attempts >= item.metadata.maxRetries) {
-            item.status = 'failed';
-            item.metadata.lastError = error instanceof Error ? error.message : 'Unknown error';
+            item.status = "failed";
+            item.metadata.lastError = error instanceof Error ? error.message : "Unknown error";
             failed++;
           } else {
-            item.status = 'pending';
-            item.metadata.lastError = error instanceof Error ? error.message : 'Unknown error';
+            item.status = "pending";
+            item.metadata.lastError = error instanceof Error ? error.message : "Unknown error";
             item.metadata.nextRetryAt = this.calculateNextRetry(item.metadata.attempts);
           }
         }
@@ -339,18 +340,18 @@ export class SyncQueue {
    */
   async retry(id: string): Promise<boolean> {
     const item = this.queue.get(id);
-    if (!item || item.status !== 'failed') {
+    if (!item || item.status !== "failed") {
       return false;
     }
 
-    item.status = 'pending';
+    item.status = "pending";
     item.metadata.attempts = 0;
     item.metadata.nextRetryAt = undefined;
     this.persistToStorage();
     this.notifyListeners();
 
     await this.sync();
-    return this.queue.get(id)?.status === 'synced';
+    return this.queue.get(id)?.status === "synced";
   }
 
   /**
@@ -358,18 +359,18 @@ export class SyncQueue {
    */
   resolveConflict(id: string, useLocal: boolean): void {
     const item = this.queue.get(id);
-    if (!item || item.status !== 'conflict') {
+    if (!item || item.status !== "conflict") {
       return;
     }
 
     if (useLocal) {
       // Keep local data, reset for sync
-      item.status = 'pending';
+      item.status = "pending";
       item.metadata.attempts = 0;
       item.metadata.conflictData = undefined;
     } else {
       // Use remote data, mark as synced
-      item.status = 'synced';
+      item.status = "synced";
       if (item.metadata.conflictData) {
         item.data = item.metadata.conflictData;
       }
@@ -387,25 +388,29 @@ export class SyncQueue {
    */
   getStats(): SyncQueueStats {
     const items = Array.from(this.queue.values());
-    const pending = items.filter(i => i.status === 'pending');
+    const pending = items.filter(i => i.status === "pending");
 
     return {
       pending: pending.length,
-      syncing: items.filter(i => i.status === 'syncing').length,
-      synced: items.filter(i => i.status === 'synced').length,
-      failed: items.filter(i => i.status === 'failed').length,
-      conflict: items.filter(i => i.status === 'conflict').length,
+      syncing: items.filter(i => i.status === "syncing").length,
+      synced: items.filter(i => i.status === "synced").length,
+      failed: items.filter(i => i.status === "failed").length,
+      conflict: items.filter(i => i.status === "conflict").length,
       total: items.length,
-      oldestPending: pending.length > 0
-        ? pending.sort((a, b) => 
-            new Date(a.metadata.createdAt).getTime() - new Date(b.metadata.createdAt).getTime()
-          )[0].metadata.createdAt
-        : null,
-      newestPending: pending.length > 0
-        ? pending.sort((a, b) => 
-            new Date(b.metadata.createdAt).getTime() - new Date(a.metadata.createdAt).getTime()
-          )[0].metadata.createdAt
-        : null,
+      oldestPending:
+        pending.length > 0
+          ? pending.sort(
+              (a, b) =>
+                new Date(a.metadata.createdAt).getTime() - new Date(b.metadata.createdAt).getTime(),
+            )[0].metadata.createdAt
+          : null,
+      newestPending:
+        pending.length > 0
+          ? pending.sort(
+              (a, b) =>
+                new Date(b.metadata.createdAt).getTime() - new Date(a.metadata.createdAt).getTime(),
+            )[0].metadata.createdAt
+          : null,
     };
   }
 
@@ -421,7 +426,11 @@ export class SyncQueue {
 
   private findExistingItem(entityType: string, entityId: string): string | undefined {
     for (const [id, item] of this.queue) {
-      if (item.entityType === entityType && item.entityId === entityId && item.status === 'pending') {
+      if (
+        item.entityType === entityType &&
+        item.entityId === entityId &&
+        item.status === "pending"
+      ) {
         return id;
       }
     }
@@ -431,7 +440,7 @@ export class SyncQueue {
   private calculateNextRetry(attempts: number): string {
     const delay = Math.min(
       this.config.baseRetryDelay * Math.pow(2, attempts),
-      this.config.maxRetryDelay
+      this.config.maxRetryDelay,
     );
     return new Date(Date.now() + delay).toISOString();
   }
@@ -441,7 +450,7 @@ export class SyncQueue {
       const data = Array.from(this.queue.entries());
       localStorage.setItem(this.config.persistKey, JSON.stringify(data));
     } catch (error) {
-      console.error('Failed to persist sync queue:', error);
+      console.error("Failed to persist sync queue:", error);
     }
   }
 
@@ -451,16 +460,16 @@ export class SyncQueue {
       if (stored) {
         const data: [string, SyncQueueItem][] = JSON.parse(stored);
         this.queue = new Map(data);
-        
+
         // Reset any items that were syncing when we last closed
         for (const item of this.queue.values()) {
-          if (item.status === 'syncing') {
-            item.status = 'pending';
+          if (item.status === "syncing") {
+            item.status = "pending";
           }
         }
       }
     } catch (error) {
-      console.error('Failed to load sync queue:', error);
+      console.error("Failed to load sync queue:", error);
     }
   }
 

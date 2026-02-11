@@ -1,2 +1,2 @@
-export { TutorialPanel } from './TutorialPanel';
-export { GlossaryPanel } from './GlossaryPanel';
+export { TutorialPanel } from "./TutorialPanel";
+export { GlossaryPanel } from "./GlossaryPanel";

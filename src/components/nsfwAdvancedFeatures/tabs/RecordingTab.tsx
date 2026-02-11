@@ -193,15 +193,13 @@ export function RecordingTab({ isActive }: { isActive: boolean }): JSX.Element {
 
           // Ensure we also have `video_recordings` rows (required for video_edits FK).
           await Promise.all(
-            streamRows
-              .filter(Boolean)
-              .map((row: any) =>
-                ensureRecordingForCameraStream({
-                  sessionId: currentSession.id,
-                  cameraStream: row,
-                  durationSeconds: duration,
-                }),
-              ),
+            streamRows.filter(Boolean).map((row: any) =>
+              ensureRecordingForCameraStream({
+                sessionId: currentSession.id,
+                cameraStream: row,
+                durationSeconds: duration,
+              }),
+            ),
           );
 
           await supabase
@@ -284,7 +282,10 @@ export function RecordingTab({ isActive }: { isActive: boolean }): JSX.Element {
         {isRecording && cameraStreams.length > 0 && (
           <div className="grid grid-cols-2 gap-4">
             {cameraStreams.map((stream, index) => (
-              <div key={stream.id} className="relative aspect-video bg-black rounded overflow-hidden">
+              <div
+                key={stream.id}
+                className="relative aspect-video bg-black rounded overflow-hidden"
+              >
                 <video
                   ref={el => {
                     videoRefs.current[index] = el;

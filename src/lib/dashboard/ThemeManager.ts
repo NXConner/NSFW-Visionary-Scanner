@@ -1,11 +1,11 @@
 // Premium Themes Manager
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 export interface Theme {
   id: string;
   name: string;
   description: string;
-  category: 'light' | 'dark' | 'colorful' | 'minimal' | 'premium';
+  category: "light" | "dark" | "colorful" | "minimal" | "premium";
   isPremium: boolean;
   isCustom: boolean;
   preview: string; // gradient or color preview
@@ -36,9 +36,9 @@ export interface ThemeFonts {
 }
 
 export interface ThemeEffects {
-  borderRadius: 'none' | 'small' | 'medium' | 'large' | 'full';
-  shadows: 'none' | 'subtle' | 'medium' | 'dramatic';
-  animations: 'none' | 'minimal' | 'normal' | 'playful';
+  borderRadius: "none" | "small" | "medium" | "large" | "full";
+  shadows: "none" | "subtle" | "medium" | "dramatic";
+  animations: "none" | "minimal" | "normal" | "playful";
   blur: boolean;
   glow: boolean;
 }
@@ -50,220 +50,220 @@ export interface ThemePreferences {
   customCSS?: string;
 }
 
-const STORAGE_KEY = 'custom_themes';
-const PREFS_KEY = 'theme_preferences';
+const STORAGE_KEY = "custom_themes";
+const PREFS_KEY = "theme_preferences";
 
 const BUILT_IN_THEMES: Theme[] = [
   {
-    id: 'default-dark',
-    name: 'Default Dark',
-    description: 'The standard dark theme',
-    category: 'dark',
+    id: "default-dark",
+    name: "Default Dark",
+    description: "The standard dark theme",
+    category: "dark",
     isPremium: false,
     isCustom: false,
-    preview: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+    preview: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
     colors: {
-      primary: '#3b82f6',
-      secondary: '#8b5cf6',
-      accent: '#06b6d4',
-      background: '#0f0f14',
-      surface: '#1a1a24',
-      text: '#ffffff',
-      textMuted: '#9ca3af',
-      border: '#374151',
-      success: '#22c55e',
-      warning: '#f59e0b',
-      error: '#ef4444',
-      info: '#3b82f6'
+      primary: "#3b82f6",
+      secondary: "#8b5cf6",
+      accent: "#06b6d4",
+      background: "#0f0f14",
+      surface: "#1a1a24",
+      text: "#ffffff",
+      textMuted: "#9ca3af",
+      border: "#374151",
+      success: "#22c55e",
+      warning: "#f59e0b",
+      error: "#ef4444",
+      info: "#3b82f6",
     },
     effects: {
-      borderRadius: 'medium',
-      shadows: 'subtle',
-      animations: 'normal',
+      borderRadius: "medium",
+      shadows: "subtle",
+      animations: "normal",
       blur: true,
-      glow: false
-    }
+      glow: false,
+    },
   },
   {
-    id: 'default-light',
-    name: 'Default Light',
-    description: 'Clean light theme',
-    category: 'light',
+    id: "default-light",
+    name: "Default Light",
+    description: "Clean light theme",
+    category: "light",
     isPremium: false,
     isCustom: false,
-    preview: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+    preview: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
     colors: {
-      primary: '#2563eb',
-      secondary: '#7c3aed',
-      accent: '#0891b2',
-      background: '#ffffff',
-      surface: '#f8fafc',
-      text: '#1e293b',
-      textMuted: '#64748b',
-      border: '#e2e8f0',
-      success: '#16a34a',
-      warning: '#d97706',
-      error: '#dc2626',
-      info: '#2563eb'
+      primary: "#2563eb",
+      secondary: "#7c3aed",
+      accent: "#0891b2",
+      background: "#ffffff",
+      surface: "#f8fafc",
+      text: "#1e293b",
+      textMuted: "#64748b",
+      border: "#e2e8f0",
+      success: "#16a34a",
+      warning: "#d97706",
+      error: "#dc2626",
+      info: "#2563eb",
     },
     effects: {
-      borderRadius: 'medium',
-      shadows: 'subtle',
-      animations: 'normal',
+      borderRadius: "medium",
+      shadows: "subtle",
+      animations: "normal",
       blur: false,
-      glow: false
-    }
+      glow: false,
+    },
   },
   {
-    id: 'midnight-purple',
-    name: 'Midnight Purple',
-    description: 'Deep purple accents on dark background',
-    category: 'dark',
+    id: "midnight-purple",
+    name: "Midnight Purple",
+    description: "Deep purple accents on dark background",
+    category: "dark",
     isPremium: true,
     isCustom: false,
-    preview: 'linear-gradient(135deg, #1e1b4b 0%, #581c87 100%)',
+    preview: "linear-gradient(135deg, #1e1b4b 0%, #581c87 100%)",
     colors: {
-      primary: '#a855f7',
-      secondary: '#ec4899',
-      accent: '#f472b6',
-      background: '#0c0a1d',
-      surface: '#1e1b4b',
-      text: '#faf5ff',
-      textMuted: '#c4b5fd',
-      border: '#4c1d95',
-      success: '#34d399',
-      warning: '#fbbf24',
-      error: '#f87171',
-      info: '#a855f7'
+      primary: "#a855f7",
+      secondary: "#ec4899",
+      accent: "#f472b6",
+      background: "#0c0a1d",
+      surface: "#1e1b4b",
+      text: "#faf5ff",
+      textMuted: "#c4b5fd",
+      border: "#4c1d95",
+      success: "#34d399",
+      warning: "#fbbf24",
+      error: "#f87171",
+      info: "#a855f7",
     },
     effects: {
-      borderRadius: 'large',
-      shadows: 'dramatic',
-      animations: 'playful',
+      borderRadius: "large",
+      shadows: "dramatic",
+      animations: "playful",
       blur: true,
-      glow: true
-    }
+      glow: true,
+    },
   },
   {
-    id: 'ocean-breeze',
-    name: 'Ocean Breeze',
-    description: 'Calming blue and teal tones',
-    category: 'colorful',
+    id: "ocean-breeze",
+    name: "Ocean Breeze",
+    description: "Calming blue and teal tones",
+    category: "colorful",
     isPremium: true,
     isCustom: false,
-    preview: 'linear-gradient(135deg, #0c4a6e 0%, #0d9488 100%)',
+    preview: "linear-gradient(135deg, #0c4a6e 0%, #0d9488 100%)",
     colors: {
-      primary: '#0ea5e9',
-      secondary: '#14b8a6',
-      accent: '#06b6d4',
-      background: '#0c1929',
-      surface: '#0c4a6e',
-      text: '#f0f9ff',
-      textMuted: '#7dd3fc',
-      border: '#0369a1',
-      success: '#10b981',
-      warning: '#f59e0b',
-      error: '#f43f5e',
-      info: '#0ea5e9'
+      primary: "#0ea5e9",
+      secondary: "#14b8a6",
+      accent: "#06b6d4",
+      background: "#0c1929",
+      surface: "#0c4a6e",
+      text: "#f0f9ff",
+      textMuted: "#7dd3fc",
+      border: "#0369a1",
+      success: "#10b981",
+      warning: "#f59e0b",
+      error: "#f43f5e",
+      info: "#0ea5e9",
     },
     effects: {
-      borderRadius: 'large',
-      shadows: 'medium',
-      animations: 'normal',
+      borderRadius: "large",
+      shadows: "medium",
+      animations: "normal",
       blur: true,
-      glow: true
-    }
+      glow: true,
+    },
   },
   {
-    id: 'sunset-warmth',
-    name: 'Sunset Warmth',
-    description: 'Warm orange and red gradients',
-    category: 'colorful',
+    id: "sunset-warmth",
+    name: "Sunset Warmth",
+    description: "Warm orange and red gradients",
+    category: "colorful",
     isPremium: true,
     isCustom: false,
-    preview: 'linear-gradient(135deg, #7c2d12 0%, #dc2626 50%, #f59e0b 100%)',
+    preview: "linear-gradient(135deg, #7c2d12 0%, #dc2626 50%, #f59e0b 100%)",
     colors: {
-      primary: '#f97316',
-      secondary: '#ef4444',
-      accent: '#fbbf24',
-      background: '#1c1412',
-      surface: '#451a03',
-      text: '#fff7ed',
-      textMuted: '#fdba74',
-      border: '#9a3412',
-      success: '#84cc16',
-      warning: '#fbbf24',
-      error: '#ef4444',
-      info: '#f97316'
+      primary: "#f97316",
+      secondary: "#ef4444",
+      accent: "#fbbf24",
+      background: "#1c1412",
+      surface: "#451a03",
+      text: "#fff7ed",
+      textMuted: "#fdba74",
+      border: "#9a3412",
+      success: "#84cc16",
+      warning: "#fbbf24",
+      error: "#ef4444",
+      info: "#f97316",
     },
     effects: {
-      borderRadius: 'medium',
-      shadows: 'dramatic',
-      animations: 'playful',
+      borderRadius: "medium",
+      shadows: "dramatic",
+      animations: "playful",
       blur: true,
-      glow: true
-    }
+      glow: true,
+    },
   },
   {
-    id: 'minimal-mono',
-    name: 'Minimal Mono',
-    description: 'Clean monochrome design',
-    category: 'minimal',
+    id: "minimal-mono",
+    name: "Minimal Mono",
+    description: "Clean monochrome design",
+    category: "minimal",
     isPremium: false,
     isCustom: false,
-    preview: 'linear-gradient(135deg, #18181b 0%, #27272a 100%)',
+    preview: "linear-gradient(135deg, #18181b 0%, #27272a 100%)",
     colors: {
-      primary: '#a1a1aa',
-      secondary: '#71717a',
-      accent: '#d4d4d8',
-      background: '#09090b',
-      surface: '#18181b',
-      text: '#fafafa',
-      textMuted: '#a1a1aa',
-      border: '#3f3f46',
-      success: '#a1a1aa',
-      warning: '#a1a1aa',
-      error: '#a1a1aa',
-      info: '#a1a1aa'
+      primary: "#a1a1aa",
+      secondary: "#71717a",
+      accent: "#d4d4d8",
+      background: "#09090b",
+      surface: "#18181b",
+      text: "#fafafa",
+      textMuted: "#a1a1aa",
+      border: "#3f3f46",
+      success: "#a1a1aa",
+      warning: "#a1a1aa",
+      error: "#a1a1aa",
+      info: "#a1a1aa",
     },
     effects: {
-      borderRadius: 'small',
-      shadows: 'none',
-      animations: 'minimal',
+      borderRadius: "small",
+      shadows: "none",
+      animations: "minimal",
       blur: false,
-      glow: false
-    }
+      glow: false,
+    },
   },
   {
-    id: 'neon-cyber',
-    name: 'Neon Cyber',
-    description: 'Cyberpunk-inspired neon colors',
-    category: 'premium',
+    id: "neon-cyber",
+    name: "Neon Cyber",
+    description: "Cyberpunk-inspired neon colors",
+    category: "premium",
     isPremium: true,
     isCustom: false,
-    preview: 'linear-gradient(135deg, #000000 0%, #1a002e 50%, #00ff88 100%)',
+    preview: "linear-gradient(135deg, #000000 0%, #1a002e 50%, #00ff88 100%)",
     colors: {
-      primary: '#00ff88',
-      secondary: '#ff00ff',
-      accent: '#00ffff',
-      background: '#000000',
-      surface: '#0a0a0f',
-      text: '#00ff88',
-      textMuted: '#00cc6a',
-      border: '#00ff8855',
-      success: '#00ff88',
-      warning: '#ffff00',
-      error: '#ff0055',
-      info: '#00ffff'
+      primary: "#00ff88",
+      secondary: "#ff00ff",
+      accent: "#00ffff",
+      background: "#000000",
+      surface: "#0a0a0f",
+      text: "#00ff88",
+      textMuted: "#00cc6a",
+      border: "#00ff8855",
+      success: "#00ff88",
+      warning: "#ffff00",
+      error: "#ff0055",
+      info: "#00ffff",
     },
     effects: {
-      borderRadius: 'none',
-      shadows: 'dramatic',
-      animations: 'playful',
+      borderRadius: "none",
+      shadows: "dramatic",
+      animations: "playful",
       blur: true,
-      glow: true
-    }
-  }
+      glow: true,
+    },
+  },
 ];
 
 export class ThemeManager {
@@ -279,8 +279,8 @@ export class ThemeManager {
 
   private getDefaultPreferences(): ThemePreferences {
     return {
-      currentThemeId: 'default-dark',
-      useSystemTheme: false
+      currentThemeId: "default-dark",
+      useSystemTheme: false,
     };
   }
 
@@ -291,13 +291,13 @@ export class ThemeManager {
         const parsed = JSON.parse(data);
         parsed.forEach((theme: Theme) => this.themes.set(theme.id, theme));
       }
-      
+
       const prefs = localStorage.getItem(PREFS_KEY);
       if (prefs) {
         this.preferences = { ...this.preferences, ...JSON.parse(prefs) };
       }
     } catch (e) {
-      console.error('Failed to load themes:', e);
+      console.error("Failed to load themes:", e);
     }
   }
 
@@ -307,7 +307,7 @@ export class ThemeManager {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(customThemes));
       localStorage.setItem(PREFS_KEY, JSON.stringify(this.preferences));
     } catch (e) {
-      console.error('Failed to save themes:', e);
+      console.error("Failed to save themes:", e);
     }
   }
 
@@ -329,16 +329,16 @@ export class ThemeManager {
     return this.themes.get(id);
   }
 
-  getThemesByCategory(category: Theme['category']): Theme[] {
+  getThemesByCategory(category: Theme["category"]): Theme[] {
     return this.getThemes().filter(t => t.category === category);
   }
 
   getCurrentTheme(): Theme {
     if (this.preferences.useSystemTheme) {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      return this.themes.get(prefersDark ? 'default-dark' : 'default-light')!;
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      return this.themes.get(prefersDark ? "default-dark" : "default-light")!;
     }
-    return this.themes.get(this.preferences.currentThemeId) || this.themes.get('default-dark')!;
+    return this.themes.get(this.preferences.currentThemeId) || this.themes.get("default-dark")!;
   }
 
   setTheme(themeId: string): void {
@@ -352,16 +352,16 @@ export class ThemeManager {
   }
 
   createCustomTheme(name: string, baseThemeId?: string): Theme {
-    const base = baseThemeId ? this.themes.get(baseThemeId) : this.themes.get('default-dark');
+    const base = baseThemeId ? this.themes.get(baseThemeId) : this.themes.get("default-dark");
     const theme: Theme = {
       ...base!,
       id: uuidv4(),
       name,
-      description: 'Custom theme',
+      description: "Custom theme",
       isPremium: false,
       isCustom: true,
       colors: { ...base!.colors },
-      effects: { ...base!.effects }
+      effects: { ...base!.effects },
     };
     this.themes.set(theme.id, theme);
     this.save();
@@ -404,7 +404,7 @@ export class ThemeManager {
 
     this.themes.delete(themeId);
     if (this.preferences.currentThemeId === themeId) {
-      this.preferences.currentThemeId = 'default-dark';
+      this.preferences.currentThemeId = "default-dark";
     }
     this.save();
     this.notifyListeners();
@@ -413,7 +413,7 @@ export class ThemeManager {
 
   applyTheme(theme: Theme): void {
     const root = document.documentElement;
-    
+
     // Apply colors as CSS variables
     Object.entries(theme.colors).forEach(([key, value]) => {
       root.style.setProperty(`--color-${key}`, value);
@@ -421,18 +421,24 @@ export class ThemeManager {
 
     // Apply effects
     if (theme.effects) {
-      const radiusMap = { none: '0', small: '0.25rem', medium: '0.5rem', large: '1rem', full: '9999px' };
-      root.style.setProperty('--border-radius', radiusMap[theme.effects.borderRadius]);
-      root.style.setProperty('--enable-blur', theme.effects.blur ? '1' : '0');
-      root.style.setProperty('--enable-glow', theme.effects.glow ? '1' : '0');
+      const radiusMap = {
+        none: "0",
+        small: "0.25rem",
+        medium: "0.5rem",
+        large: "1rem",
+        full: "9999px",
+      };
+      root.style.setProperty("--border-radius", radiusMap[theme.effects.borderRadius]);
+      root.style.setProperty("--enable-blur", theme.effects.blur ? "1" : "0");
+      root.style.setProperty("--enable-glow", theme.effects.glow ? "1" : "0");
     }
 
     // Apply custom CSS if present
     if (this.preferences.customCSS) {
-      let styleEl = document.getElementById('custom-theme-css');
+      let styleEl = document.getElementById("custom-theme-css");
       if (!styleEl) {
-        styleEl = document.createElement('style');
-        styleEl.id = 'custom-theme-css';
+        styleEl = document.createElement("style");
+        styleEl.id = "custom-theme-css";
         document.head.appendChild(styleEl);
       }
       styleEl.textContent = this.preferences.customCSS;
@@ -468,7 +474,7 @@ export class ThemeManager {
       this.save();
       return theme;
     } catch (e) {
-      console.error('Failed to import theme:', e);
+      console.error("Failed to import theme:", e);
       return null;
     }
   }
@@ -478,7 +484,7 @@ export class ThemeManager {
     this.applyTheme(this.getCurrentTheme());
 
     if (this.preferences.useSystemTheme) {
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
         this.applyTheme(this.getCurrentTheme());
         this.notifyListeners();
       });

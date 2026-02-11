@@ -52,4 +52,3 @@ export interface CockWorshipingContent {
   sections: CockWorshipingSection[];
   resources: CockWorshipingResource[];
 }
-

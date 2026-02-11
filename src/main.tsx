@@ -116,7 +116,7 @@ if (isNative()) {
   // Install mobile error handlers immediately
   safeInit(installMobileErrorHandler);
   // Initialize Capacitor (async, non-blocking)
-  initializeCapacitor().catch((err) => {
+  initializeCapacitor().catch(err => {
     console.warn("[Main] Capacitor init error (non-fatal):", err);
   });
 }
@@ -127,13 +127,13 @@ if (rootEl) {
   try {
     const root = createRoot(rootEl);
     root.render(<App />);
-    
+
     // Hide splash screen after React renders (for Capacitor)
     if (isNative()) {
       // Give React a moment to render, then hide splash
       requestAnimationFrame(() => {
         setTimeout(() => {
-          hideSplashScreen().catch((err) => {
+          hideSplashScreen().catch(err => {
             console.warn("[Main] Failed to hide splash:", err);
           });
         }, 100);

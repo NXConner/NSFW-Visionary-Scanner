@@ -195,15 +195,12 @@ export const usePushNotifications = () => {
     );
 
     // On push notification action performed (user tapped)
-    PushNotifications.addListener(
-      "pushNotificationActionPerformed",
-      (action: ActionPerformed) => {
-        logger.info("Push notification action performed", {
-          actionId: action.actionId,
-          data: action.notification?.data,
-        });
-      },
-    );
+    PushNotifications.addListener("pushNotificationActionPerformed", (action: ActionPerformed) => {
+      logger.info("Push notification action performed", {
+        actionId: action.actionId,
+        data: action.notification?.data,
+      });
+    });
 
     // Local notification action
     LocalNotifications.addListener("localNotificationActionPerformed", action => {

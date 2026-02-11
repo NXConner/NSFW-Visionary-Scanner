@@ -1,11 +1,11 @@
 // Medication Tracking System with Reminders
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 export interface Medication {
   id: string;
   name: string;
   dosage: string;
-  frequency: 'daily' | 'twice_daily' | 'weekly' | 'as_needed' | 'custom';
+  frequency: "daily" | "twice_daily" | "weekly" | "as_needed" | "custom";
   customSchedule?: string[];
   startDate: string;
   endDate?: string;
@@ -30,7 +30,7 @@ export interface MedicationLog {
   id: string;
   medicationId: string;
   timestamp: string;
-  status: 'taken' | 'skipped' | 'late';
+  status: "taken" | "skipped" | "late";
   notes?: string;
   dosageAdjustment?: string;
 }
@@ -44,7 +44,7 @@ export interface MedicationStats {
   lastLogDate?: string;
 }
 
-const STORAGE_KEY = 'medication_tracker';
+const STORAGE_KEY = "medication_tracker";
 
 export class MedicationTracker {
   private medications: Map<string, Medication> = new Map();
@@ -62,7 +62,7 @@ export class MedicationTracker {
         parsed.forEach((med: Medication) => this.medications.set(med.id, med));
       }
     } catch (e) {
-      console.error('Failed to load medications:', e);
+      console.error("Failed to load medications:", e);
     }
   }
 
@@ -71,7 +71,7 @@ export class MedicationTracker {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(this.medications.values())));
       this.notifyListeners();
     } catch (e) {
-      console.error('Failed to save medications:', e);
+      console.error("Failed to save medications:", e);
     }
   }
 
@@ -85,14 +85,14 @@ export class MedicationTracker {
     return () => this.listeners.delete(callback);
   }
 
-  add(medication: Omit<Medication, 'id' | 'logs' | 'createdAt' | 'updatedAt'>): Medication {
+  add(medication: Omit<Medication, "id" | "logs" | "createdAt" | "updatedAt">): Medication {
     const now = new Date().toISOString();
     const med: Medication = {
       ...medication,
       id: uuidv4(),
       logs: [],
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
     this.medications.set(med.id, med);
     this.save();
@@ -126,7 +126,11 @@ export class MedicationTracker {
     return this.getAll().filter(m => m.isActive);
   }
 
-  logDose(medicationId: string, status: MedicationLog['status'], notes?: string): MedicationLog | null {
+  logDose(
+    medicationId: string,
+    status: MedicationLog["status"],
+    notes?: string,
+  ): MedicationLog | null {
     const med = this.medications.get(medicationId);
     if (!med) return null;
 
@@ -135,7 +139,7 @@ export class MedicationTracker {
       medicationId,
       timestamp: new Date().toISOString(),
       status,
-      notes
+      notes,
     };
 
     med.logs.push(log);
@@ -164,7 +168,7 @@ export class MedicationTracker {
       return d >= cutoff;
     });
 
-    const taken = recentLogs.filter(l => l.status === 'taken').length;
+    const taken = recentLogs.filter(l => l.status === "taken").length;
     const adherenceRate = recentLogs.length > 0 ? (taken / recentLogs.length) * 100 : 100;
 
     return {
@@ -172,8 +176,8 @@ export class MedicationTracker {
       activeMedications: active.length,
       adherenceRate: Math.round(adherenceRate),
       streakDays: this.calculateStreak(),
-      missedDoses: recentLogs.filter(l => l.status === 'skipped').length,
-      lastLogDate: allLogs.length > 0 ? allLogs[allLogs.length - 1]?.timestamp : undefined
+      missedDoses: recentLogs.filter(l => l.status === "skipped").length,
+      lastLogDate: allLogs.length > 0 ? allLogs[allLogs.length - 1]?.timestamp : undefined,
     };
   }
 
@@ -183,9 +187,10 @@ export class MedicationTracker {
     for (let i = 0; i < 365; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      const logsForDay = this.getAll().flatMap(m => m.logs)
-        .filter(l => l.timestamp.startsWith(dateStr) && l.status === 'taken');
+      const dateStr = date.toISOString().split("T")[0];
+      const logsForDay = this.getAll()
+        .flatMap(m => m.logs)
+        .filter(l => l.timestamp.startsWith(dateStr) && l.status === "taken");
       if (logsForDay.length > 0) streak++;
       else if (i > 0) break;
     }
@@ -194,13 +199,17 @@ export class MedicationTracker {
 
   getDueReminders(): { medication: Medication; reminder: MedicationReminder }[] {
     const now = new Date();
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     const currentDay = now.getDay();
     const due: { medication: Medication; reminder: MedicationReminder }[] = [];
 
     this.getActive().forEach(med => {
       med.reminders.forEach(reminder => {
-        if (reminder.enabled && reminder.days.includes(currentDay) && reminder.time === currentTime) {
+        if (
+          reminder.enabled &&
+          reminder.days.includes(currentDay) &&
+          reminder.time === currentTime
+        ) {
           due.push({ medication: med, reminder });
         }
       });

@@ -1,5 +1,5 @@
 // Dashboard Manager for Customizable Widget Arrangement
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 export interface DashboardWidget {
   id: string;
@@ -12,17 +12,17 @@ export interface DashboardWidget {
   locked: boolean;
 }
 
-export type WidgetType = 
-  | 'quick_scan' 
-  | 'recent_scans' 
-  | 'health_summary' 
-  | 'achievements' 
-  | 'medication_reminder'
-  | 'symptom_tracker'
-  | 'trend_chart'
-  | 'stats_overview'
-  | 'tutorials_progress'
-  | 'quick_actions';
+export type WidgetType =
+  | "quick_scan"
+  | "recent_scans"
+  | "health_summary"
+  | "achievements"
+  | "medication_reminder"
+  | "symptom_tracker"
+  | "trend_chart"
+  | "stats_overview"
+  | "tutorials_progress"
+  | "quick_actions";
 
 export interface DashboardLayout {
   id: string;
@@ -43,60 +43,60 @@ export interface DashboardPreferences {
   gridSize: number;
 }
 
-const STORAGE_KEY = 'dashboard_layouts';
-const PREFS_KEY = 'dashboard_preferences';
+const STORAGE_KEY = "dashboard_layouts";
+const PREFS_KEY = "dashboard_preferences";
 
 const DEFAULT_WIDGETS: DashboardWidget[] = [
   {
-    id: 'w-1',
-    type: 'quick_scan',
-    title: 'Quick Scan',
+    id: "w-1",
+    type: "quick_scan",
+    title: "Quick Scan",
     position: { x: 0, y: 0 },
     size: { width: 2, height: 2 },
     config: {},
     visible: true,
-    locked: false
+    locked: false,
   },
   {
-    id: 'w-2',
-    type: 'recent_scans',
-    title: 'Recent Scans',
+    id: "w-2",
+    type: "recent_scans",
+    title: "Recent Scans",
     position: { x: 2, y: 0 },
     size: { width: 2, height: 2 },
     config: { limit: 5 },
     visible: true,
-    locked: false
+    locked: false,
   },
   {
-    id: 'w-3',
-    type: 'health_summary',
-    title: 'Health Summary',
+    id: "w-3",
+    type: "health_summary",
+    title: "Health Summary",
     position: { x: 0, y: 2 },
     size: { width: 2, height: 1 },
     config: {},
     visible: true,
-    locked: false
+    locked: false,
   },
   {
-    id: 'w-4',
-    type: 'achievements',
-    title: 'Achievements',
+    id: "w-4",
+    type: "achievements",
+    title: "Achievements",
     position: { x: 2, y: 2 },
     size: { width: 2, height: 1 },
     config: { showRecent: true },
     visible: true,
-    locked: false
+    locked: false,
   },
   {
-    id: 'w-5',
-    type: 'stats_overview',
-    title: 'Stats Overview',
+    id: "w-5",
+    type: "stats_overview",
+    title: "Stats Overview",
     position: { x: 0, y: 3 },
     size: { width: 4, height: 1 },
     config: {},
     visible: true,
-    locked: false
-  }
+    locked: false,
+  },
 ];
 
 export class DashboardManager {
@@ -111,12 +111,12 @@ export class DashboardManager {
 
   private getDefaultPreferences(): DashboardPreferences {
     return {
-      currentLayoutId: 'default',
+      currentLayoutId: "default",
       autoArrange: true,
       showWidgetBorders: true,
       animationsEnabled: true,
       compactMode: false,
-      gridSize: 4
+      gridSize: 4,
     };
   }
 
@@ -127,25 +127,25 @@ export class DashboardManager {
         const parsed = JSON.parse(data);
         parsed.forEach((layout: DashboardLayout) => this.layouts.set(layout.id, layout));
       }
-      
+
       const prefs = localStorage.getItem(PREFS_KEY);
       if (prefs) {
         this.preferences = { ...this.preferences, ...JSON.parse(prefs) };
       }
     } catch (e) {
-      console.error('Failed to load dashboard:', e);
+      console.error("Failed to load dashboard:", e);
     }
 
     // Ensure default layout exists
-    if (!this.layouts.has('default')) {
-      this.layouts.set('default', {
-        id: 'default',
-        name: 'Default Layout',
-        description: 'Standard dashboard layout',
+    if (!this.layouts.has("default")) {
+      this.layouts.set("default", {
+        id: "default",
+        name: "Default Layout",
+        description: "Standard dashboard layout",
         widgets: [...DEFAULT_WIDGETS],
         isDefault: true,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
       this.save();
     }
@@ -157,7 +157,7 @@ export class DashboardManager {
       localStorage.setItem(PREFS_KEY, JSON.stringify(this.preferences));
       this.notifyListeners();
     } catch (e) {
-      console.error('Failed to save dashboard:', e);
+      console.error("Failed to save dashboard:", e);
     }
   }
 
@@ -180,7 +180,7 @@ export class DashboardManager {
   }
 
   getCurrentLayout(): DashboardLayout {
-    return this.layouts.get(this.preferences.currentLayoutId) || this.layouts.get('default')!;
+    return this.layouts.get(this.preferences.currentLayoutId) || this.layouts.get("default")!;
   }
 
   createLayout(name: string, description?: string): DashboardLayout {
@@ -191,7 +191,7 @@ export class DashboardManager {
       widgets: [...DEFAULT_WIDGETS.map(w => ({ ...w, id: uuidv4() }))],
       isDefault: false,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
     this.layouts.set(layout.id, layout);
     this.save();
@@ -209,7 +209,7 @@ export class DashboardManager {
       isDefault: false,
       widgets: source.widgets.map(w => ({ ...w, id: uuidv4() })),
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
     this.layouts.set(layout.id, layout);
     this.save();
@@ -217,10 +217,10 @@ export class DashboardManager {
   }
 
   deleteLayout(id: string): boolean {
-    if (id === 'default') return false;
+    if (id === "default") return false;
     const result = this.layouts.delete(id);
     if (result && this.preferences.currentLayoutId === id) {
-      this.preferences.currentLayoutId = 'default';
+      this.preferences.currentLayoutId = "default";
     }
     this.save();
     return result;
@@ -246,7 +246,7 @@ export class DashboardManager {
       size: this.getDefaultSize(type),
       config: {},
       visible: true,
-      locked: false
+      locked: false,
     };
 
     layout.widgets.push(widget);
@@ -255,7 +255,11 @@ export class DashboardManager {
     return widget;
   }
 
-  updateWidget(layoutId: string, widgetId: string, updates: Partial<DashboardWidget>): DashboardWidget | null {
+  updateWidget(
+    layoutId: string,
+    widgetId: string,
+    updates: Partial<DashboardWidget>,
+  ): DashboardWidget | null {
     const layout = this.layouts.get(layoutId);
     if (!layout) return null;
 
@@ -292,7 +296,7 @@ export class DashboardManager {
   private findNextPosition(layout: DashboardLayout): { x: number; y: number } {
     const grid = this.preferences.gridSize;
     const occupied = new Set<string>();
-    
+
     layout.widgets.forEach(w => {
       for (let x = w.position.x; x < w.position.x + w.size.width; x++) {
         for (let y = w.position.y; y < w.position.y + w.size.height; y++) {
@@ -322,7 +326,7 @@ export class DashboardManager {
       trend_chart: { width: 3, height: 2 },
       stats_overview: { width: 4, height: 1 },
       tutorials_progress: { width: 2, height: 1 },
-      quick_actions: { width: 1, height: 2 }
+      quick_actions: { width: 1, height: 2 },
     };
     return sizes[type] || { width: 2, height: 1 };
   }
@@ -339,16 +343,24 @@ export class DashboardManager {
 
   getAvailableWidgetTypes(): { type: WidgetType; name: string; description: string }[] {
     return [
-      { type: 'quick_scan', name: 'Quick Scan', description: 'Start a new scan quickly' },
-      { type: 'recent_scans', name: 'Recent Scans', description: 'View your recent scan history' },
-      { type: 'health_summary', name: 'Health Summary', description: 'Overview of health metrics' },
-      { type: 'achievements', name: 'Achievements', description: 'Recent achievement progress' },
-      { type: 'medication_reminder', name: 'Medication Reminder', description: 'Upcoming medication reminders' },
-      { type: 'symptom_tracker', name: 'Symptom Tracker', description: 'Quick symptom logging' },
-      { type: 'trend_chart', name: 'Trend Chart', description: 'Visual trend analysis' },
-      { type: 'stats_overview', name: 'Stats Overview', description: 'Key statistics at a glance' },
-      { type: 'tutorials_progress', name: 'Tutorials Progress', description: 'Tutorial completion status' },
-      { type: 'quick_actions', name: 'Quick Actions', description: 'Frequently used actions' }
+      { type: "quick_scan", name: "Quick Scan", description: "Start a new scan quickly" },
+      { type: "recent_scans", name: "Recent Scans", description: "View your recent scan history" },
+      { type: "health_summary", name: "Health Summary", description: "Overview of health metrics" },
+      { type: "achievements", name: "Achievements", description: "Recent achievement progress" },
+      {
+        type: "medication_reminder",
+        name: "Medication Reminder",
+        description: "Upcoming medication reminders",
+      },
+      { type: "symptom_tracker", name: "Symptom Tracker", description: "Quick symptom logging" },
+      { type: "trend_chart", name: "Trend Chart", description: "Visual trend analysis" },
+      { type: "stats_overview", name: "Stats Overview", description: "Key statistics at a glance" },
+      {
+        type: "tutorials_progress",
+        name: "Tutorials Progress",
+        description: "Tutorial completion status",
+      },
+      { type: "quick_actions", name: "Quick Actions", description: "Frequently used actions" },
     ];
   }
 
