@@ -7,6 +7,7 @@ This document is the **single actionable checklist** of what still needs to be d
 For deeper supporting docs, see:
 
 - `docs/tracking/CONSOLIDATED_DOCS_MASTER.md` (canonical finish plan)
+- `docs/operations/EXTERNAL_RELEASE_TASKS_RUNBOOK.md` (staging/prod runbook for remaining external tasks)
 - `docs/guides/testing/PRODUCTION_TESTING_GUIDE.md` (device QA matrix)
 - `docs/guides/integrations/payments/STRIPE_SETUP_GUIDE.md` (payments)
 - `docs/guides/integrations/notifications/FCM_SETUP.md` (push)
@@ -59,9 +60,13 @@ For deeper supporting docs, see:
 - [ ] **RLS + policies audit**
 - [ ] Run through `docs/security/rls/RLS_AUDIT_CHECKLIST.md` for all PII/health/payment/device tables
   - [ ] Confirm storage buckets are private where appropriate and require signed URLs
+  - [ ] Run `docs/security/rls/RLS_STORAGE_AUDIT_QUERIES.sql` in Supabase SQL editor
 - [ ] **Migrations**
   - [ ] Apply `supabase/migrations/*.sql` to the production project
-  - [ ] Verify `npm run db:types:check` passes against production schema (or staging mirror)
+    - [ ] Prefer: `npm run db:migrate:remote -- --dry-run` then `npm run db:migrate:remote`
+  - [ ] Verify types match schema:
+    - [ ] Local mirror: `npm run db:types:check` (requires local Supabase)
+    - [ ] Remote project: `npm run db:types:remote:check` (requires Supabase CLI auth)
 - [ ] **Backups + retention**
   - [ ] Confirm backup/restore procedure
   - [ ] Validate account deletion + retention cleanup jobs (edge functions) behave correctly
@@ -137,6 +142,7 @@ Canonical doc: `docs/guides/integrations/notifications/FCM_SETUP.md`
 - [ ] **Define rollback**
   - [ ] Versioned artifacts (docker tags or static build versions)
   - [ ] One-command rollback documented
+  - [ ] Optional: use `.github/workflows/manual-deploy.yml` to redeploy an older ref/SHA
 
 ### 6) Observability + incident readiness
 

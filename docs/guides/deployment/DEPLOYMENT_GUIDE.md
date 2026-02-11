@@ -56,8 +56,8 @@ Create a `.env.production` file or configure environment variables in your hosti
 # Supabase Project URL
 VITE_SUPABASE_URL=https://your-project.supabase.co
 
-# Supabase Publishable Key (anon key)
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+# Supabase Publishable Key (anon/public key)
+VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 # Supabase Project Reference ID
 VITE_SUPABASE_PROJECT_ID=your-project-ref
@@ -73,7 +73,7 @@ VITE_APP_VERSION=hybrid
 VITE_DISTRIBUTION_CHANNEL=direct
 
 # Environment: 'production', 'staging', 'development'
-VITE_APP_ENVIRONMENT=production
+VITE_APP_ENV=production
 ```
 
 #### 3. **Security Configuration** (Required)
@@ -267,7 +267,7 @@ vercel --prod
 ```bash
 # Via CLI
 vercel env add VITE_SUPABASE_URL production
-vercel env add VITE_SUPABASE_ANON_KEY production
+vercel env add VITE_SUPABASE_PUBLISHABLE_KEY production
 # ... add all required variables
 
 # Or via Vercel Dashboard:
@@ -335,7 +335,7 @@ netlify deploy --prod
 ```bash
 # Via CLI
 netlify env:set VITE_SUPABASE_URL "https://..."
-netlify env:set VITE_SUPABASE_ANON_KEY "eyJ..."
+netlify env:set VITE_SUPABASE_PUBLISHABLE_KEY "eyJ..."
 
 # Or via Netlify Dashboard:
 # Site Settings > Environment Variables
@@ -937,7 +937,7 @@ jobs:
         run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           # ... add all required env vars
 
       - name: Deploy to Vercel

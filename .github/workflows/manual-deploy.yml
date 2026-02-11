@@ -1,0 +1,135 @@
+name: Manual Deploy (staging/production)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        required: true
+        options:
+          - staging
+          - production
+      ref:
+        description: "Git ref (branch/tag/SHA) to deploy"
+        type: string
+        required: true
+        default: "main"
+      migrations_dry_run:
+        description: "Preview Supabase migrations (db push --dry-run)"
+        type: boolean
+        required: true
+        default: true
+      run_migrations:
+        description: "Apply Supabase migrations (db push)"
+        type: boolean
+        required: true
+        default: false
+      deploy_edge_functions:
+        description: "Deploy Supabase edge functions"
+        type: boolean
+        required: true
+        default: true
+      deploy_app:
+        description: "Run the deploy command for this environment"
+        type: boolean
+        required: true
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manual-deploy-${{ github.workflow }}-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Preview database migrations (dry-run)
+        if: inputs.migrations_dry_run
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: npm run db:migrate:remote -- --dry-run
+
+      - name: Apply database migrations
+        if: inputs.run_migrations
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: npm run db:migrate:remote
+
+      - name: Deploy Supabase edge functions
+        if: inputs.deploy_edge_functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: >-
+          node -e "const fs=require('fs');const path=require('path');
+          const root=path.join(process.cwd(),'supabase','functions');
+          const list=fs.readdirSync(root,{withFileTypes:true})
+            .filter(d=>d.isDirectory())
+            .map(d=>d.name)
+            .filter(n=>n && n!=='_shared' && !n.startsWith('.'));
+          console.log('Functions to deploy:', list.length);
+          for(const name of list){
+            const {spawnSync}=require('child_process');
+            const r=spawnSync('npx',['supabase','functions','deploy',name,'--project-ref',process.env.SUPABASE_PROJECT_REF,'--use-api','--yes'],{stdio:'inherit'});
+            if(r.status!==0) process.exit(r.status||1);
+          }"
+
+      - name: Deploy application (staging)
+        if: inputs.deploy_app && inputs.environment == 'staging'
+        env:
+          STAGING_DEPLOY_ENABLED: ${{ secrets.STAGING_DEPLOY_ENABLED }}
+          STAGING_DEPLOY_COMMAND: ${{ secrets.STAGING_DEPLOY_COMMAND }}
+        run: |
+          set -euo pipefail
+          if [ "${STAGING_DEPLOY_ENABLED:-}" != "true" ]; then
+            echo "STAGING_DEPLOY_ENABLED is not true; skipping."
+            exit 0
+          fi
+          if [ -z "${STAGING_DEPLOY_COMMAND:-}" ]; then
+            echo "Missing STAGING_DEPLOY_COMMAND"
+            exit 1
+          fi
+          eval "${STAGING_DEPLOY_COMMAND}"
+
+      - name: Deploy application (production)
+        if: inputs.deploy_app && inputs.environment == 'production'
+        env:
+          PRODUCTION_DEPLOY_ENABLED: ${{ secrets.PRODUCTION_DEPLOY_ENABLED }}
+          PRODUCTION_DEPLOY_COMMAND: ${{ secrets.PRODUCTION_DEPLOY_COMMAND }}
+        run: |
+          set -euo pipefail
+          if [ "${PRODUCTION_DEPLOY_ENABLED:-}" != "true" ]; then
+            echo "PRODUCTION_DEPLOY_ENABLED is not true; skipping."
+            exit 0
+          fi
+          if [ -z "${PRODUCTION_DEPLOY_COMMAND:-}" ]; then
+            echo "Missing PRODUCTION_DEPLOY_COMMAND"
+            exit 1
+          fi
+          eval "${PRODUCTION_DEPLOY_COMMAND}"
+
