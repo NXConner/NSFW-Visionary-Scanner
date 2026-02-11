@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import { resolve } from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
+import { configDefaults } from "vitest/config";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -163,6 +164,29 @@ export default defineConfig(({ mode }) => {
         strategies: "generateSW",
       }),
     ].filter(Boolean),
+    test: {
+      // Most unit tests exercise UI/components and require DOM APIs.
+      environment: "jsdom",
+      globals: true,
+      css: true,
+      setupFiles: ["./src/test/setup.ts"],
+      // Prevent "opaque origin" localStorage errors in jsdom.
+      environmentOptions: {
+        jsdom: {
+          url: "http://localhost/",
+        },
+      },
+      // Keep Vitest focused on unit/integration tests; Playwright owns /e2e.
+      exclude: [
+        ...configDefaults.exclude,
+        "**/e2e/**",
+        "**/playwright-report/**",
+        "**/test-results/**",
+      ],
+      clearMocks: true,
+      restoreMocks: true,
+      mockReset: true,
+    },
     resolve: {
       alias: [
         { find: "@", replacement: resolve(__dirname, "./src") },
