@@ -167,7 +167,7 @@ if (rootEl) {
         }, 100);
       });
     }
-  } catch (err) {
+  } catch {
     // Emergency fallback: show error message instead of infinite loader
     // Also hide splash screen on error so user sees the error
     if (isLikelyNativeBoot) {
