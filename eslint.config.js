@@ -12,6 +12,8 @@ export default tseslint.config(
       "**/dist/**",
       "**/build/**",
       "**/coverage/**",
+      "**/playwright-report/**",
+      "**/test-results/**",
       "**/.vite/**",
       "**/.turbo/**",
       "**/.cache/**",

@@ -12,7 +12,8 @@ test.describe("Core navigation flow (smoke)", () => {
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
 
-    await page.goto("/");
+    // Main app experience lives at /app (root "/" is the marketing/landing page).
+    await page.goto("/app");
     await waitForAppReady(page);
     await expect(page).toHaveTitle(/MorphoScan Pro/);
 

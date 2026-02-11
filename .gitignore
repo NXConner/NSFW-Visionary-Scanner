@@ -6,6 +6,11 @@ node_modules/
 dist/
 build/
 
+# Test outputs
+coverage/
+playwright-report/
+test-results/
+
 # SDK  
 android-sdk/
 

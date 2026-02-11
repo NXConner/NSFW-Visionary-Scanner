@@ -7,7 +7,8 @@ test.describe("DLC restore purchases + device management (hybrid)", () => {
   });
 
   test("Profile -> Settings shows DLC card; restore + device manager open", async ({ page }) => {
-    await page.goto("/");
+    // Main app experience lives at /app (root "/" is the marketing/landing page).
+    await page.goto("/app");
     await waitForAppReady(page);
 
     // Navigate to Profile tab

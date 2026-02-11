@@ -72,6 +72,6 @@ test.describe("NSFW Session Lock", () => {
       return;
     }
 
-    await expect(page.getByText(/nsfw session locked/i)).toBeVisible();
+    await expect(page.getByText(/panic lock active/i)).toBeVisible();
   });
 });
