@@ -280,8 +280,13 @@
             hostname.endsWith(".lovable.app") ||
             hostname.endsWith(".cursor.sh") ||
             hostname.endsWith(".cursor.so");
+          var protocol = (location.protocol || "").toLowerCase();
+          var isLikelyNativeHost =
+            protocol === "capacitor:" ||
+            protocol === "file:" ||
+            (protocol === "https:" && hostname === "localhost");
 
-          if (!isPreview) return;
+          if (!isPreview && !isLikelyNativeHost) return;
 
           // Best-effort: unregister SW + clear caches.
           if ("serviceWorker" in navigator) {

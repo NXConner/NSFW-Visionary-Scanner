@@ -57,7 +57,12 @@ const queryClient = new QueryClient();
 
 // Register addon contributions as early as possible so the DLC manager can see
 // fallback packages/manifests/modules during initialization.
-bootstrapAddons();
+try {
+  bootstrapAddons();
+} catch (error) {
+  // Never let addon bootstrap failures block first render on mobile.
+  console.error("[App] Addon bootstrap failed (continuing without addon contributions):", error);
+}
 
 const Auth = lazy(() => import("./pages/Auth"));
 const AuthCallback = lazy(() =>

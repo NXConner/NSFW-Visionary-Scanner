@@ -47,7 +47,13 @@ export function BootWatchdog({
   const isPreviewHost = useMemo(() => {
     try {
       const hostname = window.location.hostname.toLowerCase();
+      const protocol = window.location.protocol.toLowerCase();
+      const isLikelyNative =
+        protocol === "capacitor:" ||
+        protocol === "file:" ||
+        (protocol === "https:" && hostname === "localhost");
       return (
+        isLikelyNative ||
         hostname.includes("lovable") ||
         hostname.includes("cursor") ||
         hostname.endsWith(".lovableproject.com") ||
