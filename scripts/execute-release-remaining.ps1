@@ -1,0 +1,212 @@
+# Release Remaining Work Orchestrator (PowerShell)
+# Runs automated P0-P3 release tasks in sequence.
+
+param(
+    [ValidateSet("staging", "production")]
+    [string]$Environment = "staging",
+
+    [string]$EnvFile = "",
+    [string]$Repo = "",
+
+    [switch]$SkipReleaseReadiness,
+    [switch]$SkipEnvValidation,
+    [switch]$SkipSecretsProvision,
+    [switch]$SkipRemoteOps,
+    [switch]$ApplyMigrations,
+    [switch]$SkipTypesCheck,
+    [switch]$DryRun,
+
+    [switch]$TriggerManualDeploy,
+    [string]$DeployRef = "",
+    [switch]$RunMigrationsInWorkflow,
+    [switch]$SkipEdgeFunctions,
+    [switch]$SkipAppDeploy,
+
+    [switch]$Monetized,
+    [switch]$RequirePush,
+    [switch]$RequireNSFW
+)
+
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+Set-Location $repoRoot
+
+if ($DryRun -and $ApplyMigrations) {
+    throw "DryRun and ApplyMigrations cannot both be enabled."
+}
+
+Write-Host ""
+Write-Host "=== RELEASE REMAINING ORCHESTRATOR ===" -ForegroundColor Cyan
+Write-Host "Environment: $Environment" -ForegroundColor DarkGray
+Write-Host "Repo: $repoRoot" -ForegroundColor DarkGray
+Write-Host ""
+
+$results = [ordered]@{
+    Passed  = @()
+    Failed  = @()
+    Skipped = @()
+}
+
+function Add-Result {
+    param(
+        [string]$Bucket,
+        [string]$Message
+    )
+    $results[$Bucket] += $Message
+}
+
+function Invoke-NpmScript {
+    param(
+        [string]$Script,
+        [string[]]$ScriptArgs = @()
+    )
+
+    $commandArgs = @("run", $Script)
+    if ($ScriptArgs.Count -gt 0) {
+        $commandArgs += "--"
+        $commandArgs += $ScriptArgs
+    }
+
+    & npm @commandArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "npm run $Script failed with exit code $LASTEXITCODE"
+    }
+}
+
+function Invoke-Step {
+    param(
+        [string]$Name,
+        [scriptblock]$Action,
+        [switch]$Skip,
+        [string]$SkipReason = "flagged"
+    )
+
+    if ($Skip) {
+        Add-Result -Bucket "Skipped" -Message "$Name (skipped: $SkipReason)"
+        Write-Host "  ⏭️  $Name (skipped)" -ForegroundColor Yellow
+        return
+    }
+
+    Write-Host ">> $Name" -ForegroundColor Cyan
+    try {
+        & $Action
+        Add-Result -Bucket "Passed" -Message $Name
+        Write-Host "  ✅ $Name" -ForegroundColor Green
+    }
+    catch {
+        Add-Result -Bucket "Failed" -Message "$Name - $($_.Exception.Message)"
+        Write-Host "  ❌ $Name" -ForegroundColor Red
+    }
+}
+
+function Require-EnvFile {
+    if ([string]::IsNullOrWhiteSpace($EnvFile)) {
+        throw "EnvFile is required for this step. Pass -EnvFile <path>."
+    }
+    if (-not (Test-Path $EnvFile)) {
+        throw "EnvFile not found: $EnvFile"
+    }
+}
+
+# 1) Release readiness gate
+Invoke-Step -Name "Release readiness gate" -Skip:$SkipReleaseReadiness -Action {
+    Invoke-NpmScript -Script "check:release-readiness" -ScriptArgs @(
+        "--report-file", "artifacts/release-readiness-report.json"
+    )
+}
+
+# 2) Validate release env file quality
+Invoke-Step -Name "Release env validation" -Skip:$SkipEnvValidation -Action {
+    Require-EnvFile
+    $envArgs = @(
+        "--env-file", $EnvFile,
+        "--environment", $Environment,
+        "--report-file", "artifacts/release-env-validation.$Environment.json"
+    )
+    if ($Monetized) { $envArgs += "--monetized" }
+    if ($RequirePush) { $envArgs += "--require-push" }
+    if ($RequireNSFW) { $envArgs += "--require-nsfw" }
+
+    Invoke-NpmScript -Script "release:env:validate" -ScriptArgs $envArgs
+}
+
+# 3) Provision GH/Supabase secrets
+Invoke-Step -Name "Release secrets provisioning" -Skip:$SkipSecretsProvision -Action {
+    Require-EnvFile
+    $secretsArgs = @(
+        "--environment", $Environment,
+        "--env-file", $EnvFile
+    )
+    if (-not [string]::IsNullOrWhiteSpace($Repo)) {
+        $secretsArgs += @("--repo", $Repo)
+    }
+    if ($DryRun) {
+        $secretsArgs += "--dry-run"
+    }
+    Invoke-NpmScript -Script "release:secrets:provision" -ScriptArgs $secretsArgs
+}
+
+# 4) Remote migrations/types checks
+Invoke-Step -Name "Remote release ops (migrations/types)" -Skip:$SkipRemoteOps -Action {
+    Require-EnvFile
+    $remoteArgs = @(
+        "--env-file", $EnvFile
+    )
+    if (-not $SkipTypesCheck) {
+        $remoteArgs += "--types-check"
+    }
+    if ($ApplyMigrations) {
+        $remoteArgs += "--apply"
+    }
+    Invoke-NpmScript -Script "release:remote:ops" -ScriptArgs $remoteArgs
+}
+
+# 5) Optional dispatch of manual-deploy workflow
+Invoke-Step -Name "Dispatch manual deploy workflow" -Skip:(-not $TriggerManualDeploy) -SkipReason "TriggerManualDeploy not set" -Action {
+    $resolvedRef = $DeployRef
+    if ([string]::IsNullOrWhiteSpace($resolvedRef)) {
+        $resolvedRef = (git rev-parse --abbrev-ref HEAD).Trim()
+    }
+
+    $runMigrations = if ($RunMigrationsInWorkflow) { "true" } else { "false" }
+    $deployEdgeFunctions = if ($SkipEdgeFunctions) { "false" } else { "true" }
+    $deployApp = if ($SkipAppDeploy) { "false" } else { "true" }
+
+    & gh workflow run "manual-deploy.yml" `
+        -f "environment=$Environment" `
+        -f "ref=$resolvedRef" `
+        -f "migrations_dry_run=true" `
+        -f "run_migrations=$runMigrations" `
+        -f "deploy_edge_functions=$deployEdgeFunctions" `
+        -f "deploy_app=$deployApp"
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to dispatch manual-deploy workflow."
+    }
+
+    Write-Host "  ℹ️  Use 'gh run list --workflow manual-deploy.yml --limit 1' to monitor status." -ForegroundColor Yellow
+}
+
+Write-Host ""
+Write-Host "=== SUMMARY ===" -ForegroundColor Cyan
+Write-Host "Passed: $($results.Passed.Count)" -ForegroundColor Green
+Write-Host "Failed: $($results.Failed.Count)" -ForegroundColor Red
+Write-Host "Skipped: $($results.Skipped.Count)" -ForegroundColor Yellow
+
+if ($results.Failed.Count -gt 0) {
+    Write-Host ""
+    Write-Host "Failed steps:" -ForegroundColor Red
+    $results.Failed | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
+}
+
+Write-Host ""
+Write-Host "Manual external tasks still required:" -ForegroundColor Yellow
+Write-Host "  - Run docs/security/rls/RLS_STORAGE_AUDIT_QUERIES.sql in Supabase SQL editor"
+Write-Host "  - Validate Stripe webhook events + paid E2E on staging/prod"
+Write-Host "  - Validate push delivery on 1 real Android + 1 real iOS device"
+Write-Host "  - Execute Android/iOS store submission and compliance signoff"
+
+Write-Host ""
+if ($results.Failed.Count -gt 0) {
+    exit 1
+}
+exit 0

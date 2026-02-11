@@ -15,9 +15,47 @@ Use an environment file outside git (example: `.env.staging.local`) and run:
 
 Template: `config/release/release.secrets.template.env`
 
+### PowerShell one-command flow (recommended)
+
+> Requires PowerShell 7 (`pwsh`) on the executing machine.
+
+```powershell
+# Dry-run orchestration (readiness + env validation + secrets dry-run + migration dry-run)
+pwsh -File scripts/execute-release-remaining.ps1 `
+  -Environment staging `
+  -EnvFile .env.staging.local `
+  -Repo OWNER/REPO `
+  -DryRun `
+  -Monetized `
+  -RequirePush `
+  -RequireNSFW
+
+# Apply flow (provisions secrets + applies migrations + remote types check)
+pwsh -File scripts/execute-release-remaining.ps1 `
+  -Environment production `
+  -EnvFile .env.production.local `
+  -Repo OWNER/REPO `
+  -ApplyMigrations `
+  -Monetized `
+  -RequirePush `
+  -RequireNSFW `
+  -TriggerManualDeploy
+```
+
+`npm` wrapper variant:
+
+```powershell
+npm run release:remaining -- -Environment staging -EnvFile .env.staging.local -Repo OWNER/REPO -DryRun -Monetized -RequirePush -RequireNSFW
+```
+
+### Step-by-step (script equivalents)
+
 ```bash
 # 0) Run in-repo release readiness gates (writes JSON report artifact)
 npm run check:release-readiness -- --report-file artifacts/release-readiness-report.json
+
+# 0b) Validate your private env file before provisioning/apply
+npm run release:env:validate -- --environment staging --env-file .env.staging.local --monetized --require-push --require-nsfw
 
 # 1) Provision GitHub + Supabase secrets from env file
 npm run release:secrets:provision -- --environment staging --env-file .env.staging.local --repo OWNER/REPO

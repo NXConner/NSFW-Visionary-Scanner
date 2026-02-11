@@ -29,6 +29,10 @@ For deeper supporting docs, see:
 > Run automation: `pwsh -File scripts/complete-remaining.ps1`
 >
 > Run release gate: `npm run check:release-readiness -- --report-file artifacts/release-readiness-report.json`
+>
+> Validate private release env file: `npm run release:env:validate -- --environment <staging|production> --env-file <private-env-file> [--monetized --require-push --require-nsfw]`
+>
+> One-command release executor: `pwsh -File scripts/execute-release-remaining.ps1 -Environment <staging|production> -EnvFile <private-env-file> -Repo <owner/repo> [-DryRun] [-ApplyMigrations] [-TriggerManualDeploy]`
 
 ### Automated verification coverage (repo-side)
 

@@ -347,7 +347,14 @@ addCheck({
   severity: "error",
   message: "eslint-plugin-jsx-a11y is configured",
 });
-for (const scriptName of ["a11y:audit", "perf:load", "perf:nsfw-media", "analyze:bundle"]) {
+for (const scriptName of [
+  "a11y:audit",
+  "perf:load",
+  "perf:nsfw-media",
+  "analyze:bundle",
+  "release:env:validate",
+  "release:remaining",
+]) {
   addCheck({
     section: "P2-PERF",
     key: `script:${scriptName}`,

@@ -105,10 +105,17 @@ function run(command, args, { description, dryRun = false } = {}) {
 }
 
 function commandExists(command) {
-  const result = spawnSync("bash", ["-lc", `command -v ${command}`], {
+  const primary = spawnSync(command, ["--version"], {
     stdio: "ignore",
+    shell: process.platform === "win32",
   });
-  return result.status === 0;
+  if (primary.status === 0) return true;
+
+  const fallback = spawnSync(command, ["-v"], {
+    stdio: "ignore",
+    shell: process.platform === "win32",
+  });
+  return fallback.status === 0;
 }
 
 function readOriginRepo() {
