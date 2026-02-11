@@ -2,10 +2,6 @@
 node_modules/
 .npm
 
-# Build outputs
-dist/
-build/
-
 # SDK  
 android-sdk/
 
@@ -13,13 +9,3 @@ android-sdk/
 .idea/
 *.iml
 .vscode/
-
-# Logs
-*.log
-
-# Environment
-.env.local
-.env.*.local
-
-# Large generated files
-*.pdf
