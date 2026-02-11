@@ -1,13 +1,39 @@
 // Customizable Dashboard Component
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { 
-  LayoutGrid, Plus, Settings, Lock, Unlock, Eye, EyeOff, Trash2, 
-  Copy, RotateCcw, GripVertical, Maximize2, Minimize2, X,
-  Camera, Clock, Heart, Trophy, Pill, Activity, TrendingUp, BarChart3, BookOpen, Zap
-} from 'lucide-react';
-import { getDashboardManager, DashboardWidget, DashboardLayout, WidgetType } from '@/lib/dashboard/DashboardManager';
-import { cn } from '@/lib/utils';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
+import {
+  LayoutGrid,
+  Plus,
+  Settings,
+  Lock,
+  Unlock,
+  Eye,
+  EyeOff,
+  Trash2,
+  Copy,
+  RotateCcw,
+  GripVertical,
+  Maximize2,
+  Minimize2,
+  X,
+  Camera,
+  Clock,
+  Heart,
+  Trophy,
+  Pill,
+  Activity,
+  TrendingUp,
+  BarChart3,
+  BookOpen,
+  Zap,
+} from "lucide-react";
+import {
+  getDashboardManager,
+  DashboardWidget,
+  DashboardLayout,
+  WidgetType,
+} from "@/lib/dashboard/DashboardManager";
+import { cn } from "@/lib/utils";
 
 interface CustomizableDashboardProps {
   className?: string;
@@ -24,10 +50,13 @@ const WIDGET_ICONS: Record<WidgetType, React.ElementType> = {
   trend_chart: TrendingUp,
   stats_overview: BarChart3,
   tutorials_progress: BookOpen,
-  quick_actions: Zap
+  quick_actions: Zap,
 };
 
-export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ className, onWidgetClick }) => {
+export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
+  className,
+  onWidgetClick,
+}) => {
   const [layout, setLayout] = useState<DashboardLayout | null>(null);
   const [layouts, setLayouts] = useState<DashboardLayout[]>([]);
   const [editMode, setEditMode] = useState(false);
@@ -49,8 +78,8 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ cl
     if (!layout) return;
     // Update positions based on new order
     newOrder.forEach((widget, index) => {
-      manager.updateWidget(layout.id, widget.id, { 
-        position: { x: index % 4, y: Math.floor(index / 4) } 
+      manager.updateWidget(layout.id, widget.id, {
+        position: { x: index % 4, y: Math.floor(index / 4) },
       });
     });
     refresh();
@@ -93,7 +122,7 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ cl
   };
 
   const createNewLayout = () => {
-    const name = prompt('Enter layout name:');
+    const name = prompt("Enter layout name:");
     if (name) {
       manager.createLayout(name);
       refresh();
@@ -102,7 +131,7 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ cl
 
   const duplicateLayout = () => {
     if (!layout) return;
-    const name = prompt('Enter name for duplicate:');
+    const name = prompt("Enter name for duplicate:");
     if (name) {
       manager.duplicateLayout(layout.id, name);
       refresh();
@@ -110,13 +139,13 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ cl
   };
 
   const resetLayout = () => {
-    if (!layout || !confirm('Reset layout to default?')) return;
+    if (!layout || !confirm("Reset layout to default?")) return;
     manager.resetLayout(layout.id);
     refresh();
   };
 
   const deleteLayout = () => {
-    if (!layout || layout.isDefault || !confirm('Delete this layout?')) return;
+    if (!layout || layout.isDefault || !confirm("Delete this layout?")) return;
     manager.deleteLayout(layout.id);
     refresh();
   };
@@ -126,21 +155,23 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ cl
   const visibleWidgets = editMode ? layout.widgets : layout.widgets.filter(w => w.visible);
 
   return (
-    <div className={cn('p-4 space-y-4', className)}>
+    <div className={cn("p-4 space-y-4", className)}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <LayoutGrid className="w-5 h-5 text-blue-400" />
           <select
             value={layout.id}
-            onChange={(e) => switchLayout(e.target.value)}
+            onChange={e => switchLayout(e.target.value)}
             className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500"
           >
             {layouts.map(l => (
-              <option key={l.id} value={l.id}>{l.name}</option>
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
             ))}
           </select>
-          <button 
+          <button
             onClick={createNewLayout}
             className="p-1.5 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white"
             title="New Layout"
@@ -153,12 +184,12 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ cl
           <button
             onClick={() => setEditMode(!editMode)}
             className={cn(
-              'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-              editMode ? 'bg-blue-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+              editMode ? "bg-blue-500 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600",
             )}
           >
             <Settings className="w-4 h-4" />
-            {editMode ? 'Done' : 'Customize'}
+            {editMode ? "Done" : "Customize"}
           </button>
         </div>
       </div>
@@ -168,7 +199,7 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ cl
         {editMode && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="flex items-center gap-2 p-3 bg-gray-800/50 rounded-lg border border-gray-700"
           >
@@ -217,20 +248,15 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ cl
               value={widget}
               dragListener={editMode && !widget.locked}
               className={cn(
-                'bg-gray-800/50 rounded-xl border transition-all',
-                editMode ? 'border-blue-500/50' : 'border-gray-700 hover:border-gray-600',
-                !widget.visible && 'opacity-50',
-                widget.size.width === 2 && 'col-span-2',
-                widget.size.width >= 3 && 'col-span-2 md:col-span-3',
-                widget.size.width === 4 && 'col-span-2 md:col-span-4'
+                "bg-gray-800/50 rounded-xl border transition-all",
+                editMode ? "border-blue-500/50" : "border-gray-700 hover:border-gray-600",
+                !widget.visible && "opacity-50",
+                widget.size.width === 2 && "col-span-2",
+                widget.size.width >= 3 && "col-span-2 md:col-span-3",
+                widget.size.width === 4 && "col-span-2 md:col-span-4",
               )}
             >
-              <div 
-                className={cn(
-                  'p-4 h-full',
-                  widget.size.height >= 2 && 'min-h-[180px]'
-                )}
-              >
+              <div className={cn("p-4 h-full", widget.size.height >= 2 && "min-h-[180px]")}>
                 {/* Widget Header */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -245,16 +271,24 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ cl
                       <button
                         onClick={() => toggleWidgetVisibility(widget.id)}
                         className="p-1 hover:bg-gray-700 rounded text-gray-400"
-                        title={widget.visible ? 'Hide' : 'Show'}
+                        title={widget.visible ? "Hide" : "Show"}
                       >
-                        {widget.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                        {widget.visible ? (
+                          <Eye className="w-3 h-3" />
+                        ) : (
+                          <EyeOff className="w-3 h-3" />
+                        )}
                       </button>
                       <button
                         onClick={() => toggleWidgetLock(widget.id)}
                         className="p-1 hover:bg-gray-700 rounded text-gray-400"
-                        title={widget.locked ? 'Unlock' : 'Lock'}
+                        title={widget.locked ? "Unlock" : "Lock"}
                       >
-                        {widget.locked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                        {widget.locked ? (
+                          <Lock className="w-3 h-3" />
+                        ) : (
+                          <Unlock className="w-3 h-3" />
+                        )}
                       </button>
                       <button
                         onClick={() => removeWidget(widget.id)}
@@ -268,7 +302,7 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ cl
                 </div>
 
                 {/* Widget Content Placeholder */}
-                <div 
+                <div
                   className="flex items-center justify-center h-[calc(100%-40px)] bg-gray-900/30 rounded-lg cursor-pointer"
                   onClick={() => !editMode && onWidgetClick?.(widget)}
                 >
@@ -298,11 +332,14 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ cl
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
               className="bg-gray-800 rounded-xl border border-gray-700 max-w-md w-full max-h-[80vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
+              onClick={e => e.stopPropagation()}
             >
               <div className="p-4 border-b border-gray-700 flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Add Widget</h3>
-                <button onClick={() => setShowAddWidget(false)} className="p-1 hover:bg-gray-700 rounded">
+                <button
+                  onClick={() => setShowAddWidget(false)}
+                  className="p-1 hover:bg-gray-700 rounded"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>

@@ -3,29 +3,18 @@
  * Visualization of health trends and predictions
  */
 
-import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import {
-  TrendingUp,
-  TrendingDown,
-  AlertCircle,
-  Info,
-  Activity,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import React, { useMemo } from "react";
+import { motion } from "framer-motion";
+import { TrendingUp, TrendingDown, AlertCircle, Info, Activity } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   type DataPoint,
   type TrendResult,
   type AnomalyDetectionResult,
-} from '@/lib/healthPrediction';
+} from "@/lib/healthPrediction";
 
 export interface TrendChartProps {
   dataPoints: DataPoint[];
@@ -47,7 +36,7 @@ interface ChartPoint {
   date: string;
   isProjected?: boolean;
   isAnomaly?: boolean;
-  anomalySeverity?: 'mild' | 'moderate' | 'severe';
+  anomalySeverity?: "mild" | "moderate" | "severe";
 }
 
 export function TrendChart({
@@ -55,7 +44,7 @@ export function TrendChart({
   trend,
   anomalies,
   projectedPoints = [],
-  title = 'Trend Analysis',
+  title = "Trend Analysis",
   height = 200,
   showGrid = true,
   showLabels = true,
@@ -70,10 +59,7 @@ export function TrendChart({
 
   // Process data points into chart coordinates
   const chartData = useMemo(() => {
-    const allPoints = [
-      ...dataPoints,
-      ...(showProjection ? projectedPoints : []),
-    ];
+    const allPoints = [...dataPoints, ...(showProjection ? projectedPoints : [])];
 
     if (allPoints.length === 0) return { points: [], minY: 0, maxY: 100 };
 
@@ -81,12 +67,8 @@ export function TrendChart({
     const minY = Math.min(...values) * 0.9;
     const maxY = Math.max(...values) * 1.1;
 
-    const anomalyIndices = new Set(
-      anomalies?.anomalies.map(a => a.index) || []
-    );
-    const anomalyMap = new Map(
-      anomalies?.anomalies.map(a => [a.index, a.severity]) || []
-    );
+    const anomalyIndices = new Set(anomalies?.anomalies.map(a => a.index) || []);
+    const anomalyMap = new Map(anomalies?.anomalies.map(a => [a.index, a.severity]) || []);
 
     const points: ChartPoint[] = allPoints.map((point, index) => {
       const isProjected = index >= dataPoints.length;
@@ -109,11 +91,11 @@ export function TrendChart({
   // Generate path for the line
   const linePath = useMemo(() => {
     const actualPoints = chartData.points.filter(p => !p.isProjected);
-    if (actualPoints.length < 2) return '';
+    if (actualPoints.length < 2) return "";
 
     return actualPoints
       .map((point, i) => (i === 0 ? `M ${point.x} ${point.y}` : `L ${point.x} ${point.y}`))
-      .join(' ');
+      .join(" ");
   }, [chartData.points]);
 
   // Generate path for projected line
@@ -121,25 +103,26 @@ export function TrendChart({
     const projectedPoints = chartData.points.filter(p => p.isProjected);
     const lastActual = chartData.points.filter(p => !p.isProjected).pop();
 
-    if (projectedPoints.length === 0 || !lastActual) return '';
+    if (projectedPoints.length === 0 || !lastActual) return "";
 
     const points = [lastActual, ...projectedPoints];
     return points
       .map((point, i) => (i === 0 ? `M ${point.x} ${point.y}` : `L ${point.x} ${point.y}`))
-      .join(' ');
+      .join(" ");
   }, [chartData.points]);
 
   // Generate area path for gradient fill
   const areaPath = useMemo(() => {
     const actualPoints = chartData.points.filter(p => !p.isProjected);
-    if (actualPoints.length < 2) return '';
+    if (actualPoints.length < 2) return "";
 
     const baseline = padding.top + innerHeight;
     return (
       actualPoints
-        .map((point, i) => (i === 0 ? `M ${point.x} ${baseline} L ${point.x} ${point.y}` : `L ${point.x} ${point.y}`))
-        .join(' ') +
-      ` L ${actualPoints[actualPoints.length - 1].x} ${baseline} Z`
+        .map((point, i) =>
+          i === 0 ? `M ${point.x} ${baseline} L ${point.x} ${point.y}` : `L ${point.x} ${point.y}`,
+        )
+        .join(" ") + ` L ${actualPoints[actualPoints.length - 1].x} ${baseline} Z`
     );
   }, [chartData.points, innerHeight]);
 
@@ -175,9 +158,14 @@ export function TrendChart({
     return { x1: firstX, y1, x2: lastX, y2 };
   }, [trend, chartData, innerHeight]);
 
-  const trendColor = trend?.direction === 'increasing' ? '#22C55E' :
-                     trend?.direction === 'decreasing' ? '#EF4444' :
-                     trend?.direction === 'fluctuating' ? '#F59E0B' : '#6B7280';
+  const trendColor =
+    trend?.direction === "increasing"
+      ? "#22C55E"
+      : trend?.direction === "decreasing"
+        ? "#EF4444"
+        : trend?.direction === "fluctuating"
+          ? "#F59E0B"
+          : "#6B7280";
 
   if (dataPoints.length === 0) {
     return (
@@ -200,9 +188,9 @@ export function TrendChart({
           <CardTitle className="text-sm font-medium">{title}</CardTitle>
           {trend && (
             <div className="flex items-center gap-2">
-              {trend.direction === 'increasing' ? (
+              {trend.direction === "increasing" ? (
                 <TrendingUp className="h-4 w-4" style={{ color: trendColor }} />
-              ) : trend.direction === 'decreasing' ? (
+              ) : trend.direction === "decreasing" ? (
                 <TrendingDown className="h-4 w-4" style={{ color: trendColor }} />
               ) : null}
               <Badge
@@ -210,7 +198,7 @@ export function TrendChart({
                 className="text-xs capitalize"
                 style={{ borderColor: trendColor, color: trendColor }}
               >
-                {trend.direction} ({trend.percentChange > 0 ? '+' : ''}
+                {trend.direction} ({trend.percentChange > 0 ? "+" : ""}
                 {trend.percentChange.toFixed(1)}%)
               </Badge>
             </div>
@@ -219,11 +207,7 @@ export function TrendChart({
       </CardHeader>
       <CardContent>
         <div className="relative overflow-hidden">
-          <svg
-            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-            className="w-full"
-            style={{ height }}
-          >
+          <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full" style={{ height }}>
             {/* Definitions */}
             <defs>
               <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
@@ -253,12 +237,7 @@ export function TrendChart({
             {showLabels && (
               <g className="text-xs fill-muted-foreground">
                 {yLabels.map((label, i) => (
-                  <text
-                    key={i}
-                    x={padding.left - 8}
-                    y={label.y + 4}
-                    textAnchor="end"
-                  >
+                  <text key={i} x={padding.left - 8} y={label.y + 4} textAnchor="end">
                     {label.value.toFixed(1)}
                   </text>
                 ))}
@@ -284,7 +263,7 @@ export function TrendChart({
               strokeLinejoin="round"
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}
-              transition={{ duration: 1, ease: 'easeOut' }}
+              transition={{ duration: 1, ease: "easeOut" }}
             />
 
             {/* Projected line */}
@@ -326,12 +305,18 @@ export function TrendChart({
                       cx={point.x}
                       cy={point.y}
                       r={point.isAnomaly ? 6 : 4}
-                      fill={point.isAnomaly
-                        ? point.anomalySeverity === 'severe' ? '#EF4444' :
-                          point.anomalySeverity === 'moderate' ? '#F59E0B' : '#FBBF24'
-                        : point.isProjected ? 'white' : trendColor
+                      fill={
+                        point.isAnomaly
+                          ? point.anomalySeverity === "severe"
+                            ? "#EF4444"
+                            : point.anomalySeverity === "moderate"
+                              ? "#F59E0B"
+                              : "#FBBF24"
+                          : point.isProjected
+                            ? "white"
+                            : trendColor
                       }
-                      stroke={point.isProjected ? trendColor : 'white'}
+                      stroke={point.isProjected ? trendColor : "white"}
                       strokeWidth="2"
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
@@ -344,8 +329,8 @@ export function TrendChart({
                     <div className="text-xs">
                       <div className="font-medium">
                         {point.value.toFixed(2)}
-                        {point.isProjected && ' (projected)'}
-                        {point.isAnomaly && ' ⚠️'}
+                        {point.isProjected && " (projected)"}
+                        {point.isAnomaly && " ⚠️"}
                       </div>
                       <div className="text-muted-foreground">
                         {new Date(point.date).toLocaleDateString()}
@@ -365,7 +350,10 @@ export function TrendChart({
             </div>
             {showProjection && projectedPoints.length > 0 && (
               <div className="flex items-center gap-1">
-                <span className="w-3 h-0.5 border-t-2 border-dashed" style={{ borderColor: trendColor }} />
+                <span
+                  className="w-3 h-0.5 border-t-2 border-dashed"
+                  style={{ borderColor: trendColor }}
+                />
                 <span>Projected</span>
               </div>
             )}

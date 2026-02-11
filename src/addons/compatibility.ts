@@ -3,11 +3,7 @@ import {
   BUILD_APP_VERSION,
   BUILD_DISTRIBUTION_CHANNEL,
 } from "@/lib/buildFlags";
-import type {
-  AddonCompatibilityEntry,
-  AddonCompatibilityStatus,
-  AddonManifest,
-} from "./types";
+import type { AddonCompatibilityEntry, AddonCompatibilityStatus, AddonManifest } from "./types";
 
 export const ADDON_MANIFEST_SCHEMA_VERSION = "1.1.0";
 
@@ -145,7 +141,9 @@ function resolveStatus(entries: AddonCompatibilityEntry[]): AddonCompatibilitySt
   return status;
 }
 
-function mapStatusToReport(status: AddonCompatibilityStatus): "compatible" | "warning" | "incompatible" {
+function mapStatusToReport(
+  status: AddonCompatibilityStatus,
+): "compatible" | "warning" | "incompatible" {
   if (status === "supported") return "compatible";
   if (status === "experimental" || status === "deprecated") return "warning";
   return "incompatible";
@@ -192,10 +190,7 @@ export function evaluateAddonCompatibility(
       return {
         status: "incompatible",
         label: "unsupported",
-        reasons: [
-          ...reasons,
-          `Requires app >= ${manifest.minAppVersion} (current ${appVersion})`,
-        ],
+        reasons: [...reasons, `Requires app >= ${manifest.minAppVersion} (current ${appVersion})`],
       };
     }
   }

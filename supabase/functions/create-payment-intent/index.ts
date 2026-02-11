@@ -52,13 +52,13 @@ serve(async (req: Request) => {
       return jsonResponse(500, { error: "Server misconfigured: missing Supabase env" });
     }
 
-  const rateLimitResponse = await applyRateLimit({
-    req,
-    endpoint: "create-payment-intent",
-    ...DEFAULT_EDGE_RATE_LIMIT,
-    headers: corsHeaders,
-  });
-  if (rateLimitResponse) return rateLimitResponse;
+    const rateLimitResponse = await applyRateLimit({
+      req,
+      endpoint: "create-payment-intent",
+      ...DEFAULT_EDGE_RATE_LIMIT,
+      headers: corsHeaders,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
 
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeSecretKey)

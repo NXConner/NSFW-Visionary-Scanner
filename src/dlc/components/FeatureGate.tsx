@@ -41,7 +41,7 @@ export function FeatureGate({
 
   // CRITICAL FIX: Check localStorage SYNCHRONOUSLY at module level (see below)
   // This ensures privileged status is known on the VERY FIRST render
-  
+
   // SUPER ADMIN BYPASS: Immediately grant access for privileged users
   // INITIAL_SUPER_ADMIN_STATUS is computed at module load time - before any render
   const isPrivileged =
@@ -51,7 +51,7 @@ export function FeatureGate({
     allFeaturesUnlocked ||
     isAdmin ||
     isSuperAdminRole;
-  
+
   if (isPrivileged) {
     return <>{children}</>;
   }

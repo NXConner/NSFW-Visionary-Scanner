@@ -3,27 +3,27 @@
  * Reusable card for displaying expert profiles
  */
 
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Star, DollarSign, Users, Calendar, MessageSquare } from 'lucide-react'
-import { type ExpertProfile } from '@/lib/expertContent'
-import { formatExpertRating, getExpertAvailability } from '@/lib/expertUtils'
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Star, DollarSign, Users, Calendar, MessageSquare } from "lucide-react";
+import { type ExpertProfile } from "@/lib/expertContent";
+import { formatExpertRating, getExpertAvailability } from "@/lib/expertUtils";
 
 interface ExpertProfileCardProps {
-  expert: ExpertProfile
-  onBookConsultation?: (expert: ExpertProfile) => void
-  onAskQuestion?: (expert: ExpertProfile) => void
-  showActions?: boolean
+  expert: ExpertProfile;
+  onBookConsultation?: (expert: ExpertProfile) => void;
+  onAskQuestion?: (expert: ExpertProfile) => void;
+  showActions?: boolean;
 }
 
 export const ExpertProfileCard = ({
   expert,
   onBookConsultation,
   onAskQuestion,
-  showActions = true
+  showActions = true,
 }: ExpertProfileCardProps) => {
-  const availability = getExpertAvailability(expert)
+  const availability = getExpertAvailability(expert);
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -41,13 +41,18 @@ export const ExpertProfileCard = ({
               <div>
                 <h3 className="font-semibold text-lg">{expert.display_name}</h3>
                 {expert.is_verified && (
-                  <Badge variant="default" className="mt-1">Verified</Badge>
+                  <Badge variant="default" className="mt-1">
+                    Verified
+                  </Badge>
                 )}
               </div>
               <Badge
                 variant={
-                  availability === 'available' ? 'default' :
-                  availability === 'busy' ? 'secondary' : 'outline'
+                  availability === "available"
+                    ? "default"
+                    : availability === "busy"
+                      ? "secondary"
+                      : "outline"
                 }
               >
                 {availability}
@@ -55,9 +60,7 @@ export const ExpertProfileCard = ({
             </div>
 
             {expert.bio && (
-              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                {expert.bio}
-              </p>
+              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{expert.bio}</p>
             )}
 
             <div className="flex items-center gap-4 mb-3 text-sm">
@@ -71,9 +74,7 @@ export const ExpertProfileCard = ({
                 <span>${expert.consultation_rate_per_hour}/hr</span>
               </div>
               {expert.years_experience > 0 && (
-                <span className="text-muted-foreground">
-                  {expert.years_experience} years exp.
-                </span>
+                <span className="text-muted-foreground">{expert.years_experience} years exp.</span>
               )}
             </div>
 
@@ -99,18 +100,14 @@ export const ExpertProfileCard = ({
                     size="sm"
                     className="flex-1"
                     onClick={() => onBookConsultation(expert)}
-                    disabled={availability === 'unavailable'}
+                    disabled={availability === "unavailable"}
                   >
                     <Calendar className="w-4 h-4 mr-2" />
                     Book
                   </Button>
                 )}
                 {onAskQuestion && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onAskQuestion(expert)}
-                  >
+                  <Button size="sm" variant="outline" onClick={() => onAskQuestion(expert)}>
                     <MessageSquare className="w-4 h-4 mr-2" />
                     Ask
                   </Button>
@@ -121,6 +118,5 @@ export const ExpertProfileCard = ({
         </div>
       </CardContent>
     </Card>
-  )
-}
-
+  );
+};

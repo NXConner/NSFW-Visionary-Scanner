@@ -17,7 +17,9 @@ const loadModules = async (env: BuildEnv) => {
 const hasNsfwNav = (nav: Awaited<ReturnType<typeof loadModules>>["nav"]) => {
   return nav.NAV_CATEGORIES.some(category => {
     if (category.label === "NSFW Content") return true;
-    return category.items.some(item => Boolean(item.nsfwOnly) || String(item.id).startsWith("nsfw-"));
+    return category.items.some(
+      item => Boolean(item.nsfwOnly) || String(item.id).startsWith("nsfw-"),
+    );
   });
 };
 

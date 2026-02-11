@@ -26,35 +26,35 @@ interface PartnerPair {
  */
 function getPreConfiguredPartnerPairs(): PartnerPair[] {
   const pairs: PartnerPair[] = [];
-  
+
   // Primary partner pair from environment
   const email1 = import.meta.env.VITE_PARTNER_PAIR_EMAIL_1;
   const email2 = import.meta.env.VITE_PARTNER_PAIR_EMAIL_2;
-  
+
   if (email1 && email2) {
     pairs.push({
       email1: email1.toLowerCase().trim(),
       email2: email2.toLowerCase().trim(),
     });
   }
-  
+
   // Hardcoded fallback pair - always ensure this pair is connected
   const hardcodedPair: PartnerPair = {
     email1: "n8ter8@gmail.com",
     email2: "slkchick_360@yahoo.com",
   };
-  
+
   // Add hardcoded pair if not already present
   const hasHardcoded = pairs.some(
-    p => 
+    p =>
       (p.email1 === hardcodedPair.email1 && p.email2 === hardcodedPair.email2) ||
-      (p.email1 === hardcodedPair.email2 && p.email2 === hardcodedPair.email1)
+      (p.email1 === hardcodedPair.email2 && p.email2 === hardcodedPair.email1),
   );
-  
+
   if (!hasHardcoded) {
     pairs.push(hardcodedPair);
   }
-  
+
   return pairs;
 }
 
@@ -64,12 +64,12 @@ function getPreConfiguredPartnerPairs(): PartnerPair[] {
 function getPartnerEmailFromPair(userEmail: string): string | null {
   const normalizedEmail = userEmail.toLowerCase().trim();
   const pairs = getPreConfiguredPartnerPairs();
-  
+
   for (const pair of pairs) {
     if (pair.email1 === normalizedEmail) return pair.email2;
     if (pair.email2 === normalizedEmail) return pair.email1;
   }
-  
+
   return null;
 }
 
@@ -92,9 +92,9 @@ export function usePartnerConnection() {
       return;
     }
 
-    logger.info("[partnerSync] User is part of pre-configured pair", { 
-      userEmail, 
-      partnerEmail 
+    logger.info("[partnerSync] User is part of pre-configured pair", {
+      userEmail,
+      partnerEmail,
     });
 
     try {
@@ -105,19 +105,22 @@ export function usePartnerConnection() {
         .maybeSingle();
 
       let partnerUserId: string | null = null;
-      
+
       if (partnerProfile?.id) {
         partnerUserId = partnerProfile.id;
-        logger.info("[partnerSync] Found partner profile", { 
-          partnerEmail, 
-          partnerUserId 
+        logger.info("[partnerSync] Found partner profile", {
+          partnerEmail,
+          partnerUserId,
         });
       } else {
         // If no profile found, the partner may not have signed up yet
         // Can't create connection without partner_id (DB requires it)
-        logger.info("[partnerSync] Partner profile not found yet - will connect when partner signs up", { 
-          partnerEmail 
-        });
+        logger.info(
+          "[partnerSync] Partner profile not found yet - will connect when partner signs up",
+          {
+            partnerEmail,
+          },
+        );
         return;
       }
 
@@ -128,22 +131,22 @@ export function usePartnerConnection() {
         .or(`user_id.eq.${partnerUserId},partner_id.eq.${partnerUserId}`);
 
       const existing = (existingConnections || []).find(
-        c => 
+        c =>
           (c.user_id === userId && c.partner_id === partnerUserId) ||
-          (c.user_id === partnerUserId && c.partner_id === userId)
+          (c.user_id === partnerUserId && c.partner_id === userId),
       );
 
       if (existing) {
-        logger.info("[partnerSync] Connection already exists", { 
+        logger.info("[partnerSync] Connection already exists", {
           connectionId: existing.id,
-          status: existing.status 
+          status: existing.status,
         });
         return;
       }
 
       // Create auto-connection with accepted status
       const now = new Date().toISOString();
-      
+
       const { data: newConnection, error: insertError } = await fromExtended("partner_connections")
         .insert({
           user_id: userId,
@@ -158,18 +161,18 @@ export function usePartnerConnection() {
 
       if (insertError) {
         // Might fail due to unique constraint - that's okay, means connection exists
-        logger.info("[partnerSync] Auto-connect insert failed (may already exist)", { 
-          error: insertError.message 
+        logger.info("[partnerSync] Auto-connect insert failed (may already exist)", {
+          error: insertError.message,
         });
         return;
       }
 
-      logger.info("[partnerSync] Auto-connected with pre-configured partner!", { 
+      logger.info("[partnerSync] Auto-connected with pre-configured partner!", {
         connectionId: newConnection?.id,
         partnerEmail,
         partnerUserId,
       });
-      
+
       toast.success(`Connected with ${partnerEmail}!`);
     } catch (err) {
       logger.error("[partnerSync] Auto-connect failed", { error: err });

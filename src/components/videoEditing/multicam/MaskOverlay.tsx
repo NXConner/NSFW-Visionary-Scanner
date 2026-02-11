@@ -191,7 +191,12 @@ export function MaskOverlay(props: {
             {drawMode ? "Drawing…" : "Draw polygon"}
           </Button>
           {detections.length > 0 && (
-            <Button size="sm" variant="outline" className="gap-2" onClick={onAddMaskKeyframeFromDetection}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              onClick={onAddMaskKeyframeFromDetection}
+            >
               <Plus className="w-4 h-4" />
               From detection
             </Button>
@@ -277,4 +282,3 @@ export function MaskOverlay(props: {
     </div>
   );
 }
-

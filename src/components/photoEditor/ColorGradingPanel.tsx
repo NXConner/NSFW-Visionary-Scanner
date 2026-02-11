@@ -68,9 +68,15 @@ export function ColorGradingPanel({ state, onChange }: Props) {
 
       <Tabs defaultValue="basic" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="basic" className="text-xs">Basic</TabsTrigger>
-          <TabsTrigger value="tone" className="text-xs">Tone</TabsTrigger>
-          <TabsTrigger value="split" className="text-xs">Split</TabsTrigger>
+          <TabsTrigger value="basic" className="text-xs">
+            Basic
+          </TabsTrigger>
+          <TabsTrigger value="tone" className="text-xs">
+            Tone
+          </TabsTrigger>
+          <TabsTrigger value="split" className="text-xs">
+            Split
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="basic" className="space-y-3 mt-3">

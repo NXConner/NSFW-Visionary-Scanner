@@ -1,2 +1,2 @@
-export * from './MedicationTracker';
-export * from './SymptomJournal';
+export * from "./MedicationTracker";
+export * from "./SymptomJournal";

@@ -87,7 +87,8 @@ export const es: TranslationDictionary = {
 
   "partnerSync.loading": "Cargando sincronización de pareja...",
   "partnerSync.lockedTitle": "Sincronización de pareja",
-  "partnerSync.lockedDescription": "Desbloquee la sincronización de pareja para conectar y coordinar.",
+  "partnerSync.lockedDescription":
+    "Desbloquee la sincronización de pareja para conectar y coordinar.",
   "partnerSync.tabs.thoughts": "Pings de pensamiento",
   "partnerSync.tabs.dates": "Noches de cita",
   "partnerSync.tabs.positions": "Posiciones",
@@ -130,7 +131,8 @@ export const es: TranslationDictionary = {
   "partnerSync.connection.inviteExpiry": "Caducidad de la invitación (días)",
   "partnerSync.connection.createInvite": "Crear invitación",
   "partnerSync.connection.acceptInviteTitle": "Aceptar invitación",
-  "partnerSync.connection.acceptInviteSubtitle": "Ingrese el código de invitación que envió su pareja",
+  "partnerSync.connection.acceptInviteSubtitle":
+    "Ingrese el código de invitación que envió su pareja",
   "partnerSync.connection.inviteCode": "Código de invitación",
   "partnerSync.connection.inviteCodePlaceholder": "PSC-XXXXXXX",
   "partnerSync.connection.acceptInvite": "Aceptar invitación",
@@ -194,7 +196,8 @@ export const es: TranslationDictionary = {
   "partnerSync.pings.sendReply": "Enviar",
   "partnerSync.pings.loadMore": "Cargar más",
   "partnerSync.pings.templatesPanelTitle": "Plantillas y respuestas rápidas",
-  "partnerSync.pings.templatesPanelSubtitle": "Administre plantillas guardadas y respuestas predefinidas.",
+  "partnerSync.pings.templatesPanelSubtitle":
+    "Administre plantillas guardadas y respuestas predefinidas.",
   "partnerSync.pings.createTemplate": "Crear plantilla",
   "partnerSync.pings.templateNamePlaceholder": "Nombre de plantilla",
   "partnerSync.pings.templateMessagePlaceholder": "Mensaje de plantilla",
@@ -280,7 +283,8 @@ export const es: TranslationDictionary = {
 
   "partnerSync.positions.title": "Selección de posiciones",
   "partnerSync.positions.subtitle": "Sugiera posiciones y responda a las selecciones de su pareja.",
-  "partnerSync.positions.connectHint": "Conéctese con una pareja para usar selección de posiciones.",
+  "partnerSync.positions.connectHint":
+    "Conéctese con una pareja para usar selección de posiciones.",
   "partnerSync.positions.themeTags": "Etiquetas de tema",
   "partnerSync.positions.intensity": "Intensidad",
   "partnerSync.positions.priority": "Prioridad",
@@ -331,8 +335,10 @@ export const es: TranslationDictionary = {
   "partnerSync.positions.longestStreak": "Racha más larga",
 
   "partnerSync.settings.consentTitle": "Consentimiento y acuerdo",
-  "partnerSync.settings.consentSubtitle": "Cada pareja debe aceptar el consentimiento más reciente.",
-  "partnerSync.settings.consentNeeded": "Debe aceptar el consentimiento de sincronización de pareja.",
+  "partnerSync.settings.consentSubtitle":
+    "Cada pareja debe aceptar el consentimiento más reciente.",
+  "partnerSync.settings.consentNeeded":
+    "Debe aceptar el consentimiento de sincronización de pareja.",
   "partnerSync.settings.consentRecorded": "Su consentimiento está registrado.",
   "partnerSync.settings.partnerConsentNeeded": "Su pareja aún no ha aceptado.",
   "partnerSync.settings.partnerConsentRecorded": "Su pareja aceptó el consentimiento.",
@@ -350,7 +356,8 @@ export const es: TranslationDictionary = {
   "partnerSync.settings.scheduledPings": "Pings programados",
   "partnerSync.settings.mediaAttachments": "Adjuntos multimedia",
   "partnerSync.settings.retentionTitle": "Política de retención",
-  "partnerSync.settings.retentionSubtitle": "Controle cuánto tiempo se mantienen los datos compartidos.",
+  "partnerSync.settings.retentionSubtitle":
+    "Controle cuánto tiempo se mantienen los datos compartidos.",
   "partnerSync.settings.retentionPings": "Retención de pings (días)",
   "partnerSync.settings.retentionSelections": "Retención de selecciones (días)",
   "partnerSync.settings.retentionPlans": "Retención de planes (días)",
@@ -385,8 +392,7 @@ export const es: TranslationDictionary = {
   "partnerSync.recommendations.pings.3": "Use temas para alinear expectativas antes de verse.",
   "partnerSync.recommendations.pings.4":
     "Haga seguimiento con una respuesta para confirmar interés y límites.",
-  "partnerSync.recommendations.pings.5":
-    "Programe pings cuando su pareja tenga horas de silencio.",
+  "partnerSync.recommendations.pings.5": "Programe pings cuando su pareja tenga horas de silencio.",
   "partnerSync.recommendations.pings.6": "Use reacciones para reconocer mensajes rápidamente.",
   "partnerSync.recommendations.dates.1":
     "Planifique la noche en segmentos (salida, cena, noche en casa).",
@@ -406,15 +412,18 @@ export const es: TranslationDictionary = {
     "Use notas para explicar qué le gusta de cada sugerencia.",
   "partnerSync.recommendations.positions.3":
     "Equilibre la intensidad mezclando opciones fáciles y avanzadas.",
-  "partnerSync.recommendations.positions.4": "Marque las posiciones probadas para mantener la lista fresca.",
+  "partnerSync.recommendations.positions.4":
+    "Marque las posiciones probadas para mantener la lista fresca.",
   "partnerSync.recommendations.positions.5":
     "Use listas de seguridad y límites antes de probar algo nuevo.",
-  "partnerSync.recommendations.positions.6": "Use cambios de selección para negociar alternativas rápidamente.",
+  "partnerSync.recommendations.positions.6":
+    "Use cambios de selección para negociar alternativas rápidamente.",
   "partnerSync.recommendations.safety.1": "Confirme el consentimiento y límites antes de comenzar.",
   "partnerSync.recommendations.safety.2":
     "Acuerden una palabra de pausa o alto para chequeos en tiempo real.",
   "partnerSync.recommendations.safety.3": "Deje espacio para aftercare o una calma posterior.",
   "partnerSync.recommendations.safety.4":
     "Use ajustes de privacidad para controlar quién ve los detalles de ubicación.",
-  "partnerSync.preview.subtitle": "Vista previa de paneles con estados vacíos y revisión de diseño.",
+  "partnerSync.preview.subtitle":
+    "Vista previa de paneles con estados vacíos y revisión de diseño.",
 };

@@ -79,8 +79,9 @@ export async function upsertMyPositionMediaOverride(params: {
       updated_at: now,
     };
 
-    const { error } = await fromExtended("user_position_media_overrides")
-      .upsert(payload, { onConflict: "user_id,position_key,media_kind" });
+    const { error } = await fromExtended("user_position_media_overrides").upsert(payload, {
+      onConflict: "user_id,position_key,media_kind",
+    });
 
     if (error) {
       logger.error("upsertMyPositionMediaOverride failed", { error: error.message });

@@ -10,29 +10,29 @@ import React, {
   useEffect,
   useCallback,
   ReactNode,
-} from 'react';
+} from "react";
 import {
   AchievementManager,
   getAchievementManager,
   type UnlockedAchievement,
   type AchievementStats,
   type AchievementEvent,
-} from '@/lib/achievements/AchievementManager';
+} from "@/lib/achievements/AchievementManager";
 import {
   type Achievement,
   type AchievementCategory,
   allAchievements,
   getAchievement,
   getAchievementsByCategory,
-} from '@/lib/achievements/achievementDefinitions';
+} from "@/lib/achievements/achievementDefinitions";
 import {
   type MilestoneProgress,
   type Milestone,
   allMilestones,
   getMilestone,
   milestoneCategories,
-} from '@/lib/achievements/milestones';
-import { useSettings } from '@/contexts/settings';
+} from "@/lib/achievements/milestones";
+import { useSettings } from "@/contexts/settings";
 
 export interface AchievementContextValue {
   // State
@@ -62,7 +62,9 @@ export interface AchievementContextValue {
   // Queries
   isUnlocked: (achievementId: string) => boolean;
   getAchievementById: (id: string) => Achievement | undefined;
-  getProgress: (achievementId: string) => { current: number; target: number; percentage: number } | null;
+  getProgress: (
+    achievementId: string,
+  ) => { current: number; target: number; percentage: number } | null;
   getAchievementsByCategory: (category: AchievementCategory) => Achievement[];
   getMilestoneById: (id: string) => Milestone | undefined;
 
@@ -93,14 +95,14 @@ export function AchievementProvider({ children }: AchievementProviderProps) {
   // Initialize and subscribe to events
   useEffect(() => {
     let mounted = true;
-    
+
     // Timeout fallback to ensure loading completes within 2 seconds
     const loadingTimeout = setTimeout(() => {
       if (mounted) {
         setIsLoading(false);
       }
     }, 2000);
-    
+
     try {
       // Load initial state
       setUnlockedAchievements(manager.getUnlockedAchievements());
@@ -118,7 +120,7 @@ export function AchievementProvider({ children }: AchievementProviderProps) {
         }
       }
     } catch (error) {
-      console.error('[AchievementProvider] Failed to load initial state:', error);
+      console.error("[AchievementProvider] Failed to load initial state:", error);
     } finally {
       // Mark loading as complete
       if (mounted) {
@@ -130,11 +132,11 @@ export function AchievementProvider({ children }: AchievementProviderProps) {
     // Subscribe to events
     const unsubscribe = manager.subscribe((event: AchievementEvent) => {
       switch (event.type) {
-        case 'achievement_unlocked': {
+        case "achievement_unlocked": {
           const { achievement } = event.data as { achievement: Achievement };
           setUnlockedAchievements(manager.getUnlockedAchievements());
           setTotalPoints(manager.getTotalPoints());
-          
+
           if (achievementSettings?.showNotifications) {
             setRecentlyUnlocked(achievement);
             setShowingToast(true);
@@ -142,16 +144,16 @@ export function AchievementProvider({ children }: AchievementProviderProps) {
           break;
         }
 
-        case 'milestone_completed':
-        case 'milestone_progress':
+        case "milestone_completed":
+        case "milestone_progress":
           setMilestoneProgress(manager.getAllMilestoneProgress());
           break;
 
-        case 'stats_updated':
+        case "stats_updated":
           setStats(manager.getStats());
           break;
 
-        case 'points_earned':
+        case "points_earned":
           setTotalPoints(manager.getTotalPoints());
           break;
       }
@@ -165,17 +167,23 @@ export function AchievementProvider({ children }: AchievementProviderProps) {
   }, [manager, achievementSettings?.showNotifications]);
 
   // Actions
-  const recordScan = useCallback((scanData?: { quality?: number; duration?: number }) => {
-    if (achievementSettings?.enabled !== false) {
-      manager.recordScan(scanData);
-    }
-  }, [manager, achievementSettings?.enabled]);
+  const recordScan = useCallback(
+    (scanData?: { quality?: number; duration?: number }) => {
+      if (achievementSettings?.enabled !== false) {
+        manager.recordScan(scanData);
+      }
+    },
+    [manager, achievementSettings?.enabled],
+  );
 
-  const recordFeatureUse = useCallback((featureId: string) => {
-    if (achievementSettings?.enabled !== false) {
-      manager.recordFeatureUse(featureId);
-    }
-  }, [manager, achievementSettings?.enabled]);
+  const recordFeatureUse = useCallback(
+    (featureId: string) => {
+      if (achievementSettings?.enabled !== false) {
+        manager.recordFeatureUse(featureId);
+      }
+    },
+    [manager, achievementSettings?.enabled],
+  );
 
   const recordHealthCheck = useCallback(() => {
     if (achievementSettings?.enabled !== false) {
@@ -189,24 +197,33 @@ export function AchievementProvider({ children }: AchievementProviderProps) {
     }
   }, [manager, achievementSettings?.enabled]);
 
-  const recordMilestone = useCallback((milestoneKey: string) => {
-    if (achievementSettings?.enabled !== false) {
-      manager.recordMilestone(milestoneKey);
-    }
-  }, [manager, achievementSettings?.enabled]);
+  const recordMilestone = useCallback(
+    (milestoneKey: string) => {
+      if (achievementSettings?.enabled !== false) {
+        manager.recordMilestone(milestoneKey);
+      }
+    },
+    [manager, achievementSettings?.enabled],
+  );
 
   // Queries
-  const isUnlocked = useCallback((achievementId: string) => {
-    return manager.isAchievementUnlocked(achievementId);
-  }, [manager]);
+  const isUnlocked = useCallback(
+    (achievementId: string) => {
+      return manager.isAchievementUnlocked(achievementId);
+    },
+    [manager],
+  );
 
   const getAchievementById = useCallback((id: string) => {
     return getAchievement(id);
   }, []);
 
-  const getProgress = useCallback((achievementId: string) => {
-    return manager.getAchievementProgress(achievementId);
-  }, [manager]);
+  const getProgress = useCallback(
+    (achievementId: string) => {
+      return manager.getAchievementProgress(achievementId);
+    },
+    [manager],
+  );
 
   const getMilestoneById = useCallback((id: string) => {
     return getMilestone(id);
@@ -221,9 +238,12 @@ export function AchievementProvider({ children }: AchievementProviderProps) {
     setRecentlyUnlocked(null);
   }, [manager, recentlyUnlocked]);
 
-  const markAsNotified = useCallback((achievementId: string) => {
-    manager.markAsNotified(achievementId);
-  }, [manager]);
+  const markAsNotified = useCallback(
+    (achievementId: string) => {
+      manager.markAsNotified(achievementId);
+    },
+    [manager],
+  );
 
   // Computed values
   const unlockedCount = unlockedAchievements.length;
@@ -267,17 +287,13 @@ export function AchievementProvider({ children }: AchievementProviderProps) {
     markAsNotified,
   };
 
-  return (
-    <AchievementContext.Provider value={value}>
-      {children}
-    </AchievementContext.Provider>
-  );
+  return <AchievementContext.Provider value={value}>{children}</AchievementContext.Provider>;
 }
 
 export function useAchievements(): AchievementContextValue {
   const context = useContext(AchievementContext);
   if (!context) {
-    throw new Error('useAchievements must be used within an AchievementProvider');
+    throw new Error("useAchievements must be used within an AchievementProvider");
   }
   return context;
 }

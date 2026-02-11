@@ -1,6 +1,6 @@
 /**
  * Curvature Visualization Utilities
- * 
+ *
  * Provides functions to generate visual overlays for landmark-based curvature detection.
  */
 
@@ -41,17 +41,12 @@ const defaultConfig: Required<CurvatureOverlayConfig> = {
 /**
  * Generate SVG path for the angle arc between two vectors.
  */
-export function generateAngleArcPath(
-  center: Vec2,
-  v1: Vec2,
-  v2: Vec2,
-  radius: number
-): string {
+export function generateAngleArcPath(center: Vec2, v1: Vec2, v2: Vec2, radius: number): string {
   // Start point on first vector
   const p1 = add(center, mul(v1, radius));
   // End point on second vector
   const p2 = add(center, mul(v2, radius));
-  
+
   // Determine if arc should be large (>180 degrees)
   const cross = v1.x * v2.y - v1.y * v2.x;
   const largeArc = 0; // Always small arc for curvature
@@ -65,7 +60,7 @@ export function generateAngleArcPath(
  */
 export function generateCurvatureVisualization(
   result: LandmarkCurvatureResult,
-  config: CurvatureOverlayConfig = {}
+  config: CurvatureOverlayConfig = {},
 ): {
   landmarks: Array<{
     position: Vec2;
@@ -95,7 +90,7 @@ export function generateCurvatureVisualization(
   };
 } {
   const cfg = { ...defaultConfig, ...config };
-  
+
   // Map landmark types to display labels
   const labelMap: Record<string, string> = {
     D1: "Distal 1",
@@ -147,20 +142,22 @@ export function generateCurvatureVisualization(
   }
 
   // Generate angle arc
-  let angleArc: {
-    path: string;
-    color: string;
-    width: number;
-    center: Vec2;
-    angleDeg: number;
-  } | undefined;
+  let angleArc:
+    | {
+        path: string;
+        color: string;
+        width: number;
+        center: Vec2;
+        angleDeg: number;
+      }
+    | undefined;
 
   if (cfg.showArc && result.angleDeg > 2 && d1 && d2 && p1 && p2) {
     // Center point for arc visualization - midpoint between regions
     const distalMid = mul(add(d1.position, d2.position), 0.5);
     const proximalMid = mul(add(p1.position, p2.position), 0.5);
     const arcCenter = mul(add(distalMid, proximalMid), 0.5);
-    
+
     // Arc radius based on distance between regions
     const regionDist = len(sub(distalMid, proximalMid));
     const arcRadius = regionDist * 0.3;
@@ -169,7 +166,7 @@ export function generateCurvatureVisualization(
       arcCenter,
       result.proximalAxis,
       result.distalAxis,
-      arcRadius
+      arcRadius,
     );
 
     angleArc = {
@@ -212,22 +209,22 @@ export function getCurvatureTypeLabel(type: string): string {
  */
 export function getCurvatureClinicalNote(result: LandmarkCurvatureResult): string {
   const { angleDeg, direction, curvatureType } = result;
-  
+
   if (angleDeg < 5) {
     return "Curvature within normal range (< 5°)";
   }
-  
+
   if (angleDeg < 15) {
     return `Mild ${direction} curvature detected (${angleDeg.toFixed(1)}°). Generally considered normal variation.`;
   }
-  
+
   if (angleDeg < 30) {
     return `Moderate ${direction} curvature (${angleDeg.toFixed(1)}°). Consider consulting a urologist if symptoms present.`;
   }
-  
+
   if (angleDeg < 45) {
     return `Significant ${direction} ${curvatureType} curvature (${angleDeg.toFixed(1)}°). Medical evaluation recommended.`;
   }
-  
+
   return `Severe ${direction} ${curvatureType} curvature (${angleDeg.toFixed(1)}°). Professional medical consultation advised.`;
 }

@@ -127,7 +127,11 @@ serve(async req => {
     });
     if (!rate.allowed) {
       return new Response(JSON.stringify({ error: "Rate limit exceeded", success: false }), {
-        headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          ...buildRateLimitHeaders(rate),
+          "Content-Type": "application/json",
+        },
         status: 429,
       });
     }
@@ -171,7 +175,9 @@ serve(async req => {
         let notified = 0;
         if (prefs.notify_before_deletion && prefs.notify_days_before < config.retentionDays) {
           const notifyDate = new Date(now);
-          notifyDate.setDate(notifyDate.getDate() - (config.retentionDays - prefs.notify_days_before));
+          notifyDate.setDate(
+            notifyDate.getDate() - (config.retentionDays - prefs.notify_days_before),
+          );
 
           const { count: notifyCount } = await supabaseClient
             .from(config.table)
@@ -239,7 +245,11 @@ serve(async req => {
         timestamp: new Date().toISOString(),
       }),
       {
-        headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          ...buildRateLimitHeaders(rate),
+          "Content-Type": "application/json",
+        },
         status: 200,
       },
     );

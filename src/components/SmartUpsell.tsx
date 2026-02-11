@@ -39,7 +39,13 @@ interface UpsellPrompt {
 
 export const SmartUpsell = () => {
   const { tier, features, hasFeature, loading: featureLoading } = useFeatureAccess();
-  const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked, loading: authLoading, rolesLoading } = useAuth();
+  const {
+    isSuperAdmin,
+    hasFullAccess,
+    allFeaturesUnlocked,
+    loading: authLoading,
+    rolesLoading,
+  } = useAuth();
   const [showPrompt, setShowPrompt] = useState(false);
   const [currentPrompt, setCurrentPrompt] = useState<UpsellPrompt | null>(null);
   const [dismissedPrompts, setDismissedPrompts] = useState<Set<string>>(new Set());
@@ -254,7 +260,13 @@ export const SmartUpsell = () => {
  */
 export const InlineUpsellBanner = ({ feature, context }: { feature: string; context?: string }) => {
   const { tier, loading: featureLoading } = useFeatureAccess();
-  const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked, loading: authLoading, rolesLoading } = useAuth();
+  const {
+    isSuperAdmin,
+    hasFullAccess,
+    allFeaturesUnlocked,
+    loading: authLoading,
+    rolesLoading,
+  } = useAuth();
 
   // Wait for access checks before deciding to show upsell
   // CRITICAL: Must wait for rolesLoading to complete - this is where super admin status is determined

@@ -62,7 +62,9 @@ export function useAdminMetrics() {
         .eq("status", "active");
 
       // Calculate retention (users active vs total)
-      const retention = totalUsers ? Math.round(((activeUsers || 0) / totalUsers) * 100 * 10) / 10 : 0;
+      const retention = totalUsers
+        ? Math.round(((activeUsers || 0) / totalUsers) * 100 * 10) / 10
+        : 0;
 
       setMetrics({
         totalUsers: totalUsers || 0,

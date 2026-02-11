@@ -75,4 +75,3 @@ test.describe("NSFW Session Lock", () => {
     await expect(page.getByText(/nsfw session locked/i)).toBeVisible();
   });
 });
-

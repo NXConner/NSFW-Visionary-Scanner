@@ -7,11 +7,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LockedFeature } from "@/dlc/components/LockedFeature";
 import { useDLCFeature } from "@/dlc/context/DLCContext";
-import {
-  usePartnerConnection,
-  usePartnerConsent,
-  usePartnerPermissions,
-} from "@/lib/partnerSync";
+import { usePartnerConnection, usePartnerConsent, usePartnerPermissions } from "@/lib/partnerSync";
 import { useI18n } from "@/lib/i18n";
 import { PartnerConnectionCard } from "./PartnerConnectionCard";
 import { ThoughtPingsPanel } from "./ThoughtPingsPanel";
@@ -54,8 +50,12 @@ export function PartnerSyncTab({ onNavigateToTab }: PartnerSyncTabProps = {}) {
       : null;
 
   const { permissions, updatePermission } = usePartnerPermissions(connectionId);
-  const { needsConsent, partnerNeedsConsent, acceptConsent, loading: consentLoading } =
-    usePartnerConsent(connectionId);
+  const {
+    needsConsent,
+    partnerNeedsConsent,
+    acceptConsent,
+    loading: consentLoading,
+  } = usePartnerConsent(connectionId);
   const consentReady = !needsConsent && !partnerNeedsConsent;
 
   if (isLoading) {
@@ -123,7 +123,9 @@ export function PartnerSyncTab({ onNavigateToTab }: PartnerSyncTabProps = {}) {
             partnerId={partnerId}
             currentUserId={currentUserId}
             consentReady={consentReady}
-            onNavigateToHub={onNavigateToTab ? () => onNavigateToTab("date-night-planner") : undefined}
+            onNavigateToHub={
+              onNavigateToTab ? () => onNavigateToTab("date-night-planner") : undefined
+            }
           />
         </TabsContent>
         <TabsContent value="positions" className="space-y-4">

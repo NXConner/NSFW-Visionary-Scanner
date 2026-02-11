@@ -3,13 +3,17 @@
  * UI component for displaying and managing notifications
  */
 
-import * as React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { useNotifications, type Notification, type NotificationType } from '@/contexts/NotificationContext';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import * as React from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import {
+  useNotifications,
+  type Notification,
+  type NotificationType,
+} from "@/contexts/NotificationContext";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Bell,
   BellOff,
@@ -25,18 +29,18 @@ import {
   CheckCircle,
   Clock,
   Settings,
-} from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 export interface NotificationCenterProps {
   className?: string;
-  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+  position?: "top-right" | "top-left" | "bottom-right" | "bottom-left";
   maxHeight?: number;
 }
 
 export function NotificationCenter({
   className,
-  position = 'top-right',
+  position = "top-right",
   maxHeight = 400,
 }: NotificationCenterProps) {
   const {
@@ -58,19 +62,19 @@ export function NotificationCenter({
   // Get icon for notification type
   const getIcon = (type: NotificationType) => {
     switch (type) {
-      case 'success':
+      case "success":
         return <CheckCircle className="w-4 h-4 text-green-400" />;
-      case 'error':
+      case "error":
         return <AlertCircle className="w-4 h-4 text-red-400" />;
-      case 'warning':
+      case "warning":
         return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
-      case 'achievement':
+      case "achievement":
         return <Trophy className="w-4 h-4 text-purple-400" />;
-      case 'measurement':
+      case "measurement":
         return <Ruler className="w-4 h-4 text-blue-400" />;
-      case 'reminder':
+      case "reminder":
         return <Clock className="w-4 h-4 text-orange-400" />;
-      case 'system':
+      case "system":
         return <Settings className="w-4 h-4 text-gray-400" />;
       default:
         return <Info className="w-4 h-4 text-blue-400" />;
@@ -79,33 +83,33 @@ export function NotificationCenter({
 
   // Get background color for notification type
   const getTypeBgColor = (type: NotificationType, read: boolean) => {
-    const opacity = read ? '10' : '20';
+    const opacity = read ? "10" : "20";
     switch (type) {
-      case 'success':
+      case "success":
         return `rgba(34, 197, 94, 0.${opacity})`;
-      case 'error':
+      case "error":
         return `rgba(239, 68, 68, 0.${opacity})`;
-      case 'warning':
+      case "warning":
         return `rgba(234, 179, 8, 0.${opacity})`;
-      case 'achievement':
+      case "achievement":
         return `rgba(168, 85, 247, 0.${opacity})`;
-      case 'measurement':
+      case "measurement":
         return `rgba(59, 130, 246, 0.${opacity})`;
       default:
-        return `rgba(255, 255, 255, 0.0${read ? '5' : '8'})`;
+        return `rgba(255, 255, 255, 0.0${read ? "5" : "8"})`;
     }
   };
 
   // Position classes
   const positionClasses = {
-    'top-right': 'top-0 right-0',
-    'top-left': 'top-0 left-0',
-    'bottom-right': 'bottom-0 right-0',
-    'bottom-left': 'bottom-0 left-0',
+    "top-right": "top-0 right-0",
+    "top-left": "top-0 left-0",
+    "bottom-right": "bottom-0 right-0",
+    "bottom-left": "bottom-0 left-0",
   };
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn("relative", className)}>
       {/* Bell Button */}
       <Button
         variant="ghost"
@@ -119,7 +123,7 @@ export function NotificationCenter({
         ) : (
           <BellOff className="w-5 h-5 text-muted-foreground" />
         )}
-        
+
         {/* Unread badge */}
         <AnimatePresence>
           {unreadCount > 0 && (
@@ -133,7 +137,7 @@ export function NotificationCenter({
                 variant="destructive"
                 className="h-5 min-w-5 flex items-center justify-center p-0 text-xs"
               >
-                {unreadCount > 99 ? '99+' : unreadCount}
+                {unreadCount > 99 ? "99+" : unreadCount}
               </Badge>
             </motion.div>
           )}
@@ -158,12 +162,12 @@ export function NotificationCenter({
               initial={{ opacity: 0, scale: 0.95, y: -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className={cn(
-                'absolute z-50 w-80 sm:w-96 rounded-xl overflow-hidden',
-                'bg-background/95 backdrop-blur-xl border shadow-2xl',
+                "absolute z-50 w-80 sm:w-96 rounded-xl overflow-hidden",
+                "bg-background/95 backdrop-blur-xl border shadow-2xl",
                 positionClasses[position],
-                'mt-2'
+                "mt-2",
               )}
             >
               {/* Header */}
@@ -200,12 +204,7 @@ export function NotificationCenter({
                     <CheckCheck className="w-3 h-3 mr-1" />
                     Mark all read
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={dismissAll}
-                  >
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={dismissAll}>
                     <Trash2 className="w-3 h-3 mr-1" />
                     Dismiss all
                   </Button>
@@ -221,7 +220,7 @@ export function NotificationCenter({
                   </div>
                 ) : (
                   <div className="divide-y">
-                    {visibleNotifications.map((notification) => (
+                    {visibleNotifications.map(notification => (
                       <NotificationItem
                         key={notification.id}
                         notification={notification}
@@ -276,8 +275,8 @@ function NotificationItem({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
       className={cn(
-        'relative px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer group',
-        !notification.read && 'border-l-2 border-l-primary'
+        "relative px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer group",
+        !notification.read && "border-l-2 border-l-primary",
       )}
       style={{ backgroundColor: bgColor }}
       onClick={onMarkRead}
@@ -289,7 +288,9 @@ function NotificationItem({
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <p className={cn('text-sm font-medium truncate', !notification.read && 'font-semibold')}>
+            <p
+              className={cn("text-sm font-medium truncate", !notification.read && "font-semibold")}
+            >
               {notification.title}
             </p>
             <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -306,7 +307,7 @@ function NotificationItem({
               variant="link"
               size="sm"
               className="h-auto p-0 mt-1 text-xs"
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation();
                 notification.action?.onClick();
               }}
@@ -323,7 +324,7 @@ function NotificationItem({
               variant="ghost"
               size="icon"
               className="h-6 w-6"
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation();
                 onMarkRead();
               }}
@@ -336,7 +337,7 @@ function NotificationItem({
             variant="ghost"
             size="icon"
             className="h-6 w-6"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               onDismiss();
             }}

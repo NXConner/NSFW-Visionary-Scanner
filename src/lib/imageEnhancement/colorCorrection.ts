@@ -82,7 +82,8 @@ export function analyzeColors(imageData: ImageData): ColorAnalysis {
   const averageBrightness = totalBrightness / pixelCount;
 
   // Calculate contrast using histogram spread
-  let minLum = 255, maxLum = 0;
+  let minLum = 255,
+    maxLum = 0;
   for (let i = 0; i < 256; i++) {
     if (histogram.luminance[i] > 0) {
       minLum = Math.min(minLum, i);
@@ -92,7 +93,8 @@ export function analyzeColors(imageData: ImageData): ColorAnalysis {
   const contrast = ((maxLum - minLum) / 255) * 100;
 
   // Estimate color temperature from RGB ratios
-  let totalR = 0, totalB = 0;
+  let totalR = 0,
+    totalB = 0;
   for (let i = 0; i < data.length; i += 4) {
     totalR += data[i];
     totalB += data[i + 2];
@@ -105,7 +107,7 @@ export function analyzeColors(imageData: ImageData): ColorAnalysis {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([key, count]) => {
-      const [r, g, b] = key.split(',').map(Number);
+      const [r, g, b] = key.split(",").map(Number);
       return { r, g, b, percentage: (count / pixelCount) * 100 };
     });
 
@@ -167,9 +169,9 @@ function applyContrast(data: Uint8ClampedArray, amount: number): void {
  * Apply exposure adjustment (gamma correction)
  */
 function applyExposure(data: Uint8ClampedArray, amount: number): void {
-  const gamma = 1 + (amount / 100);
+  const gamma = 1 + amount / 100;
   const gammaCorrection = 1 / gamma;
-  
+
   for (let i = 0; i < data.length; i += 4) {
     data[i] = Math.round(255 * Math.pow(data[i] / 255, gammaCorrection));
     data[i + 1] = Math.round(255 * Math.pow(data[i + 1] / 255, gammaCorrection));
@@ -202,7 +204,7 @@ function applyShadows(data: Uint8ClampedArray, amount: number): void {
   for (let i = 0; i < data.length; i += 4) {
     const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
     if (lum < 75) {
-      const factor = 1 - (lum / 75);
+      const factor = 1 - lum / 75;
       const adjust = adjustment * factor * 50;
       data[i] = Math.min(255, Math.max(0, data[i] + adjust));
       data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + adjust));
@@ -244,7 +246,8 @@ function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
 
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h = 0, s = 0;
+  let h = 0,
+    s = 0;
   const l = (max + min) / 2;
 
   if (max !== min) {
@@ -299,7 +302,7 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
  * Apply saturation adjustment
  */
 function applySaturation(data: Uint8ClampedArray, amount: number): void {
-  const adjustment = 1 + (amount / 100);
+  const adjustment = 1 + amount / 100;
   for (let i = 0; i < data.length; i += 4) {
     const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
     const newS = Math.min(1, Math.max(0, s * adjustment));
@@ -352,7 +355,7 @@ function applyBlacks(data: Uint8ClampedArray, amount: number): void {
   for (let i = 0; i < data.length; i += 4) {
     const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
     if (lum < 35) {
-      const factor = 1 - (lum / 35);
+      const factor = 1 - lum / 35;
       const adjust = adjustment * factor * 30;
       data[i] = Math.min(255, Math.max(0, data[i] - adjust));
       data[i + 1] = Math.min(255, Math.max(0, data[i + 1] - adjust));
@@ -366,7 +369,7 @@ function applyBlacks(data: Uint8ClampedArray, amount: number): void {
  */
 export function correctColors(
   imageData: ImageData,
-  options: Partial<ColorCorrectionOptions> = {}
+  options: Partial<ColorCorrectionOptions> = {},
 ): ImageData {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const result = new Uint8ClampedArray(imageData.data);
@@ -395,7 +398,9 @@ export function autoWhiteBalance(imageData: ImageData): ImageData {
   const result = new Uint8ClampedArray(data);
 
   // Calculate average RGB values
-  let avgR = 0, avgG = 0, avgB = 0;
+  let avgR = 0,
+    avgG = 0,
+    avgB = 0;
   const pixelCount = data.length / 4;
 
   for (let i = 0; i < data.length; i += 4) {

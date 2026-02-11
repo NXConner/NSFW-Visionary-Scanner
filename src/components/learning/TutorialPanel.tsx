@@ -1,9 +1,26 @@
 // Interactive Tutorial Panel Component
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Play, CheckCircle, Circle, ChevronRight, ChevronLeft, Award, RefreshCw, Clock, Star } from 'lucide-react';
-import { getTutorialEngine, Tutorial, TutorialProgress, TutorialStats, QuizQuestion } from '@/lib/learning/TutorialEngine';
-import { cn } from '@/lib/utils';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  BookOpen,
+  Play,
+  CheckCircle,
+  Circle,
+  ChevronRight,
+  ChevronLeft,
+  Award,
+  RefreshCw,
+  Clock,
+  Star,
+} from "lucide-react";
+import {
+  getTutorialEngine,
+  Tutorial,
+  TutorialProgress,
+  TutorialStats,
+  QuizQuestion,
+} from "@/lib/learning/TutorialEngine";
+import { cn } from "@/lib/utils";
 
 interface TutorialPanelProps {
   className?: string;
@@ -15,7 +32,9 @@ export const TutorialPanel: React.FC<TutorialPanelProps> = ({ className }) => {
   const [activeTutorial, setActiveTutorial] = useState<Tutorial | null>(null);
   const [activeProgress, setActiveProgress] = useState<TutorialProgress | null>(null);
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
-  const [quizResult, setQuizResult] = useState<{ correct: boolean; explanation: string } | null>(null);
+  const [quizResult, setQuizResult] = useState<{ correct: boolean; explanation: string } | null>(
+    null,
+  );
   const engine = getTutorialEngine();
 
   useEffect(() => {
@@ -68,9 +87,9 @@ export const TutorialPanel: React.FC<TutorialPanelProps> = ({ className }) => {
   };
 
   const getDifficultyColor = (d: string) => {
-    if (d === 'beginner') return 'text-green-400 bg-green-500/20';
-    if (d === 'intermediate') return 'text-yellow-400 bg-yellow-500/20';
-    return 'text-red-400 bg-red-500/20';
+    if (d === "beginner") return "text-green-400 bg-green-500/20";
+    if (d === "intermediate") return "text-yellow-400 bg-yellow-500/20";
+    return "text-red-400 bg-red-500/20";
   };
 
   // Active Tutorial View
@@ -80,18 +99,23 @@ export const TutorialPanel: React.FC<TutorialPanelProps> = ({ className }) => {
     const progress = (activeProgress.completedSteps.length / activeTutorial.steps.length) * 100;
 
     return (
-      <div className={cn('p-4 space-y-4', className)}>
+      <div className={cn("p-4 space-y-4", className)}>
         {/* Header */}
         <div className="flex items-center justify-between">
-          <button onClick={closeTutorial} className="text-gray-400 hover:text-white flex items-center gap-1">
+          <button
+            onClick={closeTutorial}
+            className="text-gray-400 hover:text-white flex items-center gap-1"
+          >
             <ChevronLeft className="w-4 h-4" /> Back
           </button>
-          <span className="text-sm text-gray-400">{activeProgress.currentStep + 1} / {activeTutorial.steps.length}</span>
+          <span className="text-sm text-gray-400">
+            {activeProgress.currentStep + 1} / {activeTutorial.steps.length}
+          </span>
         </div>
 
         {/* Progress Bar */}
         <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-          <motion.div 
+          <motion.div
             className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
@@ -121,13 +145,17 @@ export const TutorialPanel: React.FC<TutorialPanelProps> = ({ className }) => {
                       onClick={() => !quizResult && setQuizAnswer(idx)}
                       disabled={!!quizResult}
                       className={cn(
-                        'w-full text-left px-4 py-3 rounded-lg border transition-all',
-                        quizAnswer === idx 
-                          ? quizResult 
-                            ? quizResult.correct ? 'bg-green-500/30 border-green-500' : 'bg-red-500/30 border-red-500'
-                            : 'bg-blue-500/30 border-blue-500'
-                          : 'bg-gray-800 border-gray-600 hover:border-gray-500',
-                        quizResult && idx === currentStep.quiz!.correctIndex && 'bg-green-500/30 border-green-500'
+                        "w-full text-left px-4 py-3 rounded-lg border transition-all",
+                        quizAnswer === idx
+                          ? quizResult
+                            ? quizResult.correct
+                              ? "bg-green-500/30 border-green-500"
+                              : "bg-red-500/30 border-red-500"
+                            : "bg-blue-500/30 border-blue-500"
+                          : "bg-gray-800 border-gray-600 hover:border-gray-500",
+                        quizResult &&
+                          idx === currentStep.quiz!.correctIndex &&
+                          "bg-green-500/30 border-green-500",
                       )}
                     >
                       {option}
@@ -147,12 +175,14 @@ export const TutorialPanel: React.FC<TutorialPanelProps> = ({ className }) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className={cn(
-                      'mt-4 p-3 rounded-lg',
-                      quizResult.correct ? 'bg-green-500/20 border border-green-500/50' : 'bg-red-500/20 border border-red-500/50'
+                      "mt-4 p-3 rounded-lg",
+                      quizResult.correct
+                        ? "bg-green-500/20 border border-green-500/50"
+                        : "bg-red-500/20 border border-red-500/50",
                     )}
                   >
-                    <p className={quizResult.correct ? 'text-green-400' : 'text-red-400'}>
-                      {quizResult.correct ? '✓ Correct!' : '✗ Incorrect'}
+                    <p className={quizResult.correct ? "text-green-400" : "text-red-400"}>
+                      {quizResult.correct ? "✓ Correct!" : "✗ Incorrect"}
                     </p>
                     <p className="text-gray-300 text-sm mt-1">{quizResult.explanation}</p>
                   </motion.div>
@@ -176,7 +206,11 @@ export const TutorialPanel: React.FC<TutorialPanelProps> = ({ className }) => {
             disabled={currentStep.quiz && !quizResult}
             className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {isCompleted ? 'Finish' : activeProgress.currentStep === activeTutorial.steps.length - 1 ? 'Complete' : 'Next'}
+            {isCompleted
+              ? "Finish"
+              : activeProgress.currentStep === activeTutorial.steps.length - 1
+                ? "Complete"
+                : "Next"}
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -186,16 +220,18 @@ export const TutorialPanel: React.FC<TutorialPanelProps> = ({ className }) => {
 
   // Tutorial List View
   return (
-    <div className={cn('p-4 space-y-6', className)}>
+    <div className={cn("p-4 space-y-6", className)}>
       {/* Stats */}
       {stats && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="grid grid-cols-2 md:grid-cols-4 gap-3"
         >
           <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 rounded-xl p-4 border border-blue-500/30">
-            <div className="text-2xl font-bold text-blue-400">{stats.completedTutorials}/{stats.totalTutorials}</div>
+            <div className="text-2xl font-bold text-blue-400">
+              {stats.completedTutorials}/{stats.totalTutorials}
+            </div>
             <div className="text-xs text-gray-400">Completed</div>
           </div>
           <div className="bg-gradient-to-br from-green-500/20 to-green-600/10 rounded-xl p-4 border border-green-500/30">
@@ -224,8 +260,8 @@ export const TutorialPanel: React.FC<TutorialPanelProps> = ({ className }) => {
         {tutorials.map(tutorial => {
           const progress = engine.getProgress(tutorial.id);
           const isCompleted = engine.isCompleted(tutorial.id);
-          const progressPercent = progress 
-            ? (progress.completedSteps.length / tutorial.steps.length) * 100 
+          const progressPercent = progress
+            ? (progress.completedSteps.length / tutorial.steps.length) * 100
             : 0;
 
           return (
@@ -233,8 +269,8 @@ export const TutorialPanel: React.FC<TutorialPanelProps> = ({ className }) => {
               key={tutorial.id}
               whileHover={{ scale: 1.01 }}
               className={cn(
-                'bg-gray-800/50 rounded-xl p-4 border transition-all cursor-pointer',
-                isCompleted ? 'border-green-500/50' : 'border-gray-700 hover:border-blue-500/50'
+                "bg-gray-800/50 rounded-xl p-4 border transition-all cursor-pointer",
+                isCompleted ? "border-green-500/50" : "border-gray-700 hover:border-blue-500/50",
               )}
               onClick={() => startTutorial(tutorial)}
             >
@@ -252,7 +288,9 @@ export const TutorialPanel: React.FC<TutorialPanelProps> = ({ className }) => {
                   </div>
                   <p className="text-sm text-gray-400 mb-2">{tutorial.description}</p>
                   <div className="flex items-center gap-3 text-xs">
-                    <span className={cn('px-2 py-0.5 rounded', getDifficultyColor(tutorial.difficulty))}>
+                    <span
+                      className={cn("px-2 py-0.5 rounded", getDifficultyColor(tutorial.difficulty))}
+                    >
                       {tutorial.difficulty}
                     </span>
                     <span className="text-gray-500 flex items-center gap-1">
@@ -265,10 +303,7 @@ export const TutorialPanel: React.FC<TutorialPanelProps> = ({ className }) => {
               </div>
               {progress && !isCompleted && (
                 <div className="mt-3 h-1 bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500" 
-                    style={{ width: `${progressPercent}%` }} 
-                  />
+                  <div className="h-full bg-blue-500" style={{ width: `${progressPercent}%` }} />
                 </div>
               )}
             </motion.div>

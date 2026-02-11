@@ -16,16 +16,16 @@ import {
   detectSeasonality,
   projectTrend,
   calculateStatistics,
-} from './trendAnalysis';
+} from "./trendAnalysis";
 import {
   type RiskAssessment,
   type RiskLevel,
   assessRisk,
   getRiskLevelColor,
-} from './riskAssessment';
+} from "./riskAssessment";
 
-export type PredictionType = 'trend' | 'value' | 'range' | 'category';
-export type PredictionTimeframe = '7d' | '14d' | '30d' | '90d';
+export type PredictionType = "trend" | "value" | "range" | "category";
+export type PredictionTimeframe = "7d" | "14d" | "30d" | "90d";
 
 export interface Prediction {
   id: string;
@@ -34,7 +34,7 @@ export interface Prediction {
   timeframe: PredictionTimeframe;
   predictedValue?: number;
   predictedRange?: { min: number; max: number };
-  predictedTrend?: TrendResult['direction'];
+  predictedTrend?: TrendResult["direction"];
   confidence: number; // 0-100
   factors: PredictionFactor[];
   generatedAt: string;
@@ -43,7 +43,7 @@ export interface Prediction {
 
 export interface PredictionFactor {
   name: string;
-  impact: 'positive' | 'negative' | 'neutral';
+  impact: "positive" | "negative" | "neutral";
   weight: number;
   description: string;
 }
@@ -52,7 +52,7 @@ export interface HealthInsight {
   id: string;
   title: string;
   description: string;
-  severity: 'info' | 'success' | 'warning' | 'alert';
+  severity: "info" | "success" | "warning" | "alert";
   category: string;
   actionable: boolean;
   suggestedAction?: string;
@@ -105,7 +105,7 @@ export class PredictionEngine {
   /**
    * Perform comprehensive analysis on data
    */
-  analyze(dataPoints: DataPoint[], metricId: string = 'default'): AnalysisResult {
+  analyze(dataPoints: DataPoint[], metricId: string = "default"): AnalysisResult {
     if (!this.state.isInitialized) {
       this.initialize();
     }
@@ -158,7 +158,7 @@ export class PredictionEngine {
     dataPoints: DataPoint[],
     trend: TrendResult,
     seasonality: SeasonalityResult,
-    metricId: string
+    metricId: string,
   ): Prediction[] {
     const predictions: Prediction[] = [];
     const now = new Date();
@@ -166,9 +166,9 @@ export class PredictionEngine {
     // Trend prediction
     predictions.push({
       id: `pred_trend_${Date.now()}`,
-      type: 'trend',
+      type: "trend",
       metricId,
-      timeframe: '30d',
+      timeframe: "30d",
       predictedTrend: this.predictFutureTrend(trend),
       confidence: Math.min(90, trend.confidence * 0.8 + (dataPoints.length / 20) * 20),
       factors: this.getTrendFactors(trend, seasonality),
@@ -177,20 +177,20 @@ export class PredictionEngine {
     });
 
     // Value predictions for different timeframes
-    const timeframes: PredictionTimeframe[] = ['7d', '14d', '30d'];
-    
+    const timeframes: PredictionTimeframe[] = ["7d", "14d", "30d"];
+
     for (const timeframe of timeframes) {
       const days = parseInt(timeframe);
       const projected = projectTrend(dataPoints, days);
       const lastProjected = projected[projected.length - 1];
 
       if (lastProjected) {
-        const confidenceDecay = 1 - (days / 100);
+        const confidenceDecay = 1 - days / 100;
         const stats = calculateStatistics(dataPoints.map(d => d.value));
 
         predictions.push({
           id: `pred_value_${timeframe}_${Date.now()}`,
-          type: 'range',
+          type: "range",
           metricId,
           timeframe,
           predictedValue: lastProjected.value,
@@ -209,39 +209,40 @@ export class PredictionEngine {
     return predictions;
   }
 
-  private predictFutureTrend(currentTrend: TrendResult): TrendResult['direction'] {
+  private predictFutureTrend(currentTrend: TrendResult): TrendResult["direction"] {
     // Simple persistence model - predict trend will continue
-    if (currentTrend.strength === 'strong' || currentTrend.strength === 'moderate') {
+    if (currentTrend.strength === "strong" || currentTrend.strength === "moderate") {
       return currentTrend.direction;
     }
-    return 'stable';
+    return "stable";
   }
 
-  private getTrendFactors(
-    trend: TrendResult,
-    seasonality: SeasonalityResult
-  ): PredictionFactor[] {
+  private getTrendFactors(trend: TrendResult, seasonality: SeasonalityResult): PredictionFactor[] {
     const factors: PredictionFactor[] = [];
 
     factors.push({
-      name: 'Historical Trend',
-      impact: trend.direction === 'increasing' ? 'positive' : 
-              trend.direction === 'decreasing' ? 'negative' : 'neutral',
+      name: "Historical Trend",
+      impact:
+        trend.direction === "increasing"
+          ? "positive"
+          : trend.direction === "decreasing"
+            ? "negative"
+            : "neutral",
       weight: trend.rSquared,
       description: `${trend.direction} trend with ${trend.strength} strength`,
     });
 
     factors.push({
-      name: 'Data Consistency',
-      impact: trend.standardDeviation / trend.meanValue < 0.1 ? 'positive' : 'neutral',
+      name: "Data Consistency",
+      impact: trend.standardDeviation / trend.meanValue < 0.1 ? "positive" : "neutral",
       weight: 0.3,
-      description: 'Based on measurement variability',
+      description: "Based on measurement variability",
     });
 
     if (seasonality.hasSeasonality) {
       factors.push({
-        name: 'Seasonal Pattern',
-        impact: 'neutral',
+        name: "Seasonal Pattern",
+        impact: "neutral",
         weight: seasonality.confidence / 100,
         description: `${seasonality.periodDays}-day cycle detected`,
       });
@@ -253,14 +254,14 @@ export class PredictionEngine {
   private getValueFactors(trend: TrendResult, days: number): PredictionFactor[] {
     return [
       {
-        name: 'Trend Extrapolation',
-        impact: 'neutral',
+        name: "Trend Extrapolation",
+        impact: "neutral",
         weight: Math.max(0.3, trend.rSquared),
         description: `Based on ${trend.dataPoints} historical data points`,
       },
       {
-        name: 'Time Horizon',
-        impact: days > 14 ? 'negative' : 'neutral',
+        name: "Time Horizon",
+        impact: days > 14 ? "negative" : "neutral",
         weight: 0.2,
         description: `${days}-day prediction window`,
       },
@@ -274,23 +275,25 @@ export class PredictionEngine {
     trend: TrendResult,
     anomalies: AnomalyDetectionResult,
     risk: RiskAssessment,
-    seasonality: SeasonalityResult
+    seasonality: SeasonalityResult,
   ): HealthInsight[] {
     const insights: HealthInsight[] = [];
     const now = new Date().toISOString();
 
     // Trend insight
-    if (trend.strength !== 'none') {
+    if (trend.strength !== "none") {
       insights.push({
         id: `insight_trend_${Date.now()}`,
         title: `${trend.direction.charAt(0).toUpperCase() + trend.direction.slice(1)} Trend Detected`,
         description: `Your measurements show a ${trend.strength} ${trend.direction} trend over the analyzed period (${trend.percentChange.toFixed(1)}% change).`,
-        severity: trend.direction === 'decreasing' && trend.strength === 'strong' ? 'warning' : 'info',
-        category: 'trend',
-        actionable: trend.strength === 'strong',
-        suggestedAction: trend.direction === 'decreasing' && trend.strength !== 'weak'
-          ? 'Continue monitoring and consider consulting a healthcare provider if the trend persists.'
-          : undefined,
+        severity:
+          trend.direction === "decreasing" && trend.strength === "strong" ? "warning" : "info",
+        category: "trend",
+        actionable: trend.strength === "strong",
+        suggestedAction:
+          trend.direction === "decreasing" && trend.strength !== "weak"
+            ? "Continue monitoring and consider consulting a healthcare provider if the trend persists."
+            : undefined,
         relatedMetrics: [],
         timestamp: now,
       });
@@ -298,28 +301,30 @@ export class PredictionEngine {
 
     // Anomaly insight
     if (anomalies.anomalies.length > 0) {
-      const severeCount = anomalies.anomalies.filter(a => a.severity === 'severe').length;
+      const severeCount = anomalies.anomalies.filter(a => a.severity === "severe").length;
       insights.push({
         id: `insight_anomaly_${Date.now()}`,
-        title: 'Unusual Measurements Detected',
-        description: `${anomalies.anomalies.length} measurement(s) were outside the normal range. ${severeCount > 0 ? `${severeCount} were significantly different.` : ''}`,
-        severity: severeCount > 0 ? 'alert' : 'warning',
-        category: 'anomaly',
+        title: "Unusual Measurements Detected",
+        description: `${anomalies.anomalies.length} measurement(s) were outside the normal range. ${severeCount > 0 ? `${severeCount} were significantly different.` : ""}`,
+        severity: severeCount > 0 ? "alert" : "warning",
+        category: "anomaly",
         actionable: true,
-        suggestedAction: 'Review these measurements to ensure they were taken correctly. Retake if necessary.',
+        suggestedAction:
+          "Review these measurements to ensure they were taken correctly. Retake if necessary.",
         relatedMetrics: [],
         timestamp: now,
       });
     }
 
     // Risk insight
-    if (risk.riskLevel !== 'low') {
+    if (risk.riskLevel !== "low") {
       insights.push({
         id: `insight_risk_${Date.now()}`,
         title: `${risk.riskLevel.charAt(0).toUpperCase() + risk.riskLevel.slice(1)} Risk Level`,
-        description: risk.recommendations[0] || 'Some factors warrant attention.',
-        severity: risk.riskLevel === 'high' ? 'alert' : risk.riskLevel === 'elevated' ? 'warning' : 'info',
-        category: 'risk',
+        description: risk.recommendations[0] || "Some factors warrant attention.",
+        severity:
+          risk.riskLevel === "high" ? "alert" : risk.riskLevel === "elevated" ? "warning" : "info",
+        category: "risk",
         actionable: true,
         suggestedAction: risk.recommendations[0],
         relatedMetrics: [],
@@ -331,10 +336,11 @@ export class PredictionEngine {
     if (trend.dataPoints >= 10 && trend.standardDeviation / trend.meanValue < 0.05) {
       insights.push({
         id: `insight_consistency_${Date.now()}`,
-        title: 'Excellent Measurement Consistency',
-        description: 'Your measurements are very consistent, indicating good technique and reliable data.',
-        severity: 'success',
-        category: 'quality',
+        title: "Excellent Measurement Consistency",
+        description:
+          "Your measurements are very consistent, indicating good technique and reliable data.",
+        severity: "success",
+        category: "quality",
         actionable: false,
         relatedMetrics: [],
         timestamp: now,
@@ -345,10 +351,10 @@ export class PredictionEngine {
     if (seasonality.hasSeasonality && seasonality.confidence > 70) {
       insights.push({
         id: `insight_seasonality_${Date.now()}`,
-        title: 'Cyclical Pattern Detected',
+        title: "Cyclical Pattern Detected",
         description: `A ${seasonality.periodDays}-day cycle has been detected in your data. This could indicate natural variations.`,
-        severity: 'info',
-        category: 'pattern',
+        severity: "info",
+        category: "pattern",
         actionable: false,
         relatedMetrics: [],
         timestamp: now,
@@ -376,7 +382,7 @@ export class PredictionEngine {
    * Get quick summary
    */
   getQuickSummary(dataPoints: DataPoint[]): {
-    trend: TrendResult['direction'];
+    trend: TrendResult["direction"];
     riskLevel: RiskLevel;
     confidence: number;
     topInsight: string;
@@ -387,7 +393,7 @@ export class PredictionEngine {
       trend: analysis.trend.direction,
       riskLevel: analysis.riskAssessment.riskLevel,
       confidence: analysis.trend.confidence,
-      topInsight: analysis.insights[0]?.title || 'No significant findings',
+      topInsight: analysis.insights[0]?.title || "No significant findings",
     };
   }
 
@@ -396,7 +402,7 @@ export class PredictionEngine {
    */
   comparePeriods(
     period1: DataPoint[],
-    period2: DataPoint[]
+    period2: DataPoint[],
   ): {
     period1Stats: ReturnType<typeof calculateStatistics>;
     period2Stats: ReturnType<typeof calculateStatistics>;

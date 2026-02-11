@@ -30,7 +30,7 @@ const supabaseNotConfiguredError = new Error(
     "Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.",
 );
 
-const createDisabledResult = <T,>(data: T | null = null) => ({
+const createDisabledResult = <T>(data: T | null = null) => ({
   data,
   error: supabaseNotConfiguredError,
 });
@@ -145,8 +145,9 @@ const isLocalStorageAvailable = (): boolean => {
   }
 };
 
-const safeStorage: Storage | undefined =
-  isLocalStorageAvailable() ? window.localStorage : undefined;
+const safeStorage: Storage | undefined = isLocalStorageAvailable()
+  ? window.localStorage
+  : undefined;
 
 export const supabase = isConfigured
   ? createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {

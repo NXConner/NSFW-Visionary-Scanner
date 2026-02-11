@@ -14,4 +14,3 @@ export const scanInputsSchema = z.object({
   calibration: calibrationSchema.optional(),
   requestedUnits: z.enum(["mm", "cm", "in"]).optional(),
 });
-

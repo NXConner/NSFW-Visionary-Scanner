@@ -15,18 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Eye,
   EyeOff,
@@ -47,12 +37,12 @@ export function ScannerCaptureScreen(): React.ReactElement {
   // AR overlay state
   const [arEnabled, setArEnabled] = useState(true);
   const [showARControls, setShowARControls] = useState(false);
-  
+
   // Settings from context
   const settingsContext = useSettings();
   const arSettings = settingsContext?.arOverlay;
   const setARSettings = settingsContext?.setAROverlay;
-  
+
   // AR measurement hook
   const arMeasurement = useARMeasurement({
     onCaptureReady: () => {
@@ -61,26 +51,29 @@ export function ScannerCaptureScreen(): React.ReactElement {
         navigator.vibrate([50, 30, 50]);
       }
     },
-    onQualityChange: (quality) => {
+    onQualityChange: quality => {
       // Could log quality changes for analytics
     },
   });
-  
+
   // Mock landmarks for demo - in production these would come from object detection
   const [mockLandmarks] = useState<DetectionLandmark[]>([
-    { id: '1', point: { x: 150, y: 200 }, confidence: 0.95, type: 'reference' },
-    { id: '2', point: { x: 250, y: 200 }, confidence: 0.88, type: 'measurement' },
-    { id: '3', point: { x: 250, y: 400 }, confidence: 0.92, type: 'measurement' },
-    { id: '4', point: { x: 200, y: 300 }, confidence: 0.85, type: 'anchor' },
+    { id: "1", point: { x: 150, y: 200 }, confidence: 0.95, type: "reference" },
+    { id: "2", point: { x: 250, y: 200 }, confidence: 0.88, type: "measurement" },
+    { id: "3", point: { x: 250, y: 400 }, confidence: 0.92, type: "measurement" },
+    { id: "4", point: { x: 200, y: 300 }, confidence: 0.85, type: "anchor" },
   ]);
-  
+
   // Handle AR setting changes
-  const handleSettingChange = useCallback((key: keyof typeof arSettings, value: boolean | AROverlaySensitivity) => {
-    if (setARSettings && arSettings) {
-      setARSettings({ ...arSettings, [key]: value });
-    }
-  }, [setARSettings, arSettings]);
-  
+  const handleSettingChange = useCallback(
+    (key: keyof typeof arSettings, value: boolean | AROverlaySensitivity) => {
+      if (setARSettings && arSettings) {
+        setARSettings({ ...arSettings, [key]: value });
+      }
+    },
+    [setARSettings, arSettings],
+  );
+
   // Toggle AR overlay
   const toggleAR = useCallback(() => {
     setArEnabled(prev => !prev);
@@ -95,7 +88,7 @@ export function ScannerCaptureScreen(): React.ReactElement {
     <div className="relative h-full w-full">
       {/* Main Scanner Experience */}
       <ScannerExperience />
-      
+
       {/* AR Overlay Controls - Floating Button */}
       <div className="fixed bottom-24 right-4 z-50 flex flex-col gap-2">
         {/* Quick Toggle */}
@@ -109,11 +102,8 @@ export function ScannerCaptureScreen(): React.ReactElement {
               <Button
                 variant={arEnabled ? "default" : "secondary"}
                 size="icon"
-                className={cn(
-                  "h-12 w-12 rounded-full shadow-lg",
-                  arEnabled && "bg-primary"
-                )}
-                onClick={(e) => {
+                className={cn("h-12 w-12 rounded-full shadow-lg", arEnabled && "bg-primary")}
+                onClick={e => {
                   if (e.detail === 2) {
                     // Double click opens settings
                     setShowARControls(true);
@@ -122,19 +112,11 @@ export function ScannerCaptureScreen(): React.ReactElement {
                   }
                 }}
               >
-                {arEnabled ? (
-                  <Target className="h-5 w-5" />
-                ) : (
-                  <EyeOff className="h-5 w-5" />
-                )}
+                {arEnabled ? <Target className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
               </Button>
             </PopoverTrigger>
-            
-            <PopoverContent 
-              side="left" 
-              align="end"
-              className="w-72 p-4"
-            >
+
+            <PopoverContent side="left" align="end" className="w-72 p-4">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold">AR Measurement</h4>
@@ -142,7 +124,7 @@ export function ScannerCaptureScreen(): React.ReactElement {
                     {arEnabled ? "Active" : "Off"}
                   </Badge>
                 </div>
-                
+
                 {/* Quick Settings */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -153,10 +135,10 @@ export function ScannerCaptureScreen(): React.ReactElement {
                     <Switch
                       id="ar-guides"
                       checked={arSettings?.showGuides ?? true}
-                      onCheckedChange={(v) => handleSettingChange('showGuides', v)}
+                      onCheckedChange={v => handleSettingChange("showGuides", v)}
                     />
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <Label htmlFor="ar-points" className="flex items-center gap-2">
                       <Crosshair className="h-4 w-4" />
@@ -165,10 +147,10 @@ export function ScannerCaptureScreen(): React.ReactElement {
                     <Switch
                       id="ar-points"
                       checked={arSettings?.showDetectionPoints ?? true}
-                      onCheckedChange={(v) => handleSettingChange('showDetectionPoints', v)}
+                      onCheckedChange={v => handleSettingChange("showDetectionPoints", v)}
                     />
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <Label htmlFor="ar-quality" className="flex items-center gap-2">
                       <Activity className="h-4 w-4" />
@@ -177,10 +159,10 @@ export function ScannerCaptureScreen(): React.ReactElement {
                     <Switch
                       id="ar-quality"
                       checked={arSettings?.showQualityIndicator ?? true}
-                      onCheckedChange={(v) => handleSettingChange('showQualityIndicator', v)}
+                      onCheckedChange={v => handleSettingChange("showQualityIndicator", v)}
                     />
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <Label htmlFor="ar-prompts" className="flex items-center gap-2">
                       <Eye className="h-4 w-4" />
@@ -189,27 +171,27 @@ export function ScannerCaptureScreen(): React.ReactElement {
                     <Switch
                       id="ar-prompts"
                       checked={arSettings?.showPositioningPrompts ?? true}
-                      onCheckedChange={(v) => handleSettingChange('showPositioningPrompts', v)}
+                      onCheckedChange={v => handleSettingChange("showPositioningPrompts", v)}
                     />
                   </div>
-                  
+
                   <div className="border-t pt-3 mt-3">
                     <Label className="text-xs text-muted-foreground mb-2 block">Sensitivity</Label>
                     <div className="flex gap-2">
-                      {(['low', 'medium', 'high'] as const).map((level) => (
+                      {(["low", "medium", "high"] as const).map(level => (
                         <Button
                           key={level}
                           variant={arSettings?.sensitivity === level ? "default" : "outline"}
                           size="sm"
                           className="flex-1 capitalize"
-                          onClick={() => handleSettingChange('sensitivity', level)}
+                          onClick={() => handleSettingChange("sensitivity", level)}
                         >
                           {level}
                         </Button>
                       ))}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between border-t pt-3">
                     <Label htmlFor="ar-haptic" className="flex items-center gap-2">
                       <Vibrate className="h-4 w-4" />
@@ -218,10 +200,10 @@ export function ScannerCaptureScreen(): React.ReactElement {
                     <Switch
                       id="ar-haptic"
                       checked={arSettings?.hapticFeedback ?? true}
-                      onCheckedChange={(v) => handleSettingChange('hapticFeedback', v)}
+                      onCheckedChange={v => handleSettingChange("hapticFeedback", v)}
                     />
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <Label htmlFor="ar-sound" className="flex items-center gap-2">
                       {arSettings?.soundFeedback ? (
@@ -234,11 +216,11 @@ export function ScannerCaptureScreen(): React.ReactElement {
                     <Switch
                       id="ar-sound"
                       checked={arSettings?.soundFeedback ?? false}
-                      onCheckedChange={(v) => handleSettingChange('soundFeedback', v)}
+                      onCheckedChange={v => handleSettingChange("soundFeedback", v)}
                     />
                   </div>
                 </div>
-                
+
                 {/* Full Settings Link */}
                 <Sheet>
                   <SheetTrigger asChild>
@@ -254,7 +236,8 @@ export function ScannerCaptureScreen(): React.ReactElement {
                     <div className="mt-6 space-y-6">
                       {/* Full settings panel would go here */}
                       <p className="text-sm text-muted-foreground">
-                        Configure detailed AR measurement overlay settings in the main Settings page.
+                        Configure detailed AR measurement overlay settings in the main Settings
+                        page.
                       </p>
                     </div>
                   </SheetContent>
@@ -263,7 +246,7 @@ export function ScannerCaptureScreen(): React.ReactElement {
             </PopoverContent>
           </Popover>
         </motion.div>
-        
+
         {/* Status Badge */}
         <AnimatePresence>
           {arEnabled && arMeasurement.captureReady && (
@@ -272,16 +255,12 @@ export function ScannerCaptureScreen(): React.ReactElement {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
             >
-              <Badge 
-                className="bg-green-500 text-white animate-pulse"
-              >
-                Ready to capture
-              </Badge>
+              <Badge className="bg-green-500 text-white animate-pulse">Ready to capture</Badge>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-      
+
       {/* AR Overlay Demo (positioned for demonstration) */}
       {arEnabled && (
         <div className="fixed top-20 left-4 z-40 pointer-events-none">
@@ -299,9 +278,7 @@ export function ScannerCaptureScreen(): React.ReactElement {
               landmarks={mockLandmarks}
               className="opacity-90"
             />
-            <div className="absolute bottom-2 left-2 text-xs text-white/70">
-              AR Preview
-            </div>
+            <div className="absolute bottom-2 left-2 text-xs text-white/70">AR Preview</div>
           </motion.div>
         </div>
       )}

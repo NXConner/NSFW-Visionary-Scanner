@@ -61,24 +61,52 @@ interface UserItem {
 const getRoleBadge = (role: UserRole) => {
   switch (role) {
     case "super_admin":
-      return <Badge className="bg-destructive gap-1"><Shield className="w-3 h-3" /> Super Admin</Badge>;
+      return (
+        <Badge className="bg-destructive gap-1">
+          <Shield className="w-3 h-3" /> Super Admin
+        </Badge>
+      );
     case "admin":
-      return <Badge className="bg-destructive/80 gap-1"><Shield className="w-3 h-3" /> Admin</Badge>;
+      return (
+        <Badge className="bg-destructive/80 gap-1">
+          <Shield className="w-3 h-3" /> Admin
+        </Badge>
+      );
     case "premium":
-      return <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 gap-1"><Crown className="w-3 h-3" /> Premium</Badge>;
+      return (
+        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 gap-1">
+          <Crown className="w-3 h-3" /> Premium
+        </Badge>
+      );
     default:
-      return <Badge variant="secondary" className="gap-1"><User className="w-3 h-3" /> User</Badge>;
+      return (
+        <Badge variant="secondary" className="gap-1">
+          <User className="w-3 h-3" /> User
+        </Badge>
+      );
   }
 };
 
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "active":
-      return <Badge variant="outline" className="gap-1 border-success text-success"><CheckCircle className="w-3 h-3" /> Active</Badge>;
+      return (
+        <Badge variant="outline" className="gap-1 border-success text-success">
+          <CheckCircle className="w-3 h-3" /> Active
+        </Badge>
+      );
     case "suspended":
-      return <Badge variant="outline" className="gap-1 border-destructive text-destructive"><Ban className="w-3 h-3" /> Suspended</Badge>;
+      return (
+        <Badge variant="outline" className="gap-1 border-destructive text-destructive">
+          <Ban className="w-3 h-3" /> Suspended
+        </Badge>
+      );
     default:
-      return <Badge variant="outline" className="gap-1"><UserCheck className="w-3 h-3" /> Pending</Badge>;
+      return (
+        <Badge variant="outline" className="gap-1">
+          <UserCheck className="w-3 h-3" /> Pending
+        </Badge>
+      );
   }
 };
 
@@ -102,9 +130,7 @@ export function AdminUsersPanel() {
       if (profilesError) throw profilesError;
 
       // Fetch user roles
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("user_id, role");
+      const { data: roles } = await supabase.from("user_roles").select("user_id, role");
 
       // Fetch premium subscriptions
       const { data: subscriptions } = await supabase
@@ -128,8 +154,12 @@ export function AdminUsersPanel() {
           name: profile.display_name || profile.email?.split("@")[0] || "User",
           role,
           status: "active" as const,
-          joinedAt: profile.created_at ? format(new Date(profile.created_at), "MMM d, yyyy") : "Unknown",
-          lastActive: profile.updated_at ? format(new Date(profile.updated_at), "MMM d, yyyy") : "Unknown",
+          joinedAt: profile.created_at
+            ? format(new Date(profile.created_at), "MMM d, yyyy")
+            : "Unknown",
+          lastActive: profile.updated_at
+            ? format(new Date(profile.updated_at), "MMM d, yyyy")
+            : "Unknown",
           hasPremium: premiumSet.has(profile.user_id),
         };
       });

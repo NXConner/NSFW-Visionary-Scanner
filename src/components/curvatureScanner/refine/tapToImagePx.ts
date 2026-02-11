@@ -23,7 +23,12 @@ export type ImageTapMappingResult =
 export function mapObjectContainTapToImagePx(input: ImageTapMappingInput): ImageTapMappingResult {
   const { containerRect, naturalWidth, naturalHeight, clientX, clientY } = input;
 
-  if (!Number.isFinite(naturalWidth) || !Number.isFinite(naturalHeight) || naturalWidth <= 0 || naturalHeight <= 0) {
+  if (
+    !Number.isFinite(naturalWidth) ||
+    !Number.isFinite(naturalHeight) ||
+    naturalWidth <= 0 ||
+    naturalHeight <= 0
+  ) {
     return { kind: "miss" };
   }
 
@@ -59,4 +64,3 @@ export function mapObjectContainTapToImagePx(input: ImageTapMappingInput): Image
     yPct: (clampedY / naturalHeight) * 100,
   };
 }
-

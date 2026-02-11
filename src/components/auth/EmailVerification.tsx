@@ -1,17 +1,27 @@
 /**
  * Email Verification Component
- * 
+ *
  * Displays email verification status and allows users to resend verification emails.
  * Matches the UI design from the MorphoScan Pro app.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Mail, CheckCircle2, AlertCircle, Loader2, RefreshCw, Shield, Cloud, Bell, Star } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { EmailService } from '@/lib/email';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Mail,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  RefreshCw,
+  Shield,
+  Cloud,
+  Bell,
+  Star,
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { EmailService } from "@/lib/email";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface EmailVerificationProps {
   onVerified?: () => void;
@@ -22,7 +32,7 @@ interface EmailVerificationProps {
 export const EmailVerification: React.FC<EmailVerificationProps> = ({
   onVerified,
   showBenefits = true,
-  className = '',
+  className = "",
 }) => {
   const { user } = useAuth();
   const [isVerified, setIsVerified] = useState(false);
@@ -32,8 +42,8 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
   const [resendError, setResendError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
 
-  const email = user?.email || '';
-  const maskedEmail = email ? `${email.substring(0, 3)}***@${email.split('@')[1] || ''}` : '';
+  const email = user?.email || "";
+  const maskedEmail = email ? `${email.substring(0, 3)}***@${email.split("@")[1] || ""}` : "";
 
   // Check verification status
   const checkVerificationStatus = useCallback(async () => {
@@ -45,7 +55,7 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
         onVerified();
       }
     } catch (error) {
-      console.error('Error checking verification status:', error);
+      console.error("Error checking verification status:", error);
     } finally {
       setIsChecking(false);
     }
@@ -54,7 +64,7 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
   // Initial check and polling
   useEffect(() => {
     checkVerificationStatus();
-    
+
     // Poll every 5 seconds to check if user verified
     const interval = setInterval(checkVerificationStatus, 5000);
     return () => clearInterval(interval);
@@ -71,22 +81,22 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
   // Handle resend verification email
   const handleResendEmail = async () => {
     if (!email || cooldown > 0) return;
-    
+
     setIsResending(true);
     setResendSuccess(false);
     setResendError(null);
 
     try {
       const result = await EmailService.sendVerificationEmail(email);
-      
+
       if (result.success) {
         setResendSuccess(true);
         setCooldown(60); // 60 second cooldown
       } else {
-        setResendError(result.error || 'Failed to send verification email');
+        setResendError(result.error || "Failed to send verification email");
       }
     } catch (error) {
-      setResendError('An unexpected error occurred');
+      setResendError("An unexpected error occurred");
     } finally {
       setIsResending(false);
     }
@@ -95,7 +105,9 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
   // If already verified, show success state
   if (isVerified) {
     return (
-      <Card className={`bg-gradient-to-br from-green-900/20 to-green-800/10 border-green-500/30 ${className}`}>
+      <Card
+        className={`bg-gradient-to-br from-green-900/20 to-green-800/10 border-green-500/30 ${className}`}
+      >
         <CardContent className="p-6">
           <div className="flex flex-col items-center text-center">
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mb-4">
@@ -123,9 +135,7 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
             </div>
 
             {/* Title */}
-            <h2 className="text-2xl font-bold text-white mb-2">
-              Email Verification Required
-            </h2>
+            <h2 className="text-2xl font-bold text-white mb-2">Email Verification Required</h2>
 
             {/* Description */}
             <p className="text-white/70 text-sm mb-6">
@@ -135,10 +145,12 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
             {/* Alert Box */}
             <Alert className="bg-orange-500/10 border-orange-500/30 mb-6">
               <AlertCircle className="h-4 w-4 text-orange-500" />
-              <AlertTitle className="text-orange-400 font-semibold">Email Verification Required</AlertTitle>
+              <AlertTitle className="text-orange-400 font-semibold">
+                Email Verification Required
+              </AlertTitle>
               <AlertDescription className="text-white/80">
-                Please verify your email address ({maskedEmail}) to access all features. 
-                Check your inbox for the verification link.
+                Please verify your email address ({maskedEmail}) to access all features. Check your
+                inbox for the verification link.
               </AlertDescription>
             </Alert>
 
@@ -173,7 +185,7 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
                 ) : cooldown > 0 ? (
                   `Resend in ${cooldown}s`
                 ) : (
-                  'Resend Email'
+                  "Resend Email"
                 )}
               </Button>
             </div>
@@ -221,7 +233,7 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
                 <span>Access premium features</span>
               </li>
             </ul>
-            
+
             <p className="mt-4 text-white/50 text-xs">
               Didn't receive the email? Check your spam folder or click "Resend Email" above.
             </p>

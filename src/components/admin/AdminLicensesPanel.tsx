@@ -203,11 +203,7 @@ export function AdminLicensesPanel() {
                       <TableCell>{lic.expiresAt}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => copyKey(lic.key)}
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => copyKey(lic.key)}>
                             <Copy className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon">

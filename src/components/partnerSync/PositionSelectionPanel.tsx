@@ -34,16 +34,12 @@ export function PositionSelectionPanel({
 
   if (!partnerId) {
     return (
-      <div className="text-sm text-muted-foreground">
-        {t("partnerSync.positions.connectHint")}
-      </div>
+      <div className="text-sm text-muted-foreground">{t("partnerSync.positions.connectHint")}</div>
     );
   }
   if (!consentReady) {
     return (
-      <div className="text-sm text-muted-foreground">
-        {t("partnerSync.settings.consentNeeded")}
-      </div>
+      <div className="text-sm text-muted-foreground">{t("partnerSync.settings.consentNeeded")}</div>
     );
   }
 

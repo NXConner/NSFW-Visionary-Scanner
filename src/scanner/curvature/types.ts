@@ -66,4 +66,3 @@ export interface CurvatureScanSession {
   };
   notes?: string;
 }
-

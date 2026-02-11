@@ -31,7 +31,10 @@ export function buildAnalyticsData(params: {
   const featureMap = new Map<string, number>();
   const deviceMap = new Map<string, number>();
   const errorMap = new Map<string, { count: number; last: number }>();
-  const trendMap = new Map<string, { users: Set<string>; sessions: Set<string>; scans: number; events: number }>();
+  const trendMap = new Map<
+    string,
+    { users: Set<string>; sessions: Set<string>; scans: number; events: number }
+  >();
 
   for (const evt of events) {
     const eventName = evt.event_name || "unknown";
@@ -41,7 +44,11 @@ export function buildAnalyticsData(params: {
 
     if (evt.user_id) activeUserIds.add(evt.user_id);
     if (evt.session_id) {
-      const existing = sessionMap.get(evt.session_id) ?? { min: createdAt, max: createdAt, count: 0 };
+      const existing = sessionMap.get(evt.session_id) ?? {
+        min: createdAt,
+        max: createdAt,
+        count: 0,
+      };
       existing.min = Math.min(existing.min, createdAt);
       existing.max = Math.max(existing.max, createdAt);
       existing.count += 1;
@@ -128,7 +135,8 @@ export function buildAnalyticsData(params: {
   const bounceRate =
     totalSessions > 0
       ? Math.round(
-          (Array.from(sessionMap.values()).filter(session => session.count <= 1).length / totalSessions) *
+          (Array.from(sessionMap.values()).filter(session => session.count <= 1).length /
+            totalSessions) *
             1000,
         ) / 10
       : 0;
@@ -141,7 +149,8 @@ export function buildAnalyticsData(params: {
       activeUsers: activeUserIds.size,
       newUsers: toNumber(newUsers),
       totalEvents,
-      totalScans: events.filter(evt => (evt.event_name || "").toLowerCase().includes("scan")).length,
+      totalScans: events.filter(evt => (evt.event_name || "").toLowerCase().includes("scan"))
+        .length,
       averageSessionDuration: Math.round(averageSessionDurationMs / 1000),
       bounceRate,
     },
@@ -171,8 +180,7 @@ function buildRetentionPoints(
       const ts = new Date(evt.created_at).getTime();
       if (ts >= cutoff && evt.user_id) activeUsers.add(evt.user_id);
     }
-    const rate =
-      totalUsers > 0 ? Math.round((activeUsers.size / totalUsers) * 1000) / 10 : 0;
+    const rate = totalUsers > 0 ? Math.round((activeUsers.size / totalUsers) * 1000) / 10 : 0;
     return { period: period.label, rate };
   });
 }

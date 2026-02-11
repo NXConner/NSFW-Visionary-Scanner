@@ -21,7 +21,7 @@ describe("useLocalStorage", () => {
 
   it("initializes with empty arrays when localStorage is empty", () => {
     const { result } = renderHook(() => useLocalStorage());
-    
+
     expect(result.current.scans).toEqual([]);
     expect(result.current.diaryEntries).toEqual([]);
   });
@@ -46,13 +46,13 @@ describe("useLocalStorage", () => {
     });
 
     const { result } = renderHook(() => useLocalStorage());
-    
+
     expect(result.current.scans).toEqual(savedScans);
   });
 
   it("saves a new scan", () => {
     const { result } = renderHook(() => useLocalStorage());
-    
+
     const newScan = {
       scan_type: "erect",
       length: 6,
@@ -95,7 +95,7 @@ describe("useLocalStorage", () => {
     });
 
     const { result } = renderHook(() => useLocalStorage());
-    
+
     act(() => {
       result.current.deleteScan("test-1");
     });
@@ -106,7 +106,7 @@ describe("useLocalStorage", () => {
 
   it("saves a diary entry", () => {
     const { result } = renderHook(() => useLocalStorage());
-    
+
     const newEntry = {
       entry_date: "2025-01-01",
       length: 5,
@@ -130,7 +130,7 @@ describe("useLocalStorage", () => {
 
   it("clears all data", () => {
     const { result } = renderHook(() => useLocalStorage());
-    
+
     // Add some data first
     act(() => {
       result.current.saveScan({
@@ -156,7 +156,7 @@ describe("useLocalStorage", () => {
 
   it("exports data correctly", () => {
     const { result } = renderHook(() => useLocalStorage());
-    
+
     act(() => {
       result.current.saveScan({
         scan_type: "test",
@@ -178,7 +178,7 @@ describe("useLocalStorage", () => {
 
   it("imports data correctly", () => {
     const { result } = renderHook(() => useLocalStorage());
-    
+
     const importedData = {
       scans: [
         {
@@ -203,7 +203,7 @@ describe("useLocalStorage", () => {
     expect(result.current.scans).toEqual(importedData.scans);
     expect(safeLocalStorage.setItem).toHaveBeenCalledWith(
       "morphoscan_scans",
-      JSON.stringify(importedData.scans)
+      JSON.stringify(importedData.scans),
     );
   });
 });

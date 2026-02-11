@@ -21,7 +21,7 @@ const mapFallbackPosition = (pos: NSFWPosition): Position => {
 const shouldAllowFallback = (): boolean => {
   // Strict check first
   if (BUILD_ALLOW_ADULT_BUNDLE) return true;
-  
+
   // Fallback: allow if either flag suggests NSFW content should be available
   // This helps during development when env vars may not be perfectly configured
   if (BUILD_IS_NSFW || BUILD_IS_DIRECT) {
@@ -32,7 +32,7 @@ const shouldAllowFallback = (): boolean => {
     });
     return true;
   }
-  
+
   return false;
 };
 
@@ -73,9 +73,7 @@ export const getNsfwFallbackCategories = async (): Promise<string[]> => {
   );
 };
 
-export const findNsfwFallbackPositionById = async (
-  id: string,
-): Promise<Position | null> => {
+export const findNsfwFallbackPositionById = async (id: string): Promise<Position | null> => {
   if (!BUILD_ALLOW_ADULT_BUNDLE) return null;
   const safeId = String(id || "").trim();
   if (!safeId) return null;

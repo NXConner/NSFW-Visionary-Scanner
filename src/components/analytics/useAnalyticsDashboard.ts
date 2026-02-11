@@ -45,7 +45,8 @@ export function useAnalyticsDashboardData(options: {
           .order("created_at", { ascending: true })
           .limit(10000);
 
-        const scopedEventsQuery = isAdmin || !userId ? eventsQuery : eventsQuery.eq("user_id", userId);
+        const scopedEventsQuery =
+          isAdmin || !userId ? eventsQuery : eventsQuery.eq("user_id", userId);
 
         const [eventsResult, totalUsersResult, newUsersResult] = await Promise.all([
           scopedEventsQuery,

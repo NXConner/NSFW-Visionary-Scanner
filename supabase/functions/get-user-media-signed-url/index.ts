@@ -101,7 +101,9 @@ serve(async req => {
       });
     }
 
-    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresInSeconds);
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(path, expiresInSeconds);
     if (error || !data?.signedUrl) throw error ?? new Error("Failed to sign URL");
 
     return new Response(

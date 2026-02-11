@@ -253,7 +253,14 @@ export interface DateNightTemplate {
   id: string;
   user_id: string | null;
   template_name: string;
-  template_category: "romantic" | "passionate" | "adventurous" | "kinky" | "quick" | "custom" | null;
+  template_category:
+    | "romantic"
+    | "passionate"
+    | "adventurous"
+    | "kinky"
+    | "quick"
+    | "custom"
+    | null;
   is_public: boolean;
   default_activities: Record<string, unknown> | null;
   default_positions: string[] | null;

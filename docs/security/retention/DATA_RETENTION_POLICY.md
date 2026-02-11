@@ -86,11 +86,11 @@ Email events are logged to:
 
 ## Defaults
 
-| Category | Default Retention | Notes |
-|---|---:|---|
-| Scan History | 365 days | User configurable |
-| Health Diary | 730 days | User configurable |
-| Device Tokens | 90 days | System-managed |
+| Category      | Default Retention | Notes             |
+| ------------- | ----------------: | ----------------- |
+| Scan History  |          365 days | User configurable |
+| Health Diary  |          730 days | User configurable |
+| Device Tokens |           90 days | System-managed    |
 
 ## Operational Checklist
 
@@ -99,4 +99,3 @@ Email events are logged to:
 - [ ] Verify retention preferences are saved per user
 - [ ] Verify email notifications are delivered
 - [ ] Monitor deletion counts in logs
-

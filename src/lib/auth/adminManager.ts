@@ -22,7 +22,7 @@ export interface AdminUser {
   permissions: AdminPermission[];
 }
 
-export type AdminPermission = 
+export type AdminPermission =
   | "manage_users"
   | "manage_content"
   | "manage_dlc"
@@ -56,26 +56,29 @@ const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
  */
 function getAdminEmails(): string[] {
   const adminEmails: string[] = [];
-  
+
   // Primary admin email from VITE_ADMIN_EMAIL
   const primaryAdmin = import.meta.env.VITE_ADMIN_EMAIL;
   if (primaryAdmin) {
     adminEmails.push(primaryAdmin.toLowerCase().trim());
   }
-  
+
   // Super admin email from ADMIN_SUPER_EMAIL (also check VITE_ prefix for client-side access)
   const superAdmin = import.meta.env.VITE_ADMIN_SUPER_EMAIL || import.meta.env.ADMIN_SUPER_EMAIL;
   if (superAdmin) {
     adminEmails.push(superAdmin.toLowerCase().trim());
   }
-  
+
   // Additional admin emails from VITE_ADDITIONAL_ADMINS (comma-separated)
   const additionalAdmins = import.meta.env.VITE_ADDITIONAL_ADMINS;
   if (additionalAdmins) {
-    const extras = additionalAdmins.split(",").map((e: string) => e.toLowerCase().trim()).filter(Boolean);
+    const extras = additionalAdmins
+      .split(",")
+      .map((e: string) => e.toLowerCase().trim())
+      .filter(Boolean);
     adminEmails.push(...extras);
   }
-  
+
   // Remove duplicates
   return [...new Set(adminEmails)];
 }
@@ -103,7 +106,7 @@ function getCachedStatus(userId: string): AdminCache | null {
       return memoryCache;
     }
   }
-  
+
   // Check localStorage
   try {
     const stored = localStorage.getItem(ADMIN_CACHE_KEY);
@@ -117,7 +120,7 @@ function getCachedStatus(userId: string): AdminCache | null {
   } catch {
     // localStorage may not be available
   }
-  
+
   return null;
 }
 
@@ -128,9 +131,9 @@ function setCachedStatus(userId: string, isAdmin: boolean, role: AdminRole | nul
     role,
     timestamp: Date.now(),
   };
-  
+
   memoryCache = cache;
-  
+
   try {
     localStorage.setItem(ADMIN_CACHE_KEY, JSON.stringify(cache));
   } catch {
@@ -166,23 +169,24 @@ export function isAdminByEmail(email?: string | null): boolean {
 export function getAdminRoleByEmail(email?: string | null): AdminRole | null {
   if (!email) return null;
   const normalizedEmail = email.toLowerCase().trim();
-  
+
   // Check if super admin
   const superAdminEmail = (
-    import.meta.env.VITE_ADMIN_SUPER_EMAIL || 
-    import.meta.env.ADMIN_SUPER_EMAIL
-  )?.toLowerCase().trim();
-  
+    import.meta.env.VITE_ADMIN_SUPER_EMAIL || import.meta.env.ADMIN_SUPER_EMAIL
+  )
+    ?.toLowerCase()
+    .trim();
+
   if (superAdminEmail && normalizedEmail === superAdminEmail) {
     return "super_admin";
   }
-  
+
   // Check if primary admin
   const primaryAdminEmail = import.meta.env.VITE_ADMIN_EMAIL?.toLowerCase().trim();
   if (primaryAdminEmail && normalizedEmail === primaryAdminEmail) {
     return "admin";
   }
-  
+
   // Check additional admins
   const additionalAdmins = import.meta.env.VITE_ADDITIONAL_ADMINS;
   if (additionalAdmins) {
@@ -191,50 +195,52 @@ export function getAdminRoleByEmail(email?: string | null): AdminRole | null {
       return "admin";
     }
   }
-  
+
   return null;
 }
 
 /**
  * Check if current user is an admin (async, checks database)
  */
-export async function checkAdminRole(userId: string): Promise<{ isAdmin: boolean; role: AdminRole | null }> {
+export async function checkAdminRole(
+  userId: string,
+): Promise<{ isAdmin: boolean; role: AdminRole | null }> {
   // Check cache first
   const cached = getCachedStatus(userId);
   if (cached) {
     return { isAdmin: cached.isAdmin, role: cached.role };
   }
-  
+
   try {
     // First check database user_roles table
     const { data: roleData, error: roleError } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
-    
+
     if (!roleError && roleData && roleData.length > 0) {
       const roles = roleData.map(r => r.role);
-      
+
       if (roles.includes("super_admin")) {
         setCachedStatus(userId, true, "super_admin");
         return { isAdmin: true, role: "super_admin" };
       }
-      
+
       if (roles.includes("admin")) {
         setCachedStatus(userId, true, "admin");
         return { isAdmin: true, role: "admin" };
       }
-      
+
       if (roles.includes("moderator")) {
         setCachedStatus(userId, true, "moderator");
         return { isAdmin: true, role: "moderator" };
       }
     }
-    
+
     // Fallback: check email-based admin configuration
     const { data: userData } = await supabase.auth.getUser();
     const email = userData?.user?.email;
-    
+
     if (email) {
       const emailRole = getAdminRoleByEmail(email);
       if (emailRole) {
@@ -242,7 +248,7 @@ export async function checkAdminRole(userId: string): Promise<{ isAdmin: boolean
         return { isAdmin: true, role: emailRole };
       }
     }
-    
+
     setCachedStatus(userId, false, null);
     return { isAdmin: false, role: null };
   } catch (err) {
@@ -271,10 +277,7 @@ export function getAdminPermissions(role?: AdminRole | null): AdminPermission[] 
 /**
  * Check if admin has a specific permission
  */
-export function hasAdminPermission(
-  role: AdminRole | null,
-  permission: AdminPermission
-): boolean {
+export function hasAdminPermission(role: AdminRole | null, permission: AdminPermission): boolean {
   if (!role) return false;
   const permissions = getAdminPermissions(role);
   return permissions.includes("full_access") || permissions.includes(permission);

@@ -35,11 +35,35 @@ interface ServiceStatus {
 const services: ServiceStatus[] = [
   { name: "API Server", status: "healthy", latency: 45, uptime: "99.99%", lastCheck: "1 min ago" },
   { name: "Database", status: "healthy", latency: 12, uptime: "99.98%", lastCheck: "1 min ago" },
-  { name: "Auth Service", status: "healthy", latency: 23, uptime: "99.97%", lastCheck: "1 min ago" },
-  { name: "File Storage", status: "healthy", latency: 156, uptime: "99.95%", lastCheck: "2 min ago" },
+  {
+    name: "Auth Service",
+    status: "healthy",
+    latency: 23,
+    uptime: "99.97%",
+    lastCheck: "1 min ago",
+  },
+  {
+    name: "File Storage",
+    status: "healthy",
+    latency: 156,
+    uptime: "99.95%",
+    lastCheck: "2 min ago",
+  },
   { name: "Cache Server", status: "healthy", latency: 3, uptime: "99.99%", lastCheck: "1 min ago" },
-  { name: "Email Service", status: "degraded", latency: 450, uptime: "98.5%", lastCheck: "3 min ago" },
-  { name: "Push Notifications", status: "healthy", latency: 89, uptime: "99.9%", lastCheck: "1 min ago" },
+  {
+    name: "Email Service",
+    status: "degraded",
+    latency: 450,
+    uptime: "98.5%",
+    lastCheck: "3 min ago",
+  },
+  {
+    name: "Push Notifications",
+    status: "healthy",
+    latency: 89,
+    uptime: "99.9%",
+    lastCheck: "1 min ago",
+  },
   { name: "Analytics", status: "healthy", latency: 34, uptime: "99.8%", lastCheck: "2 min ago" },
 ];
 
@@ -74,9 +98,8 @@ export function AdminHealthPanel() {
         prev.map(m => ({
           ...m,
           value: Math.min(m.max, Math.max(0, m.value + (Math.random() - 0.5) * 10)),
-          status:
-            m.value > 80 ? "critical" : m.value > 60 ? "warning" : "good",
-        }))
+          status: m.value > 80 ? "critical" : m.value > 60 ? "warning" : "good",
+        })),
       );
     }, 5000);
     return () => clearInterval(interval);
@@ -145,9 +168,7 @@ export function AdminHealthPanel() {
               <div>
                 <p className="text-sm text-muted-foreground">Avg Response Time</p>
                 <p className="text-2xl font-bold">
-                  {Math.round(
-                    services.reduce((sum, s) => sum + s.latency, 0) / services.length
-                  )}ms
+                  {Math.round(services.reduce((sum, s) => sum + s.latency, 0) / services.length)}ms
                 </p>
               </div>
               <Zap className="h-8 w-8 text-warning" />
@@ -197,8 +218,8 @@ export function AdminHealthPanel() {
                     metric.status === "critical"
                       ? "[&>div]:bg-destructive"
                       : metric.status === "warning"
-                      ? "[&>div]:bg-warning"
-                      : ""
+                        ? "[&>div]:bg-warning"
+                        : ""
                   }`}
                 />
               </div>
@@ -246,8 +267,8 @@ export function AdminHealthPanel() {
                           service.status === "healthy"
                             ? "default"
                             : service.status === "degraded"
-                            ? "secondary"
-                            : "destructive"
+                              ? "secondary"
+                              : "destructive"
                         }
                       >
                         {service.status}
@@ -273,10 +294,7 @@ export function AdminHealthPanel() {
         <CardContent>
           <div className="space-y-3">
             {recentEvents.map((event, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-4 p-3 rounded-lg bg-muted/50"
-              >
+              <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
                 {event.type === "success" ? (
                   <CheckCircle className="h-5 w-5 text-success" />
                 ) : event.type === "warning" ? (

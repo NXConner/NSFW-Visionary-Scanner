@@ -3,7 +3,7 @@
  * Catches and logs errors that may occur on mobile devices
  */
 
-import { isNative, getPlatform } from './init';
+import { isNative, getPlatform } from "./init";
 
 interface MobileError {
   message: string;
@@ -35,7 +35,7 @@ const logError = (error: Error | string): void => {
     errorLog.shift();
   }
 
-  console.error('[MobileError]', errorObj);
+  console.error("[MobileError]", errorObj);
 };
 
 /**
@@ -66,14 +66,14 @@ export const installMobileErrorHandler = (): void => {
 
   // Unhandled promise rejection handler
   const originalOnUnhandledRejection = window.onunhandledrejection;
-  window.onunhandledrejection = (event) => {
+  window.onunhandledrejection = event => {
     logError(event.reason instanceof Error ? event.reason : String(event.reason));
     if (originalOnUnhandledRejection) {
       return originalOnUnhandledRejection.call(window, event);
     }
   };
 
-  console.log('[MobileErrorHandler] Installed global error handlers');
+  console.log("[MobileErrorHandler] Installed global error handlers");
 };
 
 export default {

@@ -3,11 +3,19 @@
  * Text-to-speech engine for scanning guidance
  */
 
-import { getPrompt, type VoicePrompt, type PromptPriority } from './scanningPrompts';
-import { getSequence, getStep, getStepText, type GuidanceSequence, type SequenceStep, type SequenceType, type SequenceCondition } from './guidanceSequences';
+import { getPrompt, type VoicePrompt, type PromptPriority } from "./scanningPrompts";
+import {
+  getSequence,
+  getStep,
+  getStepText,
+  type GuidanceSequence,
+  type SequenceStep,
+  type SequenceType,
+  type SequenceCondition,
+} from "./guidanceSequences";
 
-export type VoiceGuidanceSpeed = 'slow' | 'normal' | 'fast';
-export type VoiceGuidanceVoice = 'default' | 'male' | 'female';
+export type VoiceGuidanceSpeed = "slow" | "normal" | "fast";
+export type VoiceGuidanceVoice = "default" | "male" | "female";
 
 export interface VoiceGuidanceSettings {
   enabled: boolean;
@@ -42,18 +50,18 @@ export interface SequenceState {
   conditionCheckInterval?: number;
 }
 
-export type GuidanceEventType = 
-  | 'speech_start'
-  | 'speech_end'
-  | 'speech_error'
-  | 'sequence_start'
-  | 'sequence_step'
-  | 'sequence_pause'
-  | 'sequence_resume'
-  | 'sequence_complete'
-  | 'sequence_cancel'
-  | 'condition_check'
-  | 'action_required';
+export type GuidanceEventType =
+  | "speech_start"
+  | "speech_end"
+  | "speech_error"
+  | "sequence_start"
+  | "sequence_step"
+  | "sequence_pause"
+  | "sequence_resume"
+  | "sequence_complete"
+  | "sequence_cancel"
+  | "condition_check"
+  | "action_required";
 
 export interface GuidanceEvent {
   type: GuidanceEventType;
@@ -65,8 +73,8 @@ export type ConditionChecker = (condition: SequenceCondition) => Promise<boolean
 
 const DEFAULT_SETTINGS: VoiceGuidanceSettings = {
   enabled: true,
-  speed: 'normal',
-  voice: 'default',
+  speed: "normal",
+  voice: "default",
   volume: 80,
   announceSteps: true,
   announceMeasurements: true,
@@ -105,16 +113,16 @@ export class VoiceGuidanceEngine {
    * Initialize speech synthesis
    */
   private initializeSpeechSynthesis(): void {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
       this.speechSynthesis = window.speechSynthesis;
-      
+
       // Load voices
       const loadVoices = () => {
         this.availableVoices = this.speechSynthesis?.getVoices() || [];
       };
 
       loadVoices();
-      this.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+      this.speechSynthesis.addEventListener("voiceschanged", loadVoices);
     }
   }
 
@@ -158,20 +166,23 @@ export class VoiceGuidanceEngine {
     if (this.availableVoices.length === 0) return null;
 
     const { voice } = this.settings;
-    const lang = navigator.language || 'en-US';
+    const lang = navigator.language || "en-US";
 
     // Filter voices by language
-    const langVoices = this.availableVoices.filter(v => v.lang.startsWith(lang.split('-')[0]));
+    const langVoices = this.availableVoices.filter(v => v.lang.startsWith(lang.split("-")[0]));
     const voicePool = langVoices.length > 0 ? langVoices : this.availableVoices;
 
-    if (voice === 'default') {
+    if (voice === "default") {
       return voicePool.find(v => v.default) || voicePool[0];
     }
 
     // Try to find matching voice gender
-    const genderKeyword = voice === 'male' ? ['male', 'david', 'james', 'mark'] : ['female', 'samantha', 'zira', 'karen'];
-    const matchedVoice = voicePool.find(v => 
-      genderKeyword.some(k => v.name.toLowerCase().includes(k))
+    const genderKeyword =
+      voice === "male"
+        ? ["male", "david", "james", "mark"]
+        : ["female", "samantha", "zira", "karen"];
+    const matchedVoice = voicePool.find(v =>
+      genderKeyword.some(k => v.name.toLowerCase().includes(k)),
     );
 
     return matchedVoice || voicePool[0];
@@ -186,13 +197,13 @@ export class VoiceGuidanceEngine {
     const item: SpeechQueueItem = {
       id: `speech_${Date.now()}`,
       text,
-      priority: 'medium',
+      priority: "medium",
       interruptible: true,
       ...options,
     };
 
     // Handle priority queue
-    if (item.priority === 'critical' || item.priority === 'high') {
+    if (item.priority === "critical" || item.priority === "high") {
       // Check if current speech should be interrupted
       if (this.isSpeaking && this.currentUtterance) {
         const currentItem = this.speechQueue[0];
@@ -220,9 +231,7 @@ export class VoiceGuidanceEngine {
       return;
     }
 
-    const text = this.settings.useShortPrompts && prompt.shortText 
-      ? prompt.shortText 
-      : prompt.text;
+    const text = this.settings.useShortPrompts && prompt.shortText ? prompt.shortText : prompt.text;
 
     await this.speak(text, {
       priority: prompt.priority,
@@ -249,7 +258,7 @@ export class VoiceGuidanceEngine {
       this.playSoundEffect(item.soundEffect);
     }
 
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const utterance = new SpeechSynthesisUtterance(item.text);
       utterance.rate = SPEED_RATES[this.settings.speed];
       utterance.volume = this.settings.volume / 100;
@@ -259,21 +268,21 @@ export class VoiceGuidanceEngine {
       if (voice) utterance.voice = voice;
 
       utterance.onstart = () => {
-        this.emit({ type: 'speech_start', data: { text: item.text, id: item.id } });
+        this.emit({ type: "speech_start", data: { text: item.text, id: item.id } });
       };
 
       utterance.onend = () => {
         this.currentUtterance = null;
-        this.emit({ type: 'speech_end', data: { text: item.text, id: item.id } });
+        this.emit({ type: "speech_end", data: { text: item.text, id: item.id } });
         item.onComplete?.();
         resolve();
         this.processQueue();
       };
 
-      utterance.onerror = (event) => {
+      utterance.onerror = event => {
         this.currentUtterance = null;
         const error = new Error(`Speech error: ${event.error}`);
-        this.emit({ type: 'speech_error', data: { error, id: item.id } });
+        this.emit({ type: "speech_error", data: { error, id: item.id } });
         item.onError?.(error);
         resolve();
         this.processQueue();
@@ -340,30 +349,30 @@ export class VoiceGuidanceEngine {
 
       // Different sound effects
       switch (effect) {
-        case 'success_ding':
+        case "success_ding":
           oscillator.frequency.value = 880;
           gainNode.gain.value = 0.1;
           oscillator.start();
           oscillator.stop(this.audioContext.currentTime + 0.15);
           break;
 
-        case 'countdown_beep':
+        case "countdown_beep":
           oscillator.frequency.value = 440;
           gainNode.gain.value = 0.08;
           oscillator.start();
           oscillator.stop(this.audioContext.currentTime + 0.1);
           break;
 
-        case 'error_buzz':
-          oscillator.type = 'sawtooth';
+        case "error_buzz":
+          oscillator.type = "sawtooth";
           oscillator.frequency.value = 200;
           gainNode.gain.value = 0.1;
           oscillator.start();
           oscillator.stop(this.audioContext.currentTime + 0.2);
           break;
 
-        case 'success_chime':
-        case 'success_fanfare':
+        case "success_chime":
+        case "success_fanfare":
           oscillator.frequency.value = 660;
           gainNode.gain.value = 0.1;
           oscillator.start();
@@ -373,8 +382,8 @@ export class VoiceGuidanceEngine {
           oscillator.stop(this.audioContext.currentTime + 0.3);
           break;
 
-        case 'shutter':
-          oscillator.type = 'square';
+        case "shutter":
+          oscillator.type = "square";
           oscillator.frequency.value = 100;
           gainNode.gain.value = 0.05;
           oscillator.start();
@@ -388,7 +397,7 @@ export class VoiceGuidanceEngine {
           oscillator.stop(this.audioContext.currentTime + 0.1);
       }
     } catch (error) {
-      console.warn('Failed to play sound effect:', error);
+      console.warn("Failed to play sound effect:", error);
     }
   }
 
@@ -416,7 +425,7 @@ export class VoiceGuidanceEngine {
       startTime: Date.now(),
     };
 
-    this.emit({ type: 'sequence_start', data: { sequence: type } });
+    this.emit({ type: "sequence_start", data: { sequence: type } });
     await this.executeCurrentStep();
   }
 
@@ -437,24 +446,24 @@ export class VoiceGuidanceEngine {
     }
 
     this.sequenceState.currentStep = step;
-    this.emit({ type: 'sequence_step', data: { step, index: currentStepIndex } });
+    this.emit({ type: "sequence_step", data: { step, index: currentStepIndex } });
 
     switch (step.type) {
-      case 'prompt':
-      case 'countdown':
-      case 'feedback':
+      case "prompt":
+      case "countdown":
+      case "feedback":
         await this.executePromptStep(step);
         break;
 
-      case 'condition':
+      case "condition":
         await this.executeConditionStep(step);
         break;
 
-      case 'action':
+      case "action":
         await this.executeActionStep(step);
         break;
 
-      case 'wait':
+      case "wait":
         await this.executeWaitStep(step);
         break;
     }
@@ -465,7 +474,7 @@ export class VoiceGuidanceEngine {
    */
   private async executePromptStep(step: SequenceStep): Promise<void> {
     const text = getStepText(step, this.settings.useShortPrompts);
-    
+
     if (text) {
       if (step.promptId) {
         await this.speakPrompt(step.promptId);
@@ -498,7 +507,7 @@ export class VoiceGuidanceEngine {
         return;
       }
 
-      this.emit({ type: 'condition_check', data: { condition: step.condition } });
+      this.emit({ type: "condition_check", data: { condition: step.condition } });
 
       try {
         const result = await this.conditionChecker!(step.condition!);
@@ -528,7 +537,7 @@ export class VoiceGuidanceEngine {
       await this.speak(text);
     }
 
-    this.emit({ type: 'action_required', data: { action: step.metadata?.action, step } });
+    this.emit({ type: "action_required", data: { action: step.metadata?.action, step } });
 
     // Wait for external action completion
     // The action handler should call advanceSequence() when done
@@ -583,7 +592,7 @@ export class VoiceGuidanceEngine {
     if (this.sequenceState && this.sequenceState.sequence.allowPause) {
       this.sequenceState.isPaused = true;
       this.pause();
-      this.emit({ type: 'sequence_pause' });
+      this.emit({ type: "sequence_pause" });
     }
   }
 
@@ -594,7 +603,7 @@ export class VoiceGuidanceEngine {
     if (this.sequenceState && this.sequenceState.isPaused) {
       this.sequenceState.isPaused = false;
       this.resume();
-      this.emit({ type: 'sequence_resume' });
+      this.emit({ type: "sequence_resume" });
       this.executeCurrentStep();
     }
   }
@@ -614,7 +623,7 @@ export class VoiceGuidanceEngine {
    */
   stopSequence(): void {
     if (this.sequenceState) {
-      this.emit({ type: 'sequence_cancel' });
+      this.emit({ type: "sequence_cancel" });
       this.sequenceState = null;
     }
     this.stop();
@@ -626,7 +635,7 @@ export class VoiceGuidanceEngine {
   private completeSequence(): void {
     if (this.sequenceState) {
       this.sequenceState.isCompleted = true;
-      this.emit({ type: 'sequence_complete', data: { sequence: this.sequenceState.sequence.id } });
+      this.emit({ type: "sequence_complete", data: { sequence: this.sequenceState.sequence.id } });
       this.sequenceState = null;
     }
   }
@@ -662,7 +671,9 @@ export class VoiceGuidanceEngine {
 // Singleton instance
 let engineInstance: VoiceGuidanceEngine | null = null;
 
-export function getVoiceGuidanceEngine(settings?: Partial<VoiceGuidanceSettings>): VoiceGuidanceEngine {
+export function getVoiceGuidanceEngine(
+  settings?: Partial<VoiceGuidanceSettings>,
+): VoiceGuidanceEngine {
   if (!engineInstance) {
     engineInstance = new VoiceGuidanceEngine(settings);
   } else if (settings) {

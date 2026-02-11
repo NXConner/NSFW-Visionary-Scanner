@@ -1,13 +1,6 @@
 import { encryptData, decryptData } from "@/lib/encryption";
 
-export type AuditLogCategory =
-  | "scan"
-  | "export"
-  | "settings"
-  | "auth"
-  | "data"
-  | "report"
-  | "nsfw";
+export type AuditLogCategory = "scan" | "export" | "settings" | "auth" | "data" | "report" | "nsfw";
 
 export interface AuditLogEntry {
   id: string;
@@ -82,4 +75,3 @@ export async function clearAuditLogs(): Promise<void> {
     // ignore
   }
 }
-

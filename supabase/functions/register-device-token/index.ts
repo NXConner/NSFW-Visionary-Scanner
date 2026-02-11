@@ -41,7 +41,11 @@ serve(async req => {
     });
     if (!rate.allowed) {
       return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
-        headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          ...buildRateLimitHeaders(rate),
+          "Content-Type": "application/json",
+        },
         status: 429,
       });
     }
@@ -88,7 +92,11 @@ serve(async req => {
         device_token: data,
       }),
       {
-        headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          ...buildRateLimitHeaders(rate),
+          "Content-Type": "application/json",
+        },
         status: 200,
       },
     );

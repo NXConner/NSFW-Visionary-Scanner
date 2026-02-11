@@ -96,7 +96,14 @@ export interface HealthTrackingSettings {
 }
 
 // ======= Dashboard Customization =======
-export type DashboardWidget = "measurements" | "progress" | "achievements" | "health" | "calendar" | "tips" | "goals";
+export type DashboardWidget =
+  | "measurements"
+  | "progress"
+  | "achievements"
+  | "health"
+  | "calendar"
+  | "tips"
+  | "goals";
 export type DashboardLayout = "grid" | "list" | "compact";
 
 export interface DashboardSettings {

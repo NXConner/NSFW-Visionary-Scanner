@@ -434,7 +434,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
-    
+
     const colorMap: Record<keyof CustomInterfaceColors, string> = {
       primary: "--primary",
       secondary: "--secondary",

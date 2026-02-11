@@ -15,12 +15,10 @@ const mode = parseMode(process.argv.slice(2));
 dotenv.config({ path: path.join(repoRoot, ".env") });
 
 function parseMode(args) {
-  const modeArg = args.find((arg) => arg.startsWith("--mode="));
+  const modeArg = args.find(arg => arg.startsWith("--mode="));
   const raw = (modeArg ? modeArg.split("=")[1] : "auto").toLowerCase();
   if (!["auto", "local", "remote"].includes(raw)) {
-    console.error(
-      `Invalid mode "${raw}". Use one of: auto, local, remote (e.g. --mode=remote).`,
-    );
+    console.error(`Invalid mode "${raw}". Use one of: auto, local, remote (e.g. --mode=remote).`);
     process.exit(1);
   }
   return raw;
@@ -110,9 +108,7 @@ function readProjectRefFromConfig() {
 }
 
 function buildDirectDbUrlFromPassword({ projectRef, password }) {
-  const url = new URL(
-    `postgresql://postgres@db.${projectRef}.supabase.co:5432/postgres`,
-  );
+  const url = new URL(`postgresql://postgres@db.${projectRef}.supabase.co:5432/postgres`);
   url.password = password;
   return url.toString();
 }
@@ -127,25 +123,15 @@ function buildPoolerDbUrlFromPassword({ projectRef, password, poolerHost }) {
 }
 
 function isNetworkUnreachable(output) {
-  return (
-    typeof output === "string" &&
-    output.toLowerCase().includes("network is unreachable")
-  );
+  return typeof output === "string" && output.toLowerCase().includes("network is unreachable");
 }
 
 function isTenantOrUserNotFound(output) {
-  return (
-    typeof output === "string" &&
-    output.toLowerCase().includes("tenant or user not found")
-  );
+  return typeof output === "string" && output.toLowerCase().includes("tenant or user not found");
 }
 
 function runRemoteMigration() {
-  const dbUrl = firstSetEnv([
-    "SUPABASE_DB_URL",
-    "DATABASE_URL",
-    "SUPABASE_DATABASE_URL",
-  ]);
+  const dbUrl = firstSetEnv(["SUPABASE_DB_URL", "DATABASE_URL", "SUPABASE_DATABASE_URL"]);
 
   if (dbUrl) {
     const result = runSupabase(
@@ -205,8 +191,8 @@ function runRemoteMigration() {
         // Supabase runs multiple pooler clusters per region (e.g. aws-0, aws-1).
         const poolerClusters = ["aws-0", "aws-1"];
 
-        const poolerHosts = poolerClusters.flatMap((cluster) =>
-          poolerRegions.map((region) => `${cluster}-${region}.pooler.supabase.com`),
+        const poolerHosts = poolerClusters.flatMap(cluster =>
+          poolerRegions.map(region => `${cluster}-${region}.pooler.supabase.com`),
         );
 
         for (const poolerHost of poolerHosts) {
@@ -247,15 +233,10 @@ function runRemoteMigration() {
     if (password) {
       args.push("--password", password);
     }
-    let result = runSupabase(
-      args,
-      "Applying migrations to linked remote Supabase project...",
-    );
+    let result = runSupabase(args, "Applying migrations to linked remote Supabase project...");
     if (
       !result.ok &&
-      result.output
-        .toLowerCase()
-        .includes("cannot find project ref. have you run supabase link?")
+      result.output.toLowerCase().includes("cannot find project ref. have you run supabase link?")
     ) {
       const projectRef = readProjectRefFromConfig();
       if (projectRef) {
@@ -270,10 +251,7 @@ function runRemoteMigration() {
         );
 
         if (linkResult.ok) {
-          result = runSupabase(
-            args,
-            "Retrying migration push to linked remote project...",
-          );
+          result = runSupabase(args, "Retrying migration push to linked remote project...");
         }
       }
     }
@@ -289,12 +267,8 @@ function runRemoteMigration() {
   console.error(
     "  2) SUPABASE_DB_PASSWORD (preferred; works with project_id in supabase/config.toml)",
   );
-  console.error(
-    "  3) SUPABASE_ACCESS_TOKEN if Supabase CLI is not already authenticated",
-  );
-  console.error(
-    "If you need local migrations, install/start Docker and use --mode=local.",
-  );
+  console.error("  3) SUPABASE_ACCESS_TOKEN if Supabase CLI is not already authenticated");
+  console.error("If you need local migrations, install/start Docker and use --mode=local.");
   process.exit(1);
 }
 
@@ -349,9 +323,7 @@ function main() {
       "\nLocal migration failed due connectivity/runtime issue. Falling back to remote migration...",
     );
   } else {
-    console.warn(
-      "\nDocker is not available. Falling back to remote migration path...",
-    );
+    console.warn("\nDocker is not available. Falling back to remote migration path...");
   }
 
   const remoteResult = runRemoteMigration();

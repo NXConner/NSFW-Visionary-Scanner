@@ -50,7 +50,11 @@ serve(async req => {
     if (!rate.allowed) {
       return new Response(JSON.stringify({ success: false, error: "Rate limit exceeded" }), {
         status: 429,
-        headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          ...buildRateLimitHeaders(rate),
+          "Content-Type": "application/json",
+        },
       });
     }
 
@@ -183,7 +187,11 @@ serve(async req => {
         message: "Account deleted successfully",
       }),
       {
-        headers: { ...corsHeaders, ...buildRateLimitHeaders(rate), "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          ...buildRateLimitHeaders(rate),
+          "Content-Type": "application/json",
+        },
         status: 200,
       },
     );

@@ -3,23 +3,23 @@
  * User guidance prompts for positioning during capture
  */
 
-import * as React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { 
-  ArrowUp, 
-  ArrowDown, 
-  ArrowLeft, 
-  ArrowRight, 
-  ZoomIn, 
+import * as React from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import {
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ZoomIn,
   ZoomOut,
   RotateCcw,
   RotateCw,
   Check,
   AlertCircle,
   Hand,
-} from 'lucide-react';
-import type { PositionFeedback, PositionStatus } from '@/lib/ar/measurementCalculations';
+} from "lucide-react";
+import type { PositionFeedback, PositionStatus } from "@/lib/ar/measurementCalculations";
 
 export interface PositioningPromptsProps {
   /** Position feedback data */
@@ -44,57 +44,54 @@ export function PositioningPrompts({
   // Get icon and color based on status
   const getStatusConfig = (status: PositionStatus) => {
     switch (status) {
-      case 'good':
+      case "good":
         return {
           icon: Check,
-          color: '#22c55e',
-          bgColor: 'rgba(34, 197, 94, 0.2)',
-          borderColor: 'rgba(34, 197, 94, 0.5)',
+          color: "#22c55e",
+          bgColor: "rgba(34, 197, 94, 0.2)",
+          borderColor: "rgba(34, 197, 94, 0.5)",
         };
-      case 'adjust':
+      case "adjust":
         return {
           icon: Hand,
-          color: '#eab308',
-          bgColor: 'rgba(234, 179, 8, 0.2)',
-          borderColor: 'rgba(234, 179, 8, 0.5)',
+          color: "#eab308",
+          bgColor: "rgba(234, 179, 8, 0.2)",
+          borderColor: "rgba(234, 179, 8, 0.5)",
         };
-      case 'poor':
+      case "poor":
         return {
           icon: AlertCircle,
-          color: '#ef4444',
-          bgColor: 'rgba(239, 68, 68, 0.2)',
-          borderColor: 'rgba(239, 68, 68, 0.5)',
+          color: "#ef4444",
+          bgColor: "rgba(239, 68, 68, 0.2)",
+          borderColor: "rgba(239, 68, 68, 0.5)",
         };
     }
   };
-  
+
   const config = getStatusConfig(feedback.status);
   const StatusIcon = config.icon;
-  
+
   // Determine which direction arrows to show
   const { adjustments } = feedback;
-  const showArrows = showDirectionIndicators && feedback.status !== 'good';
-  
+  const showArrows = showDirectionIndicators && feedback.status !== "good";
+
   // Get prompts based on capture state
   const getPromptText = (): string => {
     if (captureReady) {
-      return 'Perfect! Tap to capture';
+      return "Perfect! Tap to capture";
     }
-    if (isStable && feedback.status === 'good') {
-      return 'Hold steady...';
+    if (isStable && feedback.status === "good") {
+      return "Hold steady...";
     }
     return feedback.message;
   };
 
   return (
     <motion.div
-      className={cn(
-        'flex flex-col items-center gap-3',
-        className
-      )}
+      className={cn("flex flex-col items-center gap-3", className)}
       initial={{ y: 20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
     >
       {/* Direction indicators */}
       {showArrows && (
@@ -117,7 +114,7 @@ export function PositioningPrompts({
               </motion.div>
             )}
           </AnimatePresence>
-          
+
           {/* Down arrow */}
           <AnimatePresence>
             {adjustments.moveDown && (
@@ -136,7 +133,7 @@ export function PositioningPrompts({
               </motion.div>
             )}
           </AnimatePresence>
-          
+
           {/* Left arrow */}
           <AnimatePresence>
             {adjustments.moveLeft && (
@@ -155,7 +152,7 @@ export function PositioningPrompts({
               </motion.div>
             )}
           </AnimatePresence>
-          
+
           {/* Right arrow */}
           <AnimatePresence>
             {adjustments.moveRight && (
@@ -174,7 +171,7 @@ export function PositioningPrompts({
               </motion.div>
             )}
           </AnimatePresence>
-          
+
           {/* Zoom in (move closer) */}
           <AnimatePresence>
             {adjustments.moveCloser && (
@@ -193,7 +190,7 @@ export function PositioningPrompts({
               </motion.div>
             )}
           </AnimatePresence>
-          
+
           {/* Zoom out (move farther) */}
           <AnimatePresence>
             {adjustments.moveFarther && (
@@ -212,7 +209,7 @@ export function PositioningPrompts({
               </motion.div>
             )}
           </AnimatePresence>
-          
+
           {/* Tilt indicators */}
           <AnimatePresence>
             {adjustments.tiltLeft && (
@@ -231,7 +228,7 @@ export function PositioningPrompts({
               </motion.div>
             )}
           </AnimatePresence>
-          
+
           <AnimatePresence>
             {adjustments.tiltRight && (
               <motion.div
@@ -251,7 +248,7 @@ export function PositioningPrompts({
           </AnimatePresence>
         </div>
       )}
-      
+
       {/* Main prompt card */}
       <motion.div
         className="px-5 py-3 rounded-full flex items-center gap-3 shadow-lg"
@@ -262,32 +259,29 @@ export function PositioningPrompts({
         }}
         animate={{
           scale: captureReady ? [1, 1.02, 1] : 1,
-          boxShadow: captureReady 
+          boxShadow: captureReady
             ? [`0 0 0 0 ${config.color}50`, `0 0 0 8px ${config.color}00`]
-            : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            : "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
         }}
-        transition={{ 
-          duration: 1.5, 
+        transition={{
+          duration: 1.5,
           repeat: captureReady ? Infinity : 0,
         }}
       >
         <motion.div
           animate={{
-            scale: feedback.status === 'adjust' ? [1, 1.1, 1] : 1,
+            scale: feedback.status === "adjust" ? [1, 1.1, 1] : 1,
           }}
-          transition={{ duration: 0.5, repeat: feedback.status === 'adjust' ? Infinity : 0 }}
+          transition={{ duration: 0.5, repeat: feedback.status === "adjust" ? Infinity : 0 }}
         >
           <StatusIcon className="w-5 h-5" style={{ color: config.color }} />
         </motion.div>
-        
-        <span 
-          className="text-sm font-medium"
-          style={{ color: config.color }}
-        >
+
+        <span className="text-sm font-medium" style={{ color: config.color }}>
           {getPromptText()}
         </span>
       </motion.div>
-      
+
       {/* Stability indicator dots */}
       <div className="flex items-center gap-1">
         {[...Array(5)].map((_, i) => (
@@ -295,15 +289,17 @@ export function PositioningPrompts({
             key={i}
             className="w-1.5 h-1.5 rounded-full"
             style={{
-              backgroundColor: isStable 
-                ? '#22c55e' 
-                : i < 3 ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)',
+              backgroundColor: isStable
+                ? "#22c55e"
+                : i < 3
+                  ? "rgba(255,255,255,0.3)"
+                  : "rgba(255,255,255,0.1)",
             }}
             animate={{
               scale: isStable && captureReady ? [1, 1.5, 1] : 1,
             }}
-            transition={{ 
-              delay: i * 0.1, 
+            transition={{
+              delay: i * 0.1,
               duration: 0.3,
               repeat: isStable && captureReady ? Infinity : 0,
               repeatDelay: 0.5,

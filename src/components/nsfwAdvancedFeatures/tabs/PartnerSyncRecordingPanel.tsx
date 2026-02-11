@@ -43,10 +43,7 @@ export function PartnerSyncRecordingPanel({
   }, [activeConnection, currentUserId]);
   const { events } = usePartnerEvents(connectionId);
 
-  const existingSessionIds = useMemo(
-    () => new Set(sessions.map(s => s.id)),
-    [sessions],
-  );
+  const existingSessionIds = useMemo(() => new Set(sessions.map(s => s.id)), [sessions]);
 
   const invites = useMemo(() => {
     const list: PartnerInvite[] = [];

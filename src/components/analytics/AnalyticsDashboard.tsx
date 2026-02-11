@@ -3,14 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAnalytics } from "@/lib/analytics";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  BarChart3,
-  Clock,
-  RefreshCw,
-  Shield,
-  Target,
-  Users,
-} from "lucide-react";
+import { BarChart3, Clock, RefreshCw, Shield, Target, Users } from "lucide-react";
 import { TIME_RANGES } from "./constants";
 import { useAnalyticsDashboardData } from "./useAnalyticsDashboard";
 import type { AnalyticsDashboardProps, AnalyticsTimeRange } from "./types";
@@ -121,9 +114,7 @@ export const AnalyticsDashboard = ({ className, isAdmin = false }: AnalyticsDash
         </Card>
       ) : error ? (
         <Card>
-          <CardContent className="py-10 text-center text-sm text-destructive">
-            {error}
-          </CardContent>
+          <CardContent className="py-10 text-center text-sm text-destructive">{error}</CardContent>
         </Card>
       ) : !data ? (
         <Card>

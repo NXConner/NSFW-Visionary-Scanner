@@ -282,7 +282,9 @@ export async function sendPushToTargets(
   const results: SendResult[] = [];
   for (const target of targets) {
     if (target.platform === "ios") {
-      results.push(await sendAPNSNotification({ ...payload, title: safeTitle, body: safeBody }, target.token));
+      results.push(
+        await sendAPNSNotification({ ...payload, title: safeTitle, body: safeBody }, target.token),
+      );
     } else {
       results.push(
         await sendFCMNotification(

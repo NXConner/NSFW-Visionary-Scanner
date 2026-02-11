@@ -72,7 +72,9 @@ export function ThoughtPingTemplatesPanel({
         <div className="space-y-2">
           <Label>{t("partnerSync.pings.savedTemplates")}</Label>
           {templates.length === 0 ? (
-            <div className="text-sm text-muted-foreground">{t("partnerSync.pings.templatesEmpty")}</div>
+            <div className="text-sm text-muted-foreground">
+              {t("partnerSync.pings.templatesEmpty")}
+            </div>
           ) : (
             <div className="flex flex-wrap gap-2">
               {templates.map(template => (
@@ -111,7 +113,9 @@ export function ThoughtPingTemplatesPanel({
         <div className="space-y-2">
           <Label>{t("partnerSync.pings.savedQuickReplies")}</Label>
           {quickReplies.length === 0 ? (
-            <div className="text-sm text-muted-foreground">{t("partnerSync.pings.quickRepliesEmpty")}</div>
+            <div className="text-sm text-muted-foreground">
+              {t("partnerSync.pings.quickRepliesEmpty")}
+            </div>
           ) : (
             <div className="flex flex-wrap gap-2">
               {quickReplies.map(reply => (

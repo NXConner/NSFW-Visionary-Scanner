@@ -55,7 +55,10 @@ describe("computeBaseAnchoredAngleDeg", () => {
 
 describe("computeCurvatureDirectionFromCenterline", () => {
   test("dorsal view returns lateral-right for rightward deviation", () => {
-    const pts = Array.from({ length: 60 }, (_, i) => ({ x: 100 + Math.max(0, i - 25) * 2, y: 10 + i * 8 }));
+    const pts = Array.from({ length: 60 }, (_, i) => ({
+      x: 100 + Math.max(0, i - 25) * 2,
+      y: 10 + i * 8,
+    }));
     const dir = computeCurvatureDirectionFromCenterline({
       view: "dorsal",
       centerlinePx: pts,
@@ -67,7 +70,10 @@ describe("computeCurvatureDirectionFromCenterline", () => {
 
   test("lateral view returns dorsal for upward deviation", () => {
     // base->tip mostly vertical; curve deviates upward relative to axis (negative y after orient)
-    const pts = Array.from({ length: 60 }, (_, i) => ({ x: 100 + Math.max(0, i - 20) * 1.5, y: 10 + i * 8 }));
+    const pts = Array.from({ length: 60 }, (_, i) => ({
+      x: 100 + Math.max(0, i - 20) * 1.5,
+      y: 10 + i * 8,
+    }));
     const dir = computeCurvatureDirectionFromCenterline({
       view: "lateral",
       centerlinePx: pts,
@@ -76,4 +82,3 @@ describe("computeCurvatureDirectionFromCenterline", () => {
     expect(["dorsal", "ventral", "unknown"]).toContain(dir);
   });
 });
-

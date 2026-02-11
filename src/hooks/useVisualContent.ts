@@ -78,9 +78,7 @@ export function useVisualContent(options: UseVisualContentOptions = {}): UseVisu
       const cats = categoriesKey ? categoriesKey.split(",") : [];
       if (cats.length > 0) {
         allContent = allContent.filter(item =>
-          cats.some(
-            cat => item.category.includes(cat) || item.tags.some(tag => tag.includes(cat)),
-          ),
+          cats.some(cat => item.category.includes(cat) || item.tags.some(tag => tag.includes(cat))),
         );
       }
 

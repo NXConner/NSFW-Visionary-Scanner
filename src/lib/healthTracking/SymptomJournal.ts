@@ -1,5 +1,5 @@
 // Symptom Journal with Severity Scales
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 export type SeverityLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
@@ -12,7 +12,7 @@ export interface SymptomEntry {
   triggers?: string[];
   relievingFactors?: string[];
   notes?: string;
-  mood?: 'great' | 'good' | 'okay' | 'poor' | 'terrible';
+  mood?: "great" | "good" | "okay" | "poor" | "terrible";
   timestamp: string;
   attachments?: string[];
 }
@@ -22,14 +22,14 @@ export interface SymptomType {
   name: string;
   icon: string;
   color: string;
-  category: 'physical' | 'mental' | 'digestive' | 'respiratory' | 'other';
+  category: "physical" | "mental" | "digestive" | "respiratory" | "other";
 }
 
 export interface SymptomPattern {
   symptomType: string;
   frequency: number;
   averageSeverity: number;
-  trend: 'improving' | 'worsening' | 'stable';
+  trend: "improving" | "worsening" | "stable";
   commonTriggers: string[];
   peakTimes: string[];
 }
@@ -43,18 +43,24 @@ export interface JournalStats {
 }
 
 const DEFAULT_SYMPTOM_TYPES: SymptomType[] = [
-  { id: 'pain', name: 'Pain', icon: '🔴', color: '#ef4444', category: 'physical' },
-  { id: 'fatigue', name: 'Fatigue', icon: '😴', color: '#f59e0b', category: 'physical' },
-  { id: 'nausea', name: 'Nausea', icon: '🤢', color: '#22c55e', category: 'digestive' },
-  { id: 'headache', name: 'Headache', icon: '🤕', color: '#8b5cf6', category: 'physical' },
-  { id: 'anxiety', name: 'Anxiety', icon: '😰', color: '#6366f1', category: 'mental' },
-  { id: 'shortness_of_breath', name: 'Shortness of Breath', icon: '😮‍💨', color: '#0ea5e9', category: 'respiratory' },
-  { id: 'dizziness', name: 'Dizziness', icon: '😵', color: '#ec4899', category: 'physical' },
-  { id: 'insomnia', name: 'Insomnia', icon: '🌙', color: '#64748b', category: 'mental' },
+  { id: "pain", name: "Pain", icon: "🔴", color: "#ef4444", category: "physical" },
+  { id: "fatigue", name: "Fatigue", icon: "😴", color: "#f59e0b", category: "physical" },
+  { id: "nausea", name: "Nausea", icon: "🤢", color: "#22c55e", category: "digestive" },
+  { id: "headache", name: "Headache", icon: "🤕", color: "#8b5cf6", category: "physical" },
+  { id: "anxiety", name: "Anxiety", icon: "😰", color: "#6366f1", category: "mental" },
+  {
+    id: "shortness_of_breath",
+    name: "Shortness of Breath",
+    icon: "😮‍💨",
+    color: "#0ea5e9",
+    category: "respiratory",
+  },
+  { id: "dizziness", name: "Dizziness", icon: "😵", color: "#ec4899", category: "physical" },
+  { id: "insomnia", name: "Insomnia", icon: "🌙", color: "#64748b", category: "mental" },
 ];
 
-const STORAGE_KEY = 'symptom_journal';
-const TYPES_KEY = 'symptom_types';
+const STORAGE_KEY = "symptom_journal";
+const TYPES_KEY = "symptom_types";
 
 export class SymptomJournal {
   private entries: Map<string, SymptomEntry> = new Map();
@@ -75,7 +81,7 @@ export class SymptomJournal {
       const types = localStorage.getItem(TYPES_KEY);
       if (types) this.customTypes = JSON.parse(types);
     } catch (e) {
-      console.error('Failed to load symptom journal:', e);
+      console.error("Failed to load symptom journal:", e);
     }
   }
 
@@ -85,7 +91,7 @@ export class SymptomJournal {
       localStorage.setItem(TYPES_KEY, JSON.stringify(this.customTypes));
       this.notifyListeners();
     } catch (e) {
-      console.error('Failed to save symptom journal:', e);
+      console.error("Failed to save symptom journal:", e);
     }
   }
 
@@ -99,11 +105,11 @@ export class SymptomJournal {
     return () => this.listeners.delete(callback);
   }
 
-  addEntry(entry: Omit<SymptomEntry, 'id' | 'timestamp'>): SymptomEntry {
+  addEntry(entry: Omit<SymptomEntry, "id" | "timestamp">): SymptomEntry {
     const newEntry: SymptomEntry = {
       ...entry,
       id: uuidv4(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
     this.entries.set(newEntry.id, newEntry);
     this.save();
@@ -131,7 +137,7 @@ export class SymptomJournal {
 
   getAll(): SymptomEntry[] {
     return Array.from(this.entries.values()).sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
   }
 
@@ -150,7 +156,7 @@ export class SymptomJournal {
     return [...DEFAULT_SYMPTOM_TYPES, ...this.customTypes];
   }
 
-  addSymptomType(type: Omit<SymptomType, 'id'>): SymptomType {
+  addSymptomType(type: Omit<SymptomType, "id">): SymptomType {
     const newType = { ...type, id: uuidv4() };
     this.customTypes.push(newType);
     this.save();
@@ -161,7 +167,7 @@ export class SymptomJournal {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
     const recentEntries = this.getAll().filter(e => new Date(e.timestamp) >= cutoff);
-    
+
     const byType = new Map<string, SymptomEntry[]>();
     recentEntries.forEach(entry => {
       const list = byType.get(entry.symptomType) || [];
@@ -175,7 +181,7 @@ export class SymptomJournal {
       const allTriggers = entries.flatMap(e => e.triggers || []);
       const triggerCounts = new Map<string, number>();
       allTriggers.forEach(t => triggerCounts.set(t, (triggerCounts.get(t) || 0) + 1));
-      
+
       const hours = entries.map(e => new Date(e.timestamp).getHours());
       const peakHours = this.findPeakHours(hours);
 
@@ -184,9 +190,9 @@ export class SymptomJournal {
       const secondHalf = entries.slice(0, Math.floor(entries.length / 2));
       const firstAvg = firstHalf.reduce((s, e) => s + e.severity, 0) / (firstHalf.length || 1);
       const secondAvg = secondHalf.reduce((s, e) => s + e.severity, 0) / (secondHalf.length || 1);
-      let trend: 'improving' | 'worsening' | 'stable' = 'stable';
-      if (secondAvg < firstAvg - 1) trend = 'improving';
-      else if (secondAvg > firstAvg + 1) trend = 'worsening';
+      let trend: "improving" | "worsening" | "stable" = "stable";
+      if (secondAvg < firstAvg - 1) trend = "improving";
+      else if (secondAvg > firstAvg + 1) trend = "worsening";
 
       patterns.push({
         symptomType,
@@ -197,7 +203,7 @@ export class SymptomJournal {
           .sort((a, b) => b[1] - a[1])
           .slice(0, 3)
           .map(([t]) => t),
-        peakTimes: peakHours
+        peakTimes: peakHours,
       });
     });
 
@@ -218,7 +224,7 @@ export class SymptomJournal {
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     const thisWeek = all.filter(e => new Date(e.timestamp) >= weekAgo);
-    
+
     const typeCounts = new Map<string, number>();
     all.forEach(e => typeCounts.set(e.symptomType, (typeCounts.get(e.symptomType) || 0) + 1));
     const mostFrequent = Array.from(typeCounts.entries()).sort((a, b) => b[1] - a[1])[0];
@@ -226,20 +232,25 @@ export class SymptomJournal {
     return {
       totalEntries: all.length,
       entriesThisWeek: thisWeek.length,
-      averageSeverity: all.length > 0 
-        ? Math.round((all.reduce((s, e) => s + e.severity, 0) / all.length) * 10) / 10 
-        : 0,
+      averageSeverity:
+        all.length > 0
+          ? Math.round((all.reduce((s, e) => s + e.severity, 0) / all.length) * 10) / 10
+          : 0,
       mostFrequentSymptom: mostFrequent?.[0],
-      patterns: this.analyzePatterns()
+      patterns: this.analyzePatterns(),
     };
   }
 
   exportData(): string {
-    return JSON.stringify({
-      entries: this.getAll(),
-      customTypes: this.customTypes,
-      exportDate: new Date().toISOString()
-    }, null, 2);
+    return JSON.stringify(
+      {
+        entries: this.getAll(),
+        customTypes: this.customTypes,
+        exportDate: new Date().toISOString(),
+      },
+      null,
+      2,
+    );
   }
 }
 

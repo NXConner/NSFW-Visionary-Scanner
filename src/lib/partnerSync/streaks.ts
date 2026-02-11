@@ -1,11 +1,7 @@
 export function calculateDailyStreak(dates: string[]) {
   if (dates.length === 0) return { current: 0, longest: 0 };
   const sorted = Array.from(
-    new Set(
-      dates
-        .map(d => new Date(d).toISOString().slice(0, 10))
-        .filter(Boolean),
-    ),
+    new Set(dates.map(d => new Date(d).toISOString().slice(0, 10)).filter(Boolean)),
   ).sort();
   let current = 1;
   let longest = 1;

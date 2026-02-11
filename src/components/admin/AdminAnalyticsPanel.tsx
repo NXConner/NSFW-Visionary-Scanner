@@ -13,7 +13,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Activity, ArrowDown, ArrowUp, BarChart3, Calendar, Download, Package, Users } from "lucide-react";
+import {
+  Activity,
+  ArrowDown,
+  ArrowUp,
+  BarChart3,
+  Calendar,
+  Download,
+  Package,
+  Users,
+} from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import { useAdminAnalytics, type AnalyticsPeriod } from "@/hooks/useAdminAnalytics";
 
@@ -45,7 +54,8 @@ function MetricCard({ title, value, change, icon }: MetricCardProps) {
                   <ArrowDown className="h-4 w-4 text-destructive" />
                 )}
                 <span className={`text-sm ${isPositive ? "text-success" : "text-destructive"}`}>
-                  {isPositive ? "+" : ""}{change}%
+                  {isPositive ? "+" : ""}
+                  {change}%
                 </span>
                 <span className="text-xs text-muted-foreground">vs last period</span>
               </div>
@@ -138,7 +148,10 @@ export function AdminAnalyticsPanel() {
                 <div className="text-sm text-muted-foreground">No events recorded yet.</div>
               ) : (
                 analytics.topEvents.map((evt, i) => (
-                  <div key={evt.name} className="flex items-center gap-4 p-3 rounded-lg border border-border">
+                  <div
+                    key={evt.name}
+                    className="flex items-center gap-4 p-3 rounded-lg border border-border"
+                  >
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                       {i + 1}
                     </div>

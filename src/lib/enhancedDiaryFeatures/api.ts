@@ -155,7 +155,9 @@ export async function createEnhancedDiaryEntry(
   if (!entryRow?.id) return null;
 
   // Maintain client-managed search index (allowed by RLS).
-  const { searchable_text, keywords, categories } = buildSearchText(entryRow as unknown as EnhancedDiaryEntry);
+  const { searchable_text, keywords, categories } = buildSearchText(
+    entryRow as unknown as EnhancedDiaryEntry,
+  );
   try {
     const { data: existing, error: existingErr } = await fromExtended("diary_search_index")
       .select("id")

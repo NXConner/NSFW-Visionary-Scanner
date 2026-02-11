@@ -1,11 +1,11 @@
 // Glossary Manager with AI Q&A
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 export interface GlossaryTerm {
   id: string;
   term: string;
   definition: string;
-  category: 'anatomy' | 'measurement' | 'technology' | 'medical' | 'general';
+  category: "anatomy" | "measurement" | "technology" | "medical" | "general";
   aliases?: string[];
   relatedTerms?: string[];
   pronunciation?: string;
@@ -17,7 +17,7 @@ export interface FAQItem {
   id: string;
   question: string;
   answer: string;
-  category: 'usage' | 'troubleshooting' | 'features' | 'privacy' | 'general';
+  category: "usage" | "troubleshooting" | "features" | "privacy" | "general";
   tags: string[];
   helpful: number;
   notHelpful: number;
@@ -32,122 +32,135 @@ export interface AIQuestion {
 }
 
 export interface GlossarySearchResult {
-  type: 'term' | 'faq';
+  type: "term" | "faq";
   item: GlossaryTerm | FAQItem;
   relevance: number;
 }
 
 const BUILT_IN_TERMS: GlossaryTerm[] = [
   {
-    id: 't-1',
-    term: 'AR Overlay',
-    definition: 'Augmented Reality visual overlay that provides real-time guidance during scanning by showing measurement guides, reference points, and quality indicators.',
-    category: 'technology',
-    aliases: ['augmented reality overlay', 'measurement overlay'],
-    relatedTerms: ['Reference Point', 'Quality Indicator']
+    id: "t-1",
+    term: "AR Overlay",
+    definition:
+      "Augmented Reality visual overlay that provides real-time guidance during scanning by showing measurement guides, reference points, and quality indicators.",
+    category: "technology",
+    aliases: ["augmented reality overlay", "measurement overlay"],
+    relatedTerms: ["Reference Point", "Quality Indicator"],
   },
   {
-    id: 't-2',
-    term: 'Reference Point',
-    definition: 'A detected landmark or feature used as an anchor for measurements. Reference points are shown as colored circles on the AR overlay.',
-    category: 'measurement',
-    relatedTerms: ['AR Overlay', 'Landmark Detection']
+    id: "t-2",
+    term: "Reference Point",
+    definition:
+      "A detected landmark or feature used as an anchor for measurements. Reference points are shown as colored circles on the AR overlay.",
+    category: "measurement",
+    relatedTerms: ["AR Overlay", "Landmark Detection"],
   },
   {
-    id: 't-3',
-    term: 'Quality Score',
-    definition: 'A numerical value (0-100%) indicating the reliability of a measurement based on factors like lighting, stability, angle, and distance.',
-    category: 'measurement',
-    examples: ['A quality score of 85% indicates good measurement conditions'],
-    relatedTerms: ['Confidence Level']
+    id: "t-3",
+    term: "Quality Score",
+    definition:
+      "A numerical value (0-100%) indicating the reliability of a measurement based on factors like lighting, stability, angle, and distance.",
+    category: "measurement",
+    examples: ["A quality score of 85% indicates good measurement conditions"],
+    relatedTerms: ["Confidence Level"],
   },
   {
-    id: 't-4',
-    term: 'Trend Analysis',
-    definition: 'Statistical analysis of measurement data over time to identify patterns, changes, and predict future values using moving averages and regression.',
-    category: 'medical',
-    relatedTerms: ['Health Prediction', 'Risk Assessment']
+    id: "t-4",
+    term: "Trend Analysis",
+    definition:
+      "Statistical analysis of measurement data over time to identify patterns, changes, and predict future values using moving averages and regression.",
+    category: "medical",
+    relatedTerms: ["Health Prediction", "Risk Assessment"],
   },
   {
-    id: 't-5',
-    term: 'Confidence Level',
-    definition: 'The degree of certainty in a measurement or prediction, typically expressed as a percentage. Higher confidence indicates more reliable results.',
-    category: 'measurement',
-    examples: ['A confidence level of 95% means the measurement is highly reliable']
+    id: "t-5",
+    term: "Confidence Level",
+    definition:
+      "The degree of certainty in a measurement or prediction, typically expressed as a percentage. Higher confidence indicates more reliable results.",
+    category: "measurement",
+    examples: ["A confidence level of 95% means the measurement is highly reliable"],
   },
   {
-    id: 't-6',
-    term: 'Landmark Detection',
-    definition: 'The process of identifying and locating specific anatomical or reference features in an image using computer vision algorithms.',
-    category: 'technology',
-    relatedTerms: ['Reference Point', 'Computer Vision']
+    id: "t-6",
+    term: "Landmark Detection",
+    definition:
+      "The process of identifying and locating specific anatomical or reference features in an image using computer vision algorithms.",
+    category: "technology",
+    relatedTerms: ["Reference Point", "Computer Vision"],
   },
   {
-    id: 't-7',
-    term: 'Health Prediction',
-    definition: 'AI-powered forecasting of health metrics based on historical measurement data and trend analysis.',
-    category: 'medical',
-    relatedTerms: ['Trend Analysis', 'Risk Assessment']
+    id: "t-7",
+    term: "Health Prediction",
+    definition:
+      "AI-powered forecasting of health metrics based on historical measurement data and trend analysis.",
+    category: "medical",
+    relatedTerms: ["Trend Analysis", "Risk Assessment"],
   },
   {
-    id: 't-8',
-    term: 'Offline Mode',
-    definition: 'A feature that allows the app to function without an internet connection by storing data locally and syncing when connectivity is restored.',
-    category: 'technology',
-    relatedTerms: ['Sync Queue', 'Local Storage']
-  }
+    id: "t-8",
+    term: "Offline Mode",
+    definition:
+      "A feature that allows the app to function without an internet connection by storing data locally and syncing when connectivity is restored.",
+    category: "technology",
+    relatedTerms: ["Sync Queue", "Local Storage"],
+  },
 ];
 
 const BUILT_IN_FAQS: FAQItem[] = [
   {
-    id: 'f-1',
-    question: 'How do I get accurate measurements?',
-    answer: 'For accurate measurements: 1) Ensure good lighting, 2) Hold the device steady, 3) Follow the AR positioning guides, 4) Wait for the quality indicator to show 80%+ before capturing.',
-    category: 'usage',
-    tags: ['accuracy', 'measurement', 'tips'],
+    id: "f-1",
+    question: "How do I get accurate measurements?",
+    answer:
+      "For accurate measurements: 1) Ensure good lighting, 2) Hold the device steady, 3) Follow the AR positioning guides, 4) Wait for the quality indicator to show 80%+ before capturing.",
+    category: "usage",
+    tags: ["accuracy", "measurement", "tips"],
     helpful: 45,
-    notHelpful: 3
+    notHelpful: 3,
   },
   {
-    id: 'f-2',
-    question: 'Why is my quality score low?',
-    answer: 'Low quality scores are usually caused by: poor lighting (increase ambient light), camera shake (use a stable surface or hold steadier), incorrect angle (follow the positioning prompts), or being too close/far from the subject.',
-    category: 'troubleshooting',
-    tags: ['quality', 'troubleshooting', 'accuracy'],
+    id: "f-2",
+    question: "Why is my quality score low?",
+    answer:
+      "Low quality scores are usually caused by: poor lighting (increase ambient light), camera shake (use a stable surface or hold steadier), incorrect angle (follow the positioning prompts), or being too close/far from the subject.",
+    category: "troubleshooting",
+    tags: ["quality", "troubleshooting", "accuracy"],
     helpful: 32,
-    notHelpful: 5
+    notHelpful: 5,
   },
   {
-    id: 'f-3',
-    question: 'Is my data secure?',
-    answer: 'Yes, your data is encrypted and stored securely. All measurements are saved locally on your device by default. If you enable cloud sync, data is encrypted in transit and at rest. You can also enable PIN protection for additional security.',
-    category: 'privacy',
-    tags: ['privacy', 'security', 'data'],
+    id: "f-3",
+    question: "Is my data secure?",
+    answer:
+      "Yes, your data is encrypted and stored securely. All measurements are saved locally on your device by default. If you enable cloud sync, data is encrypted in transit and at rest. You can also enable PIN protection for additional security.",
+    category: "privacy",
+    tags: ["privacy", "security", "data"],
     helpful: 67,
-    notHelpful: 2
+    notHelpful: 2,
   },
   {
-    id: 'f-4',
-    question: 'How does health prediction work?',
-    answer: 'The health prediction feature analyzes your measurement history using machine learning algorithms. It identifies trends, calculates moving averages, and uses regression analysis to forecast future values. Predictions are accompanied by confidence intervals to indicate reliability.',
-    category: 'features',
-    tags: ['prediction', 'ai', 'health'],
+    id: "f-4",
+    question: "How does health prediction work?",
+    answer:
+      "The health prediction feature analyzes your measurement history using machine learning algorithms. It identifies trends, calculates moving averages, and uses regression analysis to forecast future values. Predictions are accompanied by confidence intervals to indicate reliability.",
+    category: "features",
+    tags: ["prediction", "ai", "health"],
     helpful: 28,
-    notHelpful: 4
+    notHelpful: 4,
   },
   {
-    id: 'f-5',
-    question: 'Can I use the app offline?',
-    answer: 'Yes! The app works fully offline. All scans and measurements are saved locally. When you reconnect to the internet, your data will automatically sync if you have cloud sync enabled.',
-    category: 'features',
-    tags: ['offline', 'sync', 'connectivity'],
+    id: "f-5",
+    question: "Can I use the app offline?",
+    answer:
+      "Yes! The app works fully offline. All scans and measurements are saved locally. When you reconnect to the internet, your data will automatically sync if you have cloud sync enabled.",
+    category: "features",
+    tags: ["offline", "sync", "connectivity"],
     helpful: 41,
-    notHelpful: 1
-  }
+    notHelpful: 1,
+  },
 ];
 
-const AI_HISTORY_KEY = 'ai_questions_history';
-const FEEDBACK_KEY = 'glossary_feedback';
+const AI_HISTORY_KEY = "ai_questions_history";
+const FEEDBACK_KEY = "glossary_feedback";
 
 export class GlossaryManager {
   private terms: Map<string, GlossaryTerm> = new Map();
@@ -167,7 +180,7 @@ export class GlossaryManager {
       const data = localStorage.getItem(AI_HISTORY_KEY);
       if (data) this.aiHistory = JSON.parse(data);
     } catch (e) {
-      console.error('Failed to load AI history:', e);
+      console.error("Failed to load AI history:", e);
     }
   }
 
@@ -175,7 +188,7 @@ export class GlossaryManager {
     try {
       localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(this.aiHistory.slice(-50)));
     } catch (e) {
-      console.error('Failed to save AI history:', e);
+      console.error("Failed to save AI history:", e);
     }
   }
 
@@ -187,17 +200,17 @@ export class GlossaryManager {
         Object.entries(parsed).forEach(([id, fb]) => this.feedback.set(id, fb as any));
       }
     } catch (e) {
-      console.error('Failed to load feedback:', e);
+      console.error("Failed to load feedback:", e);
     }
   }
 
   private saveFeedback(): void {
     try {
       const obj: Record<string, any> = {};
-      this.feedback.forEach((v, k) => obj[k] = v);
+      this.feedback.forEach((v, k) => (obj[k] = v));
       localStorage.setItem(FEEDBACK_KEY, JSON.stringify(obj));
     } catch (e) {
-      console.error('Failed to save feedback:', e);
+      console.error("Failed to save feedback:", e);
     }
   }
 
@@ -210,17 +223,18 @@ export class GlossaryManager {
     return this.terms.get(id);
   }
 
-  getTermsByCategory(category: GlossaryTerm['category']): GlossaryTerm[] {
+  getTermsByCategory(category: GlossaryTerm["category"]): GlossaryTerm[] {
     return this.getTerms().filter(t => t.category === category);
   }
 
   searchTerms(query: string): GlossaryTerm[] {
     const q = query.toLowerCase();
-    return this.getTerms().filter(t => 
-      t.term.toLowerCase().includes(q) ||
-      t.definition.toLowerCase().includes(q) ||
-      t.aliases?.some(a => a.toLowerCase().includes(q)) ||
-      t.relatedTerms?.some(r => r.toLowerCase().includes(q))
+    return this.getTerms().filter(
+      t =>
+        t.term.toLowerCase().includes(q) ||
+        t.definition.toLowerCase().includes(q) ||
+        t.aliases?.some(a => a.toLowerCase().includes(q)) ||
+        t.relatedTerms?.some(r => r.toLowerCase().includes(q)),
     );
   }
 
@@ -233,16 +247,17 @@ export class GlossaryManager {
     return this.faqs.get(id);
   }
 
-  getFAQsByCategory(category: FAQItem['category']): FAQItem[] {
+  getFAQsByCategory(category: FAQItem["category"]): FAQItem[] {
     return this.getFAQs().filter(f => f.category === category);
   }
 
   searchFAQs(query: string): FAQItem[] {
     const q = query.toLowerCase();
-    return this.getFAQs().filter(f => 
-      f.question.toLowerCase().includes(q) ||
-      f.answer.toLowerCase().includes(q) ||
-      f.tags.some(t => t.toLowerCase().includes(q))
+    return this.getFAQs().filter(
+      f =>
+        f.question.toLowerCase().includes(q) ||
+        f.answer.toLowerCase().includes(q) ||
+        f.tags.some(t => t.toLowerCase().includes(q)),
     );
   }
 
@@ -257,9 +272,9 @@ export class GlossaryManager {
       else if (term.term.toLowerCase().includes(q)) relevance = 80;
       else if (term.aliases?.some(a => a.toLowerCase().includes(q))) relevance = 70;
       else if (term.definition.toLowerCase().includes(q)) relevance = 50;
-      
+
       if (relevance > 0) {
-        results.push({ type: 'term', item: term, relevance });
+        results.push({ type: "term", item: term, relevance });
       }
     });
 
@@ -268,9 +283,9 @@ export class GlossaryManager {
       if (faq.question.toLowerCase().includes(q)) relevance = 75;
       else if (faq.tags.some(t => t.toLowerCase().includes(q))) relevance = 60;
       else if (faq.answer.toLowerCase().includes(q)) relevance = 40;
-      
+
       if (relevance > 0) {
-        results.push({ type: 'faq', item: faq, relevance });
+        results.push({ type: "faq", item: faq, relevance });
       }
     });
 
@@ -281,11 +296,11 @@ export class GlossaryManager {
   async askQuestion(question: string): Promise<AIQuestion> {
     // Check if we can answer from existing content
     const searchResults = this.search(question);
-    let answer = '';
+    let answer = "";
 
     if (searchResults.length > 0) {
       const top = searchResults[0];
-      if (top.type === 'term') {
+      if (top.type === "term") {
         const term = top.item as GlossaryTerm;
         answer = `**${term.term}**: ${term.definition}`;
         if (term.examples?.length) {
@@ -297,14 +312,15 @@ export class GlossaryManager {
       }
     } else {
       // Fallback response
-      answer = "I don't have specific information about that topic in my knowledge base. Please try rephrasing your question or check the glossary and FAQ sections for related information.";
+      answer =
+        "I don't have specific information about that topic in my knowledge base. Please try rephrasing your question or check the glossary and FAQ sections for related information.";
     }
 
     const aiQuestion: AIQuestion = {
       id: uuidv4(),
       question,
       answer,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     this.aiHistory.push(aiQuestion);

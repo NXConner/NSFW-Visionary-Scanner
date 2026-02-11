@@ -16,4 +16,3 @@ export function quantile(sorted: number[], q: number): number {
   const b = sorted[Math.min(sorted.length - 1, i + 1)] ?? a;
   return lerp(a, b, f);
 }
-

@@ -47,7 +47,12 @@ export function defaultModelFor(provider: AiProvider): string {
   return "openai/gpt-5-mini";
 }
 
-async function handleResponse(response: Response, provider: AiProvider, model: string, start: number) {
+async function handleResponse(
+  response: Response,
+  provider: AiProvider,
+  model: string,
+  start: number,
+) {
   if (!response.ok) {
     const details = await response.text();
     throw new AiProviderError("AI provider error", response.status, details);
@@ -84,7 +89,8 @@ export async function callAiProvider(
   options: ProviderOptions,
 ): Promise<ProviderResponse> {
   const start = Date.now();
-  const { messages, model, temperature, maxTokens, topP, frequencyPenalty, presencePenalty } = options;
+  const { messages, model, temperature, maxTokens, topP, frequencyPenalty, presencePenalty } =
+    options;
 
   if (provider === "openai") {
     const apiKey = Deno.env.get("OPENAI_API_KEY") || "";
@@ -129,7 +135,8 @@ export async function callAiProvider(
   }
 
   if (provider === "custom") {
-    const endpoint = Deno.env.get("SEDUCTIVE_AI_ENDPOINT") || Deno.env.get("CUSTOM_AI_ENDPOINT") || "";
+    const endpoint =
+      Deno.env.get("SEDUCTIVE_AI_ENDPOINT") || Deno.env.get("CUSTOM_AI_ENDPOINT") || "";
     if (!endpoint) throw new AiProviderError("SEDUCTIVE_AI_ENDPOINT not configured", 500);
     const apiKey = Deno.env.get("CUSTOM_AI_API_KEY") || "";
     const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -151,7 +158,8 @@ export async function callAiProvider(
   }
 
   const apiKey = Deno.env.get("LOVABLE_API_KEY") || "";
-  const gateway = Deno.env.get("LOVABLE_AI_GATEWAY") || "https://ai.gateway.lovable.dev/v1/chat/completions";
+  const gateway =
+    Deno.env.get("LOVABLE_AI_GATEWAY") || "https://ai.gateway.lovable.dev/v1/chat/completions";
   if (!apiKey) throw new AiProviderError("LOVABLE_API_KEY not configured", 500);
   const response = await fetch(gateway, {
     method: "POST",

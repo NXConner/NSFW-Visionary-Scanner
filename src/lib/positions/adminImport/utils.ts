@@ -56,7 +56,8 @@ export function normalizeCategory(raw: string, tags: string[] = []): PositionsIm
   const s = `${raw || ""}`.toLowerCase();
   const t = new Set(tags.map(x => x.toLowerCase()));
   if (s.includes("tantric") || t.has("tantric")) return "tantric";
-  if (s.includes("kama") || s.includes("sutra") || t.has("kamasutra") || t.has("kama")) return "kama_sutra";
+  if (s.includes("kama") || s.includes("sutra") || t.has("kamasutra") || t.has("kama"))
+    return "kama_sutra";
   if (s.includes("acro") || t.has("acrobatic")) return "acrobatic";
   if (s.includes("rom") || t.has("romantic") || t.has("cuddle")) return "romantic";
   if (s.includes("quick") || t.has("quickie")) return "quickie";
@@ -80,10 +81,7 @@ export function dedupeBySlug<T extends { position_slug: string }>(items: T[]): T
   return out;
 }
 
-export function ensureUniqueSlug(params: {
-  desired: string;
-  used: Set<string>;
-}): string {
+export function ensureUniqueSlug(params: { desired: string; used: Set<string> }): string {
   const base = slugify(params.desired) || "position";
   if (!params.used.has(base)) {
     params.used.add(base);
@@ -101,4 +99,3 @@ export function ensureUniqueSlug(params: {
   params.used.add(fallback);
   return fallback;
 }
-

@@ -3,9 +3,9 @@
  * Multi-profile support context for managing user profiles
  */
 
-import * as React from 'react';
-import { createContext, useContext, useCallback, useReducer, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import * as React from "react";
+import { createContext, useContext, useCallback, useReducer, useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
 
 // ======= Types =======
 
@@ -43,32 +43,35 @@ interface ProfileState {
 }
 
 type ProfileAction =
-  | { type: 'SET_PROFILES'; payload: UserProfile[] }
-  | { type: 'ADD_PROFILE'; payload: UserProfile }
-  | { type: 'UPDATE_PROFILE'; payload: { id: string; updates: Partial<UserProfile> } }
-  | { type: 'DELETE_PROFILE'; payload: string }
-  | { type: 'SET_ACTIVE_PROFILE'; payload: string }
-  | { type: 'UPDATE_SETTINGS'; payload: Partial<ProfileSettings> }
-  | { type: 'SET_LOCKED'; payload: boolean }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'LOAD_STATE'; payload: Partial<ProfileState> };
+  | { type: "SET_PROFILES"; payload: UserProfile[] }
+  | { type: "ADD_PROFILE"; payload: UserProfile }
+  | { type: "UPDATE_PROFILE"; payload: { id: string; updates: Partial<UserProfile> } }
+  | { type: "DELETE_PROFILE"; payload: string }
+  | { type: "SET_ACTIVE_PROFILE"; payload: string }
+  | { type: "UPDATE_SETTINGS"; payload: Partial<ProfileSettings> }
+  | { type: "SET_LOCKED"; payload: boolean }
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "LOAD_STATE"; payload: Partial<ProfileState> };
 
 interface ProfileContextValue extends ProfileState {
   // Profile management
-  createProfile: (name: string, options?: Partial<Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt'>>) => UserProfile;
+  createProfile: (
+    name: string,
+    options?: Partial<Omit<UserProfile, "id" | "createdAt" | "updatedAt">>,
+  ) => UserProfile;
   updateProfile: (id: string, updates: Partial<UserProfile>) => void;
   deleteProfile: (id: string) => boolean;
   getProfile: (id: string) => UserProfile | undefined;
   getActiveProfile: () => UserProfile | undefined;
-  
+
   // Profile switching
   switchProfile: (id: string, pin?: string) => Promise<boolean>;
   lockProfile: () => void;
   unlockProfile: (pin: string) => boolean;
-  
+
   // Settings
   updateSettings: (settings: Partial<ProfileSettings>) => void;
-  
+
   // Utilities
   canCreateProfile: boolean;
   profileCount: number;
@@ -76,20 +79,20 @@ interface ProfileContextValue extends ProfileState {
 
 // ======= Constants =======
 
-const STORAGE_KEY = 'morphoscan_profiles';
+const STORAGE_KEY = "morphoscan_profiles";
 const MAX_PROFILES = 10;
 
 const PROFILE_COLORS = [
-  '#3b82f6', // blue
-  '#8b5cf6', // violet
-  '#ec4899', // pink
-  '#f97316', // orange
-  '#22c55e', // green
-  '#14b8a6', // teal
-  '#f59e0b', // amber
-  '#ef4444', // red
-  '#6366f1', // indigo
-  '#84cc16', // lime
+  "#3b82f6", // blue
+  "#8b5cf6", // violet
+  "#ec4899", // pink
+  "#f97316", // orange
+  "#22c55e", // green
+  "#14b8a6", // teal
+  "#f59e0b", // amber
+  "#ef4444", // red
+  "#6366f1", // indigo
+  "#84cc16", // lime
 ];
 
 const DEFAULT_SETTINGS: ProfileSettings = {
@@ -103,8 +106,8 @@ const DEFAULT_SETTINGS: ProfileSettings = {
 // ======= Initial State =======
 
 const createDefaultProfile = (): UserProfile => ({
-  id: 'default',
-  name: 'Default',
+  id: "default",
+  name: "Default",
   color: PROFILE_COLORS[0],
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -117,7 +120,7 @@ const createDefaultProfile = (): UserProfile => ({
 
 const initialState: ProfileState = {
   profiles: [createDefaultProfile()],
-  activeProfileId: 'default',
+  activeProfileId: "default",
   settings: DEFAULT_SETTINGS,
   isLocked: false,
   isLoading: true,
@@ -127,26 +130,26 @@ const initialState: ProfileState = {
 
 function profileReducer(state: ProfileState, action: ProfileAction): ProfileState {
   switch (action.type) {
-    case 'SET_PROFILES':
+    case "SET_PROFILES":
       return { ...state, profiles: action.payload };
 
-    case 'ADD_PROFILE':
+    case "ADD_PROFILE":
       return {
         ...state,
         profiles: [...state.profiles, action.payload],
       };
 
-    case 'UPDATE_PROFILE': {
+    case "UPDATE_PROFILE": {
       const { id, updates } = action.payload;
       return {
         ...state,
         profiles: state.profiles.map(p =>
-          p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p
+          p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p,
         ),
       };
     }
 
-    case 'DELETE_PROFILE':
+    case "DELETE_PROFILE":
       return {
         ...state,
         profiles: state.profiles.filter(p => p.id !== action.payload),
@@ -156,19 +159,19 @@ function profileReducer(state: ProfileState, action: ProfileAction): ProfileStat
             : state.activeProfileId,
       };
 
-    case 'SET_ACTIVE_PROFILE':
+    case "SET_ACTIVE_PROFILE":
       return { ...state, activeProfileId: action.payload, isLocked: false };
 
-    case 'UPDATE_SETTINGS':
+    case "UPDATE_SETTINGS":
       return { ...state, settings: { ...state.settings, ...action.payload } };
 
-    case 'SET_LOCKED':
+    case "SET_LOCKED":
       return { ...state, isLocked: action.payload };
 
-    case 'SET_LOADING':
+    case "SET_LOADING":
       return { ...state, isLoading: action.payload };
 
-    case 'LOAD_STATE':
+    case "LOAD_STATE":
       return { ...state, ...action.payload, isLoading: false };
 
     default:
@@ -183,7 +186,7 @@ function hashPin(pin: string): string {
   let hash = 0;
   for (let i = 0; i < pin.length; i++) {
     const char = pin.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash;
   }
   return `pin_${Math.abs(hash).toString(16)}`;
@@ -207,19 +210,19 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       if (stored) {
         const parsed = JSON.parse(stored);
         dispatch({
-          type: 'LOAD_STATE',
+          type: "LOAD_STATE",
           payload: {
             profiles: parsed.profiles || [createDefaultProfile()],
-            activeProfileId: parsed.activeProfileId || 'default',
+            activeProfileId: parsed.activeProfileId || "default",
             settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
           },
         });
       } else {
-        dispatch({ type: 'SET_LOADING', payload: false });
+        dispatch({ type: "SET_LOADING", payload: false });
       }
     } catch (error) {
-      console.error('Failed to load profiles:', error);
-      dispatch({ type: 'SET_LOADING', payload: false });
+      console.error("Failed to load profiles:", error);
+      dispatch({ type: "SET_LOADING", payload: false });
     }
   }, []);
 
@@ -234,10 +237,10 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
           profiles: state.profiles,
           activeProfileId: state.activeProfileId,
           settings: state.settings,
-        })
+        }),
       );
     } catch (error) {
-      console.error('Failed to persist profiles:', error);
+      console.error("Failed to persist profiles:", error);
     }
   }, [state.profiles, state.activeProfileId, state.settings, state.isLoading]);
 
@@ -245,19 +248,25 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!state.settings.autoLockTimeout || state.isLocked) return;
 
-    const timeout = setTimeout(() => {
-      const activeProfile = state.profiles.find(p => p.id === state.activeProfileId);
-      if (activeProfile?.pin) {
-        dispatch({ type: 'SET_LOCKED', payload: true });
-      }
-    }, state.settings.autoLockTimeout * 60 * 1000);
+    const timeout = setTimeout(
+      () => {
+        const activeProfile = state.profiles.find(p => p.id === state.activeProfileId);
+        if (activeProfile?.pin) {
+          dispatch({ type: "SET_LOCKED", payload: true });
+        }
+      },
+      state.settings.autoLockTimeout * 60 * 1000,
+    );
 
     return () => clearTimeout(timeout);
   }, [state.settings.autoLockTimeout, state.activeProfileId, state.isLocked, state.profiles]);
 
   // Profile management
   const createProfile = useCallback(
-    (name: string, options: Partial<Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt'>> = {}): UserProfile => {
+    (
+      name: string,
+      options: Partial<Omit<UserProfile, "id" | "createdAt" | "updatedAt">> = {},
+    ): UserProfile => {
       const now = new Date().toISOString();
       const usedColors = state.profiles.map(p => p.color);
       const availableColor = PROFILE_COLORS.find(c => !usedColors.includes(c)) || PROFILE_COLORS[0];
@@ -279,10 +288,10 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         },
       };
 
-      dispatch({ type: 'ADD_PROFILE', payload: profile });
+      dispatch({ type: "ADD_PROFILE", payload: profile });
       return profile;
     },
-    [state.profiles]
+    [state.profiles],
   );
 
   const updateProfile = useCallback((id: string, updates: Partial<UserProfile>) => {
@@ -290,7 +299,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     if (updates.pin) {
       updates = { ...updates, pin: hashPin(updates.pin) };
     }
-    dispatch({ type: 'UPDATE_PROFILE', payload: { id, updates } });
+    dispatch({ type: "UPDATE_PROFILE", payload: { id, updates } });
   }, []);
 
   const deleteProfile = useCallback(
@@ -302,17 +311,17 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       if (state.profiles.length <= 1) {
         return false; // Must have at least one profile
       }
-      dispatch({ type: 'DELETE_PROFILE', payload: id });
+      dispatch({ type: "DELETE_PROFILE", payload: id });
       return true;
     },
-    [state.profiles]
+    [state.profiles],
   );
 
   const getProfile = useCallback(
     (id: string): UserProfile | undefined => {
       return state.profiles.find(p => p.id === id);
     },
-    [state.profiles]
+    [state.profiles],
   );
 
   const getActiveProfile = useCallback((): UserProfile | undefined => {
@@ -335,22 +344,24 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       // Update last active on current profile
       if (state.activeProfileId) {
         dispatch({
-          type: 'UPDATE_PROFILE',
+          type: "UPDATE_PROFILE",
           payload: {
             id: state.activeProfileId,
-            updates: { metadata: { ...getActiveProfile()?.metadata, lastActive: new Date().toISOString() } },
+            updates: {
+              metadata: { ...getActiveProfile()?.metadata, lastActive: new Date().toISOString() },
+            },
           },
         });
       }
 
-      dispatch({ type: 'SET_ACTIVE_PROFILE', payload: id });
+      dispatch({ type: "SET_ACTIVE_PROFILE", payload: id });
       return true;
     },
-    [state.profiles, state.settings.requirePinForSwitch, state.activeProfileId, getActiveProfile]
+    [state.profiles, state.settings.requirePinForSwitch, state.activeProfileId, getActiveProfile],
   );
 
   const lockProfile = useCallback(() => {
-    dispatch({ type: 'SET_LOCKED', payload: true });
+    dispatch({ type: "SET_LOCKED", payload: true });
   }, []);
 
   const unlockProfile = useCallback(
@@ -359,21 +370,22 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       if (!activeProfile?.pin) return true;
 
       if (verifyPin(pin, activeProfile.pin)) {
-        dispatch({ type: 'SET_LOCKED', payload: false });
+        dispatch({ type: "SET_LOCKED", payload: false });
         return true;
       }
       return false;
     },
-    [getActiveProfile]
+    [getActiveProfile],
   );
 
   // Settings
   const updateSettings = useCallback((settings: Partial<ProfileSettings>) => {
-    dispatch({ type: 'UPDATE_SETTINGS', payload: settings });
+    dispatch({ type: "UPDATE_SETTINGS", payload: settings });
   }, []);
 
   // Computed values
-  const canCreateProfile = state.profiles.length < Math.min(state.settings.maxProfiles, MAX_PROFILES);
+  const canCreateProfile =
+    state.profiles.length < Math.min(state.settings.maxProfiles, MAX_PROFILES);
   const profileCount = state.profiles.length;
 
   const value: ProfileContextValue = {
@@ -391,17 +403,13 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     profileCount,
   };
 
-  return (
-    <ProfileContext.Provider value={value}>
-      {children}
-    </ProfileContext.Provider>
-  );
+  return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
 }
 
 export function useProfiles() {
   const context = useContext(ProfileContext);
   if (!context) {
-    throw new Error('useProfiles must be used within a ProfileProvider');
+    throw new Error("useProfiles must be used within a ProfileProvider");
   }
   return context;
 }

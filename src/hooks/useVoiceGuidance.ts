@@ -55,9 +55,7 @@ export interface UseVoiceGuidanceReturn {
   setVoice: (voice: VoiceGuidanceSettings["voice"]) => void;
 }
 
-export function useVoiceGuidance(
-  options: UseVoiceGuidanceOptions = {},
-): UseVoiceGuidanceReturn {
+export function useVoiceGuidance(options: UseVoiceGuidanceOptions = {}): UseVoiceGuidanceReturn {
   const {
     autoInitialize = true,
     conditionChecker,
@@ -73,23 +71,18 @@ export function useVoiceGuidance(
 
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isSequenceActive, setIsSequenceActive] = useState(false);
-  const [sequenceState, setSequenceState] = useState<SequenceState | null>(
-    null,
-  );
-  const [localSettings, setLocalSettings] = useState<VoiceGuidanceSettings>(
-    () => ({
-      enabled: appSettings.voiceGuidance?.enabled ?? true,
-      speed: appSettings.voiceGuidance?.speed ?? "normal",
-      voice: appSettings.voiceGuidance?.voice ?? "default",
-      volume: appSettings.voiceGuidance?.volume ?? 80,
-      announceSteps: appSettings.voiceGuidance?.announceSteps ?? true,
-      announceMeasurements:
-        appSettings.voiceGuidance?.announceMeasurements ?? true,
-      announceErrors: appSettings.voiceGuidance?.announceErrors ?? true,
-      useShortPrompts: false,
-      soundEffectsEnabled: true,
-    }),
-  );
+  const [sequenceState, setSequenceState] = useState<SequenceState | null>(null);
+  const [localSettings, setLocalSettings] = useState<VoiceGuidanceSettings>(() => ({
+    enabled: appSettings.voiceGuidance?.enabled ?? true,
+    speed: appSettings.voiceGuidance?.speed ?? "normal",
+    voice: appSettings.voiceGuidance?.voice ?? "default",
+    volume: appSettings.voiceGuidance?.volume ?? 80,
+    announceSteps: appSettings.voiceGuidance?.announceSteps ?? true,
+    announceMeasurements: appSettings.voiceGuidance?.announceMeasurements ?? true,
+    announceErrors: appSettings.voiceGuidance?.announceErrors ?? true,
+    useShortPrompts: false,
+    soundEffectsEnabled: true,
+  }));
 
   // Initialize engine
   useEffect(() => {
@@ -101,56 +94,52 @@ export function useVoiceGuidance(
       }
 
       // Subscribe to events
-      const unsubscribe = engineRef.current.subscribe(
-        (event: GuidanceEvent) => {
-          switch (event.type) {
-            case "speech_start":
-              setIsSpeaking(true);
-              onSpeechStart?.((event.data as { text: string }).text);
-              break;
+      const unsubscribe = engineRef.current.subscribe((event: GuidanceEvent) => {
+        switch (event.type) {
+          case "speech_start":
+            setIsSpeaking(true);
+            onSpeechStart?.((event.data as { text: string }).text);
+            break;
 
-            case "speech_end":
-              setIsSpeaking(false);
-              onSpeechEnd?.((event.data as { text: string }).text);
-              break;
+          case "speech_end":
+            setIsSpeaking(false);
+            onSpeechEnd?.((event.data as { text: string }).text);
+            break;
 
-            case "sequence_start":
-              setIsSequenceActive(true);
-              break;
+          case "sequence_start":
+            setIsSequenceActive(true);
+            break;
 
-            case "sequence_step":
-              setSequenceState(engineRef.current?.getSequenceState() || null);
-              break;
+          case "sequence_step":
+            setSequenceState(engineRef.current?.getSequenceState() || null);
+            break;
 
-            case "sequence_complete":
-              setIsSequenceActive(false);
-              setSequenceState(null);
-              onSequenceComplete?.(
-                (event.data as { sequence: string }).sequence,
-              );
-              break;
+          case "sequence_complete":
+            setIsSequenceActive(false);
+            setSequenceState(null);
+            onSequenceComplete?.((event.data as { sequence: string }).sequence);
+            break;
 
-            case "sequence_cancel":
-              setIsSequenceActive(false);
-              setSequenceState(null);
-              break;
+          case "sequence_cancel":
+            setIsSequenceActive(false);
+            setSequenceState(null);
+            break;
 
-            case "action_required": {
-              const actionData = event.data as {
-                action: string;
-                step: unknown;
-              };
-              onActionRequired?.(actionData.action, actionData.step);
-              break;
-            }
-
-            case "sequence_pause":
-            case "sequence_resume":
-              setSequenceState(engineRef.current?.getSequenceState() || null);
-              break;
+          case "action_required": {
+            const actionData = event.data as {
+              action: string;
+              step: unknown;
+            };
+            onActionRequired?.(actionData.action, actionData.step);
+            break;
           }
-        },
-      );
+
+          case "sequence_pause":
+          case "sequence_resume":
+            setSequenceState(engineRef.current?.getSequenceState() || null);
+            break;
+        }
+      });
 
       return () => {
         unsubscribe();
@@ -178,7 +167,7 @@ export function useVoiceGuidance(
         announceErrors: appSettings.voiceGuidance.announceErrors,
       };
       engineRef.current.updateSettings(newSettings);
-      setLocalSettings((prev) => ({ ...prev, ...newSettings }));
+      setLocalSettings(prev => ({ ...prev, ...newSettings }));
     }
   }, [appSettings.voiceGuidance]);
 
@@ -236,7 +225,7 @@ export function useVoiceGuidance(
   const updateSettings = useCallback(
     (settings: Partial<VoiceGuidanceSettings>) => {
       engineRef.current?.updateSettings(settings);
-      setLocalSettings((prev) => ({ ...prev, ...settings }));
+      setLocalSettings(prev => ({ ...prev, ...settings }));
 
       // Persist to app settings
       updateVoiceGuidance({

@@ -3,7 +3,7 @@
  * Implements various noise reduction techniques for image enhancement
  */
 
-export type NoiseReductionLevel = 'none' | 'light' | 'medium' | 'heavy' | 'auto';
+export type NoiseReductionLevel = "none" | "light" | "medium" | "heavy" | "auto";
 
 export interface NoiseReductionOptions {
   level: NoiseReductionLevel;
@@ -29,7 +29,7 @@ export interface NoiseRegion {
 }
 
 const DEFAULT_OPTIONS: NoiseReductionOptions = {
-  level: 'auto',
+  level: "auto",
   preserveDetails: true,
   luminanceOnly: false,
   spatialSigma: 3,
@@ -51,7 +51,7 @@ export function analyzeNoise(imageData: ImageData): NoiseAnalysis {
     for (let x = 0; x < width - blockSize; x += blockSize) {
       const variance = calculateBlockVariance(data, width, x, y, blockSize);
       const noiseLevel = Math.min(1, variance / 2500);
-      
+
       regions.push({ x, y, width: blockSize, height: blockSize, noiseLevel });
       totalNoise += noiseLevel;
       blockCount++;
@@ -74,7 +74,7 @@ function calculateBlockVariance(
   width: number,
   startX: number,
   startY: number,
-  blockSize: number
+  blockSize: number,
 ): number {
   const pixels: number[] = [];
 
@@ -88,24 +88,21 @@ function calculateBlockVariance(
 
   const mean = pixels.reduce((a, b) => a + b, 0) / pixels.length;
   const variance = pixels.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / pixels.length;
-  
+
   return variance;
 }
 
 function getRecommendedLevel(noise: number): NoiseReductionLevel {
-  if (noise < 0.1) return 'none';
-  if (noise < 0.25) return 'light';
-  if (noise < 0.5) return 'medium';
-  return 'heavy';
+  if (noise < 0.1) return "none";
+  if (noise < 0.25) return "light";
+  if (noise < 0.5) return "medium";
+  return "heavy";
 }
 
 /**
  * Apply Gaussian blur for basic noise reduction
  */
-function applyGaussianBlur(
-  imageData: ImageData,
-  sigma: number
-): ImageData {
+function applyGaussianBlur(imageData: ImageData, sigma: number): ImageData {
   const { data, width, height } = imageData;
   const result = new Uint8ClampedArray(data.length);
   const kernelSize = Math.ceil(sigma * 3) * 2 + 1;
@@ -116,7 +113,11 @@ function applyGaussianBlur(
   const temp = new Uint8ClampedArray(data.length);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      let r = 0, g = 0, b = 0, a = 0, weightSum = 0;
+      let r = 0,
+        g = 0,
+        b = 0,
+        a = 0,
+        weightSum = 0;
 
       for (let kx = -halfKernel; kx <= halfKernel; kx++) {
         const px = Math.min(width - 1, Math.max(0, x + kx));
@@ -141,7 +142,11 @@ function applyGaussianBlur(
   // Vertical pass
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      let r = 0, g = 0, b = 0, a = 0, weightSum = 0;
+      let r = 0,
+        g = 0,
+        b = 0,
+        a = 0,
+        weightSum = 0;
 
       for (let ky = -halfKernel; ky <= halfKernel; ky++) {
         const py = Math.min(height - 1, Math.max(0, y + ky));
@@ -187,7 +192,7 @@ function generateGaussianKernel(size: number, sigma: number): number[] {
 export function applyBilateralFilter(
   imageData: ImageData,
   spatialSigma: number,
-  colorSigma: number
+  colorSigma: number,
 ): ImageData {
   const { data, width, height } = imageData;
   const result = new Uint8ClampedArray(data.length);
@@ -201,7 +206,10 @@ export function applyBilateralFilter(
       const centerG = data[centerIdx + 1];
       const centerB = data[centerIdx + 2];
 
-      let sumR = 0, sumG = 0, sumB = 0, weightSum = 0;
+      let sumR = 0,
+        sumG = 0,
+        sumB = 0,
+        weightSum = 0;
 
       for (let ky = -halfKernel; ky <= halfKernel; ky++) {
         for (let kx = -halfKernel; kx <= halfKernel; kx++) {
@@ -212,11 +220,13 @@ export function applyBilateralFilter(
           const spatialDist = Math.sqrt(kx * kx + ky * ky);
           const colorDist = Math.sqrt(
             Math.pow(data[idx] - centerR, 2) +
-            Math.pow(data[idx + 1] - centerG, 2) +
-            Math.pow(data[idx + 2] - centerB, 2)
+              Math.pow(data[idx + 1] - centerG, 2) +
+              Math.pow(data[idx + 2] - centerB, 2),
           );
 
-          const spatialWeight = Math.exp(-(spatialDist * spatialDist) / (2 * spatialSigma * spatialSigma));
+          const spatialWeight = Math.exp(
+            -(spatialDist * spatialDist) / (2 * spatialSigma * spatialSigma),
+          );
           const colorWeight = Math.exp(-(colorDist * colorDist) / (2 * colorSigma * colorSigma));
           const weight = spatialWeight * colorWeight;
 
@@ -285,18 +295,18 @@ export function applyMedianFilter(imageData: ImageData, kernelSize: number = 3):
  */
 export function reduceNoise(
   imageData: ImageData,
-  options: Partial<NoiseReductionOptions> = {}
+  options: Partial<NoiseReductionOptions> = {},
 ): ImageData {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   let level = opts.level;
 
   // Auto-detect noise level
-  if (level === 'auto') {
+  if (level === "auto") {
     const analysis = analyzeNoise(imageData);
     level = analysis.recommendedLevel;
   }
 
-  if (level === 'none') {
+  if (level === "none") {
     return imageData;
   }
 
@@ -312,11 +322,11 @@ export function reduceNoise(
 
 function getFilterParams(level: NoiseReductionLevel): { spatial: number; color: number } {
   switch (level) {
-    case 'light':
+    case "light":
       return { spatial: 2, color: 15 };
-    case 'medium':
+    case "medium":
       return { spatial: 3, color: 25 };
-    case 'heavy':
+    case "heavy":
       return { spatial: 5, color: 40 };
     default:
       return { spatial: 3, color: 25 };

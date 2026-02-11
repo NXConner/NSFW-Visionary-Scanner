@@ -3,4 +3,4 @@
  * Profile management utilities
  */
 
-export * from './profileManager';
+export * from "./profileManager";

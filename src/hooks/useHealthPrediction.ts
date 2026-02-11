@@ -3,7 +3,7 @@
  * React hook for health prediction operations
  */
 
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import {
   PredictionEngine,
   getPredictionEngine,
@@ -13,7 +13,7 @@ import {
   type HealthInsight,
   type TrendResult,
   type RiskAssessment,
-} from '@/lib/healthPrediction';
+} from "@/lib/healthPrediction";
 
 export interface UseHealthPredictionOptions {
   metricId?: string;
@@ -33,22 +33,22 @@ export interface UseHealthPredictionReturn {
 
   // Actions
   analyze: (dataPoints: DataPoint[]) => AnalysisResult;
-  getQuickSummary: (dataPoints: DataPoint[]) => ReturnType<PredictionEngine['getQuickSummary']>;
+  getQuickSummary: (dataPoints: DataPoint[]) => ReturnType<PredictionEngine["getQuickSummary"]>;
   comparePeriods: (
     period1: DataPoint[],
-    period2: DataPoint[]
-  ) => ReturnType<PredictionEngine['comparePeriods']>;
+    period2: DataPoint[],
+  ) => ReturnType<PredictionEngine["comparePeriods"]>;
   clearCache: () => void;
 
   // Computed
   hasEnoughData: boolean;
-  confidenceLevel: 'low' | 'medium' | 'high';
+  confidenceLevel: "low" | "medium" | "high";
 }
 
 export function useHealthPrediction(
-  options: UseHealthPredictionOptions = {}
+  options: UseHealthPredictionOptions = {},
 ): UseHealthPredictionReturn {
-  const { metricId = 'default', autoAnalyze = false, cacheResults = true } = options;
+  const { metricId = "default", autoAnalyze = false, cacheResults = true } = options;
 
   const engineRef = useRef<PredictionEngine>(getPredictionEngine());
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -64,25 +64,25 @@ export function useHealthPrediction(
     }
   }, [metricId, cacheResults]);
 
-  const analyze = useCallback((dataPoints: DataPoint[]) => {
-    setIsAnalyzing(true);
-    try {
-      const result = engineRef.current.analyze(dataPoints, metricId);
-      setLastAnalysis(result);
-      return result;
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, [metricId]);
+  const analyze = useCallback(
+    (dataPoints: DataPoint[]) => {
+      setIsAnalyzing(true);
+      try {
+        const result = engineRef.current.analyze(dataPoints, metricId);
+        setLastAnalysis(result);
+        return result;
+      } finally {
+        setIsAnalyzing(false);
+      }
+    },
+    [metricId],
+  );
 
   const getQuickSummary = useCallback((dataPoints: DataPoint[]) => {
     return engineRef.current.getQuickSummary(dataPoints);
   }, []);
 
-  const comparePeriods = useCallback((
-    period1: DataPoint[],
-    period2: DataPoint[]
-  ) => {
+  const comparePeriods = useCallback((period1: DataPoint[], period2: DataPoint[]) => {
     return engineRef.current.comparePeriods(period1, period2);
   }, []);
 
@@ -102,11 +102,11 @@ export function useHealthPrediction(
     return (lastAnalysis?.trend.dataPoints || 0) >= 5;
   }, [lastAnalysis]);
 
-  const confidenceLevel = useMemo((): 'low' | 'medium' | 'high' => {
+  const confidenceLevel = useMemo((): "low" | "medium" | "high" => {
     const confidence = lastAnalysis?.trend.confidence || 0;
-    if (confidence >= 70) return 'high';
-    if (confidence >= 40) return 'medium';
-    return 'low';
+    if (confidence >= 70) return "high";
+    if (confidence >= 40) return "medium";
+    return "low";
   }, [lastAnalysis]);
 
   return {

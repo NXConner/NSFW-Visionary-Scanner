@@ -20,9 +20,7 @@ const bannedTokens = [
 ];
 
 const bannedRegex = new RegExp(
-  bannedTokens
-    .map(token => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-    .join("|"),
+  bannedTokens.map(token => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"),
   "i",
 );
 

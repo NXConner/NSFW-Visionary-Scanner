@@ -1,1 +1,1 @@
-export { APIAccessPanel } from './APIAccessPanel';
+export { APIAccessPanel } from "./APIAccessPanel";

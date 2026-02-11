@@ -3,15 +3,12 @@
  * Notification toast for unlocked achievements
  */
 
-import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import * as LucideIcons from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import {
-  type Achievement,
-  getRarityColor,
-} from '@/lib/achievements/achievementDefinitions';
+import React, { useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import * as LucideIcons from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { type Achievement, getRarityColor } from "@/lib/achievements/achievementDefinitions";
 
 export interface AchievementToastProps {
   achievement: Achievement | null;
@@ -38,21 +35,21 @@ export function AchievementToast({
 
   if (!achievement) return null;
 
-  const Icon = (LucideIcons as Record<string, React.FC<{ size?: number; className?: string }>>)[achievement.icon] || LucideIcons.Award;
+  const Icon =
+    (LucideIcons as Record<string, React.FC<{ size?: number; className?: string }>>)[
+      achievement.icon
+    ] || LucideIcons.Award;
   const rarityColor = getRarityColor(achievement.rarity);
 
   return (
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          className={cn(
-            'fixed top-4 right-4 z-[100] pointer-events-auto',
-            className
-          )}
+          className={cn("fixed top-4 right-4 z-[100] pointer-events-auto", className)}
           initial={{ opacity: 0, y: -50, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.9 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
         >
           <div
             className="relative overflow-hidden rounded-lg shadow-2xl"
@@ -64,8 +61,8 @@ export function AchievementToast({
             {/* Shimmer effect */}
             <motion.div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-              initial={{ x: '-100%' }}
-              animate={{ x: '200%' }}
+              initial={{ x: "-100%" }}
+              animate={{ x: "200%" }}
               transition={{ duration: 1.5, repeat: 2, repeatDelay: 0.5 }}
             />
 
@@ -75,7 +72,7 @@ export function AchievementToast({
                 className="relative flex-shrink-0"
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
-                transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
               >
                 <div
                   className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg"
@@ -104,7 +101,10 @@ export function AchievementToast({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
                 >
-                  <div className="text-xs font-medium uppercase tracking-wider mb-1" style={{ color: rarityColor }}>
+                  <div
+                    className="text-xs font-medium uppercase tracking-wider mb-1"
+                    style={{ color: rarityColor }}
+                  >
                     Achievement Unlocked!
                   </div>
                   <div className="font-bold text-lg text-foreground truncate">
@@ -143,9 +143,9 @@ export function AchievementToast({
             <motion.div
               className="h-1"
               style={{ backgroundColor: rarityColor }}
-              initial={{ width: '100%' }}
-              animate={{ width: '0%' }}
-              transition={{ duration: autoHideDuration / 1000, ease: 'linear' }}
+              initial={{ width: "100%" }}
+              animate={{ width: "0%" }}
+              transition={{ duration: autoHideDuration / 1000, ease: "linear" }}
             />
           </div>
         </motion.div>

@@ -81,10 +81,10 @@ export interface AddonModule {
 
 export interface AddonRegisterContext {
   dlc: {
-    registerPackages: (
-      packages: Record<string, import("@/dlc/core/types").DLCPackage>,
+    registerPackages: (packages: Record<string, import("@/dlc/core/types").DLCPackage>) => void;
+    registerManifests: (
+      manifests: Record<string, import("@/dlc/core/dlcRegistryParts/manifests").DLCBundleManifest>,
     ) => void;
-    registerManifests: (manifests: Record<string, import("@/dlc/core/dlcRegistryParts/manifests").DLCBundleManifest>) => void;
     registerModules: (modules: Record<string, import("@/dlc/core/types").DLCModule>) => void;
   };
 }
@@ -92,4 +92,3 @@ export interface AddonRegisterContext {
 export interface AddonRegisterResult {
   contributions?: AddonContributions;
 }
-

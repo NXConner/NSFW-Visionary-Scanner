@@ -3,9 +3,9 @@
  * Handles device-ready events, splash screen dismissal, and mobile-specific setup
  */
 
-import { Capacitor } from '@capacitor/core';
-import { SplashScreen } from '@capacitor/splash-screen';
-import { StatusBar, Style } from '@capacitor/status-bar';
+import { Capacitor } from "@capacitor/core";
+import { SplashScreen } from "@capacitor/splash-screen";
+import { StatusBar, Style } from "@capacitor/status-bar";
 
 // Track initialization state
 let isInitialized = false;
@@ -21,8 +21,8 @@ export const isNative = (): boolean => {
 /**
  * Get the current platform (web, ios, android)
  */
-export const getPlatform = (): 'web' | 'ios' | 'android' => {
-  return Capacitor.getPlatform() as 'web' | 'ios' | 'android';
+export const getPlatform = (): "web" | "ios" | "android" => {
+  return Capacitor.getPlatform() as "web" | "ios" | "android";
 };
 
 /**
@@ -33,9 +33,9 @@ export const hideSplashScreen = async (): Promise<void> => {
 
   try {
     await SplashScreen.hide({ fadeOutDuration: 300 });
-    console.log('[Capacitor] Splash screen hidden');
+    console.log("[Capacitor] Splash screen hidden");
   } catch (error) {
-    console.warn('[Capacitor] Failed to hide splash screen:', error);
+    console.warn("[Capacitor] Failed to hide splash screen:", error);
     // Don't throw - app should continue even if splash fails
   }
 };
@@ -48,10 +48,10 @@ const configureStatusBar = async (): Promise<void> => {
 
   try {
     await StatusBar.setStyle({ style: Style.Dark });
-    await StatusBar.setBackgroundColor({ color: '#0a0a0a' });
-    console.log('[Capacitor] Status bar configured');
+    await StatusBar.setBackgroundColor({ color: "#0a0a0a" });
+    console.log("[Capacitor] Status bar configured");
   } catch (error) {
-    console.warn('[Capacitor] Failed to configure status bar:', error);
+    console.warn("[Capacitor] Failed to configure status bar:", error);
   }
 };
 
@@ -61,7 +61,7 @@ const configureStatusBar = async (): Promise<void> => {
  */
 export const initializeCapacitor = async (): Promise<void> => {
   if (isInitialized) {
-    console.log('[Capacitor] Already initialized');
+    console.log("[Capacitor] Already initialized");
     return;
   }
 
@@ -69,7 +69,7 @@ export const initializeCapacitor = async (): Promise<void> => {
   console.log(`[Capacitor] Initializing on platform: ${platform}`);
 
   if (!isNative()) {
-    console.log('[Capacitor] Web platform - skipping native initialization');
+    console.log("[Capacitor] Web platform - skipping native initialization");
     isInitialized = true;
     return;
   }
@@ -80,9 +80,9 @@ export const initializeCapacitor = async (): Promise<void> => {
 
     // Mark as initialized
     isInitialized = true;
-    console.log('[Capacitor] Initialization complete');
+    console.log("[Capacitor] Initialization complete");
   } catch (error) {
-    console.error('[Capacitor] Initialization error:', error);
+    console.error("[Capacitor] Initialization error:", error);
     initializationError = error as Error;
     // Still mark as initialized to prevent retries
     isInitialized = true;
@@ -102,16 +102,13 @@ export const isCapacitorInitialized = (): boolean => isInitialized;
 /**
  * Safe wrapper for Capacitor plugin calls
  */
-export const safeCapacitorCall = async <T>(
-  fn: () => Promise<T>,
-  fallback: T
-): Promise<T> => {
+export const safeCapacitorCall = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
   if (!isNative()) return fallback;
 
   try {
     return await fn();
   } catch (error) {
-    console.warn('[Capacitor] Plugin call failed:', error);
+    console.warn("[Capacitor] Plugin call failed:", error);
     return fallback;
   }
 };

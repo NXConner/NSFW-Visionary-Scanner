@@ -408,7 +408,9 @@ export const PositionDetailView: React.FC<PositionDetailViewProps> = ({
                               className="absolute left-2 top-1/2 -translate-y-1/2"
                               onClick={() =>
                                 setSelectedAnimationIndex(
-                                  prev => (prev - 1 + displayAnimations.length) % displayAnimations.length,
+                                  prev =>
+                                    (prev - 1 + displayAnimations.length) %
+                                    displayAnimations.length,
                                 )
                               }
                             >

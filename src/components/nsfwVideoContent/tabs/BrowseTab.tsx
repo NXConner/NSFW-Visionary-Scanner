@@ -143,131 +143,136 @@ export function BrowseTab(props: BrowseTabProps): JSX.Element {
           {filteredVideos.map(video => {
             const isBookmarked = bookmarkedIds.has(video.id);
             return (
-            <Card
-              key={video.id}
-              className="glass-card border-border/50 hover:border-primary/50 transition-colors"
-            >
-              <CardContent className="p-0">
-                <div className="relative aspect-video bg-muted/30 rounded-t-lg overflow-hidden">
-                  {video.thumbnail_url ? (
-                    <img
-                      src={video.thumbnail_url}
-                      alt={
-                        privacy.hideTitles || privacy.incognitoMode
-                          ? "Video thumbnail"
-                          : video.title
-                      }
-                      className={[
-                        "w-full h-full object-cover",
-                        privacy.blurThumbnails || privacy.incognitoMode ? "blur-md scale-105" : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Play className="w-12 h-12 text-muted-foreground" />
-                    </div>
-                  )}
-                  {(privacy.blurThumbnails || privacy.incognitoMode) && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Badge variant="secondary" className="gap-1">
-                        <Eye className="w-3 h-3" />
-                        Tap Play to reveal
+              <Card
+                key={video.id}
+                className="glass-card border-border/50 hover:border-primary/50 transition-colors"
+              >
+                <CardContent className="p-0">
+                  <div className="relative aspect-video bg-muted/30 rounded-t-lg overflow-hidden">
+                    {video.thumbnail_url ? (
+                      <img
+                        src={video.thumbnail_url}
+                        alt={
+                          privacy.hideTitles || privacy.incognitoMode
+                            ? "Video thumbnail"
+                            : video.title
+                        }
+                        className={[
+                          "w-full h-full object-cover",
+                          privacy.blurThumbnails || privacy.incognitoMode
+                            ? "blur-md scale-105"
+                            : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Play className="w-12 h-12 text-muted-foreground" />
+                      </div>
+                    )}
+                    {(privacy.blurThumbnails || privacy.incognitoMode) && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Badge variant="secondary" className="gap-1">
+                          <Eye className="w-3 h-3" />
+                          Tap Play to reveal
+                        </Badge>
+                      </div>
+                    )}
+                    {video.is_premium && (
+                      <Badge className="absolute top-2 right-2" variant="secondary">
+                        Premium
                       </Badge>
-                    </div>
-                  )}
-                  {video.is_premium && (
-                    <Badge className="absolute top-2 right-2" variant="secondary">
-                      Premium
-                    </Badge>
-                  )}
-                  {video.is_featured && (
-                    <Badge className="absolute top-2 left-2" variant="default">
-                      Featured
-                    </Badge>
-                  )}
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="absolute bottom-2 right-2 bg-background/70 hover:bg-background"
-                    onClick={() => onToggleBookmark(video.id, !isBookmarked)}
-                    aria-label={isBookmarked ? "Remove bookmark" : "Bookmark video"}
-                  >
-                    <Bookmark className={isBookmarked ? "w-4 h-4 fill-primary text-primary" : "w-4 h-4"} />
-                  </Button>
-                </div>
-
-                <div className="p-4 space-y-2">
-                  <h3 className="font-semibold line-clamp-2">
-                    {privacy.hideTitles || privacy.incognitoMode ? "Private Video" : video.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {privacy.incognitoMode
-                      ? "Description hidden in incognito mode."
-                      : video.description}
-                  </p>
-
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {formatDuration(video.video_duration_seconds)}
-                    </span>
-                    {!privacy.incognitoMode && (
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-3 h-3" />
-                        {video.view_count}
-                      </span>
                     )}
-                    {!privacy.incognitoMode && video.average_rating && (
-                      <span className="flex items-center gap-1">
-                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                        {video.average_rating.toFixed(1)}
-                      </span>
+                    {video.is_featured && (
+                      <Badge className="absolute top-2 left-2" variant="default">
+                        Featured
+                      </Badge>
                     )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button size="sm" className="flex-1" onClick={() => onPlay(video)}>
-                      <Play className="w-4 h-4 mr-2" />
-                      Play
-                    </Button>
                     <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onDownload(video, downloadQuality)}
+                      size="icon"
+                      variant="ghost"
+                      className="absolute bottom-2 right-2 bg-background/70 hover:bg-background"
+                      onClick={() => onToggleBookmark(video.id, !isBookmarked)}
+                      aria-label={isBookmarked ? "Remove bookmark" : "Bookmark video"}
                     >
-                      <Download className="w-4 h-4" />
+                      <Bookmark
+                        className={isBookmarked ? "w-4 h-4 fill-primary text-primary" : "w-4 h-4"}
+                      />
                     </Button>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 gap-2">
-                    <Select
-                      value={downloadQuality}
-                      onValueChange={v => setDownloadQuality(v as VideoQuality)}
-                    >
-                      <SelectTrigger className="h-8 w-[120px]">
-                        <SelectValue placeholder="Quality" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="sd">SD</SelectItem>
-                        <SelectItem value="hd">HD</SelectItem>
-                        <SelectItem value="4k">4K</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="p-4 space-y-2">
+                    <h3 className="font-semibold line-clamp-2">
+                      {privacy.hideTitles || privacy.incognitoMode ? "Private Video" : video.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {privacy.incognitoMode
+                        ? "Description hidden in incognito mode."
+                        : video.description}
+                    </p>
 
-                    {downloadProgress[`${video.id}:${downloadQuality}`] != null &&
-                      downloadProgress[`${video.id}:${downloadQuality}`] > 0 &&
-                      downloadProgress[`${video.id}:${downloadQuality}`] < 100 && (
-                        <div className="flex-1">
-                          <Progress value={downloadProgress[`${video.id}:${downloadQuality}`]} />
-                        </div>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatDuration(video.video_duration_seconds)}
+                      </span>
+                      {!privacy.incognitoMode && (
+                        <span className="flex items-center gap-1">
+                          <Eye className="w-3 h-3" />
+                          {video.view_count}
+                        </span>
                       )}
+                      {!privacy.incognitoMode && video.average_rating && (
+                        <span className="flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                          {video.average_rating.toFixed(1)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button size="sm" className="flex-1" onClick={() => onPlay(video)}>
+                        <Play className="w-4 h-4 mr-2" />
+                        Play
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onDownload(video, downloadQuality)}
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 gap-2">
+                      <Select
+                        value={downloadQuality}
+                        onValueChange={v => setDownloadQuality(v as VideoQuality)}
+                      >
+                        <SelectTrigger className="h-8 w-[120px]">
+                          <SelectValue placeholder="Quality" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sd">SD</SelectItem>
+                          <SelectItem value="hd">HD</SelectItem>
+                          <SelectItem value="4k">4K</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {downloadProgress[`${video.id}:${downloadQuality}`] != null &&
+                        downloadProgress[`${video.id}:${downloadQuality}`] > 0 &&
+                        downloadProgress[`${video.id}:${downloadQuality}`] < 100 && (
+                          <div className="flex-1">
+                            <Progress value={downloadProgress[`${video.id}:${downloadQuality}`]} />
+                          </div>
+                        )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          )})}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 

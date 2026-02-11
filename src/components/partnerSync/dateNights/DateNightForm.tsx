@@ -87,13 +87,22 @@ export function DateNightForm({
   const [error, setError] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState("");
   const [checklistItems, setChecklistItems] = useState<Array<{ id: string; value: string }>>(
-    DATE_NIGHT_CHECKLIST_PRESETS.map((item, index) => ({ id: `preset-${index}`, value: item as string })),
+    DATE_NIGHT_CHECKLIST_PRESETS.map((item, index) => ({
+      id: `preset-${index}`,
+      value: item as string,
+    })),
   );
   const [packingItems, setPackingItems] = useState<Array<{ id: string; value: string }>>(
-    DATE_NIGHT_PACKING_PRESETS.map((item, index) => ({ id: `preset-pack-${index}`, value: item as string })),
+    DATE_NIGHT_PACKING_PRESETS.map((item, index) => ({
+      id: `preset-pack-${index}`,
+      value: item as string,
+    })),
   );
   const [aftercareItems, setAftercareItems] = useState<Array<{ id: string; value: string }>>(
-    DATE_NIGHT_AFTERCARE_PRESETS.map((item, index) => ({ id: `preset-after-${index}`, value: item as string })),
+    DATE_NIGHT_AFTERCARE_PRESETS.map((item, index) => ({
+      id: `preset-after-${index}`,
+      value: item as string,
+    })),
   );
   const [reminders, setReminders] = useState<DateNightReminderItem[]>([]);
 
@@ -170,7 +179,9 @@ export function DateNightForm({
       setReminders(
         reminders.map((item, index) => ({
           id: `tpl-rem-${index}-${createItineraryId()}`,
-          reminderType: String((item as any)?.reminderType || "custom") as DateNightReminderItem["reminderType"],
+          reminderType: String(
+            (item as any)?.reminderType || "custom",
+          ) as DateNightReminderItem["reminderType"],
           remindAt: String((item as any)?.remindAt || ""),
           notes: String((item as any)?.notes || ""),
         })),
@@ -206,13 +217,22 @@ export function DateNightForm({
     if (ok) {
       setPlan(emptyPlan(partnerId));
       setChecklistItems(
-        DATE_NIGHT_CHECKLIST_PRESETS.map((item, index) => ({ id: `preset-${index}`, value: item as string })),
+        DATE_NIGHT_CHECKLIST_PRESETS.map((item, index) => ({
+          id: `preset-${index}`,
+          value: item as string,
+        })),
       );
       setPackingItems(
-        DATE_NIGHT_PACKING_PRESETS.map((item, index) => ({ id: `preset-pack-${index}`, value: item as string })),
+        DATE_NIGHT_PACKING_PRESETS.map((item, index) => ({
+          id: `preset-pack-${index}`,
+          value: item as string,
+        })),
       );
       setAftercareItems(
-        DATE_NIGHT_AFTERCARE_PRESETS.map((item, index) => ({ id: `preset-after-${index}`, value: item as string })),
+        DATE_NIGHT_AFTERCARE_PRESETS.map((item, index) => ({
+          id: `preset-after-${index}`,
+          value: item as string,
+        })),
       );
       setReminders([]);
     }
@@ -271,7 +291,10 @@ export function DateNightForm({
           onUpdate={updatePlan}
         />
 
-        <ItineraryEditor items={plan.itinerary} onChange={items => updatePlan({ itinerary: items })} />
+        <ItineraryEditor
+          items={plan.itinerary}
+          onChange={items => updatePlan({ itinerary: items })}
+        />
 
         <DateNightChecklistsSection
           checklistItems={checklistItems}

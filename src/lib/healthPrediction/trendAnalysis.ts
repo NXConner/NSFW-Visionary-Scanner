@@ -3,8 +3,8 @@
  * Algorithms for detecting trends in measurement data
  */
 
-export type TrendDirection = 'increasing' | 'decreasing' | 'stable' | 'fluctuating';
-export type TrendStrength = 'strong' | 'moderate' | 'weak' | 'none';
+export type TrendDirection = "increasing" | "decreasing" | "stable" | "fluctuating";
+export type TrendStrength = "strong" | "moderate" | "weak" | "none";
 
 export interface DataPoint {
   timestamp: string;
@@ -47,7 +47,7 @@ export interface AnomalyDetectionResult {
     value: number;
     expectedValue: number;
     zScore: number;
-    severity: 'mild' | 'moderate' | 'severe';
+    severity: "mild" | "moderate" | "severe";
   }>;
   threshold: number;
   upperBound: number[];
@@ -72,10 +72,8 @@ export function calculateStatistics(data: number[]): {
   const sorted = [...data].sort((a, b) => a - b);
   const n = data.length;
   const mean = data.reduce((a, b) => a + b, 0) / n;
-  
-  const median = n % 2 === 0
-    ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2
-    : sorted[Math.floor(n / 2)];
+
+  const median = n % 2 === 0 ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2 : sorted[Math.floor(n / 2)];
 
   const variance = data.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n;
   const standardDeviation = Math.sqrt(variance);
@@ -93,7 +91,10 @@ export function calculateStatistics(data: number[]): {
 /**
  * Linear regression for trend line
  */
-export function linearRegression(xValues: number[], yValues: number[]): {
+export function linearRegression(
+  xValues: number[],
+  yValues: number[],
+): {
   slope: number;
   intercept: number;
   rSquared: number;
@@ -121,7 +122,7 @@ export function linearRegression(xValues: number[], yValues: number[]): {
     return sum + Math.pow(y - predicted, 2);
   }, 0);
   const ssTot = yValues.reduce((sum, y) => sum + Math.pow(y - meanY, 2), 0);
-  const rSquared = ssTot === 0 ? 0 : 1 - (ssRes / ssTot);
+  const rSquared = ssTot === 0 ? 0 : 1 - ssRes / ssTot;
 
   return { slope, intercept, rSquared: Math.max(0, rSquared) };
 }
@@ -132,8 +133,8 @@ export function linearRegression(xValues: number[], yValues: number[]): {
 export function analyzeTrend(dataPoints: DataPoint[]): TrendResult {
   if (dataPoints.length < 2) {
     return {
-      direction: 'stable',
-      strength: 'none',
+      direction: "stable",
+      strength: "none",
       slope: 0,
       rSquared: 0,
       meanValue: dataPoints[0]?.value || 0,
@@ -151,44 +152,42 @@ export function analyzeTrend(dataPoints: DataPoint[]): TrendResult {
 
   // Create x values (days from start)
   const startDate = new Date(dataPoints[0].timestamp).getTime();
-  const xValues = dataPoints.map(d => 
-    (new Date(d.timestamp).getTime() - startDate) / (1000 * 60 * 60 * 24)
+  const xValues = dataPoints.map(
+    d => (new Date(d.timestamp).getTime() - startDate) / (1000 * 60 * 60 * 24),
   );
 
   const regression = linearRegression(xValues, values);
 
   // Determine direction
   let direction: TrendDirection;
-  const normalizedSlope = regression.slope / stats.mean * 100; // % per day
+  const normalizedSlope = (regression.slope / stats.mean) * 100; // % per day
 
   if (Math.abs(normalizedSlope) < 0.1) {
-    direction = 'stable';
+    direction = "stable";
   } else if (regression.rSquared < 0.3) {
-    direction = 'fluctuating';
+    direction = "fluctuating";
   } else if (normalizedSlope > 0) {
-    direction = 'increasing';
+    direction = "increasing";
   } else {
-    direction = 'decreasing';
+    direction = "decreasing";
   }
 
   // Determine strength
   let strength: TrendStrength;
   if (regression.rSquared >= 0.7) {
-    strength = 'strong';
+    strength = "strong";
   } else if (regression.rSquared >= 0.4) {
-    strength = 'moderate';
+    strength = "moderate";
   } else if (regression.rSquared >= 0.2) {
-    strength = 'weak';
+    strength = "weak";
   } else {
-    strength = 'none';
+    strength = "none";
   }
 
   // Calculate percent change
   const startValue = values[0];
   const endValue = values[values.length - 1];
-  const percentChange = startValue !== 0 
-    ? ((endValue - startValue) / startValue) * 100 
-    : 0;
+  const percentChange = startValue !== 0 ? ((endValue - startValue) / startValue) * 100 : 0;
 
   // Confidence based on data points and R-squared
   const dataPointFactor = Math.min(1, dataPoints.length / 10);
@@ -214,7 +213,7 @@ export function analyzeTrend(dataPoints: DataPoint[]): TrendResult {
  */
 export function calculateMovingAverage(
   dataPoints: DataPoint[],
-  period: number = 7
+  period: number = 7,
 ): MovingAverageResult {
   const values: number[] = [];
   const timestamps: string[] = [];
@@ -232,10 +231,7 @@ export function calculateMovingAverage(
 /**
  * Calculate exponential moving average
  */
-export function calculateEMA(
-  dataPoints: DataPoint[],
-  period: number = 7
-): MovingAverageResult {
+export function calculateEMA(dataPoints: DataPoint[], period: number = 7): MovingAverageResult {
   if (dataPoints.length === 0) {
     return { values: [], timestamps: [], period };
   }
@@ -258,31 +254,32 @@ export function calculateEMA(
  */
 export function detectAnomalies(
   dataPoints: DataPoint[],
-  threshold: number = 2.5
+  threshold: number = 2.5,
 ): AnomalyDetectionResult {
   const values = dataPoints.map(d => d.value);
   const stats = calculateStatistics(values);
 
-  const anomalies: AnomalyDetectionResult['anomalies'] = [];
+  const anomalies: AnomalyDetectionResult["anomalies"] = [];
   const upperBound: number[] = [];
   const lowerBound: number[] = [];
 
   for (let i = 0; i < dataPoints.length; i++) {
-    const zScore = stats.standardDeviation !== 0
-      ? (dataPoints[i].value - stats.mean) / stats.standardDeviation
-      : 0;
+    const zScore =
+      stats.standardDeviation !== 0
+        ? (dataPoints[i].value - stats.mean) / stats.standardDeviation
+        : 0;
 
     upperBound.push(stats.mean + threshold * stats.standardDeviation);
     lowerBound.push(stats.mean - threshold * stats.standardDeviation);
 
     if (Math.abs(zScore) > threshold) {
-      let severity: 'mild' | 'moderate' | 'severe';
+      let severity: "mild" | "moderate" | "severe";
       if (Math.abs(zScore) > threshold * 2) {
-        severity = 'severe';
+        severity = "severe";
       } else if (Math.abs(zScore) > threshold * 1.5) {
-        severity = 'moderate';
+        severity = "moderate";
       } else {
-        severity = 'mild';
+        severity = "mild";
       }
 
       anomalies.push({
@@ -304,7 +301,7 @@ export function detectAnomalies(
  */
 export function detectSeasonality(
   dataPoints: DataPoint[],
-  maxPeriod: number = 30
+  maxPeriod: number = 30,
 ): SeasonalityResult {
   const values = dataPoints.map(d => d.value);
   const n = values.length;
@@ -357,10 +354,7 @@ export function detectSeasonality(
 /**
  * Project future values based on trend
  */
-export function projectTrend(
-  dataPoints: DataPoint[],
-  daysAhead: number
-): DataPoint[] {
+export function projectTrend(dataPoints: DataPoint[], daysAhead: number): DataPoint[] {
   const trend = analyzeTrend(dataPoints);
   const lastPoint = dataPoints[dataPoints.length - 1];
   const lastDate = new Date(lastPoint.timestamp);
@@ -372,14 +366,14 @@ export function projectTrend(
     date.setDate(date.getDate() + i);
 
     // Simple linear projection
-    const projectedValue = trend.endValue + (trend.slope * i);
+    const projectedValue = trend.endValue + trend.slope * i;
 
     projections.push({
       timestamp: date.toISOString(),
       value: Math.max(0, projectedValue), // Ensure non-negative
       metadata: {
         isProjection: true,
-        confidence: Math.max(0, trend.confidence - (i * 5)), // Decreasing confidence
+        confidence: Math.max(0, trend.confidence - i * 5), // Decreasing confidence
       },
     });
   }

@@ -41,8 +41,18 @@ export function prepareSeductiveAiContext(params: {
   mode: AiMode;
   userMessage: string;
   sessionId: string;
-  body: { personality?: string; intensity?: string; media?: unknown; client_context?: Record<string, unknown> };
-  session: { ai_personality?: string | null; ai_intensity?: string | null; session_type?: string | null; session_name?: string | null };
+  body: {
+    personality?: string;
+    intensity?: string;
+    media?: unknown;
+    client_context?: Record<string, unknown>;
+  };
+  session: {
+    ai_personality?: string | null;
+    ai_intensity?: string | null;
+    session_type?: string | null;
+    session_name?: string | null;
+  };
   chronological: HistoryRow[];
   memoryMaxCues: number;
   provider: { name: string; model: string };
@@ -73,7 +83,10 @@ export function prepareSeductiveAiContext(params: {
     params.body.personality || params.session.ai_personality || "seductive",
     params.mode,
   );
-  const intensity = clampIntensity(params.body.intensity || params.session.ai_intensity || "medium", params.mode);
+  const intensity = clampIntensity(
+    params.body.intensity || params.session.ai_intensity || "medium",
+    params.mode,
+  );
   const intensityProfile = INTENSITY_PROFILES[intensity];
 
   const policyNote = buildPolicyNote(policy, params.mode);
@@ -81,8 +94,10 @@ export function prepareSeductiveAiContext(params: {
 
   const additionalContext: string[] = [];
   if (mediaSummary) additionalContext.push(mediaSummary);
-  if (params.session.session_name) additionalContext.push(`Session name: ${params.session.session_name}`);
-  if (params.session.session_type) additionalContext.push(`Session type: ${params.session.session_type}`);
+  if (params.session.session_name)
+    additionalContext.push(`Session name: ${params.session.session_name}`);
+  if (params.session.session_type)
+    additionalContext.push(`Session type: ${params.session.session_type}`);
   if (params.body.client_context?.app_version) {
     additionalContext.push(`App version: ${String(params.body.client_context.app_version)}`);
   }

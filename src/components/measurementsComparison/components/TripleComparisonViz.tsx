@@ -64,8 +64,8 @@ export function TripleComparisonViz({
   ];
 
   // Calculate max for scaling bars
-  const maxValue = Math.max(0.001, ...bars.map((b) => b.valueCm));
-  
+  const maxValue = Math.max(0.001, ...bars.map(b => b.valueCm));
+
   // Find the highest value bar for highlighting
   const maxBarValue = Math.max(...bars.map(b => b.valueCm));
 
@@ -78,7 +78,7 @@ export function TripleComparisonViz({
         {bars.map((bar, idx) => {
           const widthPct = Math.max(5, (bar.valueCm / maxValue) * 100);
           const isHighest = bar.valueCm === maxBarValue;
-          
+
           return (
             <div key={bar.label} className="space-y-1">
               <div className="flex items-center justify-between text-xs">
@@ -124,7 +124,7 @@ export function TripleComparisonViz({
         <div className="flex items-end justify-center gap-4 h-28">
           {bars.map((bar, idx) => {
             const heightPct = Math.max(10, (bar.valueCm / maxValue) * 100);
-            
+
             return (
               <div key={bar.label} className="flex flex-col items-center gap-1.5">
                 <motion.div

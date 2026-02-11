@@ -5,11 +5,13 @@ This guide explains how to build the three different app versions: SFW, NSFW, an
 ## Prerequisites
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
 
 2. Install `cross-env` (if not already installed):
+
 ```bash
 npm install --save-dev cross-env
 ```
@@ -21,16 +23,19 @@ npm install --save-dev cross-env
 ### SFW Version (Safe for Work - Store Ready)
 
 **For Google Play / Apple App Store:**
+
 ```bash
 npm run build:sfw:store
 ```
 
 **For Direct Download:**
+
 ```bash
 npm run build:sfw:direct
 ```
 
 **Generic SFW Build:**
+
 ```bash
 npm run build:sfw
 ```
@@ -38,11 +43,13 @@ npm run build:sfw
 ### NSFW Version (Adult Content - Direct Only)
 
 **Direct Download Only:**
+
 ```bash
 npm run build:nsfw:direct
 ```
 
 **Generic NSFW Build:**
+
 ```bash
 npm run build:nsfw
 ```
@@ -50,16 +57,19 @@ npm run build:nsfw
 ### Hybrid Version (SFW Base + DLC Unlock)
 
 **For Store Distribution:**
+
 ```bash
 npm run build:hybrid:store
 ```
 
 **For Direct Download:**
+
 ```bash
 npm run build:hybrid:direct
 ```
 
 **Generic Hybrid Build:**
+
 ```bash
 npm run build:hybrid
 ```
@@ -71,6 +81,7 @@ Each build requires specific environment variables. See `.env.example.versions` 
 ### Required Variables
 
 **For All Versions:**
+
 - `VITE_APP_VERSION` - Version type (sfw/nsfw/hybrid)
 - `VITE_DISTRIBUTION_CHANNEL` - Distribution channel (store/direct)
 - `VITE_STRIPE_PUBLISHABLE_KEY` - Stripe publishable key
@@ -78,6 +89,7 @@ Each build requires specific environment variables. See `.env.example.versions` 
 - `VITE_SUPABASE_PUBLISHABLE_KEY` - Supabase anon key
 
 **Version-Specific Stripe Price IDs:**
+
 - SFW Store: `VITE_STRIPE_SFW_*_STORE_*_PRICE_ID`
 - SFW Direct: `VITE_STRIPE_SFW_*_DIRECT_*_PRICE_ID`
 - NSFW Direct: `VITE_STRIPE_NSFW_*_DIRECT_*_PRICE_ID`
@@ -86,6 +98,7 @@ Each build requires specific environment variables. See `.env.example.versions` 
 ## Build Output
 
 All builds output to the `dist/` directory:
+
 - `dist/` - Production build files
 - `dist/index.html` - Entry point
 - `dist/assets/` - Compiled assets (JS, CSS, images)
@@ -101,6 +114,7 @@ All builds output to the `dist/` directory:
 ## Version Differences
 
 ### SFW Version
+
 - No NSFW content
 - Positions Gallery hidden
 - Visual content system disabled
@@ -108,6 +122,7 @@ All builds output to the `dist/` directory:
 - All core health features available
 
 ### NSFW Version
+
 - All SFW features included
 - Positions Gallery enabled
 - Visual content system enabled
@@ -115,6 +130,7 @@ All builds output to the `dist/` directory:
 - Direct download only
 
 ### Hybrid Version
+
 - SFW base app (store-compliant)
 - DLC unlock system enabled
 - NSFW content unlockable via license
@@ -123,6 +139,7 @@ All builds output to the `dist/` directory:
 ## Testing Builds
 
 ### Local Testing
+
 ```bash
 # Build
 npm run build:sfw
@@ -132,6 +149,7 @@ npm run preview
 ```
 
 ### Production Testing
+
 1. Build the version you want to test
 2. Deploy to staging environment
 3. Test all features
@@ -141,18 +159,21 @@ npm run preview
 ## Deployment
 
 ### Google Play Store
+
 1. Build SFW version: `npm run build:sfw:store`
 2. Sync with Capacitor: `npx cap sync android`
 3. Build APK/AAB: `cd android && ./gradlew assembleRelease`
 4. Upload to Google Play Console
 
 ### Apple App Store
+
 1. Build SFW version: `npm run build:sfw:store`
 2. Sync with Capacitor: `npx cap sync ios`
 3. Open in Xcode: `npx cap open ios`
 4. Archive and upload to App Store Connect
 
 ### Direct Download
+
 1. Build desired version: `npm run build:nsfw:direct` or `npm run build:sfw:direct`
 2. Deploy to web server
 3. Provide download links on website
@@ -160,16 +181,19 @@ npm run preview
 ## Troubleshooting
 
 ### Build Fails
+
 - Check environment variables are set
 - Verify Stripe price IDs are correct
 - Ensure all dependencies are installed
 
 ### Wrong Version Features
+
 - Verify `VITE_APP_VERSION` is set correctly
 - Check feature flags in `src/lib/featureFlags.ts`
 - Clear build cache: `rm -rf dist node_modules/.vite`
 
 ### Pricing Not Displaying
+
 - Verify Stripe price IDs in environment variables
 - Check `src/lib/pricing.ts` for correct filtering
 - Ensure distribution channel is set correctly
@@ -177,6 +201,7 @@ npm run preview
 ## CI/CD Integration
 
 ### GitHub Actions Example
+
 ```yaml
 - name: Build SFW Store Version
   run: npm run build:sfw:store
@@ -193,4 +218,3 @@ npm run preview
 2. Set up environment variables
 3. Test each build version
 4. Deploy to respective platforms
-

@@ -10,10 +10,6 @@ export {
   isCapacitorInitialized,
   getInitError,
   safeCapacitorCall,
-} from './init';
+} from "./init";
 
-export {
-  installMobileErrorHandler,
-  getErrorLog,
-  clearErrorLog,
-} from './errorHandler';
+export { installMobileErrorHandler, getErrorLog, clearErrorLog } from "./errorHandler";

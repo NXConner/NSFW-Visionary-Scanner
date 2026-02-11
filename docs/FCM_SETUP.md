@@ -28,6 +28,7 @@ This guide covers setting up Firebase Cloud Messaging for remote push notificati
 ### Configure Android Build
 
 Add to `android/build.gradle`:
+
 ```gradle
 buildscript {
     dependencies {
@@ -37,6 +38,7 @@ buildscript {
 ```
 
 Add to `android/app/build.gradle`:
+
 ```gradle
 apply plugin: 'com.google.gms.google-services'
 
@@ -107,19 +109,19 @@ The `FIREBASE_SERVICE_ACCOUNT` secret should contain the entire JSON content of 
 
 ```javascript
 // Example: Send notification via edge function
-const response = await fetch('/functions/v1/send-push-notification', {
-  method: 'POST',
+const response = await fetch("/functions/v1/send-push-notification", {
+  method: "POST",
   headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${supabaseAnonKey}`,
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${supabaseAnonKey}`,
   },
   body: JSON.stringify({
-    tokens: ['device_fcm_token_here'],
-    title: 'Health Reminder',
-    body: 'Time for your daily health check!',
+    tokens: ["device_fcm_token_here"],
+    title: "Health Reminder",
+    body: "Time for your daily health check!",
     data: {
-      type: 'health_reminder',
-      action: 'open_scanner',
+      type: "health_reminder",
+      action: "open_scanner",
     },
   }),
 });
@@ -128,6 +130,7 @@ const response = await fetch('/functions/v1/send-push-notification', {
 ## Push Notification Types
 
 ### Health Reminders
+
 ```json
 {
   "title": "📊 Health Check Reminder",
@@ -137,6 +140,7 @@ const response = await fetch('/functions/v1/send-push-notification', {
 ```
 
 ### Medication Reminders
+
 ```json
 {
   "title": "💊 Medication Reminder",
@@ -146,6 +150,7 @@ const response = await fetch('/functions/v1/send-push-notification', {
 ```
 
 ### Weekly Reports
+
 ```json
 {
   "title": "📈 Weekly Health Report",
@@ -155,6 +160,7 @@ const response = await fetch('/functions/v1/send-push-notification', {
 ```
 
 ### Progress Milestones
+
 ```json
 {
   "title": "🎉 Milestone Achieved!",
@@ -167,12 +173,12 @@ const response = await fetch('/functions/v1/send-push-notification', {
 
 The app uses these notification channels:
 
-| Channel ID | Name | Importance |
-|------------|------|------------|
-| `health_reminders` | Health Reminders | High |
-| `medication` | Medication | High |
-| `reports` | Reports | Default |
-| `general` | General | Default |
+| Channel ID         | Name             | Importance |
+| ------------------ | ---------------- | ---------- |
+| `health_reminders` | Health Reminders | High       |
+| `medication`       | Medication       | High       |
+| `reports`          | Reports          | Default    |
+| `general`          | General          | Default    |
 
 ## Troubleshooting
 
@@ -206,6 +212,7 @@ The app uses these notification channels:
 ## Rate Limits
 
 Firebase FCM limits:
+
 - 1,000 messages per device per day
 - 1,000,000 messages per minute per project
 - 10 topics per device

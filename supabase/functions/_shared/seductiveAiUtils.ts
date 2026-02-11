@@ -6,7 +6,11 @@ export function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-export function buildRateLimitHeaders(rateLimit: { limit: number; remaining: number; resetAt: string }) {
+export function buildRateLimitHeaders(rateLimit: {
+  limit: number;
+  remaining: number;
+  resetAt: string;
+}) {
   return {
     "X-RateLimit-Limit": rateLimit.limit.toString(),
     "X-RateLimit-Remaining": rateLimit.remaining.toString(),
@@ -31,7 +35,16 @@ export function summarizeMedia(media: unknown): string | null {
 }
 
 export function sentimentFor(text: string): { sentiment: string; confidence: number } {
-  const positiveWords = ["love", "enjoy", "excited", "happy", "pleasure", "desire", "safe", "sweet"];
+  const positiveWords = [
+    "love",
+    "enjoy",
+    "excited",
+    "happy",
+    "pleasure",
+    "desire",
+    "safe",
+    "sweet",
+  ];
   const negativeWords = ["hate", "disgust", "angry", "sad", "disappointed", "unsafe", "hurt"];
   const lower = text.toLowerCase();
   const pos = positiveWords.filter(w => lower.includes(w)).length;

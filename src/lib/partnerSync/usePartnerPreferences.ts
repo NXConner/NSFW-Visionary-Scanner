@@ -39,9 +39,7 @@ export function usePartnerPreferences() {
       }
 
       if (!data) {
-        const { data: created, error: createError } = await fromExtended(
-          "partner_sync_preferences",
-        )
+        const { data: created, error: createError } = await fromExtended("partner_sync_preferences")
           .insert({
             user_id: user.id,
             ...DEFAULT_PREFS,

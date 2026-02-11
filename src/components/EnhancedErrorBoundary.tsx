@@ -3,20 +3,20 @@
  * Advanced error handling with recovery options, error reporting, and user feedback
  */
 
-import { Component, ReactNode, createContext, useContext, useState, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { 
-  AlertTriangle, 
-  RefreshCw, 
-  Home, 
-  Bug, 
-  Send, 
-  Copy, 
+import { Component, ReactNode, createContext, useContext, useState, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  AlertTriangle,
+  RefreshCw,
+  Home,
+  Bug,
+  Send,
+  Copy,
   ChevronDown,
   ChevronUp,
   Loader2,
@@ -27,157 +27,162 @@ import {
   WifiOff,
   Database,
   Server,
-  Clock
-} from 'lucide-react'
-import { logger } from '@/lib/logger'
-import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
-import { supabase } from '@/integrations/supabase/client'
+  Clock,
+} from "lucide-react";
+import { logger } from "@/lib/logger";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 // Error types for better categorization
-type ErrorType = 'network' | 'auth' | 'data' | 'render' | 'async' | 'unknown'
+type ErrorType = "network" | "auth" | "data" | "render" | "async" | "unknown";
 
 interface ErrorInfo {
-  type: ErrorType
-  message: string
-  stack?: string
-  componentStack?: string
-  timestamp: Date
-  url: string
-  userAgent: string
-  recoverable: boolean
-  retryable: boolean
+  type: ErrorType;
+  message: string;
+  stack?: string;
+  componentStack?: string;
+  timestamp: Date;
+  url: string;
+  userAgent: string;
+  recoverable: boolean;
+  retryable: boolean;
 }
 
 interface ErrorContextType {
-  reportError: (error: Error, info?: any) => void
-  clearError: () => void
+  reportError: (error: Error, info?: any) => void;
+  clearError: () => void;
 }
 
-const ErrorContext = createContext<ErrorContextType | null>(null)
+const ErrorContext = createContext<ErrorContextType | null>(null);
 
 export const useErrorReporting = () => {
-  const context = useContext(ErrorContext)
+  const context = useContext(ErrorContext);
   if (!context) {
-    throw new Error('useErrorReporting must be used within ErrorBoundaryProvider')
+    throw new Error("useErrorReporting must be used within ErrorBoundaryProvider");
   }
-  return context
-}
+  return context;
+};
 
 // Classify error type based on error characteristics
 function classifyError(error: Error): ErrorType {
-  const message = error.message.toLowerCase()
-  const name = error.name.toLowerCase()
+  const message = error.message.toLowerCase();
+  const name = error.name.toLowerCase();
 
-  if (message.includes('network') || message.includes('fetch') || message.includes('cors')) {
-    return 'network'
+  if (message.includes("network") || message.includes("fetch") || message.includes("cors")) {
+    return "network";
   }
-  if (message.includes('auth') || message.includes('token') || message.includes('unauthorized') || message.includes('session')) {
-    return 'auth'
+  if (
+    message.includes("auth") ||
+    message.includes("token") ||
+    message.includes("unauthorized") ||
+    message.includes("session")
+  ) {
+    return "auth";
   }
-  if (message.includes('database') || message.includes('query') || message.includes('pgrst')) {
-    return 'data'
+  if (message.includes("database") || message.includes("query") || message.includes("pgrst")) {
+    return "data";
   }
-  if (name === 'chunkloaderror' || message.includes('loading chunk')) {
-    return 'async'
+  if (name === "chunkloaderror" || message.includes("loading chunk")) {
+    return "async";
   }
-  if (error.stack?.includes('render') || error.stack?.includes('React')) {
-    return 'render'
+  if (error.stack?.includes("render") || error.stack?.includes("React")) {
+    return "render";
   }
-  return 'unknown'
+  return "unknown";
 }
 
 // Get error icon based on type
 function getErrorIcon(type: ErrorType) {
   switch (type) {
-    case 'network':
-      return WifiOff
-    case 'auth':
-      return AlertCircle
-    case 'data':
-      return Database
-    case 'async':
-      return Clock
-    case 'render':
-      return Server
+    case "network":
+      return WifiOff;
+    case "auth":
+      return AlertCircle;
+    case "data":
+      return Database;
+    case "async":
+      return Clock;
+    case "render":
+      return Server;
     default:
-      return AlertTriangle
+      return AlertTriangle;
   }
 }
 
 // Get recovery suggestions based on error type
 function getRecoverySuggestions(type: ErrorType): string[] {
   switch (type) {
-    case 'network':
+    case "network":
       return [
-        'Check your internet connection',
-        'Try refreshing the page',
-        'If the problem persists, try again later'
-      ]
-    case 'auth':
+        "Check your internet connection",
+        "Try refreshing the page",
+        "If the problem persists, try again later",
+      ];
+    case "auth":
       return [
-        'Your session may have expired',
-        'Try signing out and signing back in',
-        'Clear your browser cache and cookies'
-      ]
-    case 'data':
+        "Your session may have expired",
+        "Try signing out and signing back in",
+        "Clear your browser cache and cookies",
+      ];
+    case "data":
       return [
-        'There may be a temporary issue with our servers',
-        'Try refreshing the page',
-        'If the problem persists, please contact support'
-      ]
-    case 'async':
+        "There may be a temporary issue with our servers",
+        "Try refreshing the page",
+        "If the problem persists, please contact support",
+      ];
+    case "async":
       return [
-        'There was an issue loading some content',
-        'Try refreshing the page',
-        'Clear your browser cache if the issue continues'
-      ]
+        "There was an issue loading some content",
+        "Try refreshing the page",
+        "Clear your browser cache if the issue continues",
+      ];
     default:
       return [
-        'Try refreshing the page',
-        'If the problem persists, please report this issue',
-        'Our team has been notified automatically'
-      ]
+        "Try refreshing the page",
+        "If the problem persists, please report this issue",
+        "Our team has been notified automatically",
+      ];
   }
 }
 
 interface Props {
-  children: ReactNode
-  fallback?: ReactNode
-  onError?: (error: Error, errorInfo: React.ErrorInfo) => void
-  showReportForm?: boolean
-  enableAutoRetry?: boolean
-  maxRetries?: number
+  children: ReactNode;
+  fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
+  showReportForm?: boolean;
+  enableAutoRetry?: boolean;
+  maxRetries?: number;
 }
 
 interface State {
-  hasError: boolean
-  error: Error | null
-  errorInfo: React.ErrorInfo | null
-  errorDetails: ErrorInfo | null
-  retryCount: number
-  isReporting: boolean
-  reportSubmitted: boolean
-  showDetails: boolean
+  hasError: boolean;
+  error: Error | null;
+  errorInfo: React.ErrorInfo | null;
+  errorDetails: ErrorInfo | null;
+  retryCount: number;
+  isReporting: boolean;
+  reportSubmitted: boolean;
+  showDetails: boolean;
 }
 
 export class EnhancedErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
-    super(props)
-    this.state = { 
-      hasError: false, 
-      error: null, 
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
       errorInfo: null,
       errorDetails: null,
       retryCount: 0,
       isReporting: false,
       reportSubmitted: false,
-      showDetails: false
-    }
+      showDetails: false,
+    };
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
-    const errorType = classifyError(error)
+    const errorType = classifyError(error);
     const errorDetails: ErrorInfo = {
       type: errorType,
       message: error.message,
@@ -185,11 +190,11 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
       timestamp: new Date(),
       url: window.location.href,
       userAgent: navigator.userAgent,
-      recoverable: errorType !== 'unknown',
-      retryable: ['network', 'async', 'data'].includes(errorType)
-    }
+      recoverable: errorType !== "unknown",
+      retryable: ["network", "async", "data"].includes(errorType),
+    };
 
-    return { hasError: true, error, errorDetails }
+    return { hasError: true, error, errorDetails };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
@@ -202,125 +207,126 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
       url: window.location.href,
       userAgent: navigator.userAgent,
       recoverable: true,
-      retryable: true
-    }
+      retryable: true,
+    };
 
     // Log error with structured logging
-    logger.errorBoundary(error, errorInfo.componentStack || '', undefined)
+    logger.errorBoundary(error, errorInfo.componentStack || "", undefined);
 
     // Call custom error handler if provided
-    this.props.onError?.(error, errorInfo)
+    this.props.onError?.(error, errorInfo);
 
     // Report to error tracking service
-    this.reportToService(error, errorDetails)
+    this.reportToService(error, errorDetails);
 
-    this.setState({ errorInfo, errorDetails })
+    this.setState({ errorInfo, errorDetails });
 
     // Auto-retry for recoverable errors
     if (this.props.enableAutoRetry && errorDetails.retryable) {
-      this.scheduleAutoRetry()
+      this.scheduleAutoRetry();
     }
   }
 
   private reportToService = async (error: Error, details: ErrorInfo) => {
     try {
       // Report to backend error tracking
-      await supabase.from('error_logs').insert({
+      await supabase.from("error_logs").insert({
         error_type: details.type,
         message: details.message,
         stack: details.stack,
         component_stack: details.componentStack,
         url: details.url,
         user_agent: details.userAgent,
-        created_at: details.timestamp.toISOString()
-      })
+        created_at: details.timestamp.toISOString(),
+      });
     } catch (reportError) {
       // Silently fail - don't throw during error handling
-      console.error('Failed to report error:', reportError)
+      console.error("Failed to report error:", reportError);
     }
-  }
+  };
 
   private scheduleAutoRetry = () => {
-    const { maxRetries = 3 } = this.props
-    const { retryCount } = this.state
+    const { maxRetries = 3 } = this.props;
+    const { retryCount } = this.state;
 
     if (retryCount < maxRetries) {
-      const delay = Math.min(1000 * Math.pow(2, retryCount), 10000) // Exponential backoff, max 10s
-      
+      const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff, max 10s
+
       setTimeout(() => {
-        this.handleRetry()
-      }, delay)
+        this.handleRetry();
+      }, delay);
     }
-  }
+  };
 
   handleRetry = () => {
-    this.setState(prevState => ({ 
-      hasError: false, 
-      error: null, 
+    this.setState(prevState => ({
+      hasError: false,
+      error: null,
       errorInfo: null,
       errorDetails: null,
       retryCount: prevState.retryCount + 1,
       reportSubmitted: false,
-      showDetails: false
-    }))
-  }
+      showDetails: false,
+    }));
+  };
 
   handleGoHome = () => {
-    window.location.href = '/'
-  }
+    window.location.href = "/";
+  };
 
   handleReportSubmit = async (additionalInfo: string, email: string) => {
-    const { error, errorDetails } = this.state
+    const { error, errorDetails } = this.state;
 
-    if (!error || !errorDetails) return
+    if (!error || !errorDetails) return;
 
-    this.setState({ isReporting: true })
+    this.setState({ isReporting: true });
 
     try {
-      await supabase.from('user_error_reports').insert({
+      await supabase.from("user_error_reports").insert({
         error_type: errorDetails.type,
         message: errorDetails.message,
         stack: errorDetails.stack,
         additional_info: additionalInfo,
         user_email: email,
-        url: errorDetails.url
-      })
+        url: errorDetails.url,
+      });
 
-      this.setState({ reportSubmitted: true, isReporting: false })
-      toast.success('Error report submitted. Thank you!')
+      this.setState({ reportSubmitted: true, isReporting: false });
+      toast.success("Error report submitted. Thank you!");
     } catch (submitError) {
-      this.setState({ isReporting: false })
-      toast.error('Failed to submit report. Please try again.')
+      this.setState({ isReporting: false });
+      toast.error("Failed to submit report. Please try again.");
     }
-  }
+  };
 
   handleCopyError = () => {
-    const { error, errorDetails } = this.state
-    if (!error || !errorDetails) return
+    const { error, errorDetails } = this.state;
+    if (!error || !errorDetails) return;
 
     const errorText = `
 Error Type: ${errorDetails.type}
 Message: ${errorDetails.message}
 URL: ${errorDetails.url}
 Time: ${errorDetails.timestamp.toISOString()}
-Stack: ${errorDetails.stack || 'N/A'}
-    `.trim()
+Stack: ${errorDetails.stack || "N/A"}
+    `.trim();
 
-    navigator.clipboard.writeText(errorText)
-    toast.success('Error details copied to clipboard')
-  }
+    navigator.clipboard.writeText(errorText);
+    toast.success("Error details copied to clipboard");
+  };
 
   render() {
-    const { hasError, error, errorDetails, showDetails, isReporting, reportSubmitted, retryCount } = this.state
-    const { children, fallback, showReportForm = true, maxRetries = 3 } = this.props
+    const { hasError, error, errorDetails, showDetails, isReporting, reportSubmitted, retryCount } =
+      this.state;
+    const { children, fallback, showReportForm = true, maxRetries = 3 } = this.props;
 
     if (hasError && error && errorDetails) {
       if (fallback) {
-        return fallback
+        return fallback;
       }
 
-      const ErrorIcon = getErrorIcon(errorDetails.type)
-      const suggestions = getRecoverySuggestions(errorDetails.type)
+      const ErrorIcon = getErrorIcon(errorDetails.type);
+      const suggestions = getRecoverySuggestions(errorDetails.type);
 
       return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-background">
@@ -336,20 +342,18 @@ Stack: ${errorDetails.stack || 'N/A'}
                 </Badge>
               </CardTitle>
               <CardDescription>
-                {errorDetails.type === 'network' 
-                  ? 'Connection issue detected'
-                  : errorDetails.type === 'auth'
-                  ? 'Authentication issue detected'
-                  : 'An unexpected error occurred'}
+                {errorDetails.type === "network"
+                  ? "Connection issue detected"
+                  : errorDetails.type === "auth"
+                    ? "Authentication issue detected"
+                    : "An unexpected error occurred"}
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">
               {/* Error Message */}
               <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
-                <p className="text-sm font-mono text-destructive break-all">
-                  {error.message}
-                </p>
+                <p className="text-sm font-mono text-destructive break-all">{error.message}</p>
               </div>
 
               {/* Recovery Suggestions */}
@@ -368,20 +372,12 @@ Stack: ${errorDetails.stack || 'N/A'}
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-2">
                 {errorDetails.retryable && retryCount < maxRetries && (
-                  <Button
-                    variant="outline"
-                    className="flex-1 gap-2"
-                    onClick={this.handleRetry}
-                  >
+                  <Button variant="outline" className="flex-1 gap-2" onClick={this.handleRetry}>
                     <RefreshCw className="w-4 h-4" />
                     Try Again {retryCount > 0 && `(${retryCount}/${maxRetries})`}
                   </Button>
                 )}
-                <Button
-                  variant="default"
-                  className="flex-1 gap-2"
-                  onClick={this.handleGoHome}
-                >
+                <Button variant="default" className="flex-1 gap-2" onClick={this.handleGoHome}>
                   <Home className="w-4 h-4" />
                   Go Home
                 </Button>
@@ -409,7 +405,7 @@ Stack: ${errorDetails.stack || 'N/A'}
                 <div className="space-y-3 animate-in slide-in-from-top-2">
                   <div className="p-3 rounded-lg bg-secondary/50 text-xs overflow-auto max-h-40 font-mono">
                     <pre className="whitespace-pre-wrap">
-                      {errorDetails.stack || 'No stack trace available'}
+                      {errorDetails.stack || "No stack trace available"}
                     </pre>
                   </div>
 
@@ -434,10 +430,7 @@ Stack: ${errorDetails.stack || 'N/A'}
 
               {/* Report Form */}
               {showReportForm && !reportSubmitted && (
-                <ErrorReportForm
-                  onSubmit={this.handleReportSubmit}
-                  isLoading={isReporting}
-                />
+                <ErrorReportForm onSubmit={this.handleReportSubmit} isLoading={isReporting} />
               )}
 
               {reportSubmitted && (
@@ -449,47 +442,42 @@ Stack: ${errorDetails.stack || 'N/A'}
             </CardContent>
           </Card>
         </div>
-      )
+      );
     }
 
-    return children
+    return children;
   }
 }
 
 // Error Report Form Component
 interface ErrorReportFormProps {
-  onSubmit: (info: string, email: string) => void
-  isLoading: boolean
+  onSubmit: (info: string, email: string) => void;
+  isLoading: boolean;
 }
 
 const ErrorReportForm = ({ onSubmit, isLoading }: ErrorReportFormProps) => {
-  const [additionalInfo, setAdditionalInfo] = useState('')
-  const [email, setEmail] = useState('')
-  const [expanded, setExpanded] = useState(false)
+  const [additionalInfo, setAdditionalInfo] = useState("");
+  const [email, setEmail] = useState("");
+  const [expanded, setExpanded] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit(additionalInfo, email)
-  }
+    e.preventDefault();
+    onSubmit(additionalInfo, email);
+  };
 
   if (!expanded) {
     return (
-      <Button
-        variant="ghost"
-        size="sm"
-        className="w-full"
-        onClick={() => setExpanded(true)}
-      >
+      <Button variant="ghost" size="sm" className="w-full" onClick={() => setExpanded(true)}>
         <Send className="w-4 h-4 mr-2" />
         Report this issue
       </Button>
-    )
+    );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3 p-3 rounded-lg border">
       <p className="text-sm font-medium">Help us fix this issue</p>
-      
+
       <div className="space-y-2">
         <Label htmlFor="email">Email (optional)</Label>
         <Input
@@ -497,7 +485,7 @@ const ErrorReportForm = ({ onSubmit, isLoading }: ErrorReportFormProps) => {
           type="email"
           placeholder="your@email.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={e => setEmail(e.target.value)}
         />
       </div>
 
@@ -507,7 +495,7 @@ const ErrorReportForm = ({ onSubmit, isLoading }: ErrorReportFormProps) => {
           id="info"
           placeholder="Describe what happened..."
           value={additionalInfo}
-          onChange={(e) => setAdditionalInfo(e.target.value)}
+          onChange={e => setAdditionalInfo(e.target.value)}
           rows={3}
         />
       </div>
@@ -522,11 +510,7 @@ const ErrorReportForm = ({ onSubmit, isLoading }: ErrorReportFormProps) => {
         >
           Cancel
         </Button>
-        <Button
-          type="submit"
-          size="sm"
-          disabled={isLoading}
-        >
+        <Button type="submit" size="sm" disabled={isLoading}>
           {isLoading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -541,38 +525,34 @@ const ErrorReportForm = ({ onSubmit, isLoading }: ErrorReportFormProps) => {
         </Button>
       </div>
     </form>
-  )
-}
+  );
+};
 
 // Higher-order component for wrapping components with error boundary
 export const withEnhancedErrorBoundary = <P extends object>(
   WrappedComponent: React.ComponentType<P>,
-  options?: Partial<Props>
+  options?: Partial<Props>,
 ) => {
   return function WithEnhancedErrorBoundary(props: P) {
     return (
       <EnhancedErrorBoundary {...options}>
         <WrappedComponent {...props} />
       </EnhancedErrorBoundary>
-    )
-  }
-}
+    );
+  };
+};
 
 // Async error boundary for Suspense boundaries
-export const AsyncErrorBoundary = ({ 
-  children, 
-  fallback 
-}: { 
-  children: ReactNode
-  fallback?: ReactNode 
+export const AsyncErrorBoundary = ({
+  children,
+  fallback,
+}: {
+  children: ReactNode;
+  fallback?: ReactNode;
 }) => {
   return (
-    <EnhancedErrorBoundary
-      fallback={fallback}
-      enableAutoRetry
-      maxRetries={2}
-    >
+    <EnhancedErrorBoundary fallback={fallback} enableAutoRetry maxRetries={2}>
       {children}
     </EnhancedErrorBoundary>
-  )
-}
+  );
+};

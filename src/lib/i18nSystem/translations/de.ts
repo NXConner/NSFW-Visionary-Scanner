@@ -87,7 +87,8 @@ export const de: TranslationDictionary = {
 
   "partnerSync.loading": "Partner-Sync wird geladen...",
   "partnerSync.lockedTitle": "Partner-Sync",
-  "partnerSync.lockedDescription": "Partner-Sync freischalten, um sich zu verbinden und zu koordinieren.",
+  "partnerSync.lockedDescription":
+    "Partner-Sync freischalten, um sich zu verbinden und zu koordinieren.",
   "partnerSync.tabs.thoughts": "Gedanken-Pings",
   "partnerSync.tabs.dates": "Date-Nächte",
   "partnerSync.tabs.positions": "Positionen",
@@ -280,7 +281,8 @@ export const de: TranslationDictionary = {
 
   "partnerSync.positions.title": "Positionsauswahl",
   "partnerSync.positions.subtitle": "Positionen vorschlagen und auf Partnerwünsche reagieren.",
-  "partnerSync.positions.connectHint": "Verbinden Sie sich mit einem Partner, um Positionen auszuwählen.",
+  "partnerSync.positions.connectHint":
+    "Verbinden Sie sich mit einem Partner, um Positionen auszuwählen.",
   "partnerSync.positions.themeTags": "Themen-Tags",
   "partnerSync.positions.intensity": "Intensität",
   "partnerSync.positions.priority": "Priorität",
@@ -331,7 +333,8 @@ export const de: TranslationDictionary = {
   "partnerSync.positions.longestStreak": "Längste Serie",
 
   "partnerSync.settings.consentTitle": "Einwilligung & Vereinbarung",
-  "partnerSync.settings.consentSubtitle": "Jeder Partner muss die neueste Einwilligung akzeptieren.",
+  "partnerSync.settings.consentSubtitle":
+    "Jeder Partner muss die neueste Einwilligung akzeptieren.",
   "partnerSync.settings.consentNeeded": "Sie müssen die Partner-Sync-Einwilligung akzeptieren.",
   "partnerSync.settings.consentRecorded": "Ihre Einwilligung wurde gespeichert.",
   "partnerSync.settings.partnerConsentNeeded": "Ihr Partner hat noch nicht zugestimmt.",
@@ -382,10 +385,8 @@ export const de: TranslationDictionary = {
   "partnerSync.recommendations.pings.2":
     "Mischen Sie spielerische und romantische Töne, um Ermüdung zu vermeiden.",
   "partnerSync.recommendations.pings.3": "Nutzen Sie Themen, um Erwartungen abzustimmen.",
-  "partnerSync.recommendations.pings.4":
-    "Bestätigen Sie Interesse und Grenzen mit einer Antwort.",
-  "partnerSync.recommendations.pings.5":
-    "Planen Sie Pings während der Ruhezeiten Ihres Partners.",
+  "partnerSync.recommendations.pings.4": "Bestätigen Sie Interesse und Grenzen mit einer Antwort.",
+  "partnerSync.recommendations.pings.5": "Planen Sie Pings während der Ruhezeiten Ihres Partners.",
   "partnerSync.recommendations.pings.6": "Reagieren Sie mit Reaktionen, um schnell zu bestätigen.",
   "partnerSync.recommendations.dates.1":
     "Planen Sie die Nacht in Segmenten (Ausgehen, Dinner, Zuhause).",
@@ -395,8 +396,7 @@ export const de: TranslationDictionary = {
     "Fügen Sie einen kurzen Check-in für Tempo und Komfort hinzu.",
   "partnerSync.recommendations.dates.4":
     "Halten Sie einen Backup-Plan für Zeit, Ort oder Energie bereit.",
-  "partnerSync.recommendations.dates.5":
-    "Nutzen Sie Erinnerungen für Anfahrt und Reservierungen.",
+  "partnerSync.recommendations.dates.5": "Nutzen Sie Erinnerungen für Anfahrt und Reservierungen.",
   "partnerSync.recommendations.dates.6":
     "Halten Sie Reflexionen fest, um das nächste Mal zu verbessern.",
   "partnerSync.recommendations.positions.1":
@@ -411,8 +411,7 @@ export const de: TranslationDictionary = {
     "Nutzen Sie Sicherheits-Checklisten und Grenzen vor Neuem.",
   "partnerSync.recommendations.positions.6":
     "Nutzen Sie Tauschvorschläge, um Alternativen schnell auszuhandeln.",
-  "partnerSync.recommendations.safety.1":
-    "Bestätigen Sie Einwilligung und Grenzen vor Beginn.",
+  "partnerSync.recommendations.safety.1": "Bestätigen Sie Einwilligung und Grenzen vor Beginn.",
   "partnerSync.recommendations.safety.2":
     "Vereinbaren Sie ein Stopp-/Pausenwort für Echtzeit-Check-ins.",
   "partnerSync.recommendations.safety.3":

@@ -3,11 +3,16 @@
  * Intelligent image analysis and enhancement algorithms
  */
 
-import { analyzeNoise, reduceNoise, type NoiseReductionLevel } from './noiseReduction';
-import { analyzeSharpness, sharpenImage } from './sharpening';
-import { analyzeColors, correctColors, autoWhiteBalance, type ColorCorrectionOptions } from './colorCorrection';
+import { analyzeNoise, reduceNoise, type NoiseReductionLevel } from "./noiseReduction";
+import { analyzeSharpness, sharpenImage } from "./sharpening";
+import {
+  analyzeColors,
+  correctColors,
+  autoWhiteBalance,
+  type ColorCorrectionOptions,
+} from "./colorCorrection";
 
-export type EnhancementPreset = 'auto' | 'portrait' | 'medical' | 'detailed' | 'natural' | 'vivid';
+export type EnhancementPreset = "auto" | "portrait" | "medical" | "detailed" | "natural" | "vivid";
 
 export interface AutoEnhanceOptions {
   preset: EnhancementPreset;
@@ -48,7 +53,7 @@ export interface ImageAnalysis {
   };
   overall: {
     quality: number;
-    category: 'poor' | 'fair' | 'good' | 'excellent';
+    category: "poor" | "fair" | "good" | "excellent";
   };
 }
 
@@ -66,7 +71,7 @@ export interface QualityScore {
 }
 
 const DEFAULT_OPTIONS: AutoEnhanceOptions = {
-  preset: 'auto',
+  preset: "auto",
   intensity: 50,
   preserveOriginal: true,
   enableNoiseReduction: true,
@@ -84,17 +89,13 @@ export function analyzeImage(imageData: ImageData): ImageAnalysis {
   const colorAnalysis = analyzeColors(imageData);
 
   // Calculate overall quality score
-  const noiseScore = 100 - (noiseAnalysis.estimatedNoise * 100);
+  const noiseScore = 100 - noiseAnalysis.estimatedNoise * 100;
   const sharpnessScore = sharpnessAnalysis.currentSharpness;
   const exposureScore = calculateExposureScore(colorAnalysis.averageBrightness);
   const colorScore = Math.min(100, colorAnalysis.contrast + 20);
 
-  const overallScore = (
-    noiseScore * 0.25 +
-    sharpnessScore * 0.3 +
-    exposureScore * 0.25 +
-    colorScore * 0.2
-  );
+  const overallScore =
+    noiseScore * 0.25 + sharpnessScore * 0.3 + exposureScore * 0.25 + colorScore * 0.2;
 
   return {
     noise: {
@@ -128,17 +129,20 @@ function calculateExposureScore(brightness: number): number {
   return Math.max(0, 100 - (deviation / 128) * 100);
 }
 
-function getQualityCategory(score: number): 'poor' | 'fair' | 'good' | 'excellent' {
-  if (score >= 80) return 'excellent';
-  if (score >= 60) return 'good';
-  if (score >= 40) return 'fair';
-  return 'poor';
+function getQualityCategory(score: number): "poor" | "fair" | "good" | "excellent" {
+  if (score >= 80) return "excellent";
+  if (score >= 60) return "good";
+  if (score >= 40) return "fair";
+  return "poor";
 }
 
 /**
  * Get preset-specific enhancement parameters
  */
-function getPresetParameters(preset: EnhancementPreset, analysis: ImageAnalysis): {
+function getPresetParameters(
+  preset: EnhancementPreset,
+  analysis: ImageAnalysis,
+): {
   noiseReduction: NoiseReductionLevel;
   sharpening: number;
   colorCorrection: Partial<ColorCorrectionOptions>;
@@ -150,9 +154,9 @@ function getPresetParameters(preset: EnhancementPreset, analysis: ImageAnalysis)
   };
 
   switch (preset) {
-    case 'portrait':
+    case "portrait":
       return {
-        noiseReduction: 'medium',
+        noiseReduction: "medium",
         sharpening: Math.min(40, analysis.sharpness.recommended),
         colorCorrection: {
           brightness: analysis.exposure.isUnderexposed ? 15 : 0,
@@ -162,7 +166,7 @@ function getPresetParameters(preset: EnhancementPreset, analysis: ImageAnalysis)
         },
       };
 
-    case 'medical':
+    case "medical":
       return {
         noiseReduction: analysis.noise.recommendation,
         sharpening: Math.min(60, analysis.sharpness.recommended + 10),
@@ -174,9 +178,9 @@ function getPresetParameters(preset: EnhancementPreset, analysis: ImageAnalysis)
         },
       };
 
-    case 'detailed':
+    case "detailed":
       return {
-        noiseReduction: 'light',
+        noiseReduction: "light",
         sharpening: Math.min(80, analysis.sharpness.recommended + 20),
         colorCorrection: {
           brightness: calculateBrightnessAdjustment(analysis.exposure.brightness),
@@ -186,7 +190,7 @@ function getPresetParameters(preset: EnhancementPreset, analysis: ImageAnalysis)
         },
       };
 
-    case 'natural':
+    case "natural":
       return {
         noiseReduction: analysis.noise.recommendation,
         sharpening: Math.min(30, analysis.sharpness.recommended * 0.5),
@@ -196,7 +200,7 @@ function getPresetParameters(preset: EnhancementPreset, analysis: ImageAnalysis)
         },
       };
 
-    case 'vivid':
+    case "vivid":
       return {
         noiseReduction: analysis.noise.recommendation,
         sharpening: analysis.sharpness.recommended,
@@ -210,7 +214,7 @@ function getPresetParameters(preset: EnhancementPreset, analysis: ImageAnalysis)
         },
       };
 
-    case 'auto':
+    case "auto":
     default:
       return {
         noiseReduction: analysis.noise.recommendation,
@@ -236,7 +240,7 @@ function calculateBrightnessAdjustment(currentBrightness: number): number {
  */
 function blendImages(original: ImageData, enhanced: ImageData, opacity: number): ImageData {
   const result = new Uint8ClampedArray(original.data.length);
-  
+
   for (let i = 0; i < original.data.length; i += 4) {
     result[i] = original.data[i] * (1 - opacity) + enhanced.data[i] * opacity;
     result[i + 1] = original.data[i + 1] * (1 - opacity) + enhanced.data[i + 1] * opacity;
@@ -260,7 +264,7 @@ function calculateQualityScore(imageData: ImageData): number {
  */
 export function autoEnhance(
   imageData: ImageData,
-  options: Partial<AutoEnhanceOptions> = {}
+  options: Partial<AutoEnhanceOptions> = {},
 ): EnhancementResult {
   const startTime = performance.now();
   const opts = { ...DEFAULT_OPTIONS, ...options };
@@ -286,7 +290,7 @@ export function autoEnhance(
   let result = imageData;
 
   // Apply noise reduction
-  if (opts.enableNoiseReduction && params.noiseReduction !== 'none') {
+  if (opts.enableNoiseReduction && params.noiseReduction !== "none") {
     result = reduceNoise(result, {
       level: params.noiseReduction,
       preserveDetails: true,
@@ -305,7 +309,7 @@ export function autoEnhance(
     // Scale adjustments by intensity
     const scaledCorrection: Partial<ColorCorrectionOptions> = {};
     for (const [key, value] of Object.entries(params.colorCorrection)) {
-      if (typeof value === 'number') {
+      if (typeof value === "number") {
         scaledCorrection[key as keyof ColorCorrectionOptions] = value * intensityFactor;
       }
     }
@@ -318,7 +322,7 @@ export function autoEnhance(
     const scaledSharpening = params.sharpening * intensityFactor;
     result = sharpenImage(result, {
       intensity: scaledSharpening,
-      method: 'unsharp',
+      method: "unsharp",
       preserveHighlights: true,
       preserveShadows: true,
     });
@@ -352,7 +356,7 @@ export function autoEnhance(
  * Quick enhance with default settings
  */
 export function quickEnhance(imageData: ImageData): ImageData {
-  return autoEnhance(imageData, { preset: 'auto', intensity: 50 }).enhancedImage;
+  return autoEnhance(imageData, { preset: "auto", intensity: 50 }).enhancedImage;
 }
 
 /**
@@ -375,21 +379,21 @@ export function getEnhancementSuggestions(imageData: ImageData): {
   }
 
   if (analysis.exposure.isUnderexposed) {
-    suggestions.push('Increase brightness and exposure');
+    suggestions.push("Increase brightness and exposure");
   } else if (analysis.exposure.isOverexposed) {
-    suggestions.push('Reduce highlights and overall exposure');
+    suggestions.push("Reduce highlights and overall exposure");
   }
 
   if (analysis.color.contrast < 40) {
-    suggestions.push('Boost contrast for more punch');
+    suggestions.push("Boost contrast for more punch");
   }
 
   // Recommend preset based on analysis
-  let recommendedPreset: EnhancementPreset = 'auto';
-  if (analysis.overall.category === 'poor') {
-    recommendedPreset = 'detailed';
-  } else if (analysis.overall.category === 'fair') {
-    recommendedPreset = 'natural';
+  let recommendedPreset: EnhancementPreset = "auto";
+  if (analysis.overall.category === "poor") {
+    recommendedPreset = "detailed";
+  } else if (analysis.overall.category === "fair") {
+    recommendedPreset = "natural";
   }
 
   return {

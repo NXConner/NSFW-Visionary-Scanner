@@ -1,1 +1,1 @@
-export * from './APIAccessManager';
+export * from "./APIAccessManager";

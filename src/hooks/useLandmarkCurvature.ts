@@ -50,7 +50,7 @@ export function useLandmarkCurvature({
   const [result, setResult] = useState<LandmarkCurvatureResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
-  
+
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const lastInputHashRef = useRef<string>("");
 
@@ -67,7 +67,7 @@ export function useLandmarkCurvature({
         centerline,
         contourPoints,
         imageWidth,
-        imageHeight
+        imageHeight,
       );
 
       // Scale landmark positions back to original image coordinates
@@ -80,10 +80,12 @@ export function useLandmarkCurvature({
             y: lm.position.y * invScale,
           },
         })),
-        hingePoint: rawResult.hingePoint ? {
-          x: rawResult.hingePoint.x * invScale,
-          y: rawResult.hingePoint.y * invScale,
-        } : undefined,
+        hingePoint: rawResult.hingePoint
+          ? {
+              x: rawResult.hingePoint.x * invScale,
+              y: rawResult.hingePoint.y * invScale,
+            }
+          : undefined,
       };
 
       // Only update if confidence meets threshold
@@ -110,7 +112,7 @@ export function useLandmarkCurvature({
 
     // Create a simple hash of inputs to detect changes
     const inputHash = `${centerline.length}-${contourPoints.length}-${imageWidth}-${imageHeight}`;
-    
+
     if (inputHash === lastInputHashRef.current) {
       return; // No change
     }
@@ -131,7 +133,15 @@ export function useLandmarkCurvature({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [enabled, centerline.length, contourPoints.length, imageWidth, imageHeight, debounceMs, computeCurvature]);
+  }, [
+    enabled,
+    centerline.length,
+    contourPoints.length,
+    imageWidth,
+    imageHeight,
+    debounceMs,
+    computeCurvature,
+  ]);
 
   const refresh = useCallback(() => {
     lastInputHashRef.current = ""; // Force recomputation

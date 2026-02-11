@@ -23,13 +23,10 @@ type SeedPayload = {
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const SEED_FILE =
-  process.env.PARTNER_SYNC_SEED_FILE || "scripts/seed/partner-sync-seed.json";
+const SEED_FILE = process.env.PARTNER_SYNC_SEED_FILE || "scripts/seed/partner-sync-seed.json";
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SEED_FILE) {
-  throw new Error(
-    "Missing SUPABASE_URL/VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY",
-  );
+  throw new Error("Missing SUPABASE_URL/VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
 }
 
 const resolved = path.resolve(SEED_FILE);

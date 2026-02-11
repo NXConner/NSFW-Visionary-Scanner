@@ -224,7 +224,7 @@ export const ImageUploadScan = () => {
                 accept="image/*"
                 className="hidden"
                 onChange={handleFileSelect}
-              aria-label="Upload scan image"
+                aria-label="Upload scan image"
               />
               <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
                 <Upload className="w-8 h-8 text-primary" />

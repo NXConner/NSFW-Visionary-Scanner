@@ -1,9 +1,24 @@
 // Medication Panel Component
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Pill, Clock, Check, X, Bell, Edit2, Trash2, Calendar, TrendingUp } from 'lucide-react';
-import { getMedicationTracker, Medication, MedicationStats } from '@/lib/healthTracking/MedicationTracker';
-import { cn } from '@/lib/utils';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Plus,
+  Pill,
+  Clock,
+  Check,
+  X,
+  Bell,
+  Edit2,
+  Trash2,
+  Calendar,
+  TrendingUp,
+} from "lucide-react";
+import {
+  getMedicationTracker,
+  Medication,
+  MedicationStats,
+} from "@/lib/healthTracking/MedicationTracker";
+import { cn } from "@/lib/utils";
 
 interface MedicationPanelProps {
   className?: string;
@@ -19,17 +34,17 @@ export const MedicationPanel: React.FC<MedicationPanelProps> = ({ className }) =
   useEffect(() => {
     setMedications(tracker.getAll());
     setStats(tracker.getStats());
-    return tracker.subscribe((meds) => {
+    return tracker.subscribe(meds => {
       setMedications(meds);
       setStats(tracker.getStats());
     });
   }, []);
 
   const [formData, setFormData] = useState({
-    name: '',
-    dosage: '',
-    frequency: 'daily' as Medication['frequency'],
-    notes: ''
+    name: "",
+    dosage: "",
+    frequency: "daily" as Medication["frequency"],
+    notes: "",
   });
 
   const handleAdd = () => {
@@ -37,26 +52,35 @@ export const MedicationPanel: React.FC<MedicationPanelProps> = ({ className }) =
     tracker.add({
       ...formData,
       startDate: new Date().toISOString(),
-      reminders: [{ id: crypto.randomUUID(), time: '09:00', days: [0,1,2,3,4,5,6], enabled: true, soundEnabled: true, vibrationEnabled: true }],
-      isActive: true
+      reminders: [
+        {
+          id: crypto.randomUUID(),
+          time: "09:00",
+          days: [0, 1, 2, 3, 4, 5, 6],
+          enabled: true,
+          soundEnabled: true,
+          vibrationEnabled: true,
+        },
+      ],
+      isActive: true,
     });
-    setFormData({ name: '', dosage: '', frequency: 'daily', notes: '' });
+    setFormData({ name: "", dosage: "", frequency: "daily", notes: "" });
     setShowAddForm(false);
   };
 
-  const handleLogDose = (medId: string, status: 'taken' | 'skipped') => {
+  const handleLogDose = (medId: string, status: "taken" | "skipped") => {
     tracker.logDose(medId, status);
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Delete this medication?')) tracker.delete(id);
+    if (confirm("Delete this medication?")) tracker.delete(id);
   };
 
   return (
-    <div className={cn('p-4 space-y-6', className)}>
+    <div className={cn("p-4 space-y-6", className)}>
       {/* Stats Overview */}
       {stats && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="grid grid-cols-2 md:grid-cols-4 gap-3"
@@ -98,7 +122,7 @@ export const MedicationPanel: React.FC<MedicationPanelProps> = ({ className }) =
         {showAddForm && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 space-y-3"
           >
@@ -106,7 +130,7 @@ export const MedicationPanel: React.FC<MedicationPanelProps> = ({ className }) =
               type="text"
               placeholder="Medication name"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={e => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
             />
             <div className="flex gap-3">
@@ -114,12 +138,14 @@ export const MedicationPanel: React.FC<MedicationPanelProps> = ({ className }) =
                 type="text"
                 placeholder="Dosage (e.g., 10mg)"
                 value={formData.dosage}
-                onChange={(e) => setFormData({ ...formData, dosage: e.target.value })}
+                onChange={e => setFormData({ ...formData, dosage: e.target.value })}
                 className="flex-1 px-3 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
               />
               <select
                 value={formData.frequency}
-                onChange={(e) => setFormData({ ...formData, frequency: e.target.value as Medication['frequency'] })}
+                onChange={e =>
+                  setFormData({ ...formData, frequency: e.target.value as Medication["frequency"] })
+                }
                 className="px-3 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
               >
                 <option value="daily">Daily</option>
@@ -131,12 +157,22 @@ export const MedicationPanel: React.FC<MedicationPanelProps> = ({ className }) =
             <textarea
               placeholder="Notes (optional)"
               value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              onChange={e => setFormData({ ...formData, notes: e.target.value })}
               className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none resize-none h-20"
             />
             <div className="flex justify-end gap-2">
-              <button onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg">Cancel</button>
-              <button onClick={handleAdd} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg">Save</button>
+              <button
+                onClick={() => setShowAddForm(false)}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAdd}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg"
+              >
+                Save
+              </button>
             </div>
           </motion.div>
         )}
@@ -150,34 +186,51 @@ export const MedicationPanel: React.FC<MedicationPanelProps> = ({ className }) =
             <p>No medications added yet</p>
           </div>
         ) : (
-          medications.map((med) => (
+          medications.map(med => (
             <motion.div
               key={med.id}
               layout
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className={cn(
-                'bg-gray-800/50 rounded-xl p-4 border transition-all',
-                med.isActive ? 'border-gray-700 hover:border-blue-500/50' : 'border-gray-800 opacity-60'
+                "bg-gray-800/50 rounded-xl p-4 border transition-all",
+                med.isActive
+                  ? "border-gray-700 hover:border-blue-500/50"
+                  : "border-gray-800 opacity-60",
               )}
             >
               <div className="flex items-start justify-between">
                 <div>
                   <h4 className="font-semibold text-white flex items-center gap-2">
                     {med.name}
-                    {!med.isActive && <span className="text-xs px-2 py-0.5 bg-gray-700 rounded">Inactive</span>}
+                    {!med.isActive && (
+                      <span className="text-xs px-2 py-0.5 bg-gray-700 rounded">Inactive</span>
+                    )}
                   </h4>
-                  <p className="text-sm text-gray-400">{med.dosage} • {med.frequency.replace('_', ' ')}</p>
+                  <p className="text-sm text-gray-400">
+                    {med.dosage} • {med.frequency.replace("_", " ")}
+                  </p>
                   {med.notes && <p className="text-xs text-gray-500 mt-1">{med.notes}</p>}
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => handleLogDose(med.id, 'taken')} className="p-2 hover:bg-green-500/20 rounded-lg text-green-400" title="Mark as taken">
+                  <button
+                    onClick={() => handleLogDose(med.id, "taken")}
+                    className="p-2 hover:bg-green-500/20 rounded-lg text-green-400"
+                    title="Mark as taken"
+                  >
                     <Check className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleLogDose(med.id, 'skipped')} className="p-2 hover:bg-red-500/20 rounded-lg text-red-400" title="Mark as skipped">
+                  <button
+                    onClick={() => handleLogDose(med.id, "skipped")}
+                    className="p-2 hover:bg-red-500/20 rounded-lg text-red-400"
+                    title="Mark as skipped"
+                  >
                     <X className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDelete(med.id)} className="p-2 hover:bg-gray-700 rounded-lg text-gray-400">
+                  <button
+                    onClick={() => handleDelete(med.id)}
+                    className="p-2 hover:bg-gray-700 rounded-lg text-gray-400"
+                  >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -187,8 +240,14 @@ export const MedicationPanel: React.FC<MedicationPanelProps> = ({ className }) =
                 <div className="mt-3 pt-3 border-t border-gray-700">
                   <div className="flex items-center gap-2 text-xs text-gray-500">
                     <Clock className="w-3 h-3" />
-                    Last: {new Date(med.logs[med.logs.length - 1].timestamp).toLocaleString()} - 
-                    <span className={med.logs[med.logs.length - 1].status === 'taken' ? 'text-green-400' : 'text-red-400'}>
+                    Last: {new Date(med.logs[med.logs.length - 1].timestamp).toLocaleString()} -
+                    <span
+                      className={
+                        med.logs[med.logs.length - 1].status === "taken"
+                          ? "text-green-400"
+                          : "text-red-400"
+                      }
+                    >
                       {med.logs[med.logs.length - 1].status}
                     </span>
                   </div>

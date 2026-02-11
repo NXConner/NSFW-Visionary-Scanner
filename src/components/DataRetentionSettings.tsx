@@ -59,9 +59,8 @@ export const DataRetentionSettings = () => {
           .eq("user_id", user.id)
           .maybeSingle();
         if (error) throw error;
-        const incoming = (data as any)?.data_retention_preferences as
-          | Partial<RetentionPreference>
-          | null;
+        const incoming = (data as any)
+          ?.data_retention_preferences as Partial<RetentionPreference> | null;
         if (incoming) {
           setPreferences({
             ...DEFAULT_RETENTION,

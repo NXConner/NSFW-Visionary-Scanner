@@ -7,7 +7,7 @@ export async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
 }
 
 /**
- * Convert Blob to data URL. 
+ * Convert Blob to data URL.
  * Uses URL.createObjectURL for internal operations when possible (faster),
  * but falls back to FileReader when a true data URL is required.
  */
@@ -38,4 +38,3 @@ export function revokeObjectUrl(url: string): void {
     // Ignore errors
   }
 }
-

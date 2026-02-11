@@ -79,9 +79,9 @@ export const NavigationDropdown = ({ activeTab, onTabChange }: NavigationDropdow
       isSuperAdmin,
       nsfwAvailable,
     });
-    
+
     console.log("[Navigation] Visibility check:", { visible, locked });
-    
+
     if (!visible) {
       console.log("[Navigation] Item not visible, aborting");
       return;
@@ -154,7 +154,7 @@ export const NavigationDropdown = ({ activeTab, onTabChange }: NavigationDropdow
                 {ADMIN_NAV_CATEGORY.items.map(item => (
                   <DropdownMenuItem
                     key={item.id}
-                    onClick={(e) => {
+                    onClick={e => {
                       e.preventDefault();
                       e.stopPropagation();
                       handleNavClick(item);
@@ -192,7 +192,7 @@ export const NavigationDropdown = ({ activeTab, onTabChange }: NavigationDropdow
                 .map(item => (
                   <DropdownMenuItem
                     key={item.id}
-                    onClick={(e) => {
+                    onClick={e => {
                       e.preventDefault();
                       e.stopPropagation();
                       handleNavClick(item);
@@ -224,7 +224,7 @@ export const NavigationDropdown = ({ activeTab, onTabChange }: NavigationDropdow
         <DropdownMenuSeparator />
         {user ? (
           <DropdownMenuItem
-            onClick={(e) => {
+            onClick={e => {
               e.preventDefault();
               signOut();
               setOpen(false);
@@ -236,7 +236,7 @@ export const NavigationDropdown = ({ activeTab, onTabChange }: NavigationDropdow
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem
-            onClick={(e) => {
+            onClick={e => {
               e.preventDefault();
               navigate("/auth");
               setOpen(false);

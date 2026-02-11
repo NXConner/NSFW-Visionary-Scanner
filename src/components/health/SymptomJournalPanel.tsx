@@ -1,20 +1,35 @@
 // Symptom Journal Panel Component
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Activity, TrendingUp, TrendingDown, Minus, Calendar, BarChart3, X } from 'lucide-react';
-import { getSymptomJournal, SymptomEntry, SymptomType, SeverityLevel, JournalStats } from '@/lib/healthTracking/SymptomJournal';
-import { cn } from '@/lib/utils';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Plus,
+  Activity,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Calendar,
+  BarChart3,
+  X,
+} from "lucide-react";
+import {
+  getSymptomJournal,
+  SymptomEntry,
+  SymptomType,
+  SeverityLevel,
+  JournalStats,
+} from "@/lib/healthTracking/SymptomJournal";
+import { cn } from "@/lib/utils";
 
 interface SymptomJournalPanelProps {
   className?: string;
 }
 
 const MOOD_OPTIONS = [
-  { value: 'great', emoji: '😄', label: 'Great' },
-  { value: 'good', emoji: '😊', label: 'Good' },
-  { value: 'okay', emoji: '😐', label: 'Okay' },
-  { value: 'poor', emoji: '😟', label: 'Poor' },
-  { value: 'terrible', emoji: '😣', label: 'Terrible' },
+  { value: "great", emoji: "😄", label: "Great" },
+  { value: "good", emoji: "😊", label: "Good" },
+  { value: "okay", emoji: "😐", label: "Okay" },
+  { value: "poor", emoji: "😟", label: "Poor" },
+  { value: "terrible", emoji: "😣", label: "Terrible" },
 ] as const;
 
 export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ className }) => {
@@ -22,26 +37,26 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
   const [symptomTypes, setSymptomTypes] = useState<SymptomType[]>([]);
   const [stats, setStats] = useState<JournalStats | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'stats'>('list');
+  const [viewMode, setViewMode] = useState<"list" | "stats">("list");
   const journal = getSymptomJournal();
 
   useEffect(() => {
     setEntries(journal.getAll());
     setSymptomTypes(journal.getSymptomTypes());
     setStats(journal.getStats());
-    return journal.subscribe((e) => {
+    return journal.subscribe(e => {
       setEntries(e);
       setStats(journal.getStats());
     });
   }, []);
 
   const [formData, setFormData] = useState({
-    symptomType: '',
+    symptomType: "",
     severity: 5 as SeverityLevel,
-    location: '',
-    triggers: '',
-    mood: 'okay' as SymptomEntry['mood'],
-    notes: ''
+    location: "",
+    triggers: "",
+    mood: "okay" as SymptomEntry["mood"],
+    notes: "",
   });
 
   const handleAdd = () => {
@@ -50,37 +65,44 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
       symptomType: formData.symptomType,
       severity: formData.severity,
       location: formData.location || undefined,
-      triggers: formData.triggers ? formData.triggers.split(',').map(t => t.trim()) : undefined,
+      triggers: formData.triggers ? formData.triggers.split(",").map(t => t.trim()) : undefined,
       mood: formData.mood,
-      notes: formData.notes || undefined
+      notes: formData.notes || undefined,
     });
-    setFormData({ symptomType: '', severity: 5, location: '', triggers: '', mood: 'okay', notes: '' });
+    setFormData({
+      symptomType: "",
+      severity: 5,
+      location: "",
+      triggers: "",
+      mood: "okay",
+      notes: "",
+    });
     setShowAddForm(false);
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Delete this entry?')) journal.deleteEntry(id);
+    if (confirm("Delete this entry?")) journal.deleteEntry(id);
   };
 
   const getSeverityColor = (severity: number) => {
-    if (severity <= 3) return 'text-green-400 bg-green-500/20';
-    if (severity <= 6) return 'text-yellow-400 bg-yellow-500/20';
-    return 'text-red-400 bg-red-500/20';
+    if (severity <= 3) return "text-green-400 bg-green-500/20";
+    if (severity <= 6) return "text-yellow-400 bg-yellow-500/20";
+    return "text-red-400 bg-red-500/20";
   };
 
   const getTrendIcon = (trend: string) => {
-    if (trend === 'improving') return <TrendingDown className="w-4 h-4 text-green-400" />;
-    if (trend === 'worsening') return <TrendingUp className="w-4 h-4 text-red-400" />;
+    if (trend === "improving") return <TrendingDown className="w-4 h-4 text-green-400" />;
+    if (trend === "worsening") return <TrendingUp className="w-4 h-4 text-red-400" />;
     return <Minus className="w-4 h-4 text-gray-400" />;
   };
 
   const getTypeInfo = (typeId: string) => symptomTypes.find(t => t.id === typeId);
 
   return (
-    <div className={cn('p-4 space-y-6', className)}>
+    <div className={cn("p-4 space-y-6", className)}>
       {/* Stats Overview */}
       {stats && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="grid grid-cols-2 md:grid-cols-4 gap-3"
@@ -99,7 +121,7 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
           </div>
           <div className="bg-gradient-to-br from-green-500/20 to-green-600/10 rounded-xl p-4 border border-green-500/30">
             <div className="text-2xl font-bold text-green-400">
-              {getTypeInfo(stats.mostFrequentSymptom || '')?.icon || '-'}
+              {getTypeInfo(stats.mostFrequentSymptom || "")?.icon || "-"}
             </div>
             <div className="text-xs text-gray-400">Most Common</div>
           </div>
@@ -113,10 +135,14 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
         </h3>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setViewMode(viewMode === 'list' ? 'stats' : 'list')}
+            onClick={() => setViewMode(viewMode === "list" ? "stats" : "list")}
             className="p-2 hover:bg-gray-700 rounded-lg text-gray-400"
           >
-            {viewMode === 'list' ? <BarChart3 className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
+            {viewMode === "list" ? (
+              <BarChart3 className="w-4 h-4" />
+            ) : (
+              <Calendar className="w-4 h-4" />
+            )}
           </button>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
@@ -132,7 +158,7 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
         {showAddForm && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 space-y-4"
           >
@@ -145,10 +171,10 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
                     key={type.id}
                     onClick={() => setFormData({ ...formData, symptomType: type.id })}
                     className={cn(
-                      'px-3 py-2 rounded-lg border transition-all text-sm',
-                      formData.symptomType === type.id 
-                        ? 'bg-purple-500/30 border-purple-500' 
-                        : 'bg-gray-700 border-gray-600 hover:border-gray-500'
+                      "px-3 py-2 rounded-lg border transition-all text-sm",
+                      formData.symptomType === type.id
+                        ? "bg-purple-500/30 border-purple-500"
+                        : "bg-gray-700 border-gray-600 hover:border-gray-500",
                     )}
                   >
                     {type.icon} {type.name}
@@ -159,13 +185,17 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
 
             {/* Severity Slider */}
             <div>
-              <label className="text-sm text-gray-400 block mb-2">Severity: {formData.severity}/10</label>
+              <label className="text-sm text-gray-400 block mb-2">
+                Severity: {formData.severity}/10
+              </label>
               <input
                 type="range"
                 min={1}
                 max={10}
                 value={formData.severity}
-                onChange={(e) => setFormData({ ...formData, severity: parseInt(e.target.value) as SeverityLevel })}
+                onChange={e =>
+                  setFormData({ ...formData, severity: parseInt(e.target.value) as SeverityLevel })
+                }
                 className="w-full accent-purple-500"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -184,10 +214,10 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
                     key={mood.value}
                     onClick={() => setFormData({ ...formData, mood: mood.value })}
                     className={cn(
-                      'flex-1 py-2 rounded-lg border transition-all text-center',
-                      formData.mood === mood.value 
-                        ? 'bg-purple-500/30 border-purple-500' 
-                        : 'bg-gray-700 border-gray-600 hover:border-gray-500'
+                      "flex-1 py-2 rounded-lg border transition-all text-center",
+                      formData.mood === mood.value
+                        ? "bg-purple-500/30 border-purple-500"
+                        : "bg-gray-700 border-gray-600 hover:border-gray-500",
                     )}
                   >
                     <div className="text-xl">{mood.emoji}</div>
@@ -203,14 +233,14 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
                 type="text"
                 placeholder="Location (e.g., head, back)"
                 value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                onChange={e => setFormData({ ...formData, location: e.target.value })}
                 className="px-3 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-purple-500 focus:outline-none text-sm"
               />
               <input
                 type="text"
                 placeholder="Triggers (comma-separated)"
                 value={formData.triggers}
-                onChange={(e) => setFormData({ ...formData, triggers: e.target.value })}
+                onChange={e => setFormData({ ...formData, triggers: e.target.value })}
                 className="px-3 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-purple-500 focus:outline-none text-sm"
               />
             </div>
@@ -218,20 +248,30 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
             <textarea
               placeholder="Notes (optional)"
               value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              onChange={e => setFormData({ ...formData, notes: e.target.value })}
               className="w-full px-3 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-purple-500 focus:outline-none resize-none h-16 text-sm"
             />
 
             <div className="flex justify-end gap-2">
-              <button onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-sm">Cancel</button>
-              <button onClick={handleAdd} className="px-4 py-2 bg-purple-500 hover:bg-purple-600 rounded-lg text-sm">Save Entry</button>
+              <button
+                onClick={() => setShowAddForm(false)}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAdd}
+                className="px-4 py-2 bg-purple-500 hover:bg-purple-600 rounded-lg text-sm"
+              >
+                Save Entry
+              </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Content */}
-      {viewMode === 'list' ? (
+      {viewMode === "list" ? (
         <div className="space-y-3">
           {entries.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
@@ -239,7 +279,7 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
               <p>No symptoms logged yet</p>
             </div>
           ) : (
-            entries.slice(0, 20).map((entry) => {
+            entries.slice(0, 20).map(entry => {
               const typeInfo = getTypeInfo(entry.symptomType);
               const moodInfo = MOOD_OPTIONS.find(m => m.value === entry.mood);
               return (
@@ -252,20 +292,31 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                      <div className="text-2xl">{typeInfo?.icon || '❓'}</div>
+                      <div className="text-2xl">{typeInfo?.icon || "❓"}</div>
                       <div>
-                        <h4 className="font-semibold text-white">{typeInfo?.name || entry.symptomType}</h4>
+                        <h4 className="font-semibold text-white">
+                          {typeInfo?.name || entry.symptomType}
+                        </h4>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className={cn('text-xs px-2 py-0.5 rounded-full', getSeverityColor(entry.severity))}>
+                          <span
+                            className={cn(
+                              "text-xs px-2 py-0.5 rounded-full",
+                              getSeverityColor(entry.severity),
+                            )}
+                          >
                             Severity: {entry.severity}/10
                           </span>
                           {moodInfo && <span className="text-sm">{moodInfo.emoji}</span>}
-                          {entry.location && <span className="text-xs text-gray-500">{entry.location}</span>}
+                          {entry.location && (
+                            <span className="text-xs text-gray-500">{entry.location}</span>
+                          )}
                         </div>
                         {entry.triggers && entry.triggers.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {entry.triggers.map((t, i) => (
-                              <span key={i} className="text-xs px-2 py-0.5 bg-gray-700 rounded">{t}</span>
+                              <span key={i} className="text-xs px-2 py-0.5 bg-gray-700 rounded">
+                                {t}
+                              </span>
                             ))}
                           </div>
                         )}
@@ -273,7 +324,10 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                      <button onClick={() => handleDelete(entry.id)} className="p-1 hover:bg-gray-700 rounded text-gray-500">
+                      <button
+                        onClick={() => handleDelete(entry.id)}
+                        className="p-1 hover:bg-gray-700 rounded text-gray-500"
+                      >
                         <X className="w-3 h-3" />
                       </button>
                       <span className="text-xs text-gray-500">
@@ -293,7 +347,10 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
           {stats?.patterns.map(pattern => {
             const typeInfo = getTypeInfo(pattern.symptomType);
             return (
-              <div key={pattern.symptomType} className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+              <div
+                key={pattern.symptomType}
+                className="bg-gray-800/50 rounded-xl p-4 border border-gray-700"
+              >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">{typeInfo?.icon}</span>
@@ -315,7 +372,7 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
                   </div>
                   <div>
                     <div className="text-gray-500">Peak Times</div>
-                    <div className="font-semibold">{pattern.peakTimes.join(', ') || '-'}</div>
+                    <div className="font-semibold">{pattern.peakTimes.join(", ") || "-"}</div>
                   </div>
                 </div>
                 {pattern.commonTriggers.length > 0 && (
@@ -323,7 +380,9 @@ export const SymptomJournalPanel: React.FC<SymptomJournalPanelProps> = ({ classN
                     <div className="text-xs text-gray-500 mb-1">Common Triggers</div>
                     <div className="flex flex-wrap gap-1">
                       {pattern.commonTriggers.map((t, i) => (
-                        <span key={i} className="text-xs px-2 py-0.5 bg-gray-700 rounded">{t}</span>
+                        <span key={i} className="text-xs px-2 py-0.5 bg-gray-700 rounded">
+                          {t}
+                        </span>
                       ))}
                     </div>
                   </div>

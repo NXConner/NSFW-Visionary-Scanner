@@ -3,10 +3,33 @@
  * Orchestrates all enhancement operations with caching and optimization
  */
 
-import { reduceNoise, analyzeNoise, type NoiseReductionOptions, type NoiseReductionLevel } from './noiseReduction';
-import { sharpenImage, analyzeSharpness, type SharpeningOptions, type SharpeningMethod } from './sharpening';
-import { correctColors, autoWhiteBalance, analyzeColors, type ColorCorrectionOptions } from './colorCorrection';
-import { autoEnhance, analyzeImage, getEnhancementSuggestions, type AutoEnhanceOptions, type EnhancementPreset, type EnhancementResult, type ImageAnalysis } from './autoEnhance';
+import {
+  reduceNoise,
+  analyzeNoise,
+  type NoiseReductionOptions,
+  type NoiseReductionLevel,
+} from "./noiseReduction";
+import {
+  sharpenImage,
+  analyzeSharpness,
+  type SharpeningOptions,
+  type SharpeningMethod,
+} from "./sharpening";
+import {
+  correctColors,
+  autoWhiteBalance,
+  analyzeColors,
+  type ColorCorrectionOptions,
+} from "./colorCorrection";
+import {
+  autoEnhance,
+  analyzeImage,
+  getEnhancementSuggestions,
+  type AutoEnhanceOptions,
+  type EnhancementPreset,
+  type EnhancementResult,
+  type ImageAnalysis,
+} from "./autoEnhance";
 
 export interface EnhancementState {
   originalImage: ImageData | null;
@@ -30,12 +53,12 @@ export interface EnhancementSettings {
   colorCorrection: Partial<ColorCorrectionOptions>;
 }
 
-export type EnhancementEventType = 
-  | 'stateChange'
-  | 'processingStart'
-  | 'processingEnd'
-  | 'error'
-  | 'historyChange';
+export type EnhancementEventType =
+  | "stateChange"
+  | "processingStart"
+  | "processingEnd"
+  | "error"
+  | "historyChange";
 
 export interface EnhancementEvent {
   type: EnhancementEventType;
@@ -80,14 +103,16 @@ export class ImageEnhancer {
 
   private setState(updates: Partial<EnhancementState>): void {
     this.state = { ...this.state, ...updates };
-    this.emit({ type: 'stateChange', data: this.state });
+    this.emit({ type: "stateChange", data: this.state });
   }
 
   /**
    * Load an image for enhancement
    */
-  async loadImage(source: HTMLImageElement | HTMLCanvasElement | ImageData | string): Promise<void> {
-    this.emit({ type: 'processingStart' });
+  async loadImage(
+    source: HTMLImageElement | HTMLCanvasElement | ImageData | string,
+  ): Promise<void> {
+    this.emit({ type: "processingStart" });
     this.setState({ isProcessing: true });
 
     try {
@@ -95,7 +120,7 @@ export class ImageEnhancer {
 
       if (source instanceof ImageData) {
         imageData = source;
-      } else if (typeof source === 'string') {
+      } else if (typeof source === "string") {
         imageData = await this.loadImageFromUrl(source);
       } else {
         imageData = this.getImageDataFromElement(source);
@@ -106,16 +131,18 @@ export class ImageEnhancer {
       this.setState({
         originalImage: this.cloneImageData(imageData),
         currentImage: imageData,
-        history: [{ image: this.cloneImageData(imageData), action: 'Initial load', timestamp: Date.now() }],
+        history: [
+          { image: this.cloneImageData(imageData), action: "Initial load", timestamp: Date.now() },
+        ],
         historyIndex: 0,
         analysis,
         isProcessing: false,
       });
 
-      this.emit({ type: 'processingEnd' });
+      this.emit({ type: "processingEnd" });
     } catch (error) {
       this.setState({ isProcessing: false });
-      this.emit({ type: 'error', data: error });
+      this.emit({ type: "error", data: error });
       throw error;
     }
   }
@@ -123,7 +150,7 @@ export class ImageEnhancer {
   private async loadImageFromUrl(url: string): Promise<ImageData> {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      img.crossOrigin = "anonymous";
       img.onload = () => {
         resolve(this.getImageDataFromElement(img));
       };
@@ -133,9 +160,9 @@ export class ImageEnhancer {
   }
 
   private getImageDataFromElement(element: HTMLImageElement | HTMLCanvasElement): ImageData {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d')!;
-    
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d")!;
+
     if (element instanceof HTMLImageElement) {
       canvas.width = element.naturalWidth;
       canvas.height = element.naturalHeight;
@@ -150,17 +177,17 @@ export class ImageEnhancer {
   }
 
   private cloneImageData(imageData: ImageData): ImageData {
-    return new ImageData(
-      new Uint8ClampedArray(imageData.data),
-      imageData.width,
-      imageData.height
-    );
+    return new ImageData(new Uint8ClampedArray(imageData.data), imageData.width, imageData.height);
   }
 
   /**
    * Add entry to history
    */
-  private addToHistory(image: ImageData, action: string, parameters?: Record<string, unknown>): void {
+  private addToHistory(
+    image: ImageData,
+    action: string,
+    parameters?: Record<string, unknown>,
+  ): void {
     // Remove any future history if we're not at the end
     const newHistory = this.state.history.slice(0, this.state.historyIndex + 1);
 
@@ -182,7 +209,7 @@ export class ImageEnhancer {
       historyIndex: newHistory.length - 1,
     });
 
-    this.emit({ type: 'historyChange', data: newHistory });
+    this.emit({ type: "historyChange", data: newHistory });
   }
 
   /**
@@ -203,27 +230,27 @@ export class ImageEnhancer {
    * Apply noise reduction
    */
   async applyNoiseReduction(options: Partial<NoiseReductionOptions> = {}): Promise<ImageData> {
-    if (!this.state.currentImage) throw new Error('No image loaded');
+    if (!this.state.currentImage) throw new Error("No image loaded");
 
-    this.emit({ type: 'processingStart' });
+    this.emit({ type: "processingStart" });
     this.setState({ isProcessing: true });
 
     try {
       const result = reduceNoise(this.state.currentImage, options);
       const analysis = analyzeImage(result);
 
-      this.addToHistory(result, 'Noise Reduction', options);
+      this.addToHistory(result, "Noise Reduction", options);
       this.setState({
         currentImage: result,
         analysis,
         isProcessing: false,
       });
 
-      this.emit({ type: 'processingEnd' });
+      this.emit({ type: "processingEnd" });
       return result;
     } catch (error) {
       this.setState({ isProcessing: false });
-      this.emit({ type: 'error', data: error });
+      this.emit({ type: "error", data: error });
       throw error;
     }
   }
@@ -232,27 +259,27 @@ export class ImageEnhancer {
    * Apply sharpening
    */
   async applySharpening(options: Partial<SharpeningOptions> = {}): Promise<ImageData> {
-    if (!this.state.currentImage) throw new Error('No image loaded');
+    if (!this.state.currentImage) throw new Error("No image loaded");
 
-    this.emit({ type: 'processingStart' });
+    this.emit({ type: "processingStart" });
     this.setState({ isProcessing: true });
 
     try {
       const result = sharpenImage(this.state.currentImage, options);
       const analysis = analyzeImage(result);
 
-      this.addToHistory(result, 'Sharpening', options);
+      this.addToHistory(result, "Sharpening", options);
       this.setState({
         currentImage: result,
         analysis,
         isProcessing: false,
       });
 
-      this.emit({ type: 'processingEnd' });
+      this.emit({ type: "processingEnd" });
       return result;
     } catch (error) {
       this.setState({ isProcessing: false });
-      this.emit({ type: 'error', data: error });
+      this.emit({ type: "error", data: error });
       throw error;
     }
   }
@@ -261,27 +288,27 @@ export class ImageEnhancer {
    * Apply color correction
    */
   async applyColorCorrection(options: Partial<ColorCorrectionOptions> = {}): Promise<ImageData> {
-    if (!this.state.currentImage) throw new Error('No image loaded');
+    if (!this.state.currentImage) throw new Error("No image loaded");
 
-    this.emit({ type: 'processingStart' });
+    this.emit({ type: "processingStart" });
     this.setState({ isProcessing: true });
 
     try {
       const result = correctColors(this.state.currentImage, options);
       const analysis = analyzeImage(result);
 
-      this.addToHistory(result, 'Color Correction', options);
+      this.addToHistory(result, "Color Correction", options);
       this.setState({
         currentImage: result,
         analysis,
         isProcessing: false,
       });
 
-      this.emit({ type: 'processingEnd' });
+      this.emit({ type: "processingEnd" });
       return result;
     } catch (error) {
       this.setState({ isProcessing: false });
-      this.emit({ type: 'error', data: error });
+      this.emit({ type: "error", data: error });
       throw error;
     }
   }
@@ -290,27 +317,27 @@ export class ImageEnhancer {
    * Apply auto white balance
    */
   async applyAutoWhiteBalance(): Promise<ImageData> {
-    if (!this.state.currentImage) throw new Error('No image loaded');
+    if (!this.state.currentImage) throw new Error("No image loaded");
 
-    this.emit({ type: 'processingStart' });
+    this.emit({ type: "processingStart" });
     this.setState({ isProcessing: true });
 
     try {
       const result = autoWhiteBalance(this.state.currentImage);
       const analysis = analyzeImage(result);
 
-      this.addToHistory(result, 'Auto White Balance');
+      this.addToHistory(result, "Auto White Balance");
       this.setState({
         currentImage: result,
         analysis,
         isProcessing: false,
       });
 
-      this.emit({ type: 'processingEnd' });
+      this.emit({ type: "processingEnd" });
       return result;
     } catch (error) {
       this.setState({ isProcessing: false });
-      this.emit({ type: 'error', data: error });
+      this.emit({ type: "error", data: error });
       throw error;
     }
   }
@@ -319,27 +346,31 @@ export class ImageEnhancer {
    * Apply auto enhancement
    */
   async applyAutoEnhance(options: Partial<AutoEnhanceOptions> = {}): Promise<EnhancementResult> {
-    if (!this.state.currentImage) throw new Error('No image loaded');
+    if (!this.state.currentImage) throw new Error("No image loaded");
 
-    this.emit({ type: 'processingStart' });
+    this.emit({ type: "processingStart" });
     this.setState({ isProcessing: true });
 
     try {
       const result = autoEnhance(this.state.currentImage, options);
       const analysis = analyzeImage(result.enhancedImage);
 
-      this.addToHistory(result.enhancedImage, `Auto Enhance (${options.preset || 'auto'})`, options);
+      this.addToHistory(
+        result.enhancedImage,
+        `Auto Enhance (${options.preset || "auto"})`,
+        options,
+      );
       this.setState({
         currentImage: result.enhancedImage,
         analysis,
         isProcessing: false,
       });
 
-      this.emit({ type: 'processingEnd' });
+      this.emit({ type: "processingEnd" });
       return result;
     } catch (error) {
       this.setState({ isProcessing: false });
-      this.emit({ type: 'error', data: error });
+      this.emit({ type: "error", data: error });
       throw error;
     }
   }
@@ -367,7 +398,7 @@ export class ImageEnhancer {
       analysis: analyzeImage(historyEntry.image),
     });
 
-    this.emit({ type: 'historyChange', data: this.state.history });
+    this.emit({ type: "historyChange", data: this.state.history });
     return this.state.currentImage;
   }
 
@@ -386,7 +417,7 @@ export class ImageEnhancer {
       analysis: analyzeImage(historyEntry.image),
     });
 
-    this.emit({ type: 'historyChange', data: this.state.history });
+    this.emit({ type: "historyChange", data: this.state.history });
     return this.state.currentImage;
   }
 
@@ -397,7 +428,7 @@ export class ImageEnhancer {
     if (!this.state.originalImage) return null;
 
     const original = this.cloneImageData(this.state.originalImage);
-    this.addToHistory(original, 'Reset to original');
+    this.addToHistory(original, "Reset to original");
 
     this.setState({
       currentImage: original,
@@ -431,24 +462,24 @@ export class ImageEnhancer {
   /**
    * Export current image to various formats
    */
-  async exportImage(format: 'png' | 'jpeg' | 'webp' = 'png', quality = 0.92): Promise<Blob> {
-    if (!this.state.currentImage) throw new Error('No image loaded');
+  async exportImage(format: "png" | "jpeg" | "webp" = "png", quality = 0.92): Promise<Blob> {
+    if (!this.state.currentImage) throw new Error("No image loaded");
 
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = this.state.currentImage.width;
     canvas.height = this.state.currentImage.height;
 
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext("2d")!;
     ctx.putImageData(this.state.currentImage, 0, 0);
 
     return new Promise((resolve, reject) => {
       canvas.toBlob(
         blob => {
           if (blob) resolve(blob);
-          else reject(new Error('Failed to export image'));
+          else reject(new Error("Failed to export image"));
         },
         `image/${format}`,
-        quality
+        quality,
       );
     });
   }
@@ -492,7 +523,29 @@ export function getImageEnhancer(): ImageEnhancer {
 }
 
 // Re-export types and functions from submodules
-export { analyzeNoise, reduceNoise, type NoiseReductionLevel, type NoiseReductionOptions } from './noiseReduction';
-export { analyzeSharpness, sharpenImage, type SharpeningMethod, type SharpeningOptions } from './sharpening';
-export { analyzeColors, correctColors, autoWhiteBalance, type ColorCorrectionOptions } from './colorCorrection';
-export { autoEnhance, analyzeImage, getEnhancementSuggestions, type EnhancementPreset, type AutoEnhanceOptions, type EnhancementResult } from './autoEnhance';
+export {
+  analyzeNoise,
+  reduceNoise,
+  type NoiseReductionLevel,
+  type NoiseReductionOptions,
+} from "./noiseReduction";
+export {
+  analyzeSharpness,
+  sharpenImage,
+  type SharpeningMethod,
+  type SharpeningOptions,
+} from "./sharpening";
+export {
+  analyzeColors,
+  correctColors,
+  autoWhiteBalance,
+  type ColorCorrectionOptions,
+} from "./colorCorrection";
+export {
+  autoEnhance,
+  analyzeImage,
+  getEnhancementSuggestions,
+  type EnhancementPreset,
+  type AutoEnhanceOptions,
+  type EnhancementResult,
+} from "./autoEnhance";

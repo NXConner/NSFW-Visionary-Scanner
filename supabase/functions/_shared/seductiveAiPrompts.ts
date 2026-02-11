@@ -136,7 +136,10 @@ export function pickAllowedPersonality(key: string, mode: AiMode): PersonalityPr
   const profile =
     PERSONALITY_LIBRARY[normalized as PersonalityKey] || PERSONALITY_LIBRARY.seductive;
 
-  if (mode === "tame" && (profile.key === "dirty" || profile.key === "nasty" || profile.key === "kinky")) {
+  if (
+    mode === "tame" &&
+    (profile.key === "dirty" || profile.key === "nasty" || profile.key === "kinky")
+  ) {
     return PERSONALITY_LIBRARY.seductive;
   }
 

@@ -17,7 +17,11 @@ import {
   prepareSeductiveAiContext,
   sentimentFor,
 } from "../_shared/index.ts";
-const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 const ALLOW_UNLICENSED =
   (Deno.env.get("ALLOW_UNLICENSED_SEDUCTIVE_AI") || "").toLowerCase() === "true";
 const CONTENT_POLICY = (Deno.env.get("CONTENT_POLICY") || "lovable").toLowerCase().trim();
@@ -30,7 +34,10 @@ const PRESENCE_PENALTY = Number(Deno.env.get("SEDUCTIVE_AI_PRESENCE_PENALTY") ||
 const FREQUENCY_PENALTY = Number(Deno.env.get("SEDUCTIVE_AI_FREQUENCY_PENALTY") || "0.1");
 const MEMORY_WINDOW = Math.max(8, Number(Deno.env.get("SEDUCTIVE_AI_MEMORY_WINDOW") || "18"));
 const MEMORY_MAX_CUES = Math.max(4, Number(Deno.env.get("SEDUCTIVE_AI_MEMORY_MAX") || "12"));
-const MAX_MESSAGE_CHARS = Math.max(400, Number(Deno.env.get("SEDUCTIVE_AI_MAX_MESSAGE_CHARS") || "2000"));
+const MAX_MESSAGE_CHARS = Math.max(
+  400,
+  Number(Deno.env.get("SEDUCTIVE_AI_MAX_MESSAGE_CHARS") || "2000"),
+);
 type ReqBody = {
   session_id: string;
   user_message: string;

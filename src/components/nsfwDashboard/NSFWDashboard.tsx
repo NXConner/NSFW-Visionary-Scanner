@@ -19,7 +19,11 @@ import { AgeVerificationModal } from "@/dlc/components/AgeVerificationModal";
 import { Lock, RefreshCcw } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNsfwPrivacySettings } from "@/lib/nsfwPrivacySettings";
-import { clearNsfwSessionUnlocked, isNsfwSessionLocked, triggerNsfwPanicExit } from "@/lib/nsfwSessionLock";
+import {
+  clearNsfwSessionUnlocked,
+  isNsfwSessionLocked,
+  triggerNsfwPanicExit,
+} from "@/lib/nsfwSessionLock";
 import { toast } from "sonner";
 
 function navigateToTab(tabId: string, navigate: (to: string) => void): void {

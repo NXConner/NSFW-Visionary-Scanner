@@ -1,2 +1,2 @@
-export * from './TutorialEngine';
-export * from './GlossaryManager';
+export * from "./TutorialEngine";
+export * from "./GlossaryManager";
