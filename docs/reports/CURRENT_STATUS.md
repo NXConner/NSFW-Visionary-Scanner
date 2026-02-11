@@ -25,6 +25,8 @@
 
 - ✅ Vitest configured for jsdom + shared setup (`src/test/setup.ts`)
 - ✅ Lint / format / typecheck / unit tests verified locally
+- ✅ Playwright E2E tests verified locally (`npm run test:e2e`)
+- ✅ Production build verified locally (`npm run build`)
 
 ## 📌 Remaining Work (High Level)
 
@@ -48,7 +50,7 @@ pwsh -File scripts/complete-remaining.ps1
 ## Notes
 
 - Lint/format/typecheck/unit tests were executed during this update.
-- E2E tests + prod build were not executed during this update.
+- E2E tests + prod build were executed during this update.
 - External integrations (Stripe, FCM, Supabase prod) remain manual.
 
 ---

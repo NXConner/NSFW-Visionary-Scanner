@@ -22,8 +22,8 @@ For deeper supporting docs, see:
 - **Format**: ✅ Verified
 - **Typecheck**: ✅ Verified
 - **Unit tests**: ✅ Verified
-- **E2E tests**: ⏳ Not verified in this update
-- **Prod build**: ⏳ Not verified in this update
+- **E2E tests**: ✅ Verified
+- **Prod build**: ✅ Verified
 
 > Run automation: `pwsh -File scripts/complete-remaining.ps1`
 
