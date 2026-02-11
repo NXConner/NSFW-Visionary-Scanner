@@ -12,7 +12,7 @@ test.describe("Landing page (anonymous)", () => {
 
     // Brand text varies by build profile; assert a visible hero heading exists.
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.getByRole("button", { name: /get started free/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /get started free/i }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /sign in/i }).first()).toBeVisible();
   });
 });
