@@ -63,4 +63,3 @@ if (normalize(current) !== normalize(generated)) {
 }
 
 process.stdout.write("[types-remote-check] Supabase types match remote schema.\n");
-

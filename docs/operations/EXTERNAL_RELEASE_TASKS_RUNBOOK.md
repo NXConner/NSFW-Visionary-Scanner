@@ -2,10 +2,10 @@
 
 This runbook covers the remaining manual/external steps:
 
-1) Apply Supabase migrations + run an RLS/storage audit  
-2) Provision secrets (Supabase Edge + hosting + GitHub Actions)  
-3) Import real NSFW content via `/admin/nsfw`  
-4) Wire CI deploy + rollback plan
+1. Apply Supabase migrations + run an RLS/storage audit
+2. Provision secrets (Supabase Edge + hosting + GitHub Actions)
+3. Import real NSFW content via `/admin/nsfw`
+4. Wire CI deploy + rollback plan
 
 ---
 
@@ -64,34 +64,41 @@ SUPABASE_PROJECT_REF="your-project-ref" npm run db:types:remote:check
 Set these in **Supabase Dashboard → Project Settings → Edge Functions → Secrets** (or via CLI `supabase secrets set ...`):
 
 **Stripe**
+
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `STRIPE_PRO_PRICE_ID` (used by subscription functions)
 - `STRIPE_PREMIUM_PRICE_ID` (used by subscription functions)
 
 **DLC / content signing**
+
 - `DLC_KEYRING_MASTER_KEY_B64`
 - `NSFW_CONTENT_BUCKET` (optional; default: `nsfw-content`)
 
 **Email**
+
 - `RESEND_API_KEY`
 - `EMAIL_FROM` (sender address)
 
 **Retention jobs / cron endpoints**
+
 - `DATA_RETENTION_SECRET`
 
 **AI providers (only if enabling AI features)**
+
 - `LOVABLE_API_KEY`
 - `OPENAI_API_KEY` (optional)
 - `ANTHROPIC_API_KEY` (optional)
 - `CUSTOM_AI_ENDPOINT` / `CUSTOM_AI_API_KEY` (optional)
 
 **Push notifications (only if enabling push)**
+
 - `FIREBASE_SERVICE_ACCOUNT` (full JSON)
 - `APNS_KEY_P8` / `APNS_KEY_ID` / `APNS_TEAM_ID` / `APNS_BUNDLE_ID`
 - `APNS_USE_SANDBOX` (optional)
 
 Other optional runtime toggles referenced by edge functions:
+
 - `CONTENT_POLICY`
 - `ENABLE_MEDICAL_AI_CHAT`
 - `ENABLE_GENITAL_HEALTH_AI`
@@ -115,10 +122,12 @@ See `.env.example` for the full client build inventory.
 For CI deploy jobs (see `.github/workflows/ci.yml`):
 
 **Staging**
+
 - `STAGING_DEPLOY_ENABLED` = `true`
 - `STAGING_DEPLOY_COMMAND` = your deploy command
 
 **Production**
+
 - `PRODUCTION_DEPLOY_ENABLED` = `true`
 - `PRODUCTION_DEPLOY_COMMAND` = your deploy command
 
@@ -150,9 +159,9 @@ Use the provided templates:
 
 Recommended safe process:
 
-1) Run with **Dry-run ON** to validate shape + mappings
-2) Turn **Dry-run OFF** and import
-3) If needed, run rollback using the job id shown in the results panel
+1. Run with **Dry-run ON** to validate shape + mappings
+2. Turn **Dry-run OFF** and import
+3. If needed, run rollback using the job id shown in the results panel
 
 ---
 
@@ -176,9 +185,9 @@ For the manual deployment workflow (`.github/workflows/manual-deploy.yml`), set 
 
 Recommended rollback strategy:
 
-1) Re-deploy the last known-good commit SHA (same deploy command, older ref)
-2) If you deploy Docker images, roll back by pinning the prior immutable image tag
-3) Document the incident and follow up with a fix-forward patch
+1. Re-deploy the last known-good commit SHA (same deploy command, older ref)
+2. If you deploy Docker images, roll back by pinning the prior immutable image tag
+3. Document the incident and follow up with a fix-forward patch
 
 ### 4.3 Rollback (database)
 
@@ -188,4 +197,3 @@ Rollback options:
 
 - **Preferred:** write a new migration that reverts the change
 - **Emergency:** Supabase point-in-time recovery / restore from backup (then redeploy)
-

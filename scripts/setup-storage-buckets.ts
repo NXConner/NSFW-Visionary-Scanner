@@ -80,12 +80,7 @@ const buckets = [
     name: "recordings",
     public: false, // Private by default
     fileSizeLimit: 5 * 1024 * 1024 * 1024, // 5GB
-    allowedMimeTypes: [
-      "video/mp4",
-      "video/webm",
-      "video/quicktime",
-      "application/octet-stream",
-    ],
+    allowedMimeTypes: ["video/mp4", "video/webm", "video/quicktime", "application/octet-stream"],
   },
   {
     id: "expert-content",
