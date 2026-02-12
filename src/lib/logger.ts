@@ -103,22 +103,25 @@ const safeSerialize = (value: unknown, redactKeys: string[]): unknown => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const META_ENV: Record<string, unknown> =
   ((import.meta as any)?.env as Record<string, unknown>) || {};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const PROCESS_ENV: Record<string, string | undefined> =
+  ((globalThis as any)?.process?.env as Record<string, string | undefined> | undefined) ?? {};
 const metaString = (key: string): string => {
   const v = META_ENV[key];
   if (typeof v === "string" && v.trim().length > 0) return v.trim();
-  const fromProcess = (process.env as Record<string, string | undefined>)[key];
+  const fromProcess = PROCESS_ENV[key];
   return typeof fromProcess === "string" && fromProcess.trim().length > 0 ? fromProcess.trim() : "";
 };
 const metaBool = (key: string): boolean => {
   const v = META_ENV[key];
   if (typeof v === "boolean") return v;
   if (typeof v === "string") return v === "true";
-  const fromProcess = (process.env as Record<string, string | undefined>)[key];
+  const fromProcess = PROCESS_ENV[key];
   return typeof fromProcess === "string" ? fromProcess === "true" : false;
 };
 
 class Logger {
-  private isProduction = metaBool("PROD") || process.env.NODE_ENV === "production";
+  private isProduction = metaBool("PROD") || PROCESS_ENV.NODE_ENV === "production";
   private appVersion = metaString("VITE_APP_VERSION") || "unknown";
   private envName =
     metaString("VITE_APP_ENV") || (this.isProduction ? "production" : "development");
