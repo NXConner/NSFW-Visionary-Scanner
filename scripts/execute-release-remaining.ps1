@@ -141,12 +141,21 @@ function Ensure-EnvFile {
     if (-not (Test-Path $initScript)) {
         throw "init-release-env script not found: $initScript"
     }
+    $templateEnv = Join-Path $repoRoot "config/release/release.secrets.template.env"
 
     $distribution = if ($Environment -eq "production") { "store" } else { "direct" }
     if (-not (Test-Path $EnvFile)) {
-        Write-Host "  ℹ️  EnvFile not found; creating skeleton via scripts/init-release-env.ps1" -ForegroundColor Yellow
-        & pwsh -NoProfile -File $initScript -Environment $Environment -OutFile $EnvFile -AppVersion nsfw -DistributionChannel $distribution
-        if ($LASTEXITCODE -ne 0) { throw "Failed to create env file: $EnvFile" }
+        if (Test-Path $templateEnv) {
+            Write-Host "  ℹ️  EnvFile not found; copying template env and auto-filling derived keys" -ForegroundColor Yellow
+            Copy-Item -LiteralPath $templateEnv -Destination $EnvFile -Force
+            & pwsh -NoProfile -File $initScript -Environment $Environment -OutFile $EnvFile -Update -AppVersion nsfw -DistributionChannel $distribution
+            if ($LASTEXITCODE -ne 0) { throw "Failed to initialize env file from template: $EnvFile" }
+        }
+        else {
+            Write-Host "  ℹ️  EnvFile not found; creating skeleton via scripts/init-release-env.ps1" -ForegroundColor Yellow
+            & pwsh -NoProfile -File $initScript -Environment $Environment -OutFile $EnvFile -AppVersion nsfw -DistributionChannel $distribution
+            if ($LASTEXITCODE -ne 0) { throw "Failed to create env file: $EnvFile" }
+        }
     }
     else {
         # Non-destructive: fills derived/generated keys only; provider secrets remain unchanged.
