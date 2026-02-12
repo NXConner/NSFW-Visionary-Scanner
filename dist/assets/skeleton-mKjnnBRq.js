@@ -1,0 +1,1 @@
+import{j as r}from"./vendor-CTAiHvHh.js";import{n}from"./index-CpfXHthz.js";function a({className:e,premium:s=!1,glow:o=!1,...m}){return r.jsx("div",{className:n("rounded-md",s?"skeleton-premium":"skeleton-shimmer",o&&"pulse-glow",e),...m})}export{a as S};
