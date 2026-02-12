@@ -1,6 +1,6 @@
 # Phase 1 — Analysis & Strategic Roadmap (Repo Reality-Based)
 
-**Date**: 2025-12-24  
+**Date**: 2026-02-12  
 **Workspace**: `/workspace` (git repo)  
 **Canonical product identity found in repo**: **Visionary Scanner Suite** (MorphoScan Pro + NSFW Visionary Scanner)
 
@@ -96,6 +96,15 @@ Visionary Scanner Suite is a **privacy-first health tracking and “scanner” S
   - Replace or remove `example.com` and other placeholders from UI and tests.
   - Centralize “support/privacy/terms” URLs in a single config module to prevent drift.
 
+- **P0.6 Remove production mocks/stubs for real backend integrations**
+  - Replace the **client-side mock AI response** in `src/components/AIHealthChatbot.tsx` with a real call to the **`ai-health-chat`** Edge Function.
+  - Fix **client/server contract mismatches** for `ai-health-chat` (some callers send `{ message, context }` while the function expects `{ messages: [...] }` and streams SSE).
+  - Replace the **`VideoCaptureTab` mock sessions** with real `multi_camera_sessions` data and persist actual recordings to Storage/DB.
+
+- **P0.7 Align DB constraints with UI-supported options**
+  - `multi_camera_sessions.quality` constraint currently excludes `"2k"` while UI + recording utilities support `"2k"`.
+  - Add a forward migration to include `"2k"` and update type unions accordingly.
+
 ### P1 — Phase 8 polish (performance, bundle, accessibility)
 
 - **P1.1 Performance optimization**
@@ -134,6 +143,10 @@ These features exist; here’s their **max potential** state and what to do next
   - Max: resilient offline queue + conflict strategy + retry/backoff + clear UI states and error recovery.
   - Next: ensure all core CRUD flows have deterministic offline behavior and reconciling.
 
+- **Video tooling (recording + editing)**
+  - Max: thumbnails, previews, streaming-safe playback, client-side compression fallback, and reliable chunk merge pipeline.
+  - Next: implement real thumbnail generation and upgrade the current `compressVideo()` stub to a best-effort encoder with graceful fallback.
+
 ### P3 — Optional expansions (only after ship-safety)
 
 - **Admin platform improvements** (content import pipelines, audit trails, abuse prevention).
@@ -151,7 +164,11 @@ These features exist; here’s their **max potential** state and what to do next
 |       P0 | Configure push notifications (FCM/APNs) + verify on devices                  | Fix                                              | `docs/guides/integrations/notifications/FCM_SETUP.md`, Supabase secrets, `android/app/google-services.json` (local only), `ios/*` (local only)            |
 |       P0 | Run production QA checklist + fix failures                                   | Fix                                              | `docs/guides/testing/PRODUCTION_TESTING_GUIDE.md`, targeted `src/**` as issues found                                                                      |
 |       P0 | Android boot loader hang fix (Capacitor scheme + build sync)                 | Fix                                              | `capacitor.config.ts`, `docs/guides/build/MOBILE_BUILD_GUIDE.md`                                                                                          |
-|       P0 | Remove placeholder URLs (`example.com`) and centralize legal/support URLs    | Fix/Refactor                                     | `src/pages/Auth.tsx`, `src/components/payments/PaymentForm.tsx`, `src/components/APIWebhooks.tsx`, `src/__tests__/e2e/utils.ts`, new `src/config/urls.ts` |
+|       P0 | Remove placeholder URLs (`example.com`) and centralize legal/support URLs    | Fix/Refactor                                     | `src/components/partnerSync/dateNights/DateNightMediaSection.tsx`, tests containing `example.com`, new `src/config/urls.ts`                                |
+|       P0 | Replace AIHealthChatbot mock response with real Edge Function streaming      | Fix                                              | `src/components/AIHealthChatbot.tsx`, new `src/lib/edge/aiHealthChat.ts`, update `src/components/__tests__/AIHealthChatbot.test.tsx`                        |
+|       P0 | Fix `ai-health-chat` contract mismatch across callers                        | Fix/Refactor                                     | `src/lib/liveSupportChat.ts`, any callers using `supabase.functions.invoke("ai-health-chat")`                                                             |
+|       P0 | Replace VideoCaptureTab `mockSessions` with real `multi_camera_sessions`     | Fix/Refactor                                     | `src/components/videoCapture/VideoCaptureTab.tsx`, `src/lib/nsfwAdvancedFeatures/multiCamera.ts`, shared session helpers                                   |
+|       P0 | Add `"2k"` support to `multi_camera_sessions.quality` constraint + types     | Fix                                              | new migration under `supabase/migrations/`, `src/lib/nsfwAdvancedFeatures/types.ts`                                                                        |
 |       P1 | Accessibility audit + fixes on primary flows                                 | Fix                                              | `src/components/**`, `src/pages/**`, `eslint.config.js` (rules tuning only if needed)                                                                     |
 |       P1 | Performance + bundle optimization pass (verify lazy boundaries)              | Refactor                                         | `src/pages/indexLazyTabs.ts`, heavy feature modules, `vite.config.ts`                                                                                     |
 |       P2 | Social login (Google/Apple) via Supabase OAuth                               | New-Feature                                      | `src/pages/Auth.tsx`, `src/pages/AuthCallback.tsx`, `src/contexts/AuthContext.tsx`, docs update                                                           |
@@ -168,5 +185,7 @@ These features exist; here’s their **max potential** state and what to do next
 2. **P0: Push secrets + device verification**
 3. **P0: Execute production QA checklist**
 4. **P0: Fix placeholder URLs / centralize outbound links**
-5. **P1: Accessibility audit + performance/bundle pass**
-6. **(Optional) DLC hardening** per `docs/archive/nsfw/NSFW_DLC_REMAINING_WORK.md`
+5. **P0: Replace production mocks/stubs (AI chatbot + video capture sessions)**
+6. **P0: Align DB constraints/types (multi-camera quality = include 2k)**
+7. **P1: Accessibility audit + performance/bundle pass**
+8. **(Optional) DLC hardening** per `docs/archive/nsfw/NSFW_DLC_REMAINING_WORK.md`
