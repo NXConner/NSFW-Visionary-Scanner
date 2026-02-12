@@ -105,7 +105,11 @@ function Is-SupabasePublishableKeyValue {
 
 function Find-DotEnvKeyIndex {
     param(
-        [Parameter(Mandatory)][string[]]$Lines,
+        # A dotenv file commonly contains blank lines; allow empty-string elements.
+        [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
+        [AllowEmptyString()]
+        [string[]]$Lines,
         [Parameter(Mandatory)][string]$Key
     )
     $pattern = "^\s*{0}\s*=" -f [regex]::Escape($Key)
@@ -121,7 +125,11 @@ function Find-DotEnvKeyIndex {
 
 function Upsert-DotEnvKey {
     param(
-        [Parameter(Mandatory)][string[]]$Lines,
+        # Preserve blank lines in-place (common in env templates).
+        [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
+        [AllowEmptyString()]
+        [string[]]$Lines,
         [Parameter(Mandatory)][string]$Key,
         [Parameter(Mandatory)][string]$Value,
         [switch]$OnlyIfMissing
@@ -137,7 +145,11 @@ function Upsert-DotEnvKey {
 
 function Insert-LinesAfterMarker {
     param(
-        [Parameter(Mandatory)][string[]]$Lines,
+        # Preserve blank lines; insertion operates on the raw line array.
+        [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
+        [AllowEmptyString()]
+        [string[]]$Lines,
         [Parameter(Mandatory)][string]$MarkerRegex,
         [Parameter(Mandatory)][string[]]$InsertLines
     )

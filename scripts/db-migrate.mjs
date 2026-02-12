@@ -13,7 +13,8 @@ const repoRoot = path.resolve(__dirname, "..");
 const mode = parseMode(process.argv.slice(2));
 const flags = parseFlags(process.argv.slice(2));
 
-dotenv.config({ path: path.join(repoRoot, ".env") });
+// Avoid noisy dotenv tips in CI logs (values are still loaded when present).
+dotenv.config({ path: path.join(repoRoot, ".env"), quiet: true });
 
 function parseMode(args) {
   const modeArg = args.find(arg => arg.startsWith("--mode="));
@@ -125,6 +126,24 @@ function readProjectRefFromConfig() {
   return match?.[1]?.trim() ?? "";
 }
 
+function readLinkedPoolerHost() {
+  // Supabase CLI writes a project-specific pooler URL when linked:
+  //   supabase/.temp/pooler-url
+  // Example:
+  //   postgresql://postgres.<ref>@aws-1-us-east-1.pooler.supabase.com:5432/postgres
+  const poolerUrlPath = path.join(repoRoot, "supabase", ".temp", "pooler-url");
+  if (!fs.existsSync(poolerUrlPath)) return "";
+  const raw = String(fs.readFileSync(poolerUrlPath, "utf8") || "").trim();
+  if (!raw) return "";
+  try {
+    return new URL(raw).hostname || "";
+  } catch {
+    // Fallback: best-effort parse for non-standard URL formats.
+    const m = raw.match(/@([^:/\s]+)(?::\d+)?\//);
+    return m?.[1]?.trim() ?? "";
+  }
+}
+
 function resolveProjectRef() {
   return (
     flags.projectRef ||
@@ -196,6 +215,30 @@ function runRemoteMigration() {
       // We only do this when it looks like an IPv6 routing issue or the pooler tenant is not found
       // (wrong region), to avoid noisy retries for bad passwords.
       if (isNetworkUnreachable(result.output) || isTenantOrUserNotFound(result.output)) {
+        // Fast-path: if the Supabase CLI is linked, it already knows the correct pooler host.
+        // Try that first to avoid a full region scan (which can take ~1 minute in CI).
+        const linkedPoolerHost =
+          firstSetEnv(["SUPABASE_POOLER_HOST", "SUPABASE_POOLER_HOSTNAME"]) || readLinkedPoolerHost();
+        if (linkedPoolerHost) {
+          for (const port of [6543, 5432]) {
+            const poolerDbUrl = buildPoolerDbUrlFromPassword({
+              projectRef,
+              password,
+              poolerHost: linkedPoolerHost,
+              port,
+            });
+            const attempt = runSupabase(
+              ["db", "push", "--db-url", poolerDbUrl, ...dryRunArgs, "--yes", "--include-all"],
+              flags.dryRun
+                ? `Previewing migrations via linked pooler ${linkedPoolerHost}:${port} (dry-run)...`
+                : `Retrying via linked pooler ${linkedPoolerHost}:${port}...`,
+            );
+            if (attempt.ok) {
+              return attempt;
+            }
+          }
+        }
+
         const poolerRegions = [
           // AWS regions Supabase commonly offers (ordered roughly by adoption).
           "us-east-1",

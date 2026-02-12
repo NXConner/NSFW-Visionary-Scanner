@@ -1,0 +1,14 @@
+-- Legacy placeholder migration (SQL) for Supabase CLI compatibility.
+--
+-- Background:
+-- This repo previously contained a node-pg-migrate JavaScript migration at this version
+-- (`20251204140000_init_core.js`). Supabase CLI expects migrations to be SQL files
+-- named `<timestamp>_name.sql`. The JS migration was redundant with earlier SQL migrations
+-- and caused `supabase db push` to warn/skip it.
+--
+-- Action:
+-- - The legacy JS migration has been archived under `deleted files/` for reference.
+-- - This SQL placeholder preserves the migration version so local/remote histories align.
+--
+-- Intentionally left blank.
+

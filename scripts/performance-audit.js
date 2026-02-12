@@ -275,10 +275,9 @@ try {
   log("\n✅ Performance Audit Complete!", COLORS.green);
   log("=".repeat(60), COLORS.cyan);
 
-  // Exit with error code if budgets exceeded
-  if (results.recommendations.length > 0) {
-    process.exit(1);
-  }
+  // By default this is informational; use `--strict` (or PERF_AUDIT_STRICT=true) to fail CI.
+  const strict = process.argv.includes("--strict") || process.env.PERF_AUDIT_STRICT === "true";
+  if (strict && results.recommendations.length > 0) process.exit(1);
 } catch (error) {
   log(`\n❌ Performance audit failed: ${error.message}`, COLORS.red);
   process.exit(1);

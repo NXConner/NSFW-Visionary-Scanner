@@ -33,3 +33,6 @@ android/app/release.keystore
 # Local archive workspace (do not commit temporary platform snapshots)
 deleted files/
 deleted files/no-longer-needed/ios-archive-2026-02-12/
+
+# Supabase CLI temporary state
+supabase/.temp/

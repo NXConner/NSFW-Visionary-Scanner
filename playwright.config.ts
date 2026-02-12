@@ -52,7 +52,7 @@ export default defineConfig({
 
   webServer: startServer
     ? {
-        command: `npm run dev -- --host ${serverHost} --port ${serverPort}`,
+        command: `npx cross-env VITE_E2E=1 VITE_DISTRIBUTION_CHANNEL=direct npm run dev -- --host ${serverHost} --port ${serverPort}`,
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 180_000,

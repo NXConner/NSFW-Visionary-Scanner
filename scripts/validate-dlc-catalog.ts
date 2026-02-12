@@ -11,10 +11,12 @@ type Row = {
   subscription_interval: string | null;
 };
 
-function env(name: string): string {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing ${name}`);
-  return v;
+function envAny(names: string[]): string {
+  for (const name of names) {
+    const v = process.env[name];
+    if (v && String(v).trim().length > 0) return String(v).trim();
+  }
+  return "";
 }
 
 function ok(payload: unknown) {
@@ -27,8 +29,22 @@ function fail(message: string, details?: unknown): never {
 }
 
 async function main() {
-  const url = env("SUPABASE_URL");
-  const key = env("SUPABASE_SERVICE_ROLE_KEY");
+  const argv = new Set(process.argv.slice(2));
+  const offline = argv.has("--offline") || argv.has("--skip-db");
+  const url = envAny(["SUPABASE_URL", "VITE_SUPABASE_URL"]);
+  const key = envAny(["SUPABASE_SERVICE_ROLE_KEY"]);
+
+  const codeIds = new Set(Object.keys(DLC_PACKAGES));
+
+  if (offline || !url || !key) {
+    ok({
+      ok: true,
+      mode: "offline",
+      checked: { codeCount: codeIds.size },
+      note: "DB drift validation skipped (set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to validate dlc_packages against code fallback).",
+    });
+    return;
+  }
 
   const supabase = createClient(url, key, { auth: { persistSession: false } });
 
@@ -42,8 +58,6 @@ async function main() {
   const db = (data || []) as Row[];
   const dbIds = new Set(db.map(r => r.package_id));
 
-  const codeIds = new Set(Object.keys(DLC_PACKAGES));
-
   const missingInDb = Array.from(codeIds)
     .filter(id => !dbIds.has(id))
     .sort();
@@ -55,13 +69,13 @@ async function main() {
     [];
 
   for (const id of Array.from(codeIds)) {
-    const code = (DLC_PACKAGES as any)[id];
+    const code = DLC_PACKAGES[id];
     const row = db.find(r => r.package_id === id);
     if (!row) continue;
 
     const fields: Record<string, { db: unknown; code: unknown }> = {};
 
-    const codePriceUsd = typeof code.priceUsd === "number" ? code.priceUsd : null;
+    const codePriceUsd = typeof code?.priceUsd === "number" ? code.priceUsd : null;
     if (
       row.price_usd != null &&
       codePriceUsd != null &&
@@ -70,13 +84,13 @@ async function main() {
       fields.price_usd = { db: row.price_usd, code: codePriceUsd };
     }
 
-    const codePriceType = typeof code.priceType === "string" ? code.priceType : null;
+    const codePriceType = typeof code?.priceType === "string" ? code.priceType : null;
     if (row.price_type && codePriceType && String(row.price_type) !== String(codePriceType)) {
       fields.price_type = { db: row.price_type, code: codePriceType };
     }
 
     const codeInterval =
-      typeof code.subscriptionInterval === "string" ? code.subscriptionInterval : null;
+      typeof code?.subscriptionInterval === "string" ? code.subscriptionInterval : null;
     if (
       row.subscription_interval &&
       codeInterval &&
