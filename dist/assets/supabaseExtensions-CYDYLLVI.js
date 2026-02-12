@@ -1,1 +1,0 @@
-import{s as o}from"./index-CwaZM40H.js";import"./vendor-WJPLsidm.js";import"./vendor-ui-BySrtRp-.js";import"./vendor-3d-BED6UO4r.js";import"./vendor-supabase-Ct9AlHTM.js";import"./vendor-stripe-CTPV_1UD.js";import"./vendor-motion-CCbY7wLq.js";function s(r){return o.from(r)}export{s as fromExtended};

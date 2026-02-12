@@ -1,1 +1,0 @@
-import{j as r}from"./vendor-BOulUSP9.js";import{m as t}from"./index-Cg6Z8S-N.js";function a({className:e,premium:s=!1,glow:m=!1,...o}){return r.jsx("div",{className:t("rounded-md",s?"skeleton-premium":"skeleton-shimmer",m&&"pulse-glow",e),...o})}export{a as S};
