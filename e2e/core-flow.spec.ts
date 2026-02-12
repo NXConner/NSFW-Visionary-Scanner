@@ -17,22 +17,25 @@ test.describe("Core navigation flow (smoke)", () => {
     await waitForAppReady(page);
     await expect(page).toHaveTitle(/MorphoScan Pro/);
 
-    // Navigate to Profile tab (without requiring real auth) via the in-app navigation event
+    // Navigate to Profile hub (without requiring real auth) via the in-app navigation event.
+    // Avoid relying on the nested ProfileSection header ("Your Profile") which can lazy-load slowly.
     await page.evaluate(() => {
       window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "profile" }));
     });
-    await expect(page.getByText("Your Profile")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^Profile$/i })).toBeVisible({ timeout: 15_000 });
 
     const isMobile = testInfo.project.name.toLowerCase().includes("mobile");
     if (!isMobile) {
-      // Open Settings within Profile
-      const profileSection = page
-        .getByRole("heading", { name: /your profile/i })
-        .locator("xpath=ancestor::section[1]");
-      const settingsTab = profileSection.getByRole("tab", { name: "Settings" });
+      // Open Settings within the Profile hub tablist (not the nested ProfileSection tablist).
+      const hubTabList = page
+        .getByRole("tab", { name: "Account" })
+        .locator('xpath=ancestor::*[@role="tablist"][1]');
+      const settingsTab = hubTabList.getByRole("tab", { name: "Settings" });
       await settingsTab.scrollIntoViewIfNeeded();
       await settingsTab.click({ force: true });
-      await expect(page.getByText("Appearance", { exact: true }).first()).toBeVisible();
+      await expect(page.getByText("Appearance", { exact: true }).first()).toBeVisible({
+        timeout: 15_000,
+      });
       await expect(page.getByText("Theme", { exact: true })).toBeVisible();
       await expect(page.getByText("Push Notifications", { exact: true })).toBeVisible();
       await expect(page.getByRole("heading", { name: "Linked Accounts" })).toBeVisible();
@@ -44,10 +47,10 @@ test.describe("Core navigation flow (smoke)", () => {
       await expect(page.getByRole("button", { name: /Edit Profile/i })).toBeVisible();
     }
 
-    // Navigate to Scanner tab and verify scanner UI is present
-    await page.evaluate(() => {
-      window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "scanner" }));
+    // Navigate to Scanner tab via the primary sidebar menu (real UI path).
+    await page.getByRole("button", { name: /^Scan$/ }).click();
+    await expect(page.getByRole("button", { name: "Start Camera" })).toBeVisible({
+      timeout: 15_000,
     });
-    await expect(page.getByRole("button", { name: "Start Camera" })).toBeVisible();
   });
 });

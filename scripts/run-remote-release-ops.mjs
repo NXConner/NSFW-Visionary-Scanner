@@ -30,6 +30,7 @@ function parseArgs(argv) {
     apply: has("--apply"),
     typesCheck: has("--types-check"),
     skipDryRun: has("--skip-dry-run"),
+    storageAudit: has("--storage-audit"),
   };
 }
 
@@ -113,9 +114,19 @@ function main() {
     run(process.execPath, typeArgs, "Verifying remote schema/types alignment...");
   }
 
-  console.log(
-    "\n[release-ops] Next step: run docs/security/rls/RLS_STORAGE_AUDIT_QUERIES.sql in Supabase SQL editor.",
-  );
+  if (args.storageAudit) {
+    run(
+      process.execPath,
+      ["scripts/run-sql-file.mjs", "docs/security/rls/RLS_STORAGE_AUDIT_QUERIES.sql"],
+      "Running RLS/storage audit queries...",
+    );
+    console.log("\n[release-ops] Storage/RLS audit complete. Review output above.");
+  } else {
+    console.log(
+      "\n[release-ops] Next step: run docs/security/rls/RLS_STORAGE_AUDIT_QUERIES.sql in Supabase SQL editor.",
+    );
+    console.log("[release-ops] Tip: pass --storage-audit to run it automatically.");
+  }
   console.log("[release-ops] Completed.");
 }
 
