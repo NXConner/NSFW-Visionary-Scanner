@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, ClipboardCopy, RefreshCw, Save, Trash2, X } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ClipboardCopy,
+  RefreshCw,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -9,7 +17,10 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { isNative } from "@/lib/capacitor";
 import { markAppInteractiveAndHideStaticLoader } from "@/lib/boot/staticLoader";
-import { checkSupabaseApiKeyValid, type SupabaseApiKeyCheckResult } from "@/integrations/supabase/apiKeyCheck";
+import {
+  checkSupabaseApiKeyValid,
+  type SupabaseApiKeyCheckResult,
+} from "@/integrations/supabase/apiKeyCheck";
 import {
   clearSupabaseRuntimeOverride,
   readSupabaseRuntimeOverride,
@@ -52,7 +63,6 @@ export function SupabaseApiKeyFixer(): React.ReactElement | null {
     Boolean(import.meta.env.VITEST) ||
     import.meta.env.MODE === "test" ||
     String(import.meta.env.VITE_E2E || "") === "1";
-  if (bypassForTests) return null;
 
   const nativeRuntime = useMemo(() => {
     try {
@@ -68,12 +78,14 @@ export function SupabaseApiKeyFixer(): React.ReactElement | null {
   const [check, setCheck] = useState<CheckState>("idle");
 
   useEffect(() => {
+    if (bypassForTests) return;
     const onInvalid = () => setOpen(true);
     window.addEventListener(SUPABASE_INVALID_API_KEY_EVENT, onInvalid);
     return () => window.removeEventListener(SUPABASE_INVALID_API_KEY_EVENT, onInvalid);
-  }, []);
+  }, [bypassForTests]);
 
   useEffect(() => {
+    if (bypassForTests) return;
     if (!open) return;
     markAppInteractiveAndHideStaticLoader();
 
@@ -81,9 +93,10 @@ export function SupabaseApiKeyFixer(): React.ReactElement | null {
     setUrl(override.url || supabasePublicConfig.url || "");
     setKey(override.publishableKey || supabasePublicConfig.publishableKey || "");
     setCheck("idle");
-  }, [open]);
+  }, [bypassForTests, open]);
 
   useEffect(() => {
+    if (bypassForTests) return;
     // Only auto-check on native (Android/iOS). Web environments can fix via .env.
     if (!nativeRuntime) return;
 
@@ -113,7 +126,10 @@ export function SupabaseApiKeyFixer(): React.ReactElement | null {
       .catch(() => {
         // ignore
       });
-  }, [nativeRuntime]);
+  }, [bypassForTests, nativeRuntime]);
+
+  // After hooks are registered, allow test environments to bypass all behavior.
+  if (bypassForTests) return null;
 
   if (!open) return null;
 
@@ -166,8 +182,7 @@ export function SupabaseApiKeyFixer(): React.ReactElement | null {
   const handleCopy = async () => {
     try {
       const text =
-        `VITE_SUPABASE_URL=${currentUrl}\n` +
-        `VITE_SUPABASE_PUBLISHABLE_KEY=${currentKey}\n`;
+        `VITE_SUPABASE_URL=${currentUrl}\n` + `VITE_SUPABASE_PUBLISHABLE_KEY=${currentKey}\n`;
       await navigator.clipboard.writeText(text);
       toast.success("Copied Supabase config");
     } catch {
@@ -192,7 +207,8 @@ export function SupabaseApiKeyFixer(): React.ReactElement | null {
               <div>
                 <CardTitle className="text-xl">Supabase key required</CardTitle>
                 <div className="text-sm text-muted-foreground">
-                  Sign-in requires a valid Supabase <span className="font-medium">public</span> API key.
+                  Sign-in requires a valid Supabase <span className="font-medium">public</span> API
+                  key.
                 </div>
               </div>
             </div>
@@ -219,8 +235,8 @@ export function SupabaseApiKeyFixer(): React.ReactElement | null {
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Secret key detected</AlertTitle>
               <AlertDescription>
-                You pasted a <span className="font-mono">sb_secret_</span> key. That must never be used
-                in the app. Paste the publishable key instead.
+                You pasted a <span className="font-mono">sb_secret_</span> key. That must never be
+                used in the app. Paste the publishable key instead.
               </AlertDescription>
             </Alert>
           ) : null}
@@ -253,18 +269,34 @@ export function SupabaseApiKeyFixer(): React.ReactElement | null {
                 autoCorrect="off"
               />
               {currentKey ? (
-                <div className="text-xs text-muted-foreground">Current: {redactSupabaseKey(currentKey)}</div>
+                <div className="text-xs text-muted-foreground">
+                  Current: {redactSupabaseKey(currentKey)}
+                </div>
               ) : null}
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2">
-            <Button variant="outline" className="gap-2" onClick={handleCopy} disabled={!currentUrl || !currentKey}>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleCopy}
+              disabled={!currentUrl || !currentKey}
+            >
               <ClipboardCopy className="w-4 h-4" />
               Copy
             </Button>
-            <Button variant="outline" className="gap-2" onClick={handleTest} disabled={check === "checking"}>
-              {check === "valid" ? <CheckCircle2 className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleTest}
+              disabled={check === "checking"}
+            >
+              {check === "valid" ? (
+                <CheckCircle2 className="w-4 h-4" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
               {check === "checking" ? "Testing…" : check === "valid" ? "Valid" : "Test key"}
             </Button>
             <Button className="gap-2" onClick={handleSaveAndReload}>
@@ -281,4 +313,3 @@ export function SupabaseApiKeyFixer(): React.ReactElement | null {
     </div>
   );
 }
-
