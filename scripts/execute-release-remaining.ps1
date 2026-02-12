@@ -236,7 +236,7 @@ Invoke-Step -Name "Dispatch manual deploy workflow" -Skip:(-not $TriggerManualDe
     param($err)
     $msg = ($err.Exception.Message ?? "")
     if ($msg -match "HTTP 403" -or $msg -match "Resource not accessible by integration") {
-        return "GitHub token cannot dispatch workflows (HTTP 403). Re-run locally with a PAT that has repo/actions permissions, or dispatch from GitHub UI."
+        return "GitHub token cannot dispatch workflows (HTTP 403). Re-run with a PAT that has 'repo' + 'workflow' scopes (set `$env:GH_TOKEN), or dispatch from GitHub UI."
     }
     return ""
 } -Action {
@@ -249,13 +249,19 @@ Invoke-Step -Name "Dispatch manual deploy workflow" -Skip:(-not $TriggerManualDe
     $deployEdgeFunctions = if ($SkipEdgeFunctions) { "false" } else { "true" }
     $deployApp = if ($SkipAppDeploy) { "false" } else { "true" }
 
-    $ghOut = & gh workflow run "manual-deploy.yml" `
-        -f "environment=$Environment" `
-        -f "ref=$resolvedRef" `
-        -f "migrations_dry_run=true" `
-        -f "run_migrations=$runMigrations" `
-        -f "deploy_edge_functions=$deployEdgeFunctions" `
-        -f "deploy_app=$deployApp" 2>&1
+    $ghArgs = @(
+        "workflow", "run", "manual-deploy.yml",
+        "-f", "environment=$Environment",
+        "-f", "ref=$resolvedRef",
+        "-f", "migrations_dry_run=true",
+        "-f", "run_migrations=$runMigrations",
+        "-f", "deploy_edge_functions=$deployEdgeFunctions",
+        "-f", "deploy_app=$deployApp"
+    )
+    if (-not [string]::IsNullOrWhiteSpace($Repo)) {
+        $ghArgs += @("--repo", $Repo)
+    }
+    $ghOut = & gh @ghArgs 2>&1
 
     if ($ghOut) { $ghOut | ForEach-Object { Write-Host $_ } }
 

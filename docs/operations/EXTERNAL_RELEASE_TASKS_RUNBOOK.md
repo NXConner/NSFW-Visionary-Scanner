@@ -264,6 +264,26 @@ For the manual deployment workflow (`.github/workflows/manual-deploy.yml`), set 
 - `SUPABASE_PROJECT_REF`
 - `SUPABASE_ACCESS_TOKEN`
 
+### Workflow dispatch 403 troubleshooting (manual deploy)
+
+If `gh workflow run manual-deploy.yml ...` fails with:
+
+- `HTTP 403: Resource not accessible by integration`
+
+Then the token used by `gh` cannot dispatch workflows.
+
+Fix options:
+
+1. **Preferred:** run locally with a PAT that has **`repo` + `workflow`** scopes
+   - PowerShell:
+     ```powershell
+     $env:GH_TOKEN = "<your-pat>"
+     gh auth status
+     gh workflow run manual-deploy.yml --repo OWNER/REPO -f environment=staging -f ref=main
+     ```
+2. Dispatch from GitHub UI:
+   - Actions → **Manual Deploy (staging/production)** → Run workflow
+
 ### 4.2 Rollback (application)
 
 Recommended rollback strategy:
