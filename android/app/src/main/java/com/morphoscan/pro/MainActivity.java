@@ -11,6 +11,15 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Enable Chrome devtools inspection for debug builds.
+        // This is critical for diagnosing "blank WebView" issues on real devices.
+        try {
+            if (BuildConfig.DEBUG) {
+                WebView.setWebContentsDebuggingEnabled(true);
+            }
+        } catch (Throwable ignored) {
+            // ignore
+        }
         configureWebViewForDeviceCompatibility();
     }
 
