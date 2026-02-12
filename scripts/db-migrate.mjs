@@ -139,8 +139,9 @@ function buildDirectDbUrlFromPassword({ projectRef, password }) {
   return url.toString();
 }
 
-function buildPoolerDbUrlFromPassword({ projectRef, password, poolerHost }) {
-  const url = new URL(`postgresql://postgres@${poolerHost}:6543/postgres`);
+function buildPoolerDbUrlFromPassword({ projectRef, password, poolerHost, port }) {
+  const poolerPort = Number(port) || 6543;
+  const url = new URL(`postgresql://postgres@${poolerHost}:${poolerPort}/postgres`);
   // For pooler connections, the tenant is encoded in the username.
   // Supabase format: <db_user>.<project_ref> (e.g. postgres.<ref>)
   url.username = `postgres.${projectRef}`;
@@ -228,37 +229,46 @@ function runRemoteMigration() {
         );
 
         for (const poolerHost of poolerHosts) {
-          const poolerDbUrl = buildPoolerDbUrlFromPassword({
-            projectRef,
-            password,
-            poolerHost,
-          });
+          // Supabase shows two poolers in the dashboard:
+          // - Transaction pooler (port 6543)
+          // - Session pooler (port 5432)
+          // Different projects / network environments may only allow one reliably.
+          for (const port of [6543, 5432]) {
+            const poolerDbUrl = buildPoolerDbUrlFromPassword({
+              projectRef,
+              password,
+              poolerHost,
+              port,
+            });
 
-          const attempt = runSupabase(
-            ["db", "push", "--db-url", poolerDbUrl, ...dryRunArgs, "--yes", "--include-all"],
-            flags.dryRun
-              ? `Previewing migrations via pooler host ${poolerHost} (dry-run)...`
-              : `Retrying via pooler host ${poolerHost}...`,
-          );
+            const attempt = runSupabase(
+              ["db", "push", "--db-url", poolerDbUrl, ...dryRunArgs, "--yes", "--include-all"],
+              flags.dryRun
+                ? `Previewing migrations via pooler host ${poolerHost}:${port} (dry-run)...`
+                : `Retrying via pooler host ${poolerHost}:${port}...`,
+            );
 
-          if (attempt.ok) {
-            return attempt;
+            if (attempt.ok) {
+              return attempt;
+            }
+
+            // Keep scanning for wrong-region and common connectivity/DNS issues.
+            // Break early only for errors that likely indicate a real credentials problem.
+            const out = (attempt.output ?? "").toLowerCase();
+            const isDnsError =
+              out.includes("no such host") || out.includes("hostname resolving error");
+            const isConnectivityError = isNetworkUnreachable(out) || out.includes("dial error");
+            const isWrongRegion = isTenantOrUserNotFound(out);
+
+            if (isWrongRegion || isDnsError || isConnectivityError) {
+              // For tenant-not-found, it may be wrong region OR wrong pooler port.
+              // Try the other port for the same host before moving on.
+              continue;
+            }
+
+            // Example of a hard error where further scanning won't help (password wrong, etc.)
+            break;
           }
-
-          // Keep scanning for wrong-region and common connectivity/DNS issues.
-          // Break early only for errors that likely indicate a real credentials problem.
-          const out = (attempt.output ?? "").toLowerCase();
-          const isDnsError =
-            out.includes("no such host") || out.includes("hostname resolving error");
-          const isConnectivityError = isNetworkUnreachable(out) || out.includes("dial error");
-          const isWrongRegion = isTenantOrUserNotFound(out);
-
-          if (isWrongRegion || isDnsError || isConnectivityError) {
-            continue;
-          }
-
-          // Example of a hard error where further scanning won't help (password wrong, etc.)
-          break;
         }
       }
     }
