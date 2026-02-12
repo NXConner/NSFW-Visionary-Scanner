@@ -7,12 +7,13 @@
   - In -Update mode, preserves any existing keys/values already in the file and
     only adds/fills missing derived/generated keys (so provider-issued secrets you
     paste manually are not lost).
-  - Attempts to recover the Supabase anon key (JWT) from archived build artifacts
-    or git history, validating that it matches the repo's supabase/config.toml project_id.
+  - Attempts to recover a legacy Supabase anon key (JWT) from archived build artifacts
+    or git history when no key is provided; also supports modern sb_publishable_* keys.
   - Generates internal secrets that can safely be created locally (salt/keyring/retention).
 
   Usage:
     pwsh -File scripts/init-release-env.ps1 -Environment staging
+    pwsh -File scripts/init-release-env.ps1 -Environment staging -ProjectRef <ref> -SupabasePublishableKey <sb_publishable_or_anon_key>
 
   Notes:
     Provider-issued secrets (Stripe, Firebase, APNS, Supabase access token, DB credentials)
@@ -24,6 +25,8 @@ param(
     [ValidateSet("staging", "production")]
     [string]$Environment = "staging",
 
+    [string]$ProjectRef = "",
+
     [ValidateSet("sfw", "nsfw", "hybrid")]
     [string]$AppVersion = "nsfw",
 
@@ -31,6 +34,8 @@ param(
     [string]$DistributionChannel = "direct",
 
     [string]$OutFile = "",
+
+    [string]$SupabasePublishableKey = "",
 
     [switch]$Update,
 
@@ -89,6 +94,13 @@ function Is-PlaceholderValue {
         $lower -eq "sk_test_replace_me" -or
         $lower -eq "whsec_replace_me"
     )
+}
+
+function Is-SupabasePublishableKeyValue {
+    param([string]$Value)
+    $t = ($Value ?? "").Trim()
+    if ([string]::IsNullOrWhiteSpace($t)) { return $false }
+    return $t.StartsWith("sb_publishable_")
 }
 
 function Find-DotEnvKeyIndex {
@@ -264,7 +276,7 @@ function New-RandomBase64 {
     return [Convert]::ToBase64String((New-RandomBytes -Count $Bytes))
 }
 
-$projectRef = Get-SupabaseProjectRef
+$projectRef = if (-not [string]::IsNullOrWhiteSpace($ProjectRef)) { $ProjectRef.Trim() } else { Get-SupabaseProjectRef }
 $supabaseUrl = "https://$projectRef.supabase.co"
 
 $deployEnableKey = if ($Environment -eq "staging") { "STAGING_DEPLOY_ENABLED" } else { "PRODUCTION_DEPLOY_ENABLED" }
@@ -307,18 +319,24 @@ $existingAnon = ""
 if ($existing.ContainsKey("VITE_SUPABASE_PUBLISHABLE_KEY")) { $existingAnon = [string]$existing["VITE_SUPABASE_PUBLISHABLE_KEY"] }
 elseif ($existing.ContainsKey("SUPABASE_ANON_KEY")) { $existingAnon = [string]$existing["SUPABASE_ANON_KEY"] }
 
-$anonKey = ""
-if (-not [string]::IsNullOrWhiteSpace($existingAnon)) {
-    $payload = Try-DecodeJwtPayload -Jwt $existingAnon
-    if ($null -ne $payload -and $payload.iss -eq "supabase" -and $payload.ref -eq $projectRef -and $payload.role -eq "anon") {
+$anonKey = if (-not [string]::IsNullOrWhiteSpace($SupabasePublishableKey)) { $SupabasePublishableKey.Trim() } else { "" }
+if ([string]::IsNullOrWhiteSpace($anonKey) -and -not [string]::IsNullOrWhiteSpace($existingAnon)) {
+    # Support both legacy JWT anon keys and modern sb_publishable_* keys.
+    if (Is-SupabasePublishableKeyValue -Value $existingAnon) {
         $anonKey = $existingAnon
+    }
+    else {
+        $payload = Try-DecodeJwtPayload -Jwt $existingAnon
+        if ($null -ne $payload -and $payload.iss -eq "supabase" -and $payload.ref -eq $projectRef -and $payload.role -eq "anon") {
+            $anonKey = $existingAnon
+        }
     }
 }
 if ([string]::IsNullOrWhiteSpace($anonKey)) {
     $anonKey = Find-SupabaseAnonKey -ProjectRef $projectRef
 }
 if ([string]::IsNullOrWhiteSpace($anonKey)) {
-    throw "Unable to recover Supabase anon key for project_ref=$projectRef from archived bundles or git history."
+    throw "Unable to determine Supabase publishable key for project_ref=$projectRef. Provide -SupabasePublishableKey from Supabase Dashboard > Project Settings > API."
 }
 
 # Generate internal secrets we can safely create locally.
@@ -464,7 +482,7 @@ if ($Update -and (Test-Path -LiteralPath $outPath) -and -not [string]::IsNullOrW
 
     Write-Host "[init-release-env] Updated $resolvedOutFile (preserved existing provider secrets)" -ForegroundColor Green
     Write-Host "[init-release-env] Supabase ref detected: $projectRef" -ForegroundColor DarkGray
-    Write-Host "[init-release-env] Supabase anon key available (length: $($anonKey.Length))" -ForegroundColor DarkGray
+    Write-Host "[init-release-env] Supabase publishable key available (length: $($anonKey.Length))" -ForegroundColor DarkGray
     exit 0
 }
 
@@ -530,4 +548,4 @@ catch {
 
 Write-Host "[init-release-env] Created $resolvedOutFile" -ForegroundColor Green
 Write-Host "[init-release-env] Supabase ref detected: $projectRef" -ForegroundColor DarkGray
-Write-Host "[init-release-env] Supabase anon key recovered (length: $($anonKey.Length))" -ForegroundColor DarkGray
+Write-Host "[init-release-env] Supabase publishable key available (length: $($anonKey.Length))" -ForegroundColor DarkGray

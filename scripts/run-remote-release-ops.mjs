@@ -55,9 +55,8 @@ function loadEnvFile(envFilePath) {
   if (!fs.existsSync(resolved)) fail(`env file not found: ${resolved}`);
   const parsed = dotenv.parse(fs.readFileSync(resolved, "utf8"));
   for (const [key, value] of Object.entries(parsed)) {
-    if (!process.env[key] || process.env[key] === "") {
-      process.env[key] = String(value);
-    }
+    // Deterministic behavior: the explicitly provided env file is source-of-truth.
+    process.env[key] = String(value);
   }
   return resolved;
 }

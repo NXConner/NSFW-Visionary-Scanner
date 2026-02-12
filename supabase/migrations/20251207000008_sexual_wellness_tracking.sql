@@ -121,60 +121,73 @@ ALTER TABLE sexual_wellness_patterns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE partner_connections ENABLE ROW LEVEL SECURITY;
 
 -- Sexual wellness entries policies
+DROP POLICY IF EXISTS "Users can view their own sexual wellness entries" ON sexual_wellness_entries;
 CREATE POLICY "Users can view their own sexual wellness entries"
   ON sexual_wellness_entries FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own sexual wellness entries" ON sexual_wellness_entries;
 CREATE POLICY "Users can insert their own sexual wellness entries"
   ON sexual_wellness_entries FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own sexual wellness entries" ON sexual_wellness_entries;
 CREATE POLICY "Users can update their own sexual wellness entries"
   ON sexual_wellness_entries FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own sexual wellness entries" ON sexual_wellness_entries;
 CREATE POLICY "Users can delete their own sexual wellness entries"
   ON sexual_wellness_entries FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Sexual wellness goals policies
+DROP POLICY IF EXISTS "Users can view their own sexual wellness goals" ON sexual_wellness_goals;
 CREATE POLICY "Users can view their own sexual wellness goals"
   ON sexual_wellness_goals FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own sexual wellness goals" ON sexual_wellness_goals;
 CREATE POLICY "Users can insert their own sexual wellness goals"
   ON sexual_wellness_goals FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own sexual wellness goals" ON sexual_wellness_goals;
 CREATE POLICY "Users can update their own sexual wellness goals"
   ON sexual_wellness_goals FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own sexual wellness goals" ON sexual_wellness_goals;
 CREATE POLICY "Users can delete their own sexual wellness goals"
   ON sexual_wellness_goals FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Sexual wellness patterns policies
+DROP POLICY IF EXISTS "Users can view their own sexual wellness patterns" ON sexual_wellness_patterns;
 CREATE POLICY "Users can view their own sexual wellness patterns"
   ON sexual_wellness_patterns FOR SELECT
   USING (auth.uid() = user_id);
 
 -- Partner connections policies
+DROP POLICY IF EXISTS "Users can view their own partner connections" ON partner_connections;
 CREATE POLICY "Users can view their own partner connections"
   ON partner_connections FOR SELECT
   USING (auth.uid() = user_id OR auth.uid() = partner_user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own partner connections" ON partner_connections;
 CREATE POLICY "Users can insert their own partner connections"
   ON partner_connections FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own partner connections" ON partner_connections;
 CREATE POLICY "Users can update their own partner connections"
   ON partner_connections FOR UPDATE
   USING (auth.uid() = user_id OR auth.uid() = partner_user_id)
   WITH CHECK (auth.uid() = user_id OR auth.uid() = partner_user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own partner connections" ON partner_connections;
 CREATE POLICY "Users can delete their own partner connections"
   ON partner_connections FOR DELETE
   USING (auth.uid() = user_id OR auth.uid() = partner_user_id);
@@ -219,6 +232,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_sexual_wellness_score ON sexual_wellness_entries;
 CREATE TRIGGER trigger_update_sexual_wellness_score
   BEFORE INSERT OR UPDATE ON sexual_wellness_entries
   FOR EACH ROW
@@ -277,6 +291,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_sexual_wellness_goals ON sexual_wellness_entries;
 CREATE TRIGGER trigger_update_sexual_wellness_goals
   AFTER INSERT OR UPDATE ON sexual_wellness_entries
   FOR EACH ROW
