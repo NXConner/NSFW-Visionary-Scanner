@@ -119,6 +119,23 @@ After migrations are applied, run:
 
 - `docs/security/rls/RLS_STORAGE_AUDIT_QUERIES.sql`
 
+#### Optional (recommended): run via CLI script (no SQL editor)
+
+If you have a Postgres connection URL available (preferred: `SUPABASE_DB_URL`), you can run the audit queries from the repo:
+
+##### Bash
+
+```bash
+SUPABASE_DB_URL="postgresql://..." npm run db:audit:storage
+```
+
+##### PowerShell
+
+```powershell
+$env:SUPABASE_DB_URL = "postgresql://..."
+npm run db:audit:storage
+```
+
 Minimum expectations for production readiness:
 
 - Buckets `nsfw-content`, `recordings`, `screenshots`, `user-uploads` are `public = false`

@@ -1,5 +1,10 @@
--- RLS + Storage audit queries (run in Supabase SQL editor)
+-- RLS + Storage audit queries
 -- Goal: quickly validate production/staging after applying migrations.
+--
+-- Run:
+-- - Supabase SQL editor, OR
+-- - from the repo (recommended for automation):
+--     SUPABASE_DB_URL="postgresql://..." npm run db:audit:storage
 
 -- ====================
 -- 1) Storage bucket config sanity

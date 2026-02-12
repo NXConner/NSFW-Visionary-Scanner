@@ -48,3 +48,5 @@
 ### Quick audit queries
 
 - Run: `docs/security/rls/RLS_STORAGE_AUDIT_QUERIES.sql` in the Supabase SQL editor after applying migrations.
+- Optional: run from the repo (no SQL editor) with `SUPABASE_DB_URL`:
+  - `SUPABASE_DB_URL="postgresql://..." npm run db:audit:storage`
