@@ -222,6 +222,19 @@ export default defineConfig(({ mode }) => {
           // Manual chunks split heavy dependencies to reduce main bundle size.
           // Isolated by dependency tree to avoid cyclic cross-chunk imports.
           manualChunks: id => {
+            // IMPORTANT (Capacitor/Android):
+            // In embedded WebViews, overly aggressive vendor chunk splitting can create circular
+            // chunk import graphs (e.g. vendor <-> vendor-ui). That can surface as runtime errors
+            // like "Cannot read properties of undefined (reading 'forwardRef')" during boot,
+            // even when it doesn't reproduce in dev.
+            //
+            // For Capacitor builds, keep ALL node_modules code in a single vendor chunk to
+            // eliminate cross-vendor cycles and maximize startup reliability.
+            if (isCapacitorBuild) {
+              if (id.includes("node_modules")) return "vendor";
+              return;
+            }
+
             if (id.includes("node_modules")) {
               const isThree =
                 id.includes("/node_modules/three/") ||
