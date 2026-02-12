@@ -30,6 +30,17 @@ android/app/release.keystore
 **/*.jks
 **/*.keystore
 
+# Android build artifacts (generated)
+android/.gradle/
+android/**/build/
+android/**/.cxx/
+android/**/.externalNativeBuild/
+android/**/captures/
+android/local.properties
+
+# Local artifacts (debug outputs)
+artifacts/
+
 # Local archive workspace (do not commit temporary platform snapshots)
 deleted files/
 deleted files/no-longer-needed/ios-archive-2026-02-12/
