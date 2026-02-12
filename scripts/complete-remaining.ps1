@@ -73,6 +73,66 @@ function Run-Step {
     }
 }
 
+function Parse-DotEnvFile {
+    param([Parameter(Mandatory)][string]$Path)
+    $map = @{}
+    if (-not (Test-Path -LiteralPath $Path)) { return $map }
+    $content = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop
+    $lines = ($content ?? "") -split "\r?\n"
+    foreach ($line in $lines) {
+        $t = ($line ?? "").Trim()
+        if ([string]::IsNullOrWhiteSpace($t)) { continue }
+        if ($t.StartsWith("#")) { continue }
+        $idx = $t.IndexOf("=")
+        if ($idx -lt 1) { continue }
+        $key = $t.Substring(0, $idx).Trim()
+        $value = $t.Substring($idx + 1).Trim()
+        if (
+            ($value.StartsWith('"') -and $value.EndsWith('"')) -or
+            ($value.StartsWith("'") -and $value.EndsWith("'"))
+        ) {
+            $value = $value.Substring(1, $value.Length - 2)
+        }
+        if (-not [string]::IsNullOrWhiteSpace($key)) {
+            $map[$key] = $value
+        }
+    }
+    return $map
+}
+
+function Import-EnvVarsFromFileIfMissing {
+    param(
+        [Parameter(Mandatory)][string]$EnvFilePath,
+        [Parameter(Mandatory)][string[]]$Keys
+    )
+    if (-not (Test-Path -LiteralPath $EnvFilePath)) { return }
+    $parsed = Parse-DotEnvFile -Path $EnvFilePath
+    foreach ($k in $Keys) {
+        $current = [Environment]::GetEnvironmentVariable($k, "Process")
+        if (-not [string]::IsNullOrWhiteSpace($current)) { continue }
+        if (-not $parsed.ContainsKey($k)) { continue }
+        $v = [string]$parsed[$k]
+        if ([string]::IsNullOrWhiteSpace($v)) { continue }
+        [Environment]::SetEnvironmentVariable($k, $v, "Process")
+    }
+}
+
+function Import-ReleaseEnvIfAvailable {
+    param([Parameter(Mandatory)][string[]]$Keys)
+    $candidates = @()
+    if (-not [string]::IsNullOrWhiteSpace($ReleaseEnvFile)) { $candidates += $ReleaseEnvFile }
+    $candidates += ".env.$ReleaseEnvironment.local"
+    $candidates += ".env.staging.local"
+    $candidates += ".env.production.local"
+
+    foreach ($p in $candidates) {
+        if (Test-Path -LiteralPath $p) {
+            Import-EnvVarsFromFileIfMissing -EnvFilePath $p -Keys $Keys
+            return
+        }
+    }
+}
+
 # Dependencies
 if (-not $SkipInstall) {
     if (Test-Path "node_modules") {
@@ -104,6 +164,12 @@ if (-not $SkipSupabase) {
         Add-Result -Bucket "Manual" -Message "npx not found; install Node.js tooling to run Supabase checks"
         Write-Host "  ⚠️  npx not found (manual)" -ForegroundColor Yellow
     } else {
+        # If a release env file exists, use it to populate SUPABASE_* env vars for this session.
+        Import-ReleaseEnvIfAvailable -Keys @(
+            "SUPABASE_ACCESS_TOKEN",
+            "SUPABASE_PROJECT_REF"
+        )
+
         # db push (remote) requires credentials.
         if ($env:SUPABASE_ACCESS_TOKEN -and $env:SUPABASE_PROJECT_REF) {
             Run-Step -Name "supabase db push" -Action { npm run db:push } -Skip:$false
