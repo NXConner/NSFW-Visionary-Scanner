@@ -127,6 +127,14 @@ const hideLoader = () => {
 // period while the JS bundle is still parsing/initializing on first run.
 setTimeout(
   () => {
+    // Only force-hide if the app actually reached an interactive state; otherwise keep the
+    // loader visible so the index.html boot watchdog can surface diagnostics instead of
+    // reverting to a blank screen.
+    try {
+      if (!window.__APP_INTERACTIVE__) return;
+    } catch {
+      return;
+    }
     try {
       // Prefer index.html boot script (keeps diagnostics visible if needed)
       getBootApi()?.hideLoader?.();
