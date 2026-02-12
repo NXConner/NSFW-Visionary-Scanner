@@ -24,6 +24,12 @@ allprojects {
     }
 }
 
+subprojects { subproject ->
+    subproject.tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs += ["-Xlint:-options"]
+    }
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
