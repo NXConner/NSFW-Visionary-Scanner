@@ -105,11 +105,11 @@ capacitor-cordova-android-plugins
 !capacitor-cordova-android-plugins/
 !capacitor-cordova-android-plugins/**
 
-# But ignore Gradle build outputs inside the plugin subtree
+# But NEVER track generated Gradle intermediates from the plugin project
+capacitor-cordova-android-plugins/build/
 capacitor-cordova-android-plugins/**/build/
 capacitor-cordova-android-plugins/**/.gradle/
 capacitor-cordova-android-plugins/**/.cxx/
-capacitor-cordova-android-plugins/**/.externalNativeBuild/
 
 # Copied web assets
 app/src/main/assets/public

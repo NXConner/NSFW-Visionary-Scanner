@@ -89,8 +89,10 @@ const hideLoader = () => {
   setTimeout(() => loader.remove(), 150);
 };
 
-// EMERGENCY: Force hide loader after 1.5s no matter what
-setTimeout(hideLoader, 1500);
+// Boot UX:
+// Keep the HTML loader visible until React mounts (AppContent removes it).
+// The index.html boot diagnostics watchdog will surface failures if the JS bundle
+// never executes or the app never becomes interactive.
 
 // 3. Safe initialization wrapper (never blocks boot)
 const safeInit = (fn: () => void) => {
@@ -170,6 +172,7 @@ if (rootEl) {
   } catch {
     // Emergency fallback: show error message instead of infinite loader
     // Also hide splash screen on error so user sees the error
+    hideLoader();
     if (isLikelyNativeBoot) {
       void hideNativeSplashSafely();
     }
@@ -187,41 +190,6 @@ if (rootEl) {
   }
 }
 
-// 6. Watchdog: if React doesn't mount, never show a blank screen
-setTimeout(() => {
-  try {
-    hideLoader();
-    // Also hide splash screen on mobile if app didn't load
-    if (isLikelyNativeBoot) {
-      void hideNativeSplashSafely();
-    }
-    const el = document.getElementById("root");
-    if (!el) return;
-    if (el.childElementCount > 0) return;
-    // Avoid overwriting if something already wrote a fallback.
-    if (el.getAttribute("data-boot-fallback") === "1") return;
-    el.setAttribute("data-boot-fallback", "1");
-    el.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;padding:2rem;background:#0a0a0a;">
-        <div style="max-width:520px;text-align:center;">
-          <p style="margin:0 0 0.5rem;color:#f5f5f5;font-size:18px;font-weight:600;">App didn't finish loading</p>
-          <p style="margin:0 0 1rem;color:#999;line-height:1.4;">
-            This is usually caused by a stale cache or a blocked storage state.
-          </p>
-          <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;">
-            <button onclick="location.reload()" style="padding:0.5rem 1rem;cursor:pointer;background:#8B5CF6;color:white;border:none;border-radius:8px;">Reload</button>
-            <button onclick="try{localStorage.clear()}catch(e){}; try{sessionStorage.clear()}catch(e){}; location.reload()" style="padding:0.5rem 1rem;cursor:pointer;background:#374151;color:white;border:none;border-radius:8px;">
-              Clear Storage + Reload
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-  } catch {
-    // ignore
-  }
-}, 4500);
-
 // 6. Non-critical startup - defer so UI shows ASAP
 deferInit(initSentry);
 // Route console.* in production through redacting logger/Sentry.
@@ -236,6 +204,3 @@ deferInit(() => {
   cspMeta.setAttribute("content", generateCSPHeader());
   document.head.appendChild(cspMeta);
 });
-
-// Final cleanup: ensure loader is gone
-requestAnimationFrame(hideLoader);

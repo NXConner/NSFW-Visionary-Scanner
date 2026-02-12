@@ -40,14 +40,24 @@ const isLikelyNativeEnvironment = (): boolean => {
  * Check if running in a Capacitor native environment
  */
 export const isNative = (): boolean => {
-  return Capacitor.isNativePlatform();
+  try {
+    return Capacitor.isNativePlatform();
+  } catch {
+    // Defensive fallback: treat URL heuristics as authoritative if Capacitor globals
+    // race during very early boot on some Android WebView builds.
+    return isLikelyNativeEnvironment();
+  }
 };
 
 /**
  * Get the current platform (web, ios, android)
  */
 export const getPlatform = (): "web" | "ios" | "android" => {
-  return Capacitor.getPlatform() as "web" | "ios" | "android";
+  try {
+    return Capacitor.getPlatform() as "web" | "ios" | "android";
+  } catch {
+    return "web";
+  }
 };
 
 /**

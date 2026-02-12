@@ -168,6 +168,31 @@ const AppContent = () => {
   useEffect(() => {
     // Used by BootWatchdog + boot code to detect that React has mounted.
     window.__APP_INTERACTIVE__ = true;
+    // Remove the static HTML loader only after React has mounted.
+    // This prevents "loader disappears -> blank screen" when the JS bundle
+    // loads but initial render is slow on some Android WebViews.
+    try {
+      const loader = document.getElementById("app-loader");
+      if (loader) {
+        loader.classList.add("fade-out");
+        window.setTimeout(() => {
+          try {
+            loader.remove();
+          } catch {
+            // ignore
+          }
+        }, 350);
+      }
+      // If boot diagnostics is present, let it clean up too.
+      const w = window as unknown as {
+        __BOOT_DIAG__?: { hideLoader?: () => void };
+      };
+      if (w.__BOOT_DIAG__ && typeof w.__BOOT_DIAG__.hideLoader === "function") {
+        w.__BOOT_DIAG__.hideLoader();
+      }
+    } catch {
+      // ignore
+    }
   }, []);
 
   return (

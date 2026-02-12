@@ -1,1 +1,5 @@
+<<<<<<<< HEAD:android/app/src/main/assets/public/assets/lastScanStore-CqvHSeGl.js
 import{v as e,r as s,t as c}from"./index-NbOq-KAT.js";const r="scanner_last_scan_encrypted_v1";function o(t){try{return JSON.parse(t)}catch{return null}}async function u(t){try{const a=await c(JSON.stringify(t));localStorage.setItem(r,a)}catch{}}async function i(){try{const t=localStorage.getItem(r);if(!t)return null;const a=e(t)?await s(t):t;if(!a)return null;const n=o(a);return!n||n.schemaVersion!==1?null:n}catch{return null}}export{i as l,u as s};
+========
+import{v as e,r as s,t as c}from"./index-BourTkpy.js";const r="scanner_last_scan_encrypted_v1";function o(t){try{return JSON.parse(t)}catch{return null}}async function u(t){try{const a=await c(JSON.stringify(t));localStorage.setItem(r,a)}catch{}}async function i(){try{const t=localStorage.getItem(r);if(!t)return null;const a=e(t)?await s(t):t;if(!a)return null;const n=o(a);return!n||n.schemaVersion!==1?null:n}catch{return null}}export{i as l,u as s};
+>>>>>>>> cursor/rls-storage-audit-queries-29c9:android/app/src/main/assets/public/assets/lastScanStore-CQsGpjrD.js

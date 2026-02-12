@@ -1,5 +1,6 @@
 package com.morphoscan.pro;
 
+import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -11,6 +12,18 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Enable Chrome devtools inspection for debug builds.
+        // This is critical for diagnosing "blank WebView" issues on real devices.
+        try {
+            // Do not rely on BuildConfig (can be disabled by Gradle buildFeatures on some setups).
+            final boolean debuggable =
+                    (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+            if (debuggable) {
+                WebView.setWebContentsDebuggingEnabled(true);
+            }
+        } catch (Throwable ignored) {
+            // ignore
+        }
         configureWebViewForDeviceCompatibility();
     }
 

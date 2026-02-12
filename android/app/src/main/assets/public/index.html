@@ -184,20 +184,73 @@
         margin-bottom: 24px;
         border-radius: 16px;
       }
+      /* Boot diagnostics (must be ES5-compatible for old WebViews) */
+      #boot-diag {
+        display: none;
+        margin-top: 16px;
+        width: calc(100vw - 48px);
+        max-width: 560px;
+        max-height: 420px;
+        overflow: auto;
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        padding: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+      }
+      #boot-diag .boot-diag-hint {
+        color: rgba(255, 255, 255, 0.8);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 12px;
+        line-height: 1.4;
+        margin-bottom: 10px;
+      }
+      #boot-diag .boot-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+      }
+      #boot-diag .boot-btn {
+        -webkit-appearance: none;
+           -moz-appearance: none;
+                appearance: none;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.92);
+        padding: 8px 10px;
+        border-radius: 12px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      #boot-diag .boot-btn.primary {
+        background: rgba(13, 148, 136, 0.28);
+        border-color: rgba(13, 148, 136, 0.6);
+      }
+      #boot-diag pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.82);
+      }
       @keyframes spin {
         to {
           transform: rotate(360deg);
         }
       }
     </style>
-    <script type="module" crossorigin src="./assets/index-NbOq-KAT.js"></script>
+    <script type="module" crossorigin src="./assets/index-BourTkpy.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/vendor-ui-CIIsu0hU.js">
     <link rel="modulepreload" crossorigin href="./assets/vendor-3d-Ba47j4xh.js">
     <link rel="modulepreload" crossorigin href="./assets/vendor-CJYa0DrA.js">
     <link rel="modulepreload" crossorigin href="./assets/vendor-supabase-QtpmRe1i.js">
     <link rel="modulepreload" crossorigin href="./assets/vendor-stripe-CTPV_1UD.js">
     <link rel="modulepreload" crossorigin href="./assets/vendor-motion-Bp17NaQr.js">
-    <link rel="stylesheet" crossorigin href="./assets/index-B7bPXqJ8.css">
+    <link rel="stylesheet" crossorigin href="./assets/index-CrXj3E5f.css">
   <link rel="manifest" href="./manifest.webmanifest"></head>
 
   <body>
@@ -251,12 +304,84 @@
         onerror="this.style.display = 'none'"
       />
       <div class="loader-spinner" aria-hidden="true"></div>
-      <div class="loader-text">Loading MorphoScan Pro...</div>
+      <div class="loader-text" id="loader-text">Loading MorphoScan Pro...</div>
+      <div id="boot-diag" aria-label="Boot diagnostics">
+        <div class="boot-diag-hint" id="boot-diag-hint">
+          If you see a blank screen after loading, tap Copy Diagnostics and send it.
+        </div>
+        <div class="boot-actions">
+          <button
+            type="button"
+            class="boot-btn primary"
+            onclick="window.__BOOT_DIAG__ && window.__BOOT_DIAG__.copy && window.__BOOT_DIAG__.copy()"
+          >
+            Copy diagnostics
+          </button>
+          <button
+            type="button"
+            class="boot-btn"
+            onclick="window.__BOOT_DIAG__ && window.__BOOT_DIAG__.clearStorageAndReload && window.__BOOT_DIAG__.clearStorageAndReload()"
+          >
+            Clear storage + reload
+          </button>
+          <button
+            type="button"
+            class="boot-btn"
+            onclick="window.__BOOT_DIAG__ && window.__BOOT_DIAG__.reload && window.__BOOT_DIAG__.reload()"
+          >
+            Reload
+          </button>
+        </div>
+        <pre id="boot-diag-pre"></pre>
+      </div>
     </div>
     <script>
-      // E2E + production hardening:
-      // If the JS bundle fails to execute for any reason, never leave the loader stuck forever.
+      // Boot diagnostics (runs even if the app bundle fails to load/execute).
+      // This must stay ES5 compatible to support older Android WebViews.
       (function () {
+        function nowIso() {
+          try {
+            return new Date().toISOString();
+          } catch (_) {
+            return String(Date.now());
+          }
+        }
+
+        function safeString(v) {
+          try {
+            return String(v);
+          } catch (_) {
+            return "[unstringifiable]";
+          }
+        }
+
+        function safeJson(obj) {
+          try {
+            return JSON.stringify(obj, null, 2);
+          } catch (_) {
+            try {
+              return safeString(obj);
+            } catch (e) {
+              return "[unserializable]";
+            }
+          }
+        }
+
+        function getEl(id) {
+          try {
+            return document.getElementById(id);
+          } catch (_) {
+            return null;
+          }
+        }
+
+        function setText(el, txt) {
+          if (!el) return;
+          try {
+            el.textContent = safeString(txt);
+          } catch (_) {}
+        }
+
         function hideLoader() {
           var loader = document.getElementById("app-loader");
           if (!loader) return;
@@ -267,10 +392,231 @@
             } catch (_) {}
           }, 350);
         }
-        // Absolute fallback only: allow app boot code to remove the loader first.
-        // This prevents "blank screen" in slower environments where the bundle
-        // may take longer to parse/execute.
-        setTimeout(hideLoader, 20000);
+
+        var diag = {
+          startedAt: Date.now(),
+          startedAtIso: nowIso(),
+          href: "",
+          userAgent: "",
+          online: null,
+          compat: {
+            modules: null,
+            bigInt: null,
+            wasm: null
+          },
+          errors: []
+        };
+
+        try {
+          diag.href = safeString(location && location.href);
+        } catch (_) {}
+        try {
+          diag.userAgent = safeString(navigator && navigator.userAgent);
+        } catch (_) {}
+        try {
+          diag.online = typeof navigator.onLine === "boolean" ? navigator.onLine : null;
+        } catch (_) {}
+
+        try {
+          diag.compat.modules = "noModule" in HTMLScriptElement.prototype;
+        } catch (_) {
+          diag.compat.modules = null;
+        }
+        try {
+          diag.compat.bigInt = typeof BigInt === "function";
+        } catch (_) {
+          diag.compat.bigInt = null;
+        }
+        try {
+          diag.compat.wasm = typeof WebAssembly === "object";
+        } catch (_) {
+          diag.compat.wasm = null;
+        }
+
+        function updatePanel() {
+          var pre = getEl("boot-diag-pre");
+          if (!pre) return;
+          setText(pre, safeJson(diag));
+        }
+
+        function showPanel() {
+          var panel = getEl("boot-diag");
+          if (!panel) return;
+          try {
+            panel.style.display = "block";
+          } catch (_) {}
+          updatePanel();
+        }
+
+        function addError(kind, message, extra) {
+          try {
+            diag.errors.push({
+              atIso: nowIso(),
+              kind: safeString(kind || "error"),
+              message: safeString(message || ""),
+              extra: extra || null
+            });
+            if (diag.errors.length > 25) diag.errors.shift();
+          } catch (_) {}
+          updatePanel();
+        }
+
+        function showFailure(reason) {
+          var loaderText = getEl("loader-text");
+          setText(loaderText, reason || "App didn't finish loading");
+          showPanel();
+        }
+
+        function reload() {
+          try {
+            location.reload();
+          } catch (_) {}
+        }
+
+        function clearStorageAndReload() {
+          try {
+            try {
+              localStorage.clear();
+            } catch (_) {}
+            try {
+              sessionStorage.clear();
+            } catch (_) {}
+          } finally {
+            reload();
+          }
+        }
+
+        function copy() {
+          var text = safeJson(diag);
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(text).catch(function () {});
+              return;
+            }
+          } catch (_) {}
+          try {
+            var ta = document.createElement("textarea");
+            ta.value = text;
+            ta.setAttribute("readonly", "");
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            try {
+              document.execCommand("copy");
+            } catch (_) {}
+            try {
+              ta.remove();
+            } catch (_) {
+              document.body.removeChild(ta);
+            }
+          } catch (_) {}
+        }
+
+        // Expose diagnostics for onerror/onload attributes and app-side reporting.
+        try {
+          window.__BOOT_DIAG__ = {
+            diag: diag,
+            addError: addError,
+            showPanel: showPanel,
+            showFailure: showFailure,
+            hideLoader: hideLoader,
+            reload: reload,
+            clearStorageAndReload: clearStorageAndReload,
+            copy: copy,
+            onEntrypointError: function (ev) {
+              try {
+                var src = "";
+                if (ev && ev.target && ev.target.src) src = safeString(ev.target.src);
+                addError("entrypoint", "Failed to load JS entrypoint", { src: src });
+              } catch (_) {
+                addError("entrypoint", "Failed to load JS entrypoint");
+              }
+              showFailure("Failed to load app code");
+            }
+          };
+        } catch (_) {}
+
+        // Capture resource + runtime errors (including module parse/load errors).
+        try {
+          window.addEventListener(
+            "error",
+            function (ev) {
+              try {
+                // Resource error (script/link/image) comes through with a target element.
+                var t = ev && ev.target;
+                var tag = t && t.tagName ? safeString(t.tagName).toLowerCase() : "";
+                if (tag === "script" || tag === "link" || tag === "img") {
+                  var url = t && (t.src || t.href) ? safeString(t.src || t.href) : "";
+                  addError("resource", "Failed to load resource", { tag: tag, url: url });
+                  // A failed JS entry/chunk load is fatal -> surface immediately.
+                  if (tag === "script") {
+                    showFailure("Failed to load app code");
+                  }
+                  return;
+                }
+
+                addError("error", safeString(ev && ev.message), {
+                  filename: safeString(ev && ev.filename),
+                  lineno: ev && ev.lineno ? ev.lineno : null,
+                  colno: ev && ev.colno ? ev.colno : null
+                });
+              } catch (_) {}
+            },
+            true
+          );
+        } catch (_) {}
+
+        try {
+          window.addEventListener("unhandledrejection", function (ev) {
+            try {
+              var r = ev && ev.reason ? ev.reason : "";
+              var msg = "";
+              try {
+                msg = r && r.message ? safeString(r.message) : safeString(r);
+              } catch (_) {
+                msg = safeString(r);
+              }
+              addError("unhandledrejection", msg);
+            } catch (_) {}
+          });
+        } catch (_) {}
+
+        // Timers:
+        // - If React mounts it will set window.__APP_INTERACTIVE__ and remove the loader.
+        // - If the app bundle fails, show diagnostics instead of a blank screen.
+        setTimeout(function () {
+          try {
+            if (window.__APP_INTERACTIVE__ === true) return;
+          } catch (_) {}
+
+          // Early hard failures (old WebView / missing required platform features).
+          if (diag.compat.modules === false) {
+            showFailure("Unsupported Android WebView (no JS modules). Update Android System WebView.");
+            return;
+          }
+          if (diag.compat.bigInt === false) {
+            showFailure("Unsupported Android WebView (BigInt missing). Update Android System WebView.");
+            return;
+          }
+
+          // Otherwise, reveal diagnostics panel (still loading).
+          showPanel();
+        }, 8000);
+
+        setTimeout(function () {
+          try {
+            if (window.__APP_INTERACTIVE__ === true) {
+              // App signaled it's interactive but didn't remove loader; clean up.
+              hideLoader();
+              return;
+            }
+          } catch (_) {}
+
+          // Do NOT hide loader on failure; show a useful message instead.
+          showFailure("App didn't finish loading");
+        }, 20000);
       })();
     </script>
     <script>
