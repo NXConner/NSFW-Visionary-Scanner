@@ -40,7 +40,10 @@ const isLikelyNativeEnvironment = (): boolean => {
  * Check if running in a Capacitor native environment
  */
 export const isNative = (): boolean => {
-  return Capacitor.isNativePlatform();
+  // Some OEM WebView builds can race very early during boot; prefer the hardened
+  // heuristic that falls back to URL scheme/hostname instead of relying solely
+  // on Capacitor's runtime flag.
+  return isLikelyNativeEnvironment();
 };
 
 /**

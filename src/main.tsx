@@ -13,6 +13,37 @@ import {
   installMobileErrorHandler,
 } from "./lib/capacitor";
 
+type BootApi = {
+  markStage?: (msg: string) => void;
+  hideLoader?: () => void;
+  fail?: (reason: string, details?: unknown) => void;
+};
+
+function getBootApi(): BootApi | null {
+  try {
+    return ((window as unknown as { __MORPHOSCAN_BOOT__?: BootApi }).__MORPHOSCAN_BOOT__ ??
+      null) as BootApi | null;
+  } catch {
+    return null;
+  }
+}
+
+function bootStage(msg: string): void {
+  try {
+    getBootApi()?.markStage?.(msg);
+  } catch {
+    // ignore
+  }
+}
+
+function bootFail(reason: string, details?: unknown): void {
+  try {
+    getBootApi()?.fail?.(reason, details);
+  } catch {
+    // ignore
+  }
+}
+
 // === AGGRESSIVE STARTUP OPTIMIZATION ===
 // Prevent infinite loading in pop-out preview / iframe scenarios
 
@@ -21,6 +52,8 @@ import {
 // Capture the latest requested tab so Index can apply it once ready.
 const PENDING_TAB_KEY = "__MORPHOSCAN_PENDING_TAB__";
 try {
+  (window as any).__MORPHOSCAN_BOOTSTRAP__ = true;
+  bootStage("Booting…");
   window.addEventListener("navigate-tab", (e: Event) => {
     try {
       const detail = (e as CustomEvent<string>).detail;
@@ -69,6 +102,7 @@ const isPreviewHost =
 const isLikelyNativeHost =
   protocol === "capacitor:" ||
   protocol === "file:" ||
+  (protocol === "http:" && (hostname === "localhost" || hostname === "127.0.0.1")) ||
   (protocol === "https:" && hostname === "localhost");
 const isLikelyNativeBoot = isNative() || isLikelyNativeHost;
 
@@ -89,8 +123,20 @@ const hideLoader = () => {
   setTimeout(() => loader.remove(), 150);
 };
 
-// EMERGENCY: Force hide loader after 1.5s no matter what
-setTimeout(hideLoader, 1500);
+// Never remove the loader too early on native devices; it can create a "blank screen"
+// period while the JS bundle is still parsing/initializing on first run.
+setTimeout(
+  () => {
+    try {
+      // Prefer index.html boot script (keeps diagnostics visible if needed)
+      getBootApi()?.hideLoader?.();
+    } catch {
+      // ignore
+    }
+    hideLoader();
+  },
+  isLikelyNativeBoot ? 12000 : 6000,
+);
 
 // 3. Safe initialization wrapper (never blocks boot)
 const safeInit = (fn: () => void) => {
@@ -153,8 +199,25 @@ if (isLikelyNativeBoot) {
 const rootEl = document.getElementById("root");
 if (rootEl) {
   try {
+    bootStage("Rendering UI…");
     const root = createRoot(rootEl);
     root.render(<App />);
+
+    // Let BootWatchdog (and native boot) know that React has started.
+    try {
+      window.__APP_INTERACTIVE__ = true;
+    } catch {
+      // ignore
+    }
+
+    // Prefer the index.html boot layer to remove the loader (it can show diagnostics
+    // instead of leaving a blank screen if something is wrong).
+    try {
+      getBootApi()?.hideLoader?.();
+    } catch {
+      // ignore
+    }
+    requestAnimationFrame(hideLoader);
 
     // Hide splash screen after React renders (for Capacitor)
     if (isLikelyNativeBoot) {
@@ -168,6 +231,7 @@ if (rootEl) {
       });
     }
   } catch {
+    bootFail("React render failed");
     // Emergency fallback: show error message instead of infinite loader
     // Also hide splash screen on error so user sees the error
     if (isLikelyNativeBoot) {

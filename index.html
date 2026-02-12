@@ -246,23 +246,262 @@
       <div class="loader-text">Loading MorphoScan Pro...</div>
     </div>
     <script>
-      // E2E + production hardening:
-      // If the JS bundle fails to execute for any reason, never leave the loader stuck forever.
       (function () {
-        function hideLoader() {
-          var loader = document.getElementById("app-loader");
-          if (!loader) return;
-          loader.classList.add("fade-out");
-          setTimeout(function () {
-            try {
-              loader.remove();
-            } catch (_) {}
-          }, 350);
+        // Native boot hardening:
+        // If the JS bundle fails to load/execute on-device, avoid "loader -> blank screen".
+        // Instead, keep a visible recovery UI with actionable diagnostics.
+        var loader = document.getElementById("app-loader");
+        var loaderTextEl =
+          loader && loader.querySelector ? loader.querySelector(".loader-text") : null;
+        var startedAt = Date.now();
+        var hasFailed = false;
+        var errors = [];
+
+        function getProtocol() {
+          try {
+            return String(location.protocol || "").toLowerCase();
+          } catch (_) {
+            return "";
+          }
         }
-        // Absolute fallback only: allow app boot code to remove the loader first.
-        // This prevents "blank screen" in slower environments where the bundle
-        // may take longer to parse/execute.
-        setTimeout(hideLoader, 20000);
+        function getHostname() {
+          try {
+            return String(location.hostname || "").toLowerCase();
+          } catch (_) {
+            return "";
+          }
+        }
+        function isLikelyNativeHost() {
+          var p = getProtocol();
+          var h = getHostname();
+          return (
+            p === "capacitor:" ||
+            p === "file:" ||
+            (p === "http:" && (h === "localhost" || h === "127.0.0.1")) ||
+            (p === "https:" && (h === "localhost" || h === "127.0.0.1"))
+          );
+        }
+
+        function setStage(msg) {
+          try {
+            if (hasFailed) return;
+            if (!loaderTextEl) return;
+            loaderTextEl.textContent = String(msg || "Loading…");
+          } catch (_) {}
+        }
+
+        function hideLoader() {
+          try {
+            var el = document.getElementById("app-loader");
+            if (!el) return;
+            el.classList.add("fade-out");
+            setTimeout(function () {
+              try {
+                el.remove();
+              } catch (_) {}
+            }, 350);
+          } catch (_) {}
+        }
+
+        function clearStorageBestEffort() {
+          try {
+            localStorage && localStorage.clear && localStorage.clear();
+          } catch (_) {}
+          try {
+            sessionStorage && sessionStorage.clear && sessionStorage.clear();
+          } catch (_) {}
+          try {
+            if ("caches" in window && window.caches && window.caches.keys) {
+              window.caches
+                .keys()
+                .then(function (keys) {
+                  keys.forEach(function (k) {
+                    try {
+                      window.caches.delete(k);
+                    } catch (_) {}
+                  });
+                })
+                .catch(function () {});
+            }
+          } catch (_) {}
+          try {
+            if ("serviceWorker" in navigator && navigator.serviceWorker.getRegistrations) {
+              navigator.serviceWorker
+                .getRegistrations()
+                .then(function (regs) {
+                  regs.forEach(function (r) {
+                    try {
+                      r.unregister();
+                    } catch (_) {}
+                  });
+                })
+                .catch(function () {});
+            }
+          } catch (_) {}
+        }
+
+        function getDiagnostics() {
+          var diag = {
+            ts: new Date().toISOString(),
+            msSinceStart: Date.now() - startedAt,
+            href: String(location.href || ""),
+            origin: String(location.origin || ""),
+            protocol: getProtocol(),
+            hostname: getHostname(),
+            userAgent: (navigator && navigator.userAgent) || "",
+            isLikelyNativeHost: isLikelyNativeHost(),
+            bootFlag: !!(window && window.__MORPHOSCAN_BOOTSTRAP__),
+            interactiveFlag: !!(window && window.__APP_INTERACTIVE__),
+            errors: errors.slice(-5),
+          };
+          return diag;
+        }
+
+        function showFailure(title, details) {
+          if (hasFailed) return;
+          hasFailed = true;
+          try {
+            var el = document.getElementById("app-loader");
+            if (!el) return;
+            var diag = getDiagnostics();
+            var safeTitle = String(title || "App failed to start");
+            var safeDetails = details ? String(details) : "";
+
+            el.innerHTML =
+              '<div style="max-width:720px;padding:20px;text-align:center;">' +
+              '<div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px;">' +
+              safeTitle +
+              "</div>" +
+              '<div style="font-size:13px;line-height:1.4;color:rgba(255,255,255,0.75);margin-bottom:14px;">' +
+              (safeDetails ||
+                "This is usually caused by a WebView startup error, blocked storage, or a failed JS bundle load.") +
+              "</div>" +
+              '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px;">' +
+              '<button id="boot-reload" style="padding:10px 14px;border-radius:10px;border:0;cursor:pointer;background:#8B5CF6;color:#fff;font-weight:600;">Reload</button>' +
+              '<button id="boot-clear" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);cursor:pointer;background:rgba(0,0,0,0.25);color:#fff;font-weight:600;">Clear Storage + Reload</button>' +
+              '<button id="boot-copy" style="padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);cursor:pointer;background:rgba(0,0,0,0.25);color:#fff;font-weight:600;">Copy Diagnostics</button>' +
+              "</div>" +
+              '<pre style="text-align:left;white-space:pre-wrap;word-break:break-word;font-size:11px;line-height:1.35;color:rgba(255,255,255,0.8);padding:12px;border-radius:12px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);max-height:240px;overflow:auto;margin:0;">' +
+              (function () {
+                try {
+                  return JSON.stringify(diag, null, 2);
+                } catch (_) {
+                  return String(diag);
+                }
+              })() +
+              "</pre>" +
+              "</div>";
+
+            setTimeout(function () {
+              try {
+                var btnReload = document.getElementById("boot-reload");
+                var btnClear = document.getElementById("boot-clear");
+                var btnCopy = document.getElementById("boot-copy");
+
+                if (btnReload) {
+                  btnReload.onclick = function () {
+                    try {
+                      location.reload();
+                    } catch (_) {}
+                  };
+                }
+                if (btnClear) {
+                  btnClear.onclick = function () {
+                    try {
+                      clearStorageBestEffort();
+                    } finally {
+                      try {
+                        location.reload();
+                      } catch (_) {}
+                    }
+                  };
+                }
+                if (btnCopy) {
+                  btnCopy.onclick = function () {
+                    try {
+                      var txt = JSON.stringify(getDiagnostics(), null, 2);
+                      if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(txt).catch(function () {});
+                      }
+                    } catch (_) {}
+                  };
+                }
+              } catch (_) {}
+            }, 0);
+          } catch (_) {}
+        }
+
+        // Expose a minimal boot API so main.tsx can integrate with the loader
+        try {
+          window.__MORPHOSCAN_BOOT__ = {
+            markStage: function (msg) {
+              setStage(msg);
+            },
+            hideLoader: function () {
+              hideLoader();
+            },
+            fail: function (reason, details) {
+              showFailure(String(reason || "Startup failure"), details);
+            },
+          };
+        } catch (_) {}
+
+        // Capture early failures even when the main JS bundle never executes.
+        try {
+          window.addEventListener(
+            "error",
+            function (ev) {
+              try {
+                errors.push({
+                  kind: "error",
+                  msg: String((ev && ev.message) || "Unknown error"),
+                  src: String((ev && ev.filename) || ""),
+                  line: Number((ev && ev.lineno) || 0),
+                  col: Number((ev && ev.colno) || 0),
+                });
+              } catch (_) {}
+              showFailure("JavaScript error during startup");
+            },
+            true,
+          );
+        } catch (_) {}
+
+        try {
+          window.addEventListener("unhandledrejection", function (ev) {
+            try {
+              var r = ev && ev.reason;
+              errors.push({
+                kind: "unhandledrejection",
+                msg: String((r && (r.message || r)) || "Unhandled rejection"),
+              });
+            } catch (_) {}
+            showFailure("Unhandled promise rejection during startup");
+          });
+        } catch (_) {}
+
+        // Watchdog: only show failure UI if the app never becomes interactive.
+        // Native devices may take longer to parse the bundle on first run.
+        var nativeHost = isLikelyNativeHost();
+        var timeoutMs = nativeHost ? 12000 : 20000;
+        setTimeout(function () {
+          try {
+            if (window && window.__APP_INTERACTIVE__) {
+              hideLoader();
+              return;
+            }
+            if (!(window && window.__MORPHOSCAN_BOOTSTRAP__)) {
+              showFailure(
+                "App bundle failed to start",
+                "The JavaScript bundle did not execute. This is commonly caused by a WebView load failure or missing assets in the APK.",
+              );
+              return;
+            }
+            showFailure(
+              "App is taking longer than expected",
+              "Try “Clear Storage + Reload”. If it persists, rebuild/reinstall the APK.",
+            );
+          } catch (_) {}
+        }, timeoutMs);
       })();
     </script>
     <script>
