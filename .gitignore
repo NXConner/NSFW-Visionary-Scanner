@@ -13,11 +13,6 @@ test-results/
 .vscode/
 
 # Environment
-.env
-.env.*
-!.env.example
-.env.local
-.env.*.local
 
 # Firebase / Google Services (local-only)
 android/app/google-services.json
@@ -29,17 +24,6 @@ android/gradle.properties
 android/app/release.keystore
 **/*.jks
 **/*.keystore
-
-# Android build artifacts (generated)
-android/.gradle/
-android/**/build/
-android/**/.cxx/
-android/**/.externalNativeBuild/
-android/**/captures/
-android/local.properties
-
-# Local artifacts (debug outputs)
-artifacts/
 
 # Local archive workspace (do not commit temporary platform snapshots)
 deleted files/
