@@ -63,7 +63,6 @@ async function main() {
   if (flags.envFile) {
     const loaded = loadEnvFile({ envFilePath: flags.envFile, repoRoot });
     if (flags.format === "pretty") {
-      // eslint-disable-next-line no-console
       console.log(`[run-sql-file] Loaded env from ${path.relative(repoRoot, loaded)}`);
     }
   }
@@ -99,7 +98,6 @@ async function main() {
   }
 
   if (flags.format === "pretty") {
-    // eslint-disable-next-line no-console
     console.log(`[run-sql-file] DB: ${redactDbUrl(dbUrl)}`);
   }
 
@@ -130,11 +128,9 @@ async function main() {
           });
           try {
             if (flags.format === "pretty") {
-              // eslint-disable-next-line no-console
               console.warn(
                 `[run-sql-file] Direct DB host unreachable; retrying via pooler ${poolerHost}:${port}...`,
               );
-              // eslint-disable-next-line no-console
               console.log(`[run-sql-file] DB: ${redactDbUrl(poolerUrl)}`);
             }
             client = await connectPgClient({
@@ -172,7 +168,6 @@ async function main() {
       const raw = fs.readFileSync(sqlFile, "utf8");
       const statements = splitSqlStatements(raw);
       if (flags.format === "pretty") {
-        // eslint-disable-next-line no-console
         console.log(
           `\n[run-sql-file] Running ${statements.length} statement(s) from ${path.relative(repoRoot, sqlFile)}...`,
         );

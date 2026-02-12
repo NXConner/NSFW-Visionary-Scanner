@@ -42,7 +42,6 @@ export async function runSqlStatements({
     const label = `#${idx + 1}/${statements.length}: ${statementPreview(statement)}`;
 
     if (format === "pretty") {
-      // eslint-disable-next-line no-console
       console.log(`\n[sql] ${label}`);
     }
 
@@ -62,20 +61,16 @@ export async function runSqlStatements({
         const total = entry.rows.length;
         const shown = Math.min(total, maxRows);
         if (entry.command === "SELECT" || entry.rows.length > 0) {
-          // eslint-disable-next-line no-console
           console.log(`[sql] ${entry.command} rows=${total}`);
           if (shown > 0) {
-            // eslint-disable-next-line no-console
             console.table(entry.rows.slice(0, shown));
           }
           if (total > shown) {
-            // eslint-disable-next-line no-console
             console.log(
               `[sql] (truncated) showing ${shown}/${total} rows (use --max-rows to adjust)`,
             );
           }
         } else {
-          // eslint-disable-next-line no-console
           console.log(`[sql] ${entry.command} rowCount=${entry.rowCount ?? 0}`);
         }
       }
@@ -83,7 +78,6 @@ export async function runSqlStatements({
       hadError = true;
       const message = String(err?.message || err || "Unknown error");
       if (format === "pretty") {
-        // eslint-disable-next-line no-console
         console.error(`[sql] ERROR in statement ${idx + 1}: ${message}`);
       }
       results.push({
