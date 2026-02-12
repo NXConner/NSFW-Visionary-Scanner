@@ -12,7 +12,15 @@ test-results/
 *.iml
 .vscode/
 
-# Environment
+# Environment (local-only; never commit real secrets)
+.env
+.env.*
+!.env.example
+!.env.production
+
+# Vite local overrides
+.env.local
+.env.*.local
 
 # Firebase / Google Services (local-only)
 android/app/google-services.json

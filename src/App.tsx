@@ -29,6 +29,7 @@ import { useAnalytics } from "@/lib/analytics";
 import { BootWatchdog } from "@/components/BootWatchdog";
 import { SupabaseConfigGate } from "@/components/SupabaseConfigGate";
 import { markAppInteractiveAndHideStaticLoader } from "@/lib/boot/staticLoader";
+import { SupabaseApiKeyFixer } from "@/components/SupabaseApiKeyFixer";
 import { bootstrapAddons } from "@/addons";
 import { RouteLoadingFallback } from "@/components/LoadingFallback";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -330,6 +331,7 @@ const AppContent = () => {
 const App = () => (
   <ErrorBoundary>
     <BootWatchdog timeoutMs={7000} />
+    <SupabaseApiKeyFixer />
     <SupabaseConfigGate>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>

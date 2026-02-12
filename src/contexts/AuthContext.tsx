@@ -20,6 +20,7 @@ import {
 } from "@/lib/auth/userPersistence";
 import { EmailService } from "@/lib/email";
 import { isEmailPreVerified } from "@/lib/email/emailConfig";
+import { emitSupabaseInvalidApiKeyEvent, isInvalidSupabaseApiKeyError } from "@/integrations/supabase/events";
 
 interface AuthContextType {
   user: User | null;
@@ -237,6 +238,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         password,
       });
 
+      // If backend keys are wrong, help users recover on-device (Android builds).
+      if (error && isInvalidSupabaseApiKeyError(error)) {
+        emitSupabaseInvalidApiKeyEvent();
+      }
+
       try {
         analytics.trackUserAction(error ? "auth_sign_in_failed" : "auth_sign_in_success", "auth", {
           rememberMe,
@@ -262,6 +268,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       password,
       options: { emailRedirectTo: redirectUrl },
     });
+    if (error && isInvalidSupabaseApiKeyError(error)) {
+      emitSupabaseInvalidApiKeyEvent();
+    }
     try {
       analytics.trackUserAction(error ? "auth_sign_up_failed" : "auth_sign_up_success", "auth", {
         error: error ? String(error.message || "unknown") : undefined,
@@ -284,6 +293,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       },
     });
+    if (error && isInvalidSupabaseApiKeyError(error)) {
+      emitSupabaseInvalidApiKeyEvent();
+    }
     try {
       analytics.trackUserAction(error ? "auth_google_start_failed" : "auth_google_start", "auth", {
         error: error ? String(error.message || "unknown") : undefined,
@@ -302,6 +314,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         redirectTo: redirectUrl,
       },
     });
+    if (error && isInvalidSupabaseApiKeyError(error)) {
+      emitSupabaseInvalidApiKeyEvent();
+    }
     try {
       analytics.trackUserAction(error ? "auth_apple_start_failed" : "auth_apple_start", "auth", {
         error: error ? String(error.message || "unknown") : undefined,
@@ -325,6 +340,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           redirectTo: redirectUrl,
         },
       });
+      if (error && isInvalidSupabaseApiKeyError(error)) {
+        emitSupabaseInvalidApiKeyEvent();
+      }
       try {
         analytics.trackUserAction(
           error ? "auth_link_social_failed" : "auth_link_social_success",

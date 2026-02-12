@@ -24,6 +24,7 @@ import { BiometricLoginButton } from "@/components/BiometricLoginButton";
 import { useBiometricAuth } from "@/hooks/useBiometricAuth";
 import { APP_SHORT_NAME, SUPPORT_CONTACT_EMAIL } from "@/config/brand";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
+import { emitSupabaseInvalidApiKeyEvent, isInvalidSupabaseApiKeyError } from "@/integrations/supabase/events";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -157,6 +158,8 @@ const Auth = () => {
           if (error) {
             const message = error.message.includes("Invalid login")
               ? "Invalid email or password."
+              : error.message.includes("Invalid API key")
+                ? "Backend misconfigured (invalid Supabase API key). Tap the Supabase fix prompt to update keys."
               : error.message.includes("Email not confirmed")
                 ? "Please verify your email address before signing in. Check your inbox for the verification link."
                 : error.message;
@@ -177,7 +180,11 @@ const Auth = () => {
         }
       }
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "An error occurred");
+      const err = error instanceof Error ? error : new Error("An error occurred");
+      if (isInvalidSupabaseApiKeyError(err)) {
+        emitSupabaseInvalidApiKeyEvent();
+      }
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
