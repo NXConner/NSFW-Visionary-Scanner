@@ -146,19 +146,23 @@ ALTER TABLE workshop_participants ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 -- Expert Profiles: Public read, experts can manage their own
+DROP POLICY IF EXISTS "Anyone can view expert profiles" ON expert_profiles;
 CREATE POLICY "Anyone can view expert profiles"
   ON expert_profiles FOR SELECT
   USING (is_verified = true AND is_available = true);
 
+DROP POLICY IF EXISTS "Experts can manage own profile" ON expert_profiles;
 CREATE POLICY "Experts can manage own profile"
   ON expert_profiles FOR ALL
   USING (auth.uid() = user_id);
 
 -- Expert Articles: Public read, experts can manage their own
+DROP POLICY IF EXISTS "Anyone can view published articles" ON expert_articles;
 CREATE POLICY "Anyone can view published articles"
   ON expert_articles FOR SELECT
   USING (published_at IS NOT NULL);
 
+DROP POLICY IF EXISTS "Experts can manage own articles" ON expert_articles;
 CREATE POLICY "Experts can manage own articles"
   ON expert_articles FOR ALL
   USING (
@@ -170,10 +174,12 @@ CREATE POLICY "Experts can manage own articles"
   );
 
 -- Expert Videos: Public read, experts can manage their own
+DROP POLICY IF EXISTS "Anyone can view published videos" ON expert_videos;
 CREATE POLICY "Anyone can view published videos"
   ON expert_videos FOR SELECT
   USING (published_at IS NOT NULL);
 
+DROP POLICY IF EXISTS "Experts can manage own videos" ON expert_videos;
 CREATE POLICY "Experts can manage own videos"
   ON expert_videos FOR ALL
   USING (
@@ -185,10 +191,12 @@ CREATE POLICY "Experts can manage own videos"
   );
 
 -- Expert Questions: Users can create, experts can answer
+DROP POLICY IF EXISTS "Users can view own questions" ON expert_questions;
 CREATE POLICY "Users can view own questions"
   ON expert_questions FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Experts can view questions for them" ON expert_questions;
 CREATE POLICY "Experts can view questions for them"
   ON expert_questions FOR SELECT
   USING (
@@ -199,10 +207,12 @@ CREATE POLICY "Experts can view questions for them"
     )
   );
 
+DROP POLICY IF EXISTS "Users can create questions" ON expert_questions;
 CREATE POLICY "Users can create questions"
   ON expert_questions FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Experts can answer questions" ON expert_questions;
 CREATE POLICY "Experts can answer questions"
   ON expert_questions FOR UPDATE
   USING (
@@ -214,10 +224,12 @@ CREATE POLICY "Experts can answer questions"
   );
 
 -- Expert Consultations: Users can view their own, experts can view theirs
+DROP POLICY IF EXISTS "Users can view own consultations" ON expert_consultations;
 CREATE POLICY "Users can view own consultations"
   ON expert_consultations FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Experts can view their consultations" ON expert_consultations;
 CREATE POLICY "Experts can view their consultations"
   ON expert_consultations FOR SELECT
   USING (
@@ -228,10 +240,12 @@ CREATE POLICY "Experts can view their consultations"
     )
   );
 
+DROP POLICY IF EXISTS "Users can book consultations" ON expert_consultations;
 CREATE POLICY "Users can book consultations"
   ON expert_consultations FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users and experts can update consultations" ON expert_consultations;
 CREATE POLICY "Users and experts can update consultations"
   ON expert_consultations FOR UPDATE
   USING (
@@ -244,10 +258,12 @@ CREATE POLICY "Users and experts can update consultations"
   );
 
 -- Group Workshops: Public read, experts can manage
+DROP POLICY IF EXISTS "Anyone can view workshops" ON expert_group_workshops;
 CREATE POLICY "Anyone can view workshops"
   ON expert_group_workshops FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Experts can manage own workshops" ON expert_group_workshops;
 CREATE POLICY "Experts can manage own workshops"
   ON expert_group_workshops FOR ALL
   USING (
@@ -259,10 +275,12 @@ CREATE POLICY "Experts can manage own workshops"
   );
 
 -- Workshop Participants: Users can view their own
+DROP POLICY IF EXISTS "Users can view own workshop participation" ON workshop_participants;
 CREATE POLICY "Users can view own workshop participation"
   ON workshop_participants FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can join workshops" ON workshop_participants;
 CREATE POLICY "Users can join workshops"
   ON workshop_participants FOR INSERT
   WITH CHECK (auth.uid() = user_id);

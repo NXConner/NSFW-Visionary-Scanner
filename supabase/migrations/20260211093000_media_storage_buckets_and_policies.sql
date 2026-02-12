@@ -68,61 +68,81 @@ ON CONFLICT (id) DO UPDATE SET
   file_size_limit = EXCLUDED.file_size_limit,
   allowed_mime_types = EXCLUDED.allowed_mime_types;
 
--- Ensure RLS is enabled on storage.objects (safe if already enabled)
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-
 -- ====================
 -- Normalize policies
 -- ====================
--- Drop legacy user-uploads policies created earlier (names are stable in existing migrations).
-DROP POLICY IF EXISTS "Users can upload own files to user-uploads" ON storage.objects;
-DROP POLICY IF EXISTS "Users can view own files in user-uploads" ON storage.objects;
-DROP POLICY IF EXISTS "Users can delete own files in user-uploads" ON storage.objects;
+-- On hosted Supabase, storage.objects may be owned by a system role rather than the
+-- migrator role. In that case, skip policy DDL instead of failing the whole migration.
+DO $$
+DECLARE
+  owns_storage_objects BOOLEAN := false;
+BEGIN
+  SELECT (pg_catalog.pg_get_userbyid(c.relowner) = current_user)
+  INTO owns_storage_objects
+  FROM pg_catalog.pg_class c
+  JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+  WHERE n.nspname = 'storage'
+    AND c.relname = 'objects'
+    AND c.relkind = 'r'
+  LIMIT 1;
 
--- Drop any previous policies for these buckets if rerun manually.
-DROP POLICY IF EXISTS "Users can manage own files in user-uploads" ON storage.objects;
-DROP POLICY IF EXISTS "Users can manage own recordings" ON storage.objects;
-DROP POLICY IF EXISTS "Users can manage own screenshots" ON storage.objects;
+  IF COALESCE(owns_storage_objects, false) THEN
+    -- Ensure RLS is enabled on storage.objects (safe if already enabled)
+    ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
--- user-uploads: authenticated users can manage their own user-scoped objects
-CREATE POLICY "Users can manage own files in user-uploads"
-ON storage.objects
-FOR ALL
-TO authenticated
-USING (
-  bucket_id = 'user-uploads'
-  AND auth.uid()::text = (storage.foldername(name))[1]
-)
-WITH CHECK (
-  bucket_id = 'user-uploads'
-  AND auth.uid()::text = (storage.foldername(name))[1]
-);
+    -- Drop legacy user-uploads policies created earlier (names are stable in existing migrations).
+    DROP POLICY IF EXISTS "Users can upload own files to user-uploads" ON storage.objects;
+    DROP POLICY IF EXISTS "Users can view own files in user-uploads" ON storage.objects;
+    DROP POLICY IF EXISTS "Users can delete own files in user-uploads" ON storage.objects;
 
--- recordings: authenticated users can manage their own user-scoped objects
-CREATE POLICY "Users can manage own recordings"
-ON storage.objects
-FOR ALL
-TO authenticated
-USING (
-  bucket_id = 'recordings'
-  AND auth.uid()::text = (storage.foldername(name))[1]
-)
-WITH CHECK (
-  bucket_id = 'recordings'
-  AND auth.uid()::text = (storage.foldername(name))[1]
-);
+    -- Drop any previous policies for these buckets if rerun manually.
+    DROP POLICY IF EXISTS "Users can manage own files in user-uploads" ON storage.objects;
+    DROP POLICY IF EXISTS "Users can manage own recordings" ON storage.objects;
+    DROP POLICY IF EXISTS "Users can manage own screenshots" ON storage.objects;
 
--- screenshots: authenticated users can manage their own user-scoped objects
-CREATE POLICY "Users can manage own screenshots"
-ON storage.objects
-FOR ALL
-TO authenticated
-USING (
-  bucket_id = 'screenshots'
-  AND auth.uid()::text = (storage.foldername(name))[1]
-)
-WITH CHECK (
-  bucket_id = 'screenshots'
-  AND auth.uid()::text = (storage.foldername(name))[1]
-);
+    -- user-uploads: authenticated users can manage their own user-scoped objects
+    CREATE POLICY "Users can manage own files in user-uploads"
+    ON storage.objects
+    FOR ALL
+    TO authenticated
+    USING (
+      bucket_id = 'user-uploads'
+      AND auth.uid()::text = (storage.foldername(name))[1]
+    )
+    WITH CHECK (
+      bucket_id = 'user-uploads'
+      AND auth.uid()::text = (storage.foldername(name))[1]
+    );
+
+    -- recordings: authenticated users can manage their own user-scoped objects
+    CREATE POLICY "Users can manage own recordings"
+    ON storage.objects
+    FOR ALL
+    TO authenticated
+    USING (
+      bucket_id = 'recordings'
+      AND auth.uid()::text = (storage.foldername(name))[1]
+    )
+    WITH CHECK (
+      bucket_id = 'recordings'
+      AND auth.uid()::text = (storage.foldername(name))[1]
+    );
+
+    -- screenshots: authenticated users can manage their own user-scoped objects
+    CREATE POLICY "Users can manage own screenshots"
+    ON storage.objects
+    FOR ALL
+    TO authenticated
+    USING (
+      bucket_id = 'screenshots'
+      AND auth.uid()::text = (storage.foldername(name))[1]
+    )
+    WITH CHECK (
+      bucket_id = 'screenshots'
+      AND auth.uid()::text = (storage.foldername(name))[1]
+    );
+  ELSE
+    RAISE NOTICE 'Skipping storage.objects policy DDL: current user % does not own storage.objects', current_user;
+  END IF;
+END $$;
 

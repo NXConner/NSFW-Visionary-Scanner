@@ -23,6 +23,7 @@ CREATE INDEX IF NOT EXISTS idx_edge_rate_limits_window_end ON public.edge_rate_l
 
 ALTER TABLE public.edge_rate_limits ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Service role can manage edge rate limits" ON public.edge_rate_limits;
 CREATE POLICY "Service role can manage edge rate limits"
   ON public.edge_rate_limits FOR ALL
   USING (true);
