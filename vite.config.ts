@@ -242,7 +242,6 @@ export default defineConfig(({ mode }) => {
           entryFileNames: "assets/[name]-[hash].js",
           assetFileNames: assetInfo => {
             const info = assetInfo.name?.split(".") || [];
-            const extType = info[info.length - 1];
             if (/\.(png|jpe?g|svg|gif|tiff|bmp|ico|webp)$/i.test(assetInfo.name || "")) {
               return `assets/images/[name]-[hash][extname]`;
             }
@@ -254,8 +253,9 @@ export default defineConfig(({ mode }) => {
         },
       },
       // Bundle size warnings
-      // Reduced from 1500 to 500 to catch large chunks early and encourage better code splitting
-      chunkSizeWarningLimit: 500,
+      // Keep stricter limits for web, but avoid noisy false alarms in Capacitor APK builds
+      // where native packaging and code-split startup behavior differ from browser delivery.
+      chunkSizeWarningLimit: isCapacitorBuild ? 1500 : 500,
     },
     cacheDir: "node_modules/.vite",
     optimizeDeps: {

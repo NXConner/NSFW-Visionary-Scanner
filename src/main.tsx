@@ -57,6 +57,7 @@ const cleanupSync = () => {
 
 // Run cleanup immediately on any Lovable/preview host
 const hostname = window.location.hostname.toLowerCase();
+const protocol = window.location.protocol.toLowerCase();
 const isPreviewHost =
   hostname.includes("lovable") ||
   hostname.includes("cursor") ||
@@ -65,12 +66,17 @@ const isPreviewHost =
   hostname.endsWith(".lovable.app") ||
   hostname.endsWith(".cursor.sh") ||
   hostname.endsWith(".cursor.so");
+const isLikelyNativeHost =
+  protocol === "capacitor:" ||
+  protocol === "file:" ||
+  (protocol === "https:" && hostname === "localhost");
+const isLikelyNativeBoot = isNative() || isLikelyNativeHost;
 
 // Allow forcing cleanup for debugging without slowing down local dev by default.
 // Set VITE_FORCE_SW_CLEANUP=1 to enable.
 const forceCleanup = import.meta.env.VITE_FORCE_SW_CLEANUP === "1";
 
-if (isPreviewHost || forceCleanup) {
+if (isPreviewHost || forceCleanup || isLikelyNativeBoot) {
   cleanupSync();
 }
 
@@ -111,8 +117,30 @@ const deferInit = (fn: () => void) => {
   setTimeout(() => safeInit(fn), 0);
 };
 
+let splashFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+const clearSplashFallbackTimer = () => {
+  if (!splashFallbackTimer) return;
+  clearTimeout(splashFallbackTimer);
+  splashFallbackTimer = null;
+};
+const hideNativeSplashSafely = async () => {
+  if (!isLikelyNativeBoot) return;
+  try {
+    await hideSplashScreen();
+  } finally {
+    clearSplashFallbackTimer();
+  }
+};
+
+if (isLikelyNativeBoot) {
+  // Absolute fail-safe: never leave users pinned behind native splash forever.
+  splashFallbackTimer = setTimeout(() => {
+    void hideNativeSplashSafely();
+  }, 7000);
+}
+
 // 4. Initialize Capacitor for mobile (non-blocking)
-if (isNative()) {
+if (isLikelyNativeBoot) {
   // Install mobile error handlers immediately
   safeInit(installMobileErrorHandler);
   // Initialize Capacitor (async, non-blocking)
@@ -129,21 +157,21 @@ if (rootEl) {
     root.render(<App />);
 
     // Hide splash screen after React renders (for Capacitor)
-    if (isNative()) {
+    if (isLikelyNativeBoot) {
       // Give React a moment to render, then hide splash
       requestAnimationFrame(() => {
         setTimeout(() => {
-          hideSplashScreen().catch(err => {
+          hideNativeSplashSafely().catch(err => {
             console.warn("[Main] Failed to hide splash:", err);
           });
         }, 100);
       });
     }
-  } catch (err) {
+  } catch {
     // Emergency fallback: show error message instead of infinite loader
     // Also hide splash screen on error so user sees the error
-    if (isNative()) {
-      hideSplashScreen().catch(() => {});
+    if (isLikelyNativeBoot) {
+      void hideNativeSplashSafely();
     }
     rootEl.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;background:#0a0a0a;">
@@ -164,8 +192,8 @@ setTimeout(() => {
   try {
     hideLoader();
     // Also hide splash screen on mobile if app didn't load
-    if (isNative()) {
-      hideSplashScreen().catch(() => {});
+    if (isLikelyNativeBoot) {
+      void hideNativeSplashSafely();
     }
     const el = document.getElementById("root");
     if (!el) return;

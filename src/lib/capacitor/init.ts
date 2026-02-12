@@ -12,6 +12,31 @@ let isInitialized = false;
 let initializationError: Error | null = null;
 
 /**
+ * Capacitor global detection can occasionally race during very early boot on some
+ * Android WebView builds. This fallback prevents startup logic from incorrectly
+ * treating native runtime as web and leaving splash visible.
+ */
+const isLikelyNativeEnvironment = (): boolean => {
+  try {
+    if (Capacitor.isNativePlatform()) return true;
+  } catch {
+    // ignore and fall through to URL heuristic
+  }
+
+  try {
+    const protocol = String(window.location.protocol || "").toLowerCase();
+    const hostname = String(window.location.hostname || "").toLowerCase();
+    return (
+      protocol === "capacitor:" ||
+      protocol === "file:" ||
+      (protocol === "https:" && hostname === "localhost")
+    );
+  } catch {
+    return false;
+  }
+};
+
+/**
  * Check if running in a Capacitor native environment
  */
 export const isNative = (): boolean => {
@@ -29,7 +54,7 @@ export const getPlatform = (): "web" | "ios" | "android" => {
  * Hide the splash screen safely
  */
 export const hideSplashScreen = async (): Promise<void> => {
-  if (!isNative()) return;
+  if (!isLikelyNativeEnvironment()) return;
 
   try {
     await SplashScreen.hide({ fadeOutDuration: 300 });
@@ -44,7 +69,7 @@ export const hideSplashScreen = async (): Promise<void> => {
  * Configure the status bar for mobile
  */
 const configureStatusBar = async (): Promise<void> => {
-  if (!isNative()) return;
+  if (!isLikelyNativeEnvironment()) return;
 
   try {
     await StatusBar.setStyle({ style: Style.Dark });
@@ -68,7 +93,7 @@ export const initializeCapacitor = async (): Promise<void> => {
   const platform = getPlatform();
   console.log(`[Capacitor] Initializing on platform: ${platform}`);
 
-  if (!isNative()) {
+  if (!isLikelyNativeEnvironment()) {
     console.log("[Capacitor] Web platform - skipping native initialization");
     isInitialized = true;
     return;

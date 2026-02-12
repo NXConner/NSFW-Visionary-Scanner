@@ -174,6 +174,16 @@ export const TacticalScannerBackground = () => {
               />
               <div className="absolute inset-[12%] rounded-2xl border border-primary/45 shadow-[0_0_40px_hsl(var(--primary)/0.35),inset_0_0_28px_hsl(var(--primary)/0.2)]" />
 
+              {/* Square scanner frame */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="relative h-56 w-56 md:h-80 md:w-80 lg:h-96 lg:w-96 border-2 border-primary/70 shadow-[0_0_35px_hsl(var(--primary)/0.5),inset_0_0_24px_hsl(var(--primary)/0.25)]">
+                  <div className="absolute -top-1.5 -left-1.5 h-8 w-8 border-l-2 border-t-2 border-primary" />
+                  <div className="absolute -top-1.5 -right-1.5 h-8 w-8 border-r-2 border-t-2 border-primary" />
+                  <div className="absolute -bottom-1.5 -left-1.5 h-8 w-8 border-l-2 border-b-2 border-primary" />
+                  <div className="absolute -bottom-1.5 -right-1.5 h-8 w-8 border-r-2 border-b-2 border-primary" />
+                </div>
+              </div>
+
               {/* Main icon with enhanced visibility */}
               <Scan
                 className={`relative h-44 w-44 md:h-64 md:w-64 lg:h-80 lg:w-80 text-primary drop-shadow-[0_0_60px_hsl(var(--primary))] transition-all duration-200 ${isInteracting ? "scale-105" : ""} ${glitchActive ? "translate-x-1" : ""}`}

@@ -37,12 +37,13 @@ import TabDeepLinkRedirect from "@/routes/TabDeepLinkRedirect";
 import LegacyAdminRedirect from "@/routes/LegacyAdminRedirect";
 import { isAdultContentEnabled } from "@/lib/featureFlags";
 import { BUILD_ALLOW_ADULT_BUNDLE } from "@/lib/buildFlags";
+import NotFound from "./pages/NotFound";
 
 // Lazy load all pages for better code splitting
 const Index = lazy(() => import("./pages/Index"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const DLCStorePage = lazy(() => import("./pages/DLCStorePage"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+const LazyNotFoundFallback = lazy(() => Promise.resolve({ default: NotFound }));
 const LazyScrollToTopButton = lazy(() =>
   import("@/components/navigation/ScrollToTopButton").then(m => ({
     default: m.ScrollToTopButton,
@@ -57,7 +58,12 @@ const queryClient = new QueryClient();
 
 // Register addon contributions as early as possible so the DLC manager can see
 // fallback packages/manifests/modules during initialization.
-bootstrapAddons();
+try {
+  bootstrapAddons();
+} catch (error) {
+  // Never let addon bootstrap failures block first render on mobile.
+  console.error("[App] Addon bootstrap failed (continuing without addon contributions):", error);
+}
 
 const Auth = lazy(() => import("./pages/Auth"));
 const AuthCallback = lazy(() =>
@@ -65,7 +71,7 @@ const AuthCallback = lazy(() =>
 );
 const Pricing = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/Pricing"))
-  : lazy(() => import("./pages/NotFound"));
+  : LazyNotFoundFallback;
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
@@ -96,43 +102,43 @@ const ScannerSettingsScreen = lazy(() =>
 );
 const NSFWDashboardPage = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() => import("./pages/NSFWDashboardPage"))
-  : lazy(() => import("./pages/NotFound"));
+  : LazyNotFoundFallback;
 const NSFWTopicsPage = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() => import("./pages/NSFWTopicsPage"))
-  : lazy(() => import("./pages/NotFound"));
+  : LazyNotFoundFallback;
 const NSFWAddOnsLandingPage = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() => import("./pages/NSFWAddOnsLandingPage"))
-  : lazy(() => import("./pages/NotFound"));
+  : LazyNotFoundFallback;
 const PositionsDLCPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/PositionsDLCPage"))
-  : lazy(() => import("./pages/NotFound"));
+  : LazyNotFoundFallback;
 const VideosDLCPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/VideosDLCPage"))
-  : lazy(() => import("./pages/NotFound"));
+  : LazyNotFoundFallback;
 const PositionsDLCDetailPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/PositionsDLCDetailPage"))
-  : lazy(() => import("./pages/NotFound"));
+  : LazyNotFoundFallback;
 const VideosDLCDetailPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/VideosDLCDetailPage"))
-  : lazy(() => import("./pages/NotFound"));
+  : LazyNotFoundFallback;
 const AnalyticsDLCPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/AnalyticsDLCPage"))
-  : lazy(() => import("./pages/NotFound"));
+  : LazyNotFoundFallback;
 const CommunityDLCPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/CommunityDLCPage"))
-  : lazy(() => import("./pages/NotFound"));
+  : LazyNotFoundFallback;
 const AdvancedDLCPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/AdvancedDLCPage"))
-  : lazy(() => import("./pages/NotFound"));
+  : LazyNotFoundFallback;
 const AIIntimacyCoachDLCPage = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() => import("./pages/dlc/AIIntimacyCoachDLCPage"))
-  : lazy(() => import("./pages/NotFound"));
+  : LazyNotFoundFallback;
 const IntimateDateIdeasDLCPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/IntimateDateIdeasDLCPage"))
-  : lazy(() => import("./pages/NotFound"));
+  : LazyNotFoundFallback;
 const NewDLCShowcase = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/NewDLCShowcase"))
-  : lazy(() => import("./pages/NotFound"));
+  : LazyNotFoundFallback;
 const GrowersVsShowersPage = lazy(() => import("./pages/growersVsShowers"));
 const MeasurementsVsAverageMenPage = lazy(() => import("./pages/measurementsVsAverageMen"));
 
