@@ -1,5 +1,0 @@
-<<<<<<<< HEAD:android/app/src/main/assets/public/assets/useGenericStorage-BEQxq6QX.js
-import{r as o}from"./vendor-CJYa0DrA.js";import{q as a}from"./index-NbOq-KAT.js";function p(r,e){const[c,n]=o.useState(()=>{try{const t=a.getItem(r);return t?JSON.parse(t):e}catch{return e}}),u=o.useCallback(t=>{n(i=>{const s=typeof t=="function"?t(i):t;return a.setItem(r,JSON.stringify(s)),s})},[r]);return[c,u]}export{p as u};
-========
-import{r as o}from"./vendor-CJYa0DrA.js";import{q as a}from"./index-BourTkpy.js";function p(r,e){const[c,n]=o.useState(()=>{try{const t=a.getItem(r);return t?JSON.parse(t):e}catch{return e}}),u=o.useCallback(t=>{n(i=>{const s=typeof t=="function"?t(i):t;return a.setItem(r,JSON.stringify(s)),s})},[r]);return[c,u]}export{p as u};
->>>>>>>> cursor/rls-storage-audit-queries-29c9:android/app/src/main/assets/public/assets/useGenericStorage-CBX22-5a.js
