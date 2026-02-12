@@ -1,5 +1,8 @@
 import { lazy } from "react";
 import { BUILD_ALLOW_ADULT_BUNDLE } from "@/lib/buildFlags";
+import NotFound from "@/pages/NotFound";
+
+const LazyNotFoundFallback = lazy(() => Promise.resolve({ default: NotFound }));
 
 // Unified Scanner Page (consolidates all scanner features)
 export const LazyUnifiedScannerPage = lazy(() =>
@@ -124,13 +127,13 @@ export const LazyAdvancedRoutineFeatures = lazy(() =>
 );
 export const LazyNSFWVideoContent = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() => import("@/components/nsfwVideoContent").then(m => ({ default: m.NSFWVideoContent })))
-  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
+  : LazyNotFoundFallback;
 
 export const LazyNSFWCommunityForum = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
       import("@/components/NSFWCommunityForum").then(m => ({ default: m.NSFWCommunityForum })),
     )
-  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
+  : LazyNotFoundFallback;
 
 export const LazyNSFWSexualWellnessAnalytics = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
@@ -138,7 +141,7 @@ export const LazyNSFWSexualWellnessAnalytics = BUILD_ALLOW_ADULT_BUNDLE
         default: m.NSFWSexualWellnessAnalytics,
       })),
     )
-  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
+  : LazyNotFoundFallback;
 export const LazyPremiumContentMarketplace = lazy(() =>
   import("@/components/PremiumContentMarketplace").then(m => ({
     default: m.PremiumContentMarketplace,
@@ -189,7 +192,7 @@ export const LazyNSFWAdvancedFeatures = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
       import("@/components/NSFWAdvancedFeatures").then(m => ({ default: m.NSFWAdvancedFeatures })),
     )
-  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
+  : LazyNotFoundFallback;
 
 export const LazyNSFWCockWorshipingEducation = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
@@ -197,7 +200,7 @@ export const LazyNSFWCockWorshipingEducation = BUILD_ALLOW_ADULT_BUNDLE
         default: m.CockWorshipingEducation,
       })),
     )
-  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
+  : LazyNotFoundFallback;
 
 export const LazyNSFWEducationHub = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
@@ -205,7 +208,7 @@ export const LazyNSFWEducationHub = BUILD_ALLOW_ADULT_BUNDLE
         default: m.NsfwEducationHub,
       })),
     )
-  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
+  : LazyNotFoundFallback;
 
 export const LazyBondageBdsmEducation = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
@@ -213,7 +216,7 @@ export const LazyBondageBdsmEducation = BUILD_ALLOW_ADULT_BUNDLE
         default: m.BondageBdsmEducation,
       })),
     )
-  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
+  : LazyNotFoundFallback;
 
 export const LazyTantricEducation = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
@@ -221,7 +224,7 @@ export const LazyTantricEducation = BUILD_ALLOW_ADULT_BUNDLE
         default: m.TantricEducation,
       })),
     )
-  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
+  : LazyNotFoundFallback;
 
 export const LazyKamaSutraEducation = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
@@ -229,7 +232,7 @@ export const LazyKamaSutraEducation = BUILD_ALLOW_ADULT_BUNDLE
         default: m.KamaSutraEducation,
       })),
     )
-  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
+  : LazyNotFoundFallback;
 
 export const LazySubmissiveEducation = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
@@ -237,7 +240,7 @@ export const LazySubmissiveEducation = BUILD_ALLOW_ADULT_BUNDLE
         default: m.SubmissiveEducation,
       })),
     )
-  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
+  : LazyNotFoundFallback;
 export const LazyExpertContentConsultations = lazy(() =>
   import("@/components/ExpertContentConsultations").then(m => ({
     default: m.ExpertContentConsultations,
