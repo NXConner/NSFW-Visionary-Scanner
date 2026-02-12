@@ -29,6 +29,8 @@ param(
 
     [string]$OutFile = "",
 
+    [switch]$Update,
+
     [switch]$Force
 )
 
@@ -41,6 +43,31 @@ Set-Location $RepoRoot
 function Read-TextFile {
     param([Parameter(Mandatory)][string]$Path)
     return Get-Content -LiteralPath $Path -Raw -ErrorAction Stop
+}
+
+function Parse-DotEnv {
+    param([Parameter(Mandatory)][string]$Content)
+    $map = @{}
+    $lines = $Content -split "(\r?\n)"
+    foreach ($line in $lines) {
+        $t = ($line ?? "").Trim()
+        if ([string]::IsNullOrWhiteSpace($t)) { continue }
+        if ($t.StartsWith("#")) { continue }
+        $idx = $t.IndexOf("=")
+        if ($idx -lt 1) { continue }
+        $key = $t.Substring(0, $idx).Trim()
+        $value = $t.Substring($idx + 1).Trim()
+        if (
+            ($value.StartsWith('"') -and $value.EndsWith('"')) -or
+            ($value.StartsWith("'") -and $value.EndsWith("'"))
+        ) {
+            $value = $value.Substring(1, $value.Length - 2)
+        }
+        if (-not [string]::IsNullOrWhiteSpace($key)) {
+            $map[$key] = $value
+        }
+    }
+    return $map
 }
 
 function Get-SupabaseProjectRef {
@@ -165,25 +192,56 @@ function New-RandomBase64 {
 $projectRef = Get-SupabaseProjectRef
 $supabaseUrl = "https://$projectRef.supabase.co"
 
+$deployEnableKey = if ($Environment -eq "staging") { "STAGING_DEPLOY_ENABLED" } else { "PRODUCTION_DEPLOY_ENABLED" }
+$deployCommandKey = if ($Environment -eq "staging") { "STAGING_DEPLOY_COMMAND" } else { "PRODUCTION_DEPLOY_COMMAND" }
+# Safe default: disable deploy gating until a real deploy command is configured.
+$deployEnabledDefault = "false"
+$deployCommandDefault = "npm run build:$AppVersion"
+
 $resolvedOutFile = $OutFile
 if ([string]::IsNullOrWhiteSpace($resolvedOutFile)) {
     $resolvedOutFile = ".env.$Environment.local"
 }
 
-if ((Test-Path -LiteralPath $resolvedOutFile) -and -not $Force) {
-    Write-Host "[init-release-env] $resolvedOutFile already exists; not overwriting." -ForegroundColor Yellow
+$outPath = if ([System.IO.Path]::IsPathRooted($resolvedOutFile)) { $resolvedOutFile } else { (Join-Path $RepoRoot $resolvedOutFile) }
+
+if ((Test-Path -LiteralPath $outPath) -and -not ($Force -or $Update)) {
+    Write-Host "[init-release-env] $resolvedOutFile already exists; not overwriting (use -Update or -Force)." -ForegroundColor Yellow
     exit 0
 }
 
-$anonKey = Find-SupabaseAnonKey -ProjectRef $projectRef
+$existing = @{}
+if ($Update -and (Test-Path -LiteralPath $outPath)) {
+    try {
+        $existing = Parse-DotEnv -Content (Read-TextFile -Path $outPath)
+    }
+    catch {
+        $existing = @{}
+    }
+}
+
+$existingAnon = ""
+if ($existing.ContainsKey("VITE_SUPABASE_PUBLISHABLE_KEY")) { $existingAnon = [string]$existing["VITE_SUPABASE_PUBLISHABLE_KEY"] }
+elseif ($existing.ContainsKey("SUPABASE_ANON_KEY")) { $existingAnon = [string]$existing["SUPABASE_ANON_KEY"] }
+
+$anonKey = ""
+if (-not [string]::IsNullOrWhiteSpace($existingAnon)) {
+    $payload = Try-DecodeJwtPayload -Jwt $existingAnon
+    if ($null -ne $payload -and $payload.iss -eq "supabase" -and $payload.ref -eq $projectRef -and $payload.role -eq "anon") {
+        $anonKey = $existingAnon
+    }
+}
+if ([string]::IsNullOrWhiteSpace($anonKey)) {
+    $anonKey = Find-SupabaseAnonKey -ProjectRef $projectRef
+}
 if ([string]::IsNullOrWhiteSpace($anonKey)) {
     throw "Unable to recover Supabase anon key for project_ref=$projectRef from archived bundles or git history."
 }
 
 # Generate internal secrets we can safely create locally.
-$clientSalt = New-RandomHex -Bytes 32
-$dlcKeyring = New-RandomBase64 -Bytes 32
-$retentionSecret = New-RandomBase64 -Bytes 32
+$clientSalt = if ($existing.ContainsKey("VITE_CLIENT_ENCRYPTION_SALT") -and -not [string]::IsNullOrWhiteSpace($existing["VITE_CLIENT_ENCRYPTION_SALT"])) { [string]$existing["VITE_CLIENT_ENCRYPTION_SALT"] } else { (New-RandomHex -Bytes 32) }
+$dlcKeyring = if ($existing.ContainsKey("DLC_KEYRING_MASTER_KEY_B64") -and -not [string]::IsNullOrWhiteSpace($existing["DLC_KEYRING_MASTER_KEY_B64"])) { [string]$existing["DLC_KEYRING_MASTER_KEY_B64"] } else { (New-RandomBase64 -Bytes 32) }
+$retentionSecret = if ($existing.ContainsKey("DATA_RETENTION_SECRET") -and -not [string]::IsNullOrWhiteSpace($existing["DATA_RETENTION_SECRET"])) { [string]$existing["DATA_RETENTION_SECRET"] } else { (New-RandomBase64 -Bytes 32) }
 
 $lines = @(
     "# $resolvedOutFile (private, untracked) — DO NOT COMMIT",
@@ -198,6 +256,8 @@ $lines = @(
     "VITE_CLIENT_ENCRYPTION_SALT=$clientSalt",
     "",
     "# Server/scripts helpers (not VITE_)",
+    "$deployEnableKey=$deployEnabledDefault",
+    "$deployCommandKey=$deployCommandDefault",
     "SUPABASE_PROJECT_REF=$projectRef",
     "SUPABASE_URL=$supabaseUrl",
     "SUPABASE_ANON_KEY=$anonKey",
@@ -213,8 +273,6 @@ $lines = @(
     "# FIREBASE_SERVICE_ACCOUNT, APNS_KEY_P8, APNS_KEY_ID, APNS_TEAM_ID",
     ""
 )
-
-$outPath = Join-Path $RepoRoot $resolvedOutFile
 
 # Write UTF-8 (no BOM) with trailing newline.
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
