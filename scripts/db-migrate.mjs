@@ -218,7 +218,8 @@ function runRemoteMigration() {
         // Fast-path: if the Supabase CLI is linked, it already knows the correct pooler host.
         // Try that first to avoid a full region scan (which can take ~1 minute in CI).
         const linkedPoolerHost =
-          firstSetEnv(["SUPABASE_POOLER_HOST", "SUPABASE_POOLER_HOSTNAME"]) || readLinkedPoolerHost();
+          firstSetEnv(["SUPABASE_POOLER_HOST", "SUPABASE_POOLER_HOSTNAME"]) ||
+          readLinkedPoolerHost();
         if (linkedPoolerHost) {
           for (const port of [6543, 5432]) {
             const poolerDbUrl = buildPoolerDbUrlFromPassword({
