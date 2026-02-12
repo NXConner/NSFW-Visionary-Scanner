@@ -8,6 +8,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { fromExtended } from "@/lib/supabaseExtensions";
+import { invokeAiHealthChat } from "@/lib/edge/aiHealthChat";
 
 export interface SupportChatSession {
   id: string;
@@ -223,18 +224,12 @@ export async function getAIResponse(
   sessionId: string,
   userMessage: string,
 ): Promise<string | null> {
-  // 1) Try an edge function if one exists (best-effort; some deployments may return JSON).
+  // 1) Try the AI edge function (best-effort; may be disabled by policy/env).
   try {
-    const { data, error } = await supabase.functions.invoke("ai-health-chat", {
-      body: {
-        messages: [{ role: "user", content: userMessage }],
-      },
+    const ai = await invokeAiHealthChat({
+      messages: [{ role: "user", content: userMessage }],
     });
-    if (!error && data) {
-      if (typeof data === "string") return data;
-      if (typeof data.response === "string") return data.response;
-      if (typeof data.message === "string") return data.message;
-    }
+    if (ai.ok && ai.text) return ai.text;
   } catch {
     // ignore
   }
