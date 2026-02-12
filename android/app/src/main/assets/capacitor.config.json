@@ -1,0 +1,25 @@
+{
+	"appId": "com.morphoscan.pro",
+	"appName": "MorphoScan Pro",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https",
+		"cleartext": false
+	},
+	"android": {
+		"allowMixedContent": false,
+		"captureInput": true,
+		"webContentsDebuggingEnabled": false,
+		"backgroundColor": "#0a0a0a"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"launchAutoHide": true,
+			"launchFadeOutDuration": 300,
+			"backgroundColor": "#0a0a0a",
+			"androidScaleType": "CENTER_CROP",
+			"showSpinner": false
+		}
+	}
+}

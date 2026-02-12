@@ -23,6 +23,15 @@ out/
 .gradle/
 build/
 
+# Track packaged build outputs (APKs/AABs + metadata) while keeping
+# Gradle intermediates ignored. We re-include `app/build/outputs/**` only.
+!app/build/
+app/build/**
+!app/build/outputs/
+!app/build/outputs/**
+!app/build/outputs/**/*.apk
+!app/build/outputs/**/*.aab
+
 # Local configuration file (sdk path, etc)
 local.properties
 
@@ -92,10 +101,22 @@ lint/tmp/
 # Cordova plugins for Capacitor
 capacitor-cordova-android-plugins
 
+# Keep the plugin source in-repo for reproducible native builds
+!capacitor-cordova-android-plugins/
+!capacitor-cordova-android-plugins/**
+
 # Copied web assets
 app/src/main/assets/public
+
+# Keep the synced web bundle in-repo (Capacitor)
+!app/src/main/assets/public/
+!app/src/main/assets/public/**
 
 # Generated Config files
 app/src/main/assets/capacitor.config.json
 app/src/main/assets/capacitor.plugins.json
 app/src/main/res/xml/config.xml
+
+!app/src/main/assets/capacitor.config.json
+!app/src/main/assets/capacitor.plugins.json
+!app/src/main/res/xml/config.xml

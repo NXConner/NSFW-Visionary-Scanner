@@ -2,26 +2,15 @@
 node_modules/
 .npm
 
-# Build outputs
-dist/
-build/
-artifacts/
-
 # Test outputs
 coverage/
 playwright-report/
 test-results/
 
-# SDK  
-android-sdk/
-
 # IDE
 .idea/
 *.iml
 .vscode/
-
-# Logs
-*.log
 
 # Environment
 .env
@@ -40,9 +29,6 @@ android/gradle.properties
 android/app/release.keystore
 **/*.jks
 **/*.keystore
-
-# Large generated files
-*.pdf
 
 # Local archive workspace (do not commit temporary platform snapshots)
 deleted files/no-longer-needed/ios-archive-2026-02-12/
