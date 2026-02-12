@@ -73,12 +73,12 @@ describe("Auth", () => {
     const passwordInput = screen.getByLabelText(/password/i);
     const submitButton = screen.getByRole("button", { name: /sign in/i });
 
-    fireEvent.change(emailInput, { target: { value: "test@example.com" } });
+    fireEvent.change(emailInput, { target: { value: "test@example.invalid" } });
     fireEvent.change(passwordInput, { target: { value: "password123" } });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(mockSignIn).toHaveBeenCalledWith("test@example.com", "password123", false);
+      expect(mockSignIn).toHaveBeenCalledWith("test@example.invalid", "password123", false);
     });
   });
 
@@ -96,7 +96,7 @@ describe("Auth", () => {
 
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
-    fireEvent.change(emailInput, { target: { value: "test@example.com" } });
+    fireEvent.change(emailInput, { target: { value: "test@example.invalid" } });
     fireEvent.change(passwordInput, { target: { value: "password123" } });
 
     const submitButton = screen.getByRole("button", { name: /sign in/i });
