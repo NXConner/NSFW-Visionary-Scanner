@@ -16,6 +16,14 @@ const BUILD_STEPS = [
 ];
 
 export function SupabaseConfigGate({ children }: SupabaseConfigGateProps) {
+  // E2E/unit tests should be able to render UI routes without a real backend.
+  // The Supabase client is already "disabled" when unconfigured; this gate is a UX guard for humans.
+  const bypassForTests =
+    Boolean(import.meta.env.VITEST) ||
+    import.meta.env.MODE === "test" ||
+    String(import.meta.env.VITE_E2E || "") === "1";
+  if (bypassForTests) return <>{children}</>;
+
   if (supabaseConfig.isConfigured) return <>{children}</>;
 
   return (

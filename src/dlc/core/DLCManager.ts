@@ -4,6 +4,7 @@ import { getDistributionChannel } from "@/lib/featureFlags";
 import { dlcRegistry } from "./DLCRegistry";
 import { licenseValidator } from "./LicenseValidator";
 import { downloadManager } from "./DownloadManager";
+import { getDeviceId, getDevicePlatform } from "./device";
 import type {
   DLCPackage,
   DLCLicense,
@@ -93,8 +94,6 @@ class DLCManager {
     licenses: [],
     installations: [],
   };
-  private packageUuidById = new Map<string, string>();
-  private packageIdByUuid = new Map<string, string>();
 
   async initialize(): Promise<void> {
     await this.refreshPackages();
@@ -183,17 +182,6 @@ class DLCManager {
         this.mapPackageRow(row as Record<string, unknown>, idx),
       );
 
-      this.packageUuidById.clear();
-      this.packageIdByUuid.clear();
-      data.forEach(row => {
-        const pid = String((row as any).package_id || "");
-        const uuid = String((row as any).id || "");
-        if (pid && uuid) {
-          this.packageUuidById.set(pid, uuid);
-          this.packageIdByUuid.set(uuid, pid);
-        }
-      });
-
       this.storeState = {
         ...this.storeState,
         packages,
@@ -261,7 +249,9 @@ class DLCManager {
 
       const { data, error } = await supabase
         .from("dlc_installations")
-        .select("package_id, installed_version, installed_at, file_size_bytes, checksum, is_valid")
+        .select(
+          "package_id, installed_version, install_date, created_at, storage_used_bytes, cached_content_bytes, is_corrupted, is_installed",
+        )
         .eq("user_id", auth.user.id)
         .limit(500);
 
@@ -276,15 +266,23 @@ class DLCManager {
       }
 
       const installations: DLCInstallation[] = (data || []).map((row: any) => {
-        const uuid = String(row.package_id || "");
-        const packageId = this.packageIdByUuid.get(uuid) || uuid;
+        const packageId = String(row.package_id || "");
+        const installedAtRaw = row.install_date || row.created_at || null;
+        const storageBytes =
+          row.storage_used_bytes != null
+            ? Number(row.storage_used_bytes)
+            : row.cached_content_bytes != null
+              ? Number(row.cached_content_bytes)
+              : null;
+        const corrupted = Boolean(row.is_corrupted);
+        const installed = row.is_installed == null ? true : Boolean(row.is_installed);
         return {
           packageId,
           installedVersion: String(row.installed_version || "1.0.0"),
-          installedAt: row.installed_at ? String(row.installed_at) : null,
-          fileSizeBytes: row.file_size_bytes ? Number(row.file_size_bytes) : null,
-          checksum: row.checksum ? String(row.checksum) : null,
-          isValid: row.is_valid ?? true,
+          installedAt: installedAtRaw ? String(installedAtRaw) : null,
+          fileSizeBytes: storageBytes,
+          checksum: null,
+          isValid: installed && !corrupted,
         };
       });
 
@@ -362,19 +360,25 @@ class DLCManager {
     try {
       const { data: auth } = await supabase.auth.getUser();
       if (auth.user) {
-        const pkgUuid = this.packageUuidById.get(packageId);
-        if (pkgUuid) {
-          await supabase.from("dlc_installations").upsert(
-            {
-              user_id: auth.user.id,
-              package_id: pkgUuid,
-              installed_version: this.getPackage(packageId)?.version || "1.0.0",
-              installed_at: new Date().toISOString(),
-              is_valid: true,
-            },
-            { onConflict: "user_id,package_id" },
-          );
-        }
+        const license = this.getLicense(packageId);
+        if (!license?.id) return { success: true };
+
+        const now = new Date().toISOString();
+        await supabase.from("dlc_installations").upsert(
+          {
+            user_id: auth.user.id,
+            license_id: license.id,
+            package_id: packageId,
+            device_id: getDeviceId(),
+            device_platform: getDevicePlatform(),
+            installed_version: this.getPackage(packageId)?.version || "1.0.0",
+            install_date: now,
+            last_used_at: now,
+            is_installed: true,
+            is_corrupted: false,
+          },
+          { onConflict: "user_id,package_id,device_id" },
+        );
       }
     } catch (error) {
       logger.warn("DLCManager: Installation upsert failed", {
@@ -399,14 +403,12 @@ class DLCManager {
     try {
       const { data: auth } = await supabase.auth.getUser();
       if (auth.user) {
-        const pkgUuid = this.packageUuidById.get(packageId);
-        if (pkgUuid) {
-          await supabase
-            .from("dlc_installations")
-            .delete()
-            .eq("user_id", auth.user.id)
-            .eq("package_id", pkgUuid);
-        }
+        await supabase
+          .from("dlc_installations")
+          .delete()
+          .eq("user_id", auth.user.id)
+          .eq("package_id", packageId)
+          .eq("device_id", getDeviceId());
       }
     } catch (error) {
       logger.warn("DLCManager: Installation delete failed", {
@@ -462,7 +464,11 @@ class DLCManager {
           verification_method: "self_attested",
           verified_at: new Date().toISOString(),
           is_verified: true,
-          metadata: { age, consent: true },
+          declared_age: age,
+          adult_content_consent: true,
+          terms_accepted: true,
+          terms_accepted_at: new Date().toISOString(),
+          terms_version: "v1",
         },
         { onConflict: "user_id" },
       );
@@ -488,11 +494,17 @@ class DLCManager {
       if (!auth.user) return false;
       const { data, error } = await supabase
         .from("dlc_age_verifications")
-        .select("is_verified, expires_at")
+        .select("is_verified, verified_at")
         .eq("user_id", auth.user.id)
         .maybeSingle();
       if (error || !data) return false;
-      if (data.expires_at && new Date(data.expires_at) < new Date()) return false;
+      // Treat DB verification as valid for the same TTL used by localStorage.
+      const verifiedAt = data.verified_at ? new Date(String(data.verified_at)) : null;
+      if (verifiedAt) {
+        const expiresAt = new Date(verifiedAt);
+        expiresAt.setDate(expiresAt.getDate() + AGE_VERIFICATION_EXPIRY_DAYS);
+        if (expiresAt < new Date()) return false;
+      }
 
       const verified = Boolean(data.is_verified);
       // Sync to localStorage if verified in DB

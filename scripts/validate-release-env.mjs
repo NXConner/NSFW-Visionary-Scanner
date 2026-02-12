@@ -89,7 +89,8 @@ const env = parseDotEnv(fs.readFileSync(envFilePath, "utf8"));
 const envPrefix = `${options.environment.toUpperCase()}_`;
 const results = [];
 
-const SENSITIVE_KEY_PATTERN = /(secret|token|password|api[_-]?key|private|service_role|webhook|keyring)/i;
+const SENSITIVE_KEY_PATTERN =
+  /(secret|token|password|api[_-]?key|private|service_role|webhook|keyring)/i;
 
 const PLACEHOLDER_PATTERNS = [
   /^$/i,
@@ -210,7 +211,9 @@ function validateEnum(allowed) {
   return value => (allowed.includes(value) ? true : `expected one of ${allowed.join(", ")}`);
 }
 
-console.log(`${COLORS.cyan}🔐 Release environment validation (${options.environment})${COLORS.reset}`);
+console.log(
+  `${COLORS.cyan}🔐 Release environment validation (${options.environment})${COLORS.reset}`,
+);
 console.log(`${COLORS.cyan}Env file: ${path.relative(repoRoot, envFilePath)}${COLORS.reset}\n`);
 
 // Core release + deploy keys
@@ -256,14 +259,22 @@ requireKey("STRIPE", "STRIPE_WEBHOOK_SECRET", { severity: stripeSeverity });
 requireKey("STRIPE", "VITE_STRIPE_PUBLISHABLE_KEY", { severity: stripeSeverity });
 
 const priceIdKeys = Array.from(
-  new Set([...Object.keys(env), ...Object.keys(process.env)].filter(key => key.endsWith("PRICE_ID"))),
+  new Set(
+    [...Object.keys(env), ...Object.keys(process.env)].filter(key => key.endsWith("PRICE_ID")),
+  ),
 );
 const validPriceIdKeys = priceIdKeys.filter(key => {
   const value = valueForKey(key);
   return value && !looksPlaceholder(value);
 });
 if (validPriceIdKeys.length > 0) {
-  addResult("STRIPE", "PRICE_IDS", "warning", true, `${validPriceIdKeys.length} price IDs configured`);
+  addResult(
+    "STRIPE",
+    "PRICE_IDS",
+    "warning",
+    true,
+    `${validPriceIdKeys.length} price IDs configured`,
+  );
 } else {
   addResult(
     "STRIPE",
@@ -318,7 +329,9 @@ if (!options.noReport) {
     : path.join(repoRoot, options.reportFile);
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, JSON.stringify(summary, null, 2) + "\n", "utf8");
-  console.log(`\n${COLORS.cyan}Report written: ${path.relative(repoRoot, reportPath)}${COLORS.reset}`);
+  console.log(
+    `\n${COLORS.cyan}Report written: ${path.relative(repoRoot, reportPath)}${COLORS.reset}`,
+  );
 }
 
 console.log(

@@ -2,14 +2,26 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL || "").trim();
-const SUPABASE_PUBLISHABLE_KEY = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "").trim();
+// Vite injects `import.meta.env`, but this module is also imported from Node-based scripts (tsx).
+// Keep it safe in both environments.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const META_ENV: Record<string, unknown> =
+  ((import.meta as any)?.env as Record<string, unknown>) || {};
+
+const SUPABASE_URL = String(
+  (META_ENV.VITE_SUPABASE_URL as string | undefined) || process.env.VITE_SUPABASE_URL || "",
+).trim();
+const SUPABASE_PUBLISHABLE_KEY = String(
+  (META_ENV.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined) ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    "",
+).trim();
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 const isConfigured = SUPABASE_URL.length > 0 && SUPABASE_PUBLISHABLE_KEY.length > 0;
-const isTestEnv = Boolean(import.meta.env.VITEST) || import.meta.env.MODE === "test";
+const isTestEnv = Boolean(META_ENV.VITEST) || META_ENV.MODE === "test";
 
 const missingKeys = [
   ...(SUPABASE_URL ? [] : ["VITE_SUPABASE_URL"]),

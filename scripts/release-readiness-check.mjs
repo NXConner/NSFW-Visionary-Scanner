@@ -102,13 +102,7 @@ const requiredIgnorePatterns = [
 ];
 
 for (const pattern of requiredIgnorePatterns) {
-  checkContains(
-    "P0-SECRETS",
-    gitignore,
-    pattern,
-    `.gitignore contains ${pattern}`,
-    "error",
-  );
+  checkContains("P0-SECRETS", gitignore, pattern, `.gitignore contains ${pattern}`, "error");
 }
 
 const sensitivePaths = [
@@ -176,12 +170,20 @@ checkContains(
   "if (import.meta.env.DEV) return;",
   "PWA registration is disabled in development",
 );
-checkContains(
-  "P0-SWITCHES",
-  pwaRegister,
-  "if (isNativeApp()) return;",
-  "PWA registration is disabled for native shells",
-);
+{
+  // Allow either `if (isNativeApp()) return;` or a braced guard that returns after cleanup.
+  const nativeGuardInline = /if\s*\(\s*isNativeApp\(\)\s*\)\s*return\s*;/.test(pwaRegister);
+  const nativeGuardBraced = /if\s*\(\s*isNativeApp\(\)\s*\)\s*\{[\s\S]*?return\s*;[\s\S]*?\}/.test(
+    pwaRegister,
+  );
+  addCheck({
+    section: "P0-SWITCHES",
+    key: "pwa-native-guard",
+    passed: nativeGuardInline || nativeGuardBraced,
+    severity: "error",
+    message: "PWA registration is disabled for native shells",
+  });
+}
 checkContains(
   "P0-SWITCHES",
   pwaRegister,
@@ -310,8 +312,18 @@ addCheck({
 
 // P1: CI/CD and observability
 const ciWorkflow = readFile(".github/workflows/ci.yml");
-checkContains("P1-CICD", ciWorkflow, "STAGING_DEPLOY_ENABLED", "CI has staging deploy gating secret");
-checkContains("P1-CICD", ciWorkflow, "STAGING_DEPLOY_COMMAND", "CI has staging deploy command secret");
+checkContains(
+  "P1-CICD",
+  ciWorkflow,
+  "STAGING_DEPLOY_ENABLED",
+  "CI has staging deploy gating secret",
+);
+checkContains(
+  "P1-CICD",
+  ciWorkflow,
+  "STAGING_DEPLOY_COMMAND",
+  "CI has staging deploy command secret",
+);
 checkContains(
   "P1-CICD",
   ciWorkflow,
@@ -328,8 +340,18 @@ checkContains("P1-CICD", ciWorkflow, "github/codeql-action/init", "CI includes C
 checkContains("P1-CICD", ciWorkflow, "npm run scan:vuln", "CI runs dependency vulnerability scan");
 
 const manualDeploy = readFile(".github/workflows/manual-deploy.yml");
-checkContains("P1-CICD", manualDeploy, "workflow_dispatch", "Manual deploy workflow is dispatchable");
-checkContains("P1-CICD", manualDeploy, "run_migrations", "Manual deploy supports migration apply step");
+checkContains(
+  "P1-CICD",
+  manualDeploy,
+  "workflow_dispatch",
+  "Manual deploy workflow is dispatchable",
+);
+checkContains(
+  "P1-CICD",
+  manualDeploy,
+  "run_migrations",
+  "Manual deploy supports migration apply step",
+);
 checkContains(
   "P1-CICD",
   manualDeploy,
@@ -339,11 +361,27 @@ checkContains(
 checkContains("P1-CICD", manualDeploy, "ref:", "Manual deploy supports rollback by git ref");
 
 const externalRunbook = readFile("docs/operations/EXTERNAL_RELEASE_TASKS_RUNBOOK.md");
-checkContains("P1-CICD", externalRunbook, "Rollback", "Runbook documents rollback procedures", "warning");
+checkContains(
+  "P1-CICD",
+  externalRunbook,
+  "Rollback",
+  "Runbook documents rollback procedures",
+  "warning",
+);
 
 const sentry = readFile("src/lib/sentry.ts");
-checkContains("P1-OBSERVABILITY", sentry, "sendDefaultPii: false", "Sentry PII default sending is disabled");
-checkContains("P1-OBSERVABILITY", sentry, "beforeSend", "Sentry event scrubbing hook is configured");
+checkContains(
+  "P1-OBSERVABILITY",
+  sentry,
+  "sendDefaultPii: false",
+  "Sentry PII default sending is disabled",
+);
+checkContains(
+  "P1-OBSERVABILITY",
+  sentry,
+  "beforeSend",
+  "Sentry event scrubbing hook is configured",
+);
 checkContains(
   "P1-OBSERVABILITY",
   sentry,
@@ -352,7 +390,12 @@ checkContains(
   "warning",
 );
 const logger = readFile("src/lib/logger.ts");
-checkContains("P1-OBSERVABILITY", logger, "DEFAULT_REDACT_KEYS", "Logger includes secret redaction keys");
+checkContains(
+  "P1-OBSERVABILITY",
+  logger,
+  "DEFAULT_REDACT_KEYS",
+  "Logger includes secret redaction keys",
+);
 
 // P2: Accessibility + performance
 const packageJson = JSON.parse(readFile("package.json") || "{}");
@@ -392,7 +435,10 @@ for (const e2eSpec of ["e2e/auth.spec.ts", "e2e/core-flow.spec.ts", "e2e/pricing
     message: `${e2eSpec} exists`,
   });
 }
-for (const perfTest of ["performance-tests/load-test.js", "performance-tests/nsfw-media-load-test.js"]) {
+for (const perfTest of [
+  "performance-tests/load-test.js",
+  "performance-tests/nsfw-media-load-test.js",
+]) {
   addCheck({
     section: "P2-PERF",
     key: `perf:${perfTest}`,
@@ -464,7 +510,9 @@ if (shouldWriteReport) {
   const reportAbsolutePath = path.resolve(repoRoot, reportFileArg);
   fs.mkdirSync(path.dirname(reportAbsolutePath), { recursive: true });
   fs.writeFileSync(reportAbsolutePath, JSON.stringify(summary, null, 2) + "\n", "utf8");
-  console.log(`${COLORS.cyan}Report written: ${path.relative(repoRoot, reportAbsolutePath)}${COLORS.reset}`);
+  console.log(
+    `${COLORS.cyan}Report written: ${path.relative(repoRoot, reportAbsolutePath)}${COLORS.reset}`,
+  );
 }
 
 if (failedErrors.length > 0) {

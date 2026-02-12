@@ -7,6 +7,7 @@ export interface ExpertProfile {
   credentials: string[] | null;
   years_experience: number | null;
   profile_image_url: string | null;
+  availability_schedule: unknown | null;
   consultation_rate_per_hour: number;
   group_workshop_rate_per_person: number | null;
   currency: string;

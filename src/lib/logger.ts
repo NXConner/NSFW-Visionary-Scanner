@@ -98,11 +98,30 @@ const safeSerialize = (value: unknown, redactKeys: string[]): unknown => {
   }
 };
 
+// `import.meta.env` exists in Vite builds, but may be missing when this module is imported
+// from Node (e.g., tsx scripts). Keep logger usable in both environments.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const META_ENV: Record<string, unknown> =
+  ((import.meta as any)?.env as Record<string, unknown>) || {};
+const metaString = (key: string): string => {
+  const v = META_ENV[key];
+  if (typeof v === "string" && v.trim().length > 0) return v.trim();
+  const fromProcess = (process.env as Record<string, string | undefined>)[key];
+  return typeof fromProcess === "string" && fromProcess.trim().length > 0 ? fromProcess.trim() : "";
+};
+const metaBool = (key: string): boolean => {
+  const v = META_ENV[key];
+  if (typeof v === "boolean") return v;
+  if (typeof v === "string") return v === "true";
+  const fromProcess = (process.env as Record<string, string | undefined>)[key];
+  return typeof fromProcess === "string" ? fromProcess === "true" : false;
+};
+
 class Logger {
-  private isProduction = import.meta.env.PROD;
-  private appVersion = import.meta.env.VITE_APP_VERSION || "unknown";
+  private isProduction = metaBool("PROD") || process.env.NODE_ENV === "production";
+  private appVersion = metaString("VITE_APP_VERSION") || "unknown";
   private envName =
-    import.meta.env.VITE_APP_ENV || (this.isProduction ? "production" : "development");
+    metaString("VITE_APP_ENV") || (this.isProduction ? "production" : "development");
   private redactKeys = DEFAULT_REDACT_KEYS;
 
   setRedactKeys(keys: string[]) {
@@ -250,7 +269,7 @@ export function installConsoleInterceptor(options?: {
   minLevel?: LogLevel;
   redactKeys?: string[];
 }) {
-  const enabled = options?.enabled ?? import.meta.env.PROD;
+  const enabled = options?.enabled ?? metaBool("PROD");
   if (!enabled) return;
 
   if (options?.redactKeys) logger.setRedactKeys(options.redactKeys);

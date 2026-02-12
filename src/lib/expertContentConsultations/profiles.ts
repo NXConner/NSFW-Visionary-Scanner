@@ -13,6 +13,7 @@ function mapExpertProfile(row: any): ExpertProfile {
     credentials: Array.isArray(row.credentials) ? row.credentials.map(String) : null,
     years_experience: row.years_experience ?? null,
     profile_image_url: row.profile_image_url ?? null,
+    availability_schedule: row.availability_schedule ?? null,
     consultation_rate_per_hour: Number(row.consultation_rate_per_hour ?? 0),
     group_workshop_rate_per_person:
       row.workshop_rate_per_person != null ? Number(row.workshop_rate_per_person) : null,

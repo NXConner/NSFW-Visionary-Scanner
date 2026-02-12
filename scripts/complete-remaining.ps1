@@ -91,6 +91,7 @@ Run-Step -Name "typecheck" -Action { npx tsc -p tsconfig.app.json --noEmit } -Sk
 
 # Tests
 Run-Step -Name "unit tests" -Action { npm run test:run } -Skip:$SkipUnitTests -SkipReason "flagged"
+Run-Step -Name "playwright install" -Action { npx playwright install } -Skip:$SkipE2E -SkipReason "flagged"
 Run-Step -Name "e2e tests" -Action { npm run test:e2e } -Skip:$SkipE2E -SkipReason "flagged"
 
 # Build
@@ -98,19 +99,34 @@ Run-Step -Name "prod build (nsfw direct)" -Action { npm run build:nsfw:direct } 
 
 # Supabase migrations/types
 if (-not $SkipSupabase) {
-    $hasSupabaseCli = Get-Command supabase -ErrorAction SilentlyContinue
-    if ($null -eq $hasSupabaseCli) {
-        Add-Result -Bucket "Manual" -Message "Install Supabase CLI (npm i -g supabase) to run db push"
-        Write-Host "  ⚠️  Supabase CLI not found (manual)" -ForegroundColor Yellow
+    $hasNpx = Get-Command npx -ErrorAction SilentlyContinue
+    if ($null -eq $hasNpx) {
+        Add-Result -Bucket "Manual" -Message "npx not found; install Node.js tooling to run Supabase checks"
+        Write-Host "  ⚠️  npx not found (manual)" -ForegroundColor Yellow
     } else {
+        # db push (remote) requires credentials.
         if ($env:SUPABASE_ACCESS_TOKEN -and $env:SUPABASE_PROJECT_REF) {
             Run-Step -Name "supabase db push" -Action { npm run db:push } -Skip:$false
         } else {
             Add-Result -Bucket "Manual" -Message "Set SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_REF and run npm run db:push"
             Write-Host "  ⚠️  Missing SUPABASE_ACCESS_TOKEN / SUPABASE_PROJECT_REF (manual)" -ForegroundColor Yellow
         }
+
+        # Local types check requires Docker + a running local Supabase stack.
+        $hasDocker = Get-Command docker -ErrorAction SilentlyContinue
+        if ($null -eq $hasDocker) {
+            Add-Result -Bucket "Manual" -Message "Install Docker to run local Supabase type checks (npm run db:start, then npm run db:types:check)"
+            Write-Host "  ⚠️  Docker not found (manual)" -ForegroundColor Yellow
+        } else {
+            & npx supabase status | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                Add-Result -Bucket "Manual" -Message "Start local Supabase stack (npm run db:start) to run npm run db:types:check"
+                Write-Host "  ⚠️  Local Supabase stack not running (manual)" -ForegroundColor Yellow
+            } else {
+                Run-Step -Name "db types check" -Action { npm run db:types:check } -Skip:$false
+            }
+        }
     }
-    Run-Step -Name "db types check" -Action { npm run db:types:check } -Skip:$false
 } else {
     Add-Result -Bucket "Skipped" -Message "Supabase checks (flagged)"
 }

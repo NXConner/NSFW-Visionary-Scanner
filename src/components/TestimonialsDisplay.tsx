@@ -184,7 +184,7 @@ export const TestimonialsDisplay = () => {
         {
           testimonial_id: testimonialId,
           user_id: user.id,
-          vote_type: "helpful",
+          is_helpful: true,
         },
         {
           onConflict: "testimonial_id,user_id",

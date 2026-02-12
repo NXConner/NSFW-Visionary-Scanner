@@ -1,136 +1,44 @@
 /**
- * Expert Content & Consultations System
- * Handles expert profiles, articles, videos, Q&A, consultations, and bookings
+ * Expert Content (compat wrapper)
+ *
+ * The repo’s active implementation lives under `src/lib/expertContentConsultations/*`.
+ * This file keeps the older import path (`@/lib/expertContent`) working while
+ * avoiding duplicate, schema-drifting logic.
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import { logger } from "./logger";
+import { logger } from "@/lib/logger";
 import { toast } from "sonner";
+import type {
+  ExpertArticle,
+  ExpertProfile,
+  ConsultationBooking,
+} from "@/lib/expertContentConsultations/types";
+import { getExpertProfiles as getExpertProfilesImpl } from "@/lib/expertContentConsultations/profiles";
+import { getExpertArticles as getExpertArticlesImpl } from "@/lib/expertContentConsultations/articles";
+import { bookConsultation as bookConsultationImpl } from "@/lib/expertContentConsultations/consultations";
+import { askExpertQuestion } from "@/lib/expertContentConsultations/qa";
+import { rateExpert as rateExpertImpl } from "@/lib/expertContentConsultations/ratings";
 
-export interface ExpertProfile {
-  id: string;
-  user_id: string;
-  display_name: string;
-  bio: string | null;
-  specialties: string[];
-  credentials: string[];
-  years_experience: number;
-  rating: number;
-  review_count: number;
-  consultation_rate_per_hour: number;
-  group_workshop_rate_per_person: number;
-  is_verified: boolean;
-  is_available: boolean;
-  availability_schedule: any;
-  profile_image_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
+export type { ExpertProfile, ExpertArticle };
 
-export interface ExpertArticle {
-  id: string;
-  expert_id: string;
-  title: string;
-  content: string;
-  category: string;
-  tags: string[];
-  view_count: number;
-  like_count: number;
-  is_featured: boolean;
-  published_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ExpertConsultation {
-  id: string;
-  expert_id: string;
-  user_id: string;
-  consultation_type: "individual" | "group";
-  scheduled_at: string;
-  duration_minutes: number;
-  status: "pending" | "confirmed" | "in_progress" | "completed" | "cancelled";
-  payment_status: "pending" | "paid" | "refunded";
-  payment_amount: number;
-  meeting_url: string | null;
-  recording_url: string | null;
-  notes: string | null;
-  rating: number | null;
-  review: string | null;
-  created_at: string;
-  updated_at: string;
-}
+// Historical alias used by older components/utils.
+export type ExpertConsultation = ConsultationBooking;
 
 export async function getExpertProfiles(
   specialty?: string,
   minRating?: number,
 ): Promise<ExpertProfile[]> {
-  try {
-    let query = supabase
-      .from("expert_profiles")
-      .select("*")
-      .eq("is_verified", true)
-      .eq("is_available", true)
-      .order("rating", { ascending: false });
-
-    if (specialty) {
-      query = query.contains("specialties", [specialty]);
-    }
-
-    if (minRating) {
-      query = query.gte("rating", minRating);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      logger.error("Error fetching experts", { error: error.message });
-      return [];
-    }
-
-    return (data || []) as ExpertProfile[];
-  } catch (error) {
-    logger.error("Error in getExpertProfiles", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return [];
-  }
+  const profiles = await getExpertProfilesImpl(undefined, specialty);
+  if (!minRating) return profiles;
+  return profiles.filter(p => Number(p.rating ?? 0) >= Number(minRating));
 }
 
 export async function getExpertArticles(
   expertId?: string,
   category?: string,
 ): Promise<ExpertArticle[]> {
-  try {
-    let query = supabase
-      .from("expert_articles")
-      .select("*")
-      .eq("published_at", null)
-      .not("published_at", "is", null)
-      .order("published_at", { ascending: false });
-
-    if (expertId) {
-      query = query.eq("expert_id", expertId);
-    }
-
-    if (category) {
-      query = query.eq("category", category);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      logger.error("Error fetching articles", { error: error.message });
-      return [];
-    }
-
-    return (data || []) as ExpertArticle[];
-  } catch (error) {
-    logger.error("Error in getExpertArticles", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return [];
-  }
+  return getExpertArticlesImpl(expertId, category);
 }
 
 export async function bookConsultation(
@@ -139,85 +47,15 @@ export async function bookConsultation(
   scheduledAt: string,
   durationMinutes: number,
 ): Promise<ExpertConsultation | null> {
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("Please sign in to book consultation");
-      return null;
-    }
-
-    // Get expert to get rates
-    const { data: expert } = await supabase
-      .from("expert_profiles")
-      .select("consultation_rate_per_hour, group_workshop_rate_per_person")
-      .eq("id", expertId)
-      .single();
-
-    if (!expert) {
-      toast.error("Expert not found");
-      return null;
-    }
-
-    const rate =
-      consultationType === "individual"
-        ? expert.consultation_rate_per_hour
-        : expert.group_workshop_rate_per_person;
-
-    const paymentAmount = (rate / 60) * durationMinutes;
-
-    // Create consultation booking
-    const { data, error } = await supabase
-      .from("expert_consultations")
-      .insert({
-        expert_id: expertId,
-        user_id: user.id,
-        consultation_type: consultationType,
-        scheduled_at: scheduledAt,
-        duration_minutes: durationMinutes,
-        payment_amount: paymentAmount,
-        status: "pending",
-        payment_status: "pending",
-      })
-      .select()
-      .single();
-
-    if (error) {
-      logger.error("Error booking consultation", { error: error.message });
-      toast.error("Failed to book consultation");
-      return null;
-    }
-
-    // Create payment session
-    const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
-      "create-checkout-session",
-      {
-        body: {
-          amount: paymentAmount,
-          currency: "usd",
-          metadata: {
-            consultation_id: data.id,
-            expert_id: expertId,
-            type: consultationType,
-          },
-        },
-      },
-    );
-
-    if (paymentError) {
-      logger.error("Error creating payment", { error: paymentError.message });
-    }
-
-    toast.success("Consultation booked! Please complete payment.");
-    return data as ExpertConsultation;
-  } catch (error) {
-    logger.error("Error in bookConsultation", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    toast.error("Failed to book consultation");
-    return null;
-  }
+  // Map the legacy "individual/group" concept to the newer consultation booking type.
+  // The newer module treats these as product-level types, not video modality.
+  const mappedType = consultationType === "group" ? "group" : "individual";
+  return bookConsultationImpl(expertId, {
+    consultationType: mappedType,
+    scheduledAt,
+    durationMinutes,
+    topic: "Consultation",
+  }) as Promise<ExpertConsultation | null>;
 }
 
 export async function submitExpertQuestion(
@@ -225,37 +63,8 @@ export async function submitExpertQuestion(
   question: string,
   category?: string,
 ): Promise<boolean> {
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("Please sign in");
-      return false;
-    }
-
-    const { error } = await supabase.from("expert_questions").insert({
-      expert_id: expertId,
-      user_id: user.id,
-      question,
-      category,
-      status: "pending",
-    });
-
-    if (error) {
-      logger.error("Error submitting question", { error: error.message });
-      toast.error("Failed to submit question");
-      return false;
-    }
-
-    toast.success("Question submitted!");
-    return true;
-  } catch (error) {
-    logger.error("Error in submitExpertQuestion", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return false;
-  }
+  const res = await askExpertQuestion(expertId, question, category);
+  return Boolean(res);
 }
 
 export async function rateExpert(
@@ -272,46 +81,24 @@ export async function rateExpert(
       return false;
     }
 
-    const { error } = await supabase
-      .from("expert_consultations")
-      .update({
-        rating,
-        review,
-      })
+    const { data, error } = await supabase
+      .from("consultation_bookings")
+      .select("expert_id")
       .eq("id", consultationId)
-      .eq("user_id", user.id);
-
-    if (error) {
-      logger.error("Error rating expert", { error: error.message });
-      toast.error("Failed to submit rating");
+      .maybeSingle();
+    if (error || !data?.expert_id) {
+      toast.error("Consultation not found");
       return false;
     }
 
-    // Update expert's average rating
-    const { data: consultation } = await supabase
-      .from("expert_consultations")
-      .select("expert_id, rating")
-      .eq("expert_id", consultationId)
-      .not("rating", "is", null);
-
-    if (consultation) {
-      const avgRating =
-        consultation.reduce((sum, c) => sum + (c.rating || 0), 0) / consultation.length;
-      await supabase
-        .from("expert_profiles")
-        .update({
-          rating: avgRating,
-          review_count: consultation.length,
-        })
-        .eq("id", consultation[0].expert_id);
-    }
-
-    toast.success("Rating submitted!");
-    return true;
+    const res = await rateExpertImpl(
+      String(data.expert_id),
+      { overallRating: rating, reviewText: review },
+      consultationId,
+    );
+    return Boolean(res);
   } catch (error) {
-    logger.error("Error in rateExpert", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error("rateExpert error", { error });
     return false;
   }
 }
