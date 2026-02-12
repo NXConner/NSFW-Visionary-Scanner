@@ -22,7 +22,7 @@ interface PartnerPair {
 
 /**
  * Get pre-configured partner pairs from environment variables
- * Also includes hardcoded fallback for n8ter8@gmail.com and slkchick_360@yahoo.com
+ * Also includes hardcoded fallback for n8ter8@gmail.com and butterflii18@gmail.com
  */
 function getPreConfiguredPartnerPairs(): PartnerPair[] {
   const pairs: PartnerPair[] = [];
@@ -41,7 +41,7 @@ function getPreConfiguredPartnerPairs(): PartnerPair[] {
   // Hardcoded fallback pair - always ensure this pair is connected
   const hardcodedPair: PartnerPair = {
     email1: "n8ter8@gmail.com",
-    email2: "slkchick_360@yahoo.com",
+    email2: "butterflii18@gmail.com",
   };
 
   // Add hardcoded pair if not already present
