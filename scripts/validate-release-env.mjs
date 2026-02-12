@@ -174,8 +174,22 @@ function requireOneOf(section, keys, { severity = "error" } = {}) {
     }
     return false;
   }
+  // When one key is present, the others are optional (do not emit failing results for them).
+  // We still report them for visibility, but as passing checks.
   for (const key of keys) {
-    addResult(section, key, severity, key === winner, `${key} availability checked`);
+    const value = valueForKey(key);
+    const isConfigured = Boolean(value && !looksPlaceholder(value));
+    if (key === winner) {
+      addResult(section, key, severity, true, `${key} is configured (selected)`);
+      continue;
+    }
+    addResult(
+      section,
+      key,
+      "warning",
+      true,
+      isConfigured ? `${key} is also configured (ok)` : `${key} is not set (ok)`,
+    );
   }
   return true;
 }
@@ -241,7 +255,9 @@ requireKey("STRIPE", "STRIPE_SECRET_KEY", { severity: stripeSeverity });
 requireKey("STRIPE", "STRIPE_WEBHOOK_SECRET", { severity: stripeSeverity });
 requireKey("STRIPE", "VITE_STRIPE_PUBLISHABLE_KEY", { severity: stripeSeverity });
 
-const priceIdKeys = Object.keys(env).filter(key => key.endsWith("PRICE_ID"));
+const priceIdKeys = Array.from(
+  new Set([...Object.keys(env), ...Object.keys(process.env)].filter(key => key.endsWith("PRICE_ID"))),
+);
 const validPriceIdKeys = priceIdKeys.filter(key => {
   const value = valueForKey(key);
   return value && !looksPlaceholder(value);
