@@ -185,7 +185,16 @@ async function ensureBetaTester(userId: string, email: string): Promise<void> {
     },
     { onConflict: "user_id" },
   );
-  if (error) throw new Error(`beta_testers.upsert failed (${email}): ${error.message}`);
+  if (!error) return;
+
+  // Some deployments may not have the optional beta_testers table applied yet.
+  // Provisioning should still succeed for roles/subscriptions/partner sync.
+  if (String((error as any).code || "") === "42P01" || /relation .*beta_testers.* does not exist/i.test(error.message)) {
+    console.warn(`⚠️  beta_testers table missing; skipping allowlist for ${email}`);
+    return;
+  }
+
+  throw new Error(`beta_testers.upsert failed (${email}): ${error.message}`);
 }
 
 async function ensurePartnerConnectionAccepted(params: {
