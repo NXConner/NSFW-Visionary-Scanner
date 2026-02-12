@@ -540,6 +540,10 @@
                 if (tag === "script" || tag === "link" || tag === "img") {
                   var url = t && (t.src || t.href) ? safeString(t.src || t.href) : "";
                   addError("resource", "Failed to load resource", { tag: tag, url: url });
+                  // A failed JS entry/chunk load is fatal -> surface immediately.
+                  if (tag === "script") {
+                    showFailure("Failed to load app code");
+                  }
                   return;
                 }
 
