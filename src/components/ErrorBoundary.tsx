@@ -1,5 +1,9 @@
 import React, { Component, ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import {
+  markAppInteractiveAndHideStaticLoader,
+  showBootDiagnosticsPanel,
+} from "@/lib/boot/staticLoader";
 
 interface Props {
   children: ReactNode;
@@ -35,21 +39,8 @@ class ErrorBoundary extends Component<Props, State> {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
     // Ensure the static HTML loader can't obscure the error UI.
     try {
-      const loader = document.getElementById("app-loader");
-      if (loader) {
-        loader.classList.add("fade-out");
-        window.setTimeout(() => {
-          try {
-            loader.remove();
-          } catch {
-            // ignore
-          }
-        }, 350);
-      }
-      const w = window as unknown as { __BOOT_DIAG__?: { showPanel?: () => void } };
-      if (w.__BOOT_DIAG__ && typeof w.__BOOT_DIAG__.showPanel === "function") {
-        w.__BOOT_DIAG__.showPanel();
-      }
+      markAppInteractiveAndHideStaticLoader();
+      showBootDiagnosticsPanel();
     } catch {
       // ignore
     }

@@ -28,6 +28,7 @@ import { useScrollCssVars } from "@/hooks/useScrollCssVars";
 import { useAnalytics } from "@/lib/analytics";
 import { BootWatchdog } from "@/components/BootWatchdog";
 import { SupabaseConfigGate } from "@/components/SupabaseConfigGate";
+import { markAppInteractiveAndHideStaticLoader } from "@/lib/boot/staticLoader";
 import { bootstrapAddons } from "@/addons";
 import { RouteLoadingFallback } from "@/components/LoadingFallback";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -166,33 +167,9 @@ const AppContent = () => {
   const allowAdultRoutes = BUILD_ALLOW_ADULT_BUNDLE && allowAdult;
 
   useEffect(() => {
-    // Used by BootWatchdog + boot code to detect that React has mounted.
-    window.__APP_INTERACTIVE__ = true;
-    // Remove the static HTML loader only after React has mounted.
-    // This prevents "loader disappears -> blank screen" when the JS bundle
-    // loads but initial render is slow on some Android WebViews.
-    try {
-      const loader = document.getElementById("app-loader");
-      if (loader) {
-        loader.classList.add("fade-out");
-        window.setTimeout(() => {
-          try {
-            loader.remove();
-          } catch {
-            // ignore
-          }
-        }, 350);
-      }
-      // If boot diagnostics is present, let it clean up too.
-      const w = window as unknown as {
-        __BOOT_DIAG__?: { hideLoader?: () => void };
-      };
-      if (w.__BOOT_DIAG__ && typeof w.__BOOT_DIAG__.hideLoader === "function") {
-        w.__BOOT_DIAG__.hideLoader();
-      }
-    } catch {
-      // ignore
-    }
+    // Used by boot diagnostics + watchdog logic to detect that React has mounted.
+    // Also hides the static HTML loader once React is ready to paint UI.
+    markAppInteractiveAndHideStaticLoader();
   }, []);
 
   return (

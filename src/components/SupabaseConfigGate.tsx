@@ -1,9 +1,11 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabaseConfig, supabaseConfigError } from "@/integrations/supabase/client";
+import { isNative } from "@/lib/capacitor";
+import { markAppInteractiveAndHideStaticLoader } from "@/lib/boot/staticLoader";
 
 type SupabaseConfigGateProps = {
   children: ReactNode;
@@ -15,6 +17,8 @@ const BUILD_STEPS = [
   "Run npx cap sync android, then rebuild the APK",
 ];
 
+const NATIVE_WARNING_DISMISSED_KEY = "morphoscan_supabase_warning_dismissed";
+
 export function SupabaseConfigGate({ children }: SupabaseConfigGateProps) {
   // E2E/unit tests should be able to render UI routes without a real backend.
   // The Supabase client is already "disabled" when unconfigured; this gate is a UX guard for humans.
@@ -22,9 +26,100 @@ export function SupabaseConfigGate({ children }: SupabaseConfigGateProps) {
     Boolean(import.meta.env.VITEST) ||
     import.meta.env.MODE === "test" ||
     String(import.meta.env.VITE_E2E || "") === "1";
-  if (bypassForTests) return <>{children}</>;
+  const nativeRuntime = useMemo(() => {
+    try {
+      return isNative();
+    } catch {
+      return false;
+    }
+  }, []);
 
+  const [nativeWarningDismissed, setNativeWarningDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(NATIVE_WARNING_DISMISSED_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  const shouldShowBlockingGate =
+    !bypassForTests && !supabaseConfig.isConfigured && !nativeRuntime;
+
+  useEffect(() => {
+    if (!shouldShowBlockingGate) return;
+    // If we are *blocking* the main app UI, ensure the static HTML loader cannot obscure this screen.
+    markAppInteractiveAndHideStaticLoader();
+  }, [shouldShowBlockingGate]);
+
+  if (bypassForTests) return <>{children}</>;
   if (supabaseConfig.isConfigured) return <>{children}</>;
+
+  // Capacitor/native builds cannot easily be "fixed" by setting .env values after install.
+  // Allow the app to run offline (Supabase client is disabled), but surface a persistent warning.
+  if (nativeRuntime) {
+    const missingText = supabaseConfig.missingKeys.join(", ");
+    return (
+      <>
+        {children}
+        {!nativeWarningDismissed ? (
+          <div className="fixed left-3 right-3 bottom-3 z-[100000]">
+            <Alert
+              variant="destructive"
+              className="bg-background/90 backdrop-blur border-destructive/40 shadow-lg"
+            >
+              <AlertTriangle className="h-4 w-4" />
+              <div className="space-y-2">
+                <div>
+                  <AlertTitle>Cloud features disabled (offline mode)</AlertTitle>
+                  <AlertDescription>
+                    Supabase is not configured for this build. Sign-in, sync, and cloud features are
+                    unavailable until a rebuild includes the required environment keys.
+                  </AlertDescription>
+                </div>
+                {missingText ? (
+                  <div className="text-xs text-muted-foreground">Missing: {missingText}</div>
+                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      try {
+                        if (!missingText) return;
+                        void navigator.clipboard?.writeText(missingText);
+                      } catch {
+                        // ignore
+                      }
+                    }}
+                  >
+                    Copy missing keys
+                  </Button>
+                  <Button size="sm" onClick={() => window.location.reload()}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Reload
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      try {
+                        localStorage.setItem(NATIVE_WARNING_DISMISSED_KEY, "1");
+                      } catch {
+                        // ignore
+                      }
+                      setNativeWarningDismissed(true);
+                    }}
+                  >
+                    Dismiss
+                  </Button>
+                </div>
+              </div>
+            </Alert>
+          </div>
+        ) : null}
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
