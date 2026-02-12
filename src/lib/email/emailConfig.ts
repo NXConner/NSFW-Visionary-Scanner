@@ -30,7 +30,7 @@ export interface EmailConfig {
  * Pre-verified email whitelist
  * These emails are treated as automatically verified and bypass email verification checks
  */
-export const preVerifiedEmailWhitelist: string[] = ["n8ter8@gmail.com", "slkchick_360@yahoo.com"];
+export const preVerifiedEmailWhitelist: string[] = ["n8ter8@gmail.com", "butterflii18@gmail.com"];
 
 /**
  * Check if an email is in the pre-verified whitelist

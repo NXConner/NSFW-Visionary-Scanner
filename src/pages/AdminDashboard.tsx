@@ -37,7 +37,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 // Admin email whitelist from environment
 const ADMIN_SUPER_EMAIL = import.meta.env.VITE_ADMIN_SUPER_EMAIL || "n8ter8@gmail.com";
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "slkchick_360@yahoo.com";
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "butterflii18@gmail.com";
 const ADMIN_EMAILS = [ADMIN_SUPER_EMAIL, ADMIN_EMAIL].filter(Boolean).map(e => e.toLowerCase());
 
 const ContentModerationPanel = lazy(() =>
