@@ -99,6 +99,8 @@ const PLACEHOLDER_PATTERNS = [
   /^your[_-]/i,
   /example/i,
   /<.*>/i,
+  /\[YOUR-PASSWORD\]/i,
+  /\[YOUR_PASSWORD\]/i,
   /your-project-ref/i,
   /YOUR_PROJECT_REF/i,
   /pk_test_REPLACE_ME/i,
