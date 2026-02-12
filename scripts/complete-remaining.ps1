@@ -13,7 +13,15 @@ param(
     [switch]$SkipDocs,
     [switch]$SkipDlcValidation,
     [switch]$SkipAudit,
-    [switch]$SkipPerf
+    [switch]$SkipPerf,
+    [switch]$SkipReleaseReadiness,
+    [switch]$SkipReleaseEnvValidation,
+    [ValidateSet("staging", "production")]
+    [string]$ReleaseEnvironment = "staging",
+    [string]$ReleaseEnvFile = "",
+    [switch]$Monetized,
+    [switch]$RequirePush,
+    [switch]$RequireNSFW
 )
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
@@ -120,6 +128,27 @@ if (-not $SkipDlcValidation) {
 
 # Security / audit
 Run-Step -Name "npm audit" -Action { npm run scan:vuln } -Skip:$SkipAudit -SkipReason "flagged"
+Run-Step -Name "release readiness gate" -Action { npm run check:release-readiness } -Skip:$SkipReleaseReadiness -SkipReason "flagged"
+if (-not $SkipReleaseEnvValidation) {
+    if ([string]::IsNullOrWhiteSpace($ReleaseEnvFile)) {
+        Add-Result -Bucket "Manual" -Message "Provide -ReleaseEnvFile to run release env validation (npm run release:env:validate)"
+        Write-Host "  ⚠️  Release env validation skipped (missing -ReleaseEnvFile)" -ForegroundColor Yellow
+    } else {
+        Run-Step -Name "release env validation" -Action {
+            $commandArgs = @(
+                "run", "release:env:validate", "--",
+                "--environment", $ReleaseEnvironment,
+                "--env-file", $ReleaseEnvFile
+            )
+            if ($Monetized) { $commandArgs += "--monetized" }
+            if ($RequirePush) { $commandArgs += "--require-push" }
+            if ($RequireNSFW) { $commandArgs += "--require-nsfw" }
+            & npm @commandArgs
+        } -Skip:$false
+    }
+} else {
+    Add-Result -Bucket "Skipped" -Message "release env validation (flagged)"
+}
 
 # Perf / a11y (optional)
 if (-not $SkipPerf) {

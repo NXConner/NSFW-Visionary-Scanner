@@ -5,6 +5,7 @@ node_modules/
 # Build outputs
 dist/
 build/
+artifacts/
 
 # Test outputs
 coverage/
@@ -35,9 +36,13 @@ ios/App/App/GoogleService-Info.plist
 
 # Android signing / keystores (local-only)
 android/keystore.properties
+android/gradle.properties
 android/app/release.keystore
 **/*.jks
 **/*.keystore
 
 # Large generated files
 *.pdf
+
+# Local archive workspace (do not commit temporary platform snapshots)
+deleted files/no-longer-needed/ios-archive-2026-02-12/

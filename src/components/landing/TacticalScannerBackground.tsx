@@ -159,25 +159,20 @@ export const TacticalScannerBackground = () => {
             </div>
           </div>
 
-          {/* Center scanner icon - square profile for stronger hero presence */}
+          {/* Center scanner icon - square profile + wider footprint */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative">
-              {/* Square glow stack */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-72 w-72 md:h-96 md:w-96 lg:h-[30rem] lg:w-[30rem] bg-primary/30 blur-3xl" />
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div
-                  className="h-56 w-56 md:h-80 md:w-80 lg:h-96 lg:w-96 bg-primary/20 blur-2xl animate-pulse"
-                  style={{ animationDuration: "3s" }}
-                />
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div
-                  className="h-40 w-40 md:h-56 md:w-56 lg:h-72 lg:w-72 bg-primary/25 animate-ping"
-                  style={{ animationDuration: "4s" }}
-                />
-              </div>
+            <div className="relative flex h-[18rem] w-[18rem] items-center justify-center md:h-[24rem] md:w-[24rem] lg:h-[30rem] lg:w-[30rem]">
+              {/* Layered square glow for cleaner icon silhouette */}
+              <div className="absolute inset-0 rounded-[1.75rem] bg-primary/30 blur-3xl" />
+              <div
+                className="absolute inset-[8%] rounded-[1.5rem] bg-primary/20 blur-2xl animate-pulse"
+                style={{ animationDuration: "3s" }}
+              />
+              <div
+                className="absolute inset-[16%] rounded-[1.25rem] bg-primary/25 animate-ping"
+                style={{ animationDuration: "4s" }}
+              />
+              <div className="absolute inset-[12%] rounded-2xl border border-primary/45 shadow-[0_0_40px_hsl(var(--primary)/0.35),inset_0_0_28px_hsl(var(--primary)/0.2)]" />
 
               {/* Square scanner frame */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

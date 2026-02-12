@@ -1,11 +1,73 @@
 import * as Sentry from "@sentry/react";
 import type { Metric } from "web-vitals";
 import { APP_NAME } from "@/config/brand";
+import { BUILD_DISTRIBUTION_CHANNEL } from "@/lib/buildFlags";
+
+const SENSITIVE_FIELD_PATTERNS = [
+  /password/i,
+  /token/i,
+  /authorization/i,
+  /cookie/i,
+  /secret/i,
+  /api[_-]?key/i,
+  /session/i,
+  /email/i,
+  /phone/i,
+  /address/i,
+  /dob/i,
+  /ssn/i,
+  /health/i,
+  /medical/i,
+  /diagnosis/i,
+];
+
+const SECRET_VALUE_PATTERNS = [
+  /^sk_(live|test)_[A-Za-z0-9]+$/,
+  /^whsec_[A-Za-z0-9]+$/,
+  /^eyJ[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/,
+];
+
+const redactString = (value: string): string =>
+  SECRET_VALUE_PATTERNS.some(pattern => pattern.test(value)) ? "[REDACTED]" : value;
+
+const sanitizeTelemetryValue = (value: unknown, seen = new WeakSet<object>()): unknown => {
+  if (value == null) return value;
+  if (typeof value === "string") return redactString(value);
+  if (typeof value === "number" || typeof value === "boolean") return value;
+  if (value instanceof Date) return value.toISOString();
+  if (value instanceof Error) {
+    return {
+      name: value.name,
+      message: redactString(value.message),
+      stack: value.stack,
+    };
+  }
+  if (Array.isArray(value)) {
+    return value.map(item => sanitizeTelemetryValue(item, seen));
+  }
+  if (typeof value === "object") {
+    const objectValue = value as Record<string, unknown>;
+    if (seen.has(objectValue)) return "[Circular]";
+    seen.add(objectValue);
+
+    const out: Record<string, unknown> = {};
+    for (const [key, nestedValue] of Object.entries(objectValue)) {
+      if (SENSITIVE_FIELD_PATTERNS.some(pattern => pattern.test(key))) {
+        out[key] = "[REDACTED]";
+        continue;
+      }
+      out[key] = sanitizeTelemetryValue(nestedValue, seen);
+    }
+    return out;
+  }
+  return String(value);
+};
 
 // Initialize Sentry for error tracking and performance monitoring
 export const initSentry = () => {
   const dsn = import.meta.env.VITE_SENTRY_DSN;
   const environment = import.meta.env.VITE_APP_ENV || "development";
+  const release = `${APP_NAME}@${__APP_VERSION__}`;
 
   if (!dsn || environment === "development") {
     return;
@@ -14,6 +76,8 @@ export const initSentry = () => {
   Sentry.init({
     dsn,
     environment,
+    release,
+    sendDefaultPii: false,
     integrations: [
       Sentry.browserTracingIntegration(),
       Sentry.replayIntegration({
@@ -26,6 +90,13 @@ export const initSentry = () => {
     // Session Replay
     replaysSessionSampleRate: environment === "production" ? 0.1 : 1.0,
     replaysOnErrorSampleRate: 1.0,
+    maxBreadcrumbs: 100,
+    beforeSend(event) {
+      return sanitizeTelemetryValue(event) as typeof event;
+    },
+    beforeBreadcrumb(breadcrumb) {
+      return sanitizeTelemetryValue(breadcrumb) as typeof breadcrumb;
+    },
   });
 
   // Set user context if available (with safe localStorage access)
@@ -40,7 +111,10 @@ export const initSentry = () => {
 
   // Set tags for better error categorization
   Sentry.setTag("app_version", import.meta.env.VITE_APP_VERSION || "unknown");
+  Sentry.setTag("build_version", __APP_VERSION__);
   Sentry.setTag("app_name", APP_NAME);
+  Sentry.setTag("distribution_channel", BUILD_DISTRIBUTION_CHANNEL || "direct");
+  Sentry.setTag("app_environment", environment);
 };
 
 // Performance monitoring helper

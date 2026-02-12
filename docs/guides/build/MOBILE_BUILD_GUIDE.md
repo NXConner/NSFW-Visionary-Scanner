@@ -9,7 +9,7 @@ If you’re looking for the overall “what’s left” plan, see `docs/tracking
 - **Android applicationId**: `com.morphoscan.pro` (see `android/app/build.gradle`)
 - **iOS bundle id**: `com.morphoscan.pro` (see `ios/App/App/Info.plist`)
 
-> ✅ `capacitor.config.ts` is aligned to `com.morphoscan.pro` / MorphoScan Pro.
+> ✅ `capacitor.config.json` is aligned to `com.morphoscan.pro` / MorphoScan Pro.
 
 ## Prerequisites
 
@@ -104,4 +104,5 @@ In Xcode:
 ## Production build gotcha
 
 - Capacitor dev `server.url` must be disabled for production builds.
-- This repo already disables it when `NODE_ENV=production`.
+- This repo uses a static `capacitor.config.json` with no `server.url` override, so production
+  builds are not pinned to a dev server URL.
