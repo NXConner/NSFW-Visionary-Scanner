@@ -372,6 +372,7 @@ for (const scriptName of [
   "analyze:bundle",
   "release:env:validate",
   "release:remaining",
+  "release:signoff",
 ]) {
   addCheck({
     section: "P2-PERF",

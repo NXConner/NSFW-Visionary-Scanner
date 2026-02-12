@@ -33,6 +33,8 @@ For deeper supporting docs, see:
 > Validate private release env file: `npm run release:env:validate -- --environment <staging|production> --env-file <private-env-file> [--monetized --require-push --require-nsfw]`
 >
 > One-command release executor: `pwsh -File scripts/execute-release-remaining.ps1 -Environment <staging|production> -EnvFile <private-env-file> -Repo <owner/repo> [-DryRun] [-ApplyMigrations] [-TriggerManualDeploy]`
+>
+> Evidence signoff tracker: `pwsh -File scripts/release-signoff.ps1 -Action init -Environment <staging|production> -Session <id> -Operator <name>` then `-Action record|status|validate`
 
 ### Automated verification coverage (repo-side)
 

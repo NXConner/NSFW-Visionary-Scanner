@@ -1,0 +1,292 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "id": "P0-SECRETS-NO-COMMIT",
+      "phase": "P0",
+      "scope": "core",
+      "title": "Confirm no secrets are committed (.env, google-services, gradle.properties, plist)",
+      "required": true
+    },
+    {
+      "id": "P0-SECRETS-PROVISION",
+      "phase": "P0",
+      "scope": "core",
+      "title": "Provision staging/production secrets in GitHub, hosting, and Supabase",
+      "required": true
+    },
+    {
+      "id": "P0-SWITCHES-PWA",
+      "phase": "P0",
+      "scope": "core",
+      "title": "Validate PWA service worker behavior on real staging/production domain",
+      "required": true
+    },
+    {
+      "id": "P0-SWITCHES-CAPACITOR",
+      "phase": "P0",
+      "scope": "core",
+      "title": "Validate Capacitor production build has no dev URL and no WebView debug flags",
+      "required": true
+    },
+    {
+      "id": "P0-SUPABASE-AUTH-HARDENING",
+      "phase": "P0",
+      "scope": "core",
+      "title": "Enable leaked password protection, lock redirect allowlist, and enforce admin MFA",
+      "required": true
+    },
+    {
+      "id": "P0-SUPABASE-RLS-AUDIT",
+      "phase": "P0",
+      "scope": "core",
+      "title": "Complete RLS and storage audit using RLS_STORAGE_AUDIT_QUERIES.sql",
+      "required": true
+    },
+    {
+      "id": "P0-SUPABASE-MIGRATIONS",
+      "phase": "P0",
+      "scope": "core",
+      "title": "Dry-run and apply remote Supabase migrations",
+      "required": true
+    },
+    {
+      "id": "P0-SUPABASE-TYPES-CHECK",
+      "phase": "P0",
+      "scope": "core",
+      "title": "Validate generated types match remote schema",
+      "required": true
+    },
+    {
+      "id": "P0-SUPABASE-BACKUP-RETENTION",
+      "phase": "P0",
+      "scope": "core",
+      "title": "Validate backup/restore procedure and retention/account deletion cleanup",
+      "required": true
+    },
+    {
+      "id": "P0-STRIPE-KEYS",
+      "phase": "P0",
+      "scope": "payments",
+      "title": "Set Stripe secret, webhook secret, and publishable key",
+      "required": true
+    },
+    {
+      "id": "P0-STRIPE-WEBHOOK-ENDPOINT",
+      "phase": "P0",
+      "scope": "payments",
+      "title": "Configure Stripe webhook endpoint and required events",
+      "required": true
+    },
+    {
+      "id": "P0-STRIPE-PRICE-MAPPING",
+      "phase": "P0",
+      "scope": "payments",
+      "title": "Populate all required Stripe price IDs and DLC catalog mappings",
+      "required": true
+    },
+    {
+      "id": "P0-STRIPE-E2E-PAID-FLOWS",
+      "phase": "P0",
+      "scope": "payments",
+      "title": "Validate checkout, webhook processing, entitlement unlock, billing portal, cancel/reactivate",
+      "required": true
+    },
+    {
+      "id": "P0-PUSH-FCM-SETUP",
+      "phase": "P0",
+      "scope": "push",
+      "title": "Configure Android Firebase app and FIREBASE_SERVICE_ACCOUNT secret",
+      "required": true
+    },
+    {
+      "id": "P0-PUSH-APNS-SETUP",
+      "phase": "P0",
+      "scope": "push",
+      "title": "Configure APNs key/material secrets for iOS push",
+      "required": true
+    },
+    {
+      "id": "P0-PUSH-REAL-DEVICE-DELIVERY",
+      "phase": "P0",
+      "scope": "push",
+      "title": "Verify remote push delivery on one real Android and one real iOS device",
+      "required": true
+    },
+    {
+      "id": "P0-NSFW-CONSENT-MIGRATIONS",
+      "phase": "P0",
+      "scope": "nsfw",
+      "title": "Apply NSFW consent migrations and confirm policy text/versioning",
+      "required": true
+    },
+    {
+      "id": "P0-NSFW-CONTENT-IMPORT",
+      "phase": "P0",
+      "scope": "nsfw",
+      "title": "Import NSFW videos/topics/library items via /admin/nsfw",
+      "required": true
+    },
+    {
+      "id": "P0-NSFW-SIGNED-URL-DRM",
+      "phase": "P0",
+      "scope": "nsfw",
+      "title": "Verify signed URL delivery expiry and offline DRM/expiry behavior",
+      "required": true
+    },
+    {
+      "id": "P0-NSFW-PRIVACY-TIER-ENFORCEMENT",
+      "phase": "P0",
+      "scope": "nsfw",
+      "title": "Validate privacy tier defaults, incognito behavior, and panic lock",
+      "required": true
+    },
+    {
+      "id": "P1-DEPLOY-STRATEGY-DECISION",
+      "phase": "P1",
+      "scope": "core",
+      "title": "Confirm final deployment strategy (static hosting or containerized)",
+      "required": true
+    },
+    {
+      "id": "P1-CI-DEPLOY-WIRING",
+      "phase": "P1",
+      "scope": "core",
+      "title": "Enable CI deploy secrets and verify staging+production deploy jobs execute",
+      "required": true
+    },
+    {
+      "id": "P1-ROLLBACK-RUNBOOK",
+      "phase": "P1",
+      "scope": "core",
+      "title": "Validate rollback path for app and database in a controlled drill",
+      "required": true
+    },
+    {
+      "id": "P1-OBS-SENTRY-PII",
+      "phase": "P1",
+      "scope": "core",
+      "title": "Validate Sentry DSN/env tagging and PII-safe telemetry in staging",
+      "required": true
+    },
+    {
+      "id": "P1-OBS-ALERTING-DASHBOARDS",
+      "phase": "P1",
+      "scope": "core",
+      "title": "Confirm monitoring dashboards and alert thresholds for crashes, API, and webhooks",
+      "required": true
+    },
+    {
+      "id": "P2-A11Y-AUDIT-FLOWS",
+      "phase": "P2",
+      "scope": "core",
+      "title": "Run accessibility audit across auth/scanner/diary/settings/store flows",
+      "required": true
+    },
+    {
+      "id": "P2-A11Y-WCAG-VALIDATION",
+      "phase": "P2",
+      "scope": "core",
+      "title": "Validate keyboard navigation, SR labels, contrast, and reduced motion",
+      "required": true
+    },
+    {
+      "id": "P2-PERF-LOAD-TEST",
+      "phase": "P2",
+      "scope": "core",
+      "title": "Run k6 load tests (core and NSFW media when applicable)",
+      "required": true
+    },
+    {
+      "id": "P2-PERF-BUDGETS",
+      "phase": "P2",
+      "scope": "core",
+      "title": "Validate cold start, scanner FPS/memory, and mobile media memory pressure budgets",
+      "required": true
+    },
+    {
+      "id": "P2-PERF-BUNDLE-CHECK",
+      "phase": "P2",
+      "scope": "core",
+      "title": "Review bundle composition and action any regressions",
+      "required": true
+    },
+    {
+      "id": "P3-ANDROID-SYNC",
+      "phase": "P3",
+      "scope": "mobile",
+      "title": "Sync Android Capacitor project and verify release configuration",
+      "required": true
+    },
+    {
+      "id": "P3-ANDROID-AAB-BUILD",
+      "phase": "P3",
+      "scope": "mobile",
+      "title": "Build signed Android AAB",
+      "required": true
+    },
+    {
+      "id": "P3-ANDROID-PLAY-INTERNAL",
+      "phase": "P3",
+      "scope": "mobile",
+      "title": "Upload Android build to Play internal track and pass pre-launch report",
+      "required": true
+    },
+    {
+      "id": "P3-IOS-SYNC",
+      "phase": "P3",
+      "scope": "mobile",
+      "title": "Sync iOS Capacitor project on macOS with CocoaPods installed",
+      "required": true
+    },
+    {
+      "id": "P3-IOS-ARCHIVE-UPLOAD",
+      "phase": "P3",
+      "scope": "mobile",
+      "title": "Archive in Xcode and upload build",
+      "required": true
+    },
+    {
+      "id": "P3-IOS-TESTFLIGHT",
+      "phase": "P3",
+      "scope": "mobile",
+      "title": "Complete TestFlight internal validation",
+      "required": true
+    },
+    {
+      "id": "P3-IOS-APP-REVIEW",
+      "phase": "P3",
+      "scope": "mobile",
+      "title": "Submit iOS build for App Review",
+      "required": true
+    },
+    {
+      "id": "P3-STORE-COMPLIANCE-LINKS",
+      "phase": "P3",
+      "scope": "mobile",
+      "title": "Verify privacy policy, terms URL, age rating questionnaire, and compliance answers",
+      "required": true
+    },
+    {
+      "id": "P3-STORE-ASSETS",
+      "phase": "P3",
+      "scope": "mobile",
+      "title": "Upload final screenshot/creative assets for stores",
+      "required": true
+    },
+    {
+      "id": "OPTIONAL-NSFW-DLC-IDEMPOTENCY",
+      "phase": "OPTIONAL",
+      "scope": "nsfw",
+      "title": "Validate NSFW/DLC idempotency checks, refunds/disputes, and restore/device-binding tests",
+      "required": false
+    },
+    {
+      "id": "OPTIONAL-NSFW-DLC-ACCESS-CONTROLS",
+      "phase": "OPTIONAL",
+      "scope": "nsfw",
+      "title": "Verify /admin/nsfw production access controls and consent gating across modules",
+      "required": false
+    }
+  ]
+}

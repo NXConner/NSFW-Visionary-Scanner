@@ -58,6 +58,7 @@
     "release:secrets:provision": "node scripts/provision-release-secrets.mjs",
     "release:env:validate": "node scripts/validate-release-env.mjs",
     "release:remaining": "pwsh -File scripts/execute-release-remaining.ps1",
+    "release:signoff": "pwsh -File scripts/release-signoff.ps1",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",

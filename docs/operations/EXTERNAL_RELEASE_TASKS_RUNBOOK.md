@@ -7,6 +7,10 @@ This runbook covers the remaining manual/external steps:
 3. Import real NSFW content via `/admin/nsfw`
 4. Wire CI deploy + rollback plan
 
+Evidence signoff workflow:
+
+- `docs/operations/RELEASE_EXECUTION_SIGNOFF.md`
+
 ---
 
 ## Quickstart (no local `.env` required)
@@ -20,6 +24,13 @@ Template: `config/release/release.secrets.template.env`
 > Requires PowerShell 7 (`pwsh`) on the executing machine.
 
 ```powershell
+# A) Initialize signoff session (evidence tracking)
+pwsh -File scripts/release-signoff.ps1 `
+  -Action init `
+  -Environment staging `
+  -Session "staging-YYYYMMDD" `
+  -Operator "release-manager"
+
 # Dry-run orchestration (readiness + env validation + secrets dry-run + migration dry-run)
 pwsh -File scripts/execute-release-remaining.ps1 `
   -Environment staging `
