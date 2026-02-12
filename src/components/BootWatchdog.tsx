@@ -44,16 +44,13 @@ export function BootWatchdog({
 }: BootWatchdogProps): React.ReactElement | null {
   const [tripped, setTripped] = useState(false);
 
-  const isPreviewHost = useMemo(() => {
+  const shouldWatch = useMemo(() => {
+    // Allow explicitly enabling the watchdog for field diagnostics (e.g. native builds).
+    if (String(import.meta.env.VITE_ENABLE_BOOT_WATCHDOG || "") === "1") return true;
+
     try {
       const hostname = window.location.hostname.toLowerCase();
-      const protocol = window.location.protocol.toLowerCase();
-      const isLikelyNative =
-        protocol === "capacitor:" ||
-        protocol === "file:" ||
-        (protocol === "https:" && hostname === "localhost");
       return (
-        isLikelyNative ||
         hostname.includes("lovable") ||
         hostname.includes("cursor") ||
         hostname.endsWith(".lovableproject.com") ||
@@ -69,14 +66,26 @@ export function BootWatchdog({
   }, []);
 
   useEffect(() => {
-    if (!isPreviewHost) return;
+    if (!shouldWatch) return;
 
     const timer = window.setTimeout(() => {
       if (!getWinFlag(readyFlagKey)) setTripped(true);
     }, timeoutMs);
 
     return () => window.clearTimeout(timer);
-  }, [isPreviewHost, readyFlagKey, timeoutMs]);
+  }, [readyFlagKey, shouldWatch, timeoutMs]);
+
+  useEffect(() => {
+    if (!shouldWatch) return;
+    if (!tripped) return;
+
+    // Slow boots can exceed the threshold but still recover; auto-dismiss when ready.
+    const interval = window.setInterval(() => {
+      if (getWinFlag(readyFlagKey)) setTripped(false);
+    }, 250);
+
+    return () => window.clearInterval(interval);
+  }, [readyFlagKey, shouldWatch, tripped]);
 
   if (!tripped) return null;
 
