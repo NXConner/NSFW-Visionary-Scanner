@@ -37,12 +37,12 @@ import TabDeepLinkRedirect from "@/routes/TabDeepLinkRedirect";
 import LegacyAdminRedirect from "@/routes/LegacyAdminRedirect";
 import { isAdultContentEnabled } from "@/lib/featureFlags";
 import { BUILD_ALLOW_ADULT_BUNDLE } from "@/lib/buildFlags";
+import NotFound from "./pages/NotFound";
 
 // Lazy load all pages for better code splitting
 const Index = lazy(() => import("./pages/Index"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const DLCStorePage = lazy(() => import("./pages/DLCStorePage"));
-const NotFound = lazy(() => import("./pages/NotFound"));
 const LazyScrollToTopButton = lazy(() =>
   import("@/components/navigation/ScrollToTopButton").then(m => ({
     default: m.ScrollToTopButton,
