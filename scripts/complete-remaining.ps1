@@ -167,15 +167,18 @@ if (-not $SkipSupabase) {
         # If a release env file exists, use it to populate SUPABASE_* env vars for this session.
         Import-ReleaseEnvIfAvailable -Keys @(
             "SUPABASE_ACCESS_TOKEN",
-            "SUPABASE_PROJECT_REF"
+            "SUPABASE_PROJECT_REF",
+            "SUPABASE_DB_URL",
+            "SUPABASE_DB_PASSWORD"
         )
 
         # db push (remote) requires credentials.
-        if ($env:SUPABASE_ACCESS_TOKEN -and $env:SUPABASE_PROJECT_REF) {
+        $hasRemoteDb = ($env:SUPABASE_DB_URL -or $env:SUPABASE_DB_PASSWORD)
+        if ($env:SUPABASE_ACCESS_TOKEN -and $env:SUPABASE_PROJECT_REF -and $hasRemoteDb) {
             Run-Step -Name "supabase db push" -Action { npm run db:push } -Skip:$false
         } else {
-            Add-Result -Bucket "Manual" -Message "Set SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_REF and run npm run db:push"
-            Write-Host "  ⚠️  Missing SUPABASE_ACCESS_TOKEN / SUPABASE_PROJECT_REF (manual)" -ForegroundColor Yellow
+            Add-Result -Bucket "Manual" -Message "Set SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_REF + (SUPABASE_DB_URL or SUPABASE_DB_PASSWORD) and run npm run db:push"
+            Write-Host "  ⚠️  Missing SUPABASE_ACCESS_TOKEN / SUPABASE_PROJECT_REF / SUPABASE_DB_URL|SUPABASE_DB_PASSWORD (manual)" -ForegroundColor Yellow
         }
 
         # Local types check requires Docker + a running local Supabase stack.
