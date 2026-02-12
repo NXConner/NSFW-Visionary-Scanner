@@ -129,7 +129,7 @@ export function SupabaseApiKeyFixer(): React.ReactElement | null {
       return;
     }
     if (!normalizedKey) {
-      toast.error("Enter a valid Supabase Publishable key (sb_publishable_…)");
+      toast.error("Enter a valid Supabase public API key (sb_publishable_… or eyJ…)");
       return;
     }
     setCheck("checking");
@@ -192,7 +192,7 @@ export function SupabaseApiKeyFixer(): React.ReactElement | null {
               <div>
                 <CardTitle className="text-xl">Supabase key required</CardTitle>
                 <div className="text-sm text-muted-foreground">
-                  Sign-in requires a valid Supabase <span className="font-medium">Publishable</span> key.
+                  Sign-in requires a valid Supabase <span className="font-medium">public</span> API key.
                 </div>
               </div>
             </div>
@@ -208,8 +208,9 @@ export function SupabaseApiKeyFixer(): React.ReactElement | null {
             <AlertTitle>Invalid or missing API key</AlertTitle>
             <AlertDescription>
               Open Supabase Dashboard → Project Settings → API Keys → copy the{" "}
-              <span className="font-medium">Publishable</span> key (starts with{" "}
-              <span className="font-mono">sb_publishable_</span>). Do not use the secret key.
+              <span className="font-medium">Publishable/Public</span> key (often starts with{" "}
+              <span className="font-mono">sb_publishable_</span> or the legacy{" "}
+              <span className="font-mono">eyJ…</span> anon JWT). Do not use the secret key.
             </AlertDescription>
           </Alert>
 
@@ -242,12 +243,12 @@ export function SupabaseApiKeyFixer(): React.ReactElement | null {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="supabase-key">Supabase Publishable key</Label>
+              <Label htmlFor="supabase-key">Supabase public API key</Label>
               <Input
                 id="supabase-key"
                 value={key}
                 onChange={e => setKey(e.target.value)}
-                placeholder="sb_publishable_…"
+                placeholder="sb_publishable_… or eyJ…"
                 autoCapitalize="none"
                 autoCorrect="off"
               />

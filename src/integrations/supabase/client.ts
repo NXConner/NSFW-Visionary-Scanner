@@ -181,8 +181,35 @@ const safeStorage: Storage | undefined = isLocalStorageAvailable()
   ? window.localStorage
   : undefined;
 
+function makeSafeSupabaseFetch(supabaseKey: string): typeof fetch {
+  return async (input: RequestInfo | URL, init?: RequestInit) => {
+    const headers = new Headers(
+      // Prefer explicit init headers, else fall back to Request headers.
+      (init?.headers as HeadersInit | undefined) ?? (input instanceof Request ? input.headers : undefined),
+    );
+
+    // Ensure apikey is always present (some custom calls may omit it).
+    if (!headers.has("apikey")) headers.set("apikey", supabaseKey);
+
+    // If we are using an sb_publishable key, never send it as a Bearer token.
+    // Some Supabase gateway configurations reject non-JWT Bearer tokens.
+    if (supabaseKey.startsWith("sb_publishable_")) {
+      const auth = headers.get("Authorization");
+      const expected = `Bearer ${supabaseKey}`;
+      if (auth && auth.trim() === expected) {
+        headers.delete("Authorization");
+      }
+    }
+
+    return fetch(input, { ...(init || {}), headers });
+  };
+}
+
+const supabaseGlobal = typeof fetch === "function" ? { fetch: makeSafeSupabaseFetch(SUPABASE_PUBLISHABLE_KEY) } : {};
+
 export const supabase = isConfigured
   ? createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      global: supabaseGlobal,
       auth: {
         storage: safeStorage,
         persistSession: true,

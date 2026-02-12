@@ -14,7 +14,7 @@ function hasWindow(): boolean {
 }
 
 export function sanitizeSupabaseUrl(raw: string): string {
-  const input = String(raw ?? "").trim();
+  const input = String(raw ?? "").replace(/\s+/g, "").trim();
   if (!input) return "";
 
   // Allow users to paste "project-ref.supabase.co" without scheme.
@@ -31,7 +31,16 @@ export function sanitizeSupabaseUrl(raw: string): string {
 }
 
 export function sanitizeSupabasePublishableKey(raw: string): string {
-  const k = String(raw ?? "").trim();
+  let k = String(raw ?? "").trim();
+  // Allow pasting with quotes.
+  if (
+    (k.length >= 2 && k.startsWith('"') && k.endsWith('"')) ||
+    (k.length >= 2 && k.startsWith("'") && k.endsWith("'"))
+  ) {
+    k = k.slice(1, -1);
+  }
+  // Remove any whitespace/newlines introduced by copy/paste.
+  k = k.replace(/\s+/g, "");
   if (!k) return "";
 
   // Never accept secret/service keys in the client. This prevents accidental leaks.

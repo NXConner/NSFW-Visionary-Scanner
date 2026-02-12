@@ -41,28 +41,43 @@ export async function checkSupabaseApiKeyValid(params: {
 
   const { signal, cancel } = withTimeout(timeoutMs);
   try {
-    const res = await fetch(`${url}/auth/v1/settings`, {
-      method: "GET",
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-      },
-      signal,
+    const tryRequest = async (headers: Record<string, string>): Promise<SupabaseApiKeyCheckResult> => {
+      const res = await fetch(`${url}/auth/v1/settings`, {
+        method: "GET",
+        headers,
+        signal,
+      });
+
+      if (res.ok) return "valid";
+
+      let payload: unknown = null;
+      try {
+        payload = await res.json();
+      } catch {
+        payload = null;
+      }
+
+      if (isInvalidApiKeyPayload(payload)) return "invalid";
+      return "unknown";
+    };
+
+    // Default behavior matches supabase-js headers.
+    const first = await tryRequest({
+      apikey: key,
+      Authorization: `Bearer ${key}`,
     });
+    if (first === "valid") return "valid";
 
-    if (res.ok) return "valid";
-
-    let payload: unknown = null;
-    try {
-      payload = await res.json();
-    } catch {
-      payload = null;
+    // Some environments may accept sb_publishable keys only as `apikey`
+    // and reject the same value as a Bearer token.
+    if (first === "invalid" && key.startsWith("sb_publishable_")) {
+      const second = await tryRequest({ apikey: key });
+      if (second === "valid") return "valid";
+      if (second === "invalid") return "invalid";
+      return "unknown";
     }
 
-    if (isInvalidApiKeyPayload(payload)) return "invalid";
-
-    // Any other non-2xx (CORS, auth disabled, etc) is unknown.
-    return "unknown";
+    return first;
   } catch {
     return "unknown";
   } finally {
