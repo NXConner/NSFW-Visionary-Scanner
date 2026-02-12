@@ -16,5 +16,8 @@ android/build/
 # Archived / historical content (not part of active codebase)
 deleted files/
 
+# Supabase generated types (must match `supabase gen types` output exactly)
+src/integrations/supabase/types.ts
+
 # Large exports
 exports/
