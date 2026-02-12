@@ -100,14 +100,14 @@ export function usePartnerConnection() {
     try {
       // Look up partner's user ID by email from profiles table
       const { data: partnerProfile } = await fromExtended("profiles")
-        .select("id")
+        .select("user_id")
         .eq("email", partnerEmail)
         .maybeSingle();
 
       let partnerUserId: string | null = null;
 
-      if (partnerProfile?.id) {
-        partnerUserId = partnerProfile.id;
+      if (partnerProfile?.user_id) {
+        partnerUserId = partnerProfile.user_id;
         logger.info("[partnerSync] Found partner profile", {
           partnerEmail,
           partnerUserId,
