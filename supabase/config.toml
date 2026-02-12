@@ -209,3 +209,11 @@ verify_jwt = false
 [functions.video-editing]
 enabled = true
 verify_jwt = true
+
+[functions.calculate-nsfw-wellness-score]
+enabled = true
+verify_jwt = true
+
+[functions.encrypt-credentials]
+enabled = true
+verify_jwt = true
