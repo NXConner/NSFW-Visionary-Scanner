@@ -259,6 +259,9 @@ export default defineConfig(({ mode }) => {
     },
     cacheDir: "node_modules/.vite",
     optimizeDeps: {
+      // Default Vite behavior scans **/*.html, which unintentionally picks up generated
+      // Android/Capacitor build artifacts (android/**) and can break dependency scanning.
+      entries: ["index.html"],
       include: [
         "react",
         "react-dom",
