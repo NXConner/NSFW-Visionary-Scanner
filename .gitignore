@@ -43,3 +43,6 @@ android/app/release.keystore
 
 # Large generated files
 *.pdf
+
+# Local archive workspace (do not commit temporary platform snapshots)
+deleted files/no-longer-needed/ios-archive-2026-02-12/

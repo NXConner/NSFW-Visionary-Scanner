@@ -119,10 +119,28 @@ const sensitivePaths = [
 ];
 for (const filePath of sensitivePaths) {
   const severity = filePath === "android/gradle.properties" ? "warning" : "error";
+  const tracked = isTracked(filePath);
+  if (filePath === "android/gradle.properties" && tracked) {
+    const gradleProps = readFile(filePath);
+    const hasSecretLikeLines =
+      /(^|\n)\s*(RELEASE_|MORPHOSCAN_|storePassword|keyPassword|storeFile|keyAlias)\s*=/i.test(
+        gradleProps,
+      );
+    if (!hasSecretLikeLines) {
+      addCheck({
+        section: "P0-SECRETS",
+        key: `tracked:${filePath}`,
+        passed: true,
+        severity: "warning",
+        message: `${filePath} is tracked but contains only non-secret defaults`,
+      });
+      continue;
+    }
+  }
   addCheck({
     section: "P0-SECRETS",
     key: `tracked:${filePath}`,
-    passed: !isTracked(filePath),
+    passed: !tracked,
     severity,
     message: `${filePath} is not tracked by git`,
   });
