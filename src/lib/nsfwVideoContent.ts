@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fromExtended } from "@/lib/supabaseExtensions";
 import { logger } from "./logger";
 import { toast } from "sonner";
+import { downloadNSFWVideoOffline } from "@/lib/nsfwVideoDownloads";
 
 // ==================== NSFW Video Content ====================
 
@@ -406,6 +407,7 @@ export interface NSFWVideoDownload {
 export async function requestVideoDownload(
   videoId: string,
   quality: NSFWVideoDownload["quality"],
+  options?: { onProgress?: (progressPct: number) => void },
 ): Promise<NSFWVideoDownload | null> {
   try {
     const {
@@ -416,44 +418,35 @@ export async function requestVideoDownload(
       return null;
     }
 
-    // Call download Edge Function
-    const { data: downloadData, error: downloadError } = await supabase.functions.invoke(
-      "download-nsfw-video",
-      {
-        body: {
-          video_id: videoId,
-          quality,
-        },
-      },
-    );
+    // Offline downloads are handled client-side (secure signed URL -> download -> cache -> upsert row).
+    const result = await downloadNSFWVideoOffline({
+      videoId,
+      quality,
+      onProgress: p => options?.onProgress?.(p.progress),
+    });
 
-    if (downloadError) {
-      logger.error("Error requesting download", { error: downloadError.message });
-      toast.error("Failed to start download");
+    if (!result.success) {
+      toast.error(result.error || "Failed to save offline");
       return null;
     }
 
-    // Create download record
-    const { data, error } = await supabase
-      .from("nsfw_video_downloads")
-      .insert({
-        video_id: videoId,
-        user_id: user.id,
-        quality,
-        file_path: downloadData.file_path,
-        file_size_bytes: downloadData.file_size,
-        download_status: "downloading",
-      })
-      .select()
-      .single();
+    // Return the latest download row for this video+quality.
+    const { data, error } = await fromExtended("nsfw_video_downloads")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("video_id", videoId)
+      .eq("quality", quality)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (error) {
-      logger.error("Error creating download record", { error: error.message });
+      logger.error("Error fetching download row", { error: error.message });
       return null;
     }
 
-    toast.success("Download started!");
-    return data as NSFWVideoDownload;
+    toast.success("Saved for offline use");
+    return (data || null) as NSFWVideoDownload | null;
   } catch (error) {
     logger.error("Error in requestVideoDownload", {
       error: error instanceof Error ? error.message : String(error),

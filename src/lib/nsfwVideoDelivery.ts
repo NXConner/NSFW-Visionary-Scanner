@@ -19,6 +19,8 @@ function pickVideoField(video: Record<string, unknown>, quality: VideoQuality): 
   const candidate =
     quality === "4k"
       ? video.video_url_4k
+      : quality === "2k"
+        ? (video.video_url_2k ?? video.video_url_hd)
       : quality === "sd"
         ? video.video_url_sd
         : video.video_url_hd;
@@ -67,7 +69,9 @@ export async function getNSFWVideoPlaybackUrl(params: {
 
   // Fetch video row and resolve remote URL (direct or signed)
   const { data: video, error } = await fromExtended("nsfw_video_content")
-    .select("id, dlc_pack_id, video_url_sd, video_url_hd, video_url_4k, is_active, is_approved")
+    .select(
+      "id, dlc_pack_id, video_url_sd, video_url_hd, video_url_2k, video_url_4k, is_active, is_approved",
+    )
     .eq("id", params.videoId)
     .maybeSingle();
 

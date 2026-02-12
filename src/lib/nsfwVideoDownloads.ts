@@ -80,7 +80,9 @@ async function resolveVideoAsset(
   quality: VideoQuality,
 ): Promise<{ asset: string; dlcPackId: string | null } | null> {
   const { data: video, error } = await fromExtended("nsfw_video_content")
-    .select("id, dlc_pack_id, video_url_sd, video_url_hd, video_url_4k, is_active, is_approved")
+    .select(
+      "id, dlc_pack_id, video_url_sd, video_url_hd, video_url_2k, video_url_4k, is_active, is_approved",
+    )
     .eq("id", videoId)
     .maybeSingle();
 
@@ -92,6 +94,8 @@ async function resolveVideoAsset(
   const candidate =
     quality === "4k"
       ? video.video_url_4k
+      : quality === "2k"
+        ? ((video as any).video_url_2k ?? video.video_url_hd)
       : quality === "sd"
         ? video.video_url_sd
         : video.video_url_hd;

@@ -269,11 +269,21 @@ export const NSFWVideoContent = ({
   );
 
   const handleDownload = async (video: NSFWVideoType, quality: VideoQuality) => {
+    const key = `${video.id}:${quality}`;
     try {
-      setDownloadProgress(p => ({ ...p, [`${video.id}:${quality}`]: 0 }));
-      const download = await requestVideoDownload(video.id, quality);
+      setDownloadProgress(p => ({ ...p, [key]: 0 }));
+      const download = await requestVideoDownload(video.id, quality, {
+        onProgress: progressPct => {
+          const pct = Number.isFinite(progressPct) ? Math.max(0, Math.min(100, progressPct)) : 0;
+          setDownloadProgress(prev => {
+            const existing = prev[key] ?? 0;
+            // Avoid regressions due to intermittent totalBytes/headers issues.
+            return { ...prev, [key]: Math.max(existing, pct) };
+          });
+        },
+      });
       if (download) {
-        setDownloadProgress(p => ({ ...p, [`${video.id}:${quality}`]: 100 }));
+        setDownloadProgress(p => ({ ...p, [key]: 100 }));
         await loadData();
       }
     } catch {

@@ -98,6 +98,7 @@ export function PlayerDialog(props: PlayerDialogProps): JSX.Element {
                 <SelectContent>
                   <SelectItem value="sd">SD</SelectItem>
                   <SelectItem value="hd">HD</SelectItem>
+                  <SelectItem value="2k">2K</SelectItem>
                   <SelectItem value="4k">4K</SelectItem>
                 </SelectContent>
               </Select>
