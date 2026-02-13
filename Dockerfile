@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # Keep Node aligned with CI (see .github/workflows/ci.yml)
-FROM node:18-alpine AS base
+FROM node:22-alpine AS base
 ENV NODE_ENV=production
 WORKDIR /app
 
@@ -12,7 +12,7 @@ FROM deps AS build
 COPY . .
 RUN npm run build
 
-FROM node:18-alpine AS runner
+FROM node:22-alpine AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 
