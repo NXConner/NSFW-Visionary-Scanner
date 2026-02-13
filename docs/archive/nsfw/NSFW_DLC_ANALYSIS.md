@@ -78,7 +78,7 @@ src/dlc/
 3. NSFWJS classification (5 labels: Porn, Sexy, Hentai, Neutral, Drawing)
 4. Label mapping to app schema (explicit/suggestive/neutral)
 5. Threshold evaluation (default: 0.7 for both explicit & suggestive)
-6. Result caching (NOT IMPLEMENTED - opportunity)
+6. Result caching (IMPLEMENTED): SHA-256 + LRU cache with expiry
 ```
 
 ### 2.3 Self-Test Capability

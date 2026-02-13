@@ -141,7 +141,9 @@ src/components/nsfwWellness/
 ├── types.ts                    # Shared type definitions
 ├── FunctionTrackingTab.tsx     # Function tracking form
 ├── WellnessCharts.tsx          # Chart visualizations (React.memo)
-└── index.ts                    # Module exports
+├── NSFWSexualWellnessAnalytics.tsx  # Tabbed analytics container
+├── index.ts                    # Module exports
+└── tabs/                       # Function/Libido/Satisfaction/Frequency/Score tabs
 ```
 
 **Before:**
@@ -164,6 +166,10 @@ FunctionTrackingTab.tsx: 148 LOC (focused component)
 WellnessCharts.tsx: 127 LOC (React.memo optimized)
 index.ts: 7 LOC (exports)
 ```
+
+**Follow-up (2026-02-13):**
+
+- The wellness analytics feature was further expanded into a tabbed architecture (Function/Libido/Satisfaction/Frequency/Score) with real Supabase-backed data loading and trends visualizations.
 
 **Benefits:**
 

@@ -10,6 +10,9 @@ This document captures **what is still left** to fully complete the NSFW DLC add
 - **DLC catalog alignment**: migration `supabase/migrations/20251212094000_dlc_catalog_and_stripe.sql` upserts 7 canonical packages into `dlc_packages`.
 - **DLC Stripe checkout session (edge)**: `supabase/functions/create-dlc-checkout-session/index.ts`.
 - **Stripe webhook license grant**: `supabase/functions/stripe-webhook/index.ts` grants `dlc_licenses` on `checkout.session.completed`.
+- **Private content delivery (signed URLs)**: `supabase/functions/get-dlc-signed-url/index.ts` issues short-lived signed URLs with license + device checks (privileged bypass supported).
+- **Encrypted content key delivery**: `supabase/functions/get-dlc-key/index.ts` returns per-package decryption keys when authorized (requires `DLC_KEYRING_MASTER_KEY_B64` secret).
+- **Key rotation tooling**: `supabase/functions/admin-rotate-dlc-key/index.ts` (admin-only) rotates package keys in `dlc_package_keyring`.
 - **Resumable chunk downloads**: `src/dlc/security/SecureDownloader.ts` supports pause/resume using IndexedDB chunk persistence.
 - **Build + unit tests**: `npm run test:run` and `npm run build` pass.
 
@@ -103,11 +106,12 @@ Choose one and implement consistently:
 - **Goal**: keys cannot be hardcoded; revocation and rotation are possible.
 - **Implement**:
   - Store key references per package (`dlc_packages.encryption_key_id`) and per license encrypted key material (or a key derivation approach).
-  - Add edge function: `get-dlc-key` (name TBD) to return decrypt key only if:
+  - Edge function **already exists**: `get-dlc-key` (`supabase/functions/get-dlc-key/index.ts`) returns a decrypt key only if:
     - user authenticated
     - license active
     - device authorized
     - age verified
+  - Configure Supabase secret: `DLC_KEYRING_MASTER_KEY_B64` (base64-encoded 32-byte key) for keyring decryption.
 - **Acceptance**:
   - Keys rotate without re-shipping the app; compromised licenses can be revoked.
 
