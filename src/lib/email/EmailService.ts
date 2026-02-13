@@ -22,41 +22,43 @@ export interface EmailResult {
   messageId?: string;
 }
 
-export interface EmailLogEntry {
-  id: string;
-  type: "verification" | "password_reset" | "welcome" | "notification" | "partner_invite";
-  recipientEmail: string;
+export type EmailTemplateType =
+  | "verification"
+  | "password_reset"
+  | "welcome"
+  | "notification"
+  | "partner_invite";
+
+async function sendEmailViaEdge(params: {
+  to: string;
   subject: string;
-  status: "sent" | "failed" | "pending";
-  sentAt: Date;
-  error?: string;
-}
+  html: string;
+  campaignId?: string;
+}): Promise<EmailResult> {
+  const to = String(params.to || "").trim();
+  const subject = String(params.subject || "").trim();
+  const html = String(params.html || "");
+  const campaignId = params.campaignId ? String(params.campaignId) : undefined;
 
-// In-memory email log (in production, this would be stored in database)
-const emailLog: EmailLogEntry[] = [];
-
-/**
- * Generate a unique ID for email log entries
- */
-function generateEmailId(): string {
-  return `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
-
-/**
- * Log an email event
- */
-function logEmail(entry: Omit<EmailLogEntry, "id" | "sentAt">): EmailLogEntry {
-  const logEntry: EmailLogEntry = {
-    ...entry,
-    id: generateEmailId(),
-    sentAt: new Date(),
-  };
-  emailLog.unshift(logEntry);
-  // Keep only last 100 entries in memory
-  if (emailLog.length > 100) {
-    emailLog.pop();
+  if (!to || !subject || !html) {
+    return { success: false, error: "Missing to/subject/content" };
   }
-  return logEntry;
+
+  try {
+    const { data, error } = await supabase.functions.invoke("send-email", {
+      body: { to, subject, content: html, campaignId },
+    });
+
+    if (error) {
+      return { success: false, error: error.message || "Failed to send email" };
+    }
+
+    const providerId = (data as any)?.id ? String((data as any).id) : undefined;
+    return { success: true, messageId: providerId };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    return { success: false, error: msg };
+  }
 }
 
 /**
@@ -80,35 +82,14 @@ export const EmailService = {
       });
 
       if (error) {
-        logEmail({
-          type: "verification",
-          recipientEmail: email,
-          subject: "Email Verification Required",
-          status: "failed",
-          error: error.message,
-        });
         logger.error("Failed to send verification email", { email, error: error.message });
         return { success: false, error: error.message };
       }
 
-      const logEntry = logEmail({
-        type: "verification",
-        recipientEmail: email,
-        subject: "Email Verification Required",
-        status: "sent",
-      });
-
       logger.info("Verification email sent", { email });
-      return { success: true, messageId: logEntry.id };
+      return { success: true };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      logEmail({
-        type: "verification",
-        recipientEmail: email,
-        subject: "Email Verification Required",
-        status: "failed",
-        error: errorMessage,
-      });
       logger.error("Exception sending verification email", { email, error: errorMessage });
       return { success: false, error: errorMessage };
     }
@@ -126,35 +107,14 @@ export const EmailService = {
       });
 
       if (error) {
-        logEmail({
-          type: "password_reset",
-          recipientEmail: email,
-          subject: "Reset Your Password",
-          status: "failed",
-          error: error.message,
-        });
         logger.error("Failed to send password reset email", { email, error: error.message });
         return { success: false, error: error.message };
       }
 
-      const logEntry = logEmail({
-        type: "password_reset",
-        recipientEmail: email,
-        subject: "Reset Your Password",
-        status: "sent",
-      });
-
       logger.info("Password reset email sent", { email });
-      return { success: true, messageId: logEntry.id };
+      return { success: true };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      logEmail({
-        type: "password_reset",
-        recipientEmail: email,
-        subject: "Reset Your Password",
-        status: "failed",
-        error: errorMessage,
-      });
       logger.error("Exception sending password reset email", { email, error: errorMessage });
       return { success: false, error: errorMessage };
     }
@@ -167,29 +127,17 @@ export const EmailService = {
    */
   async sendWelcomeEmail(email: string, userName: string): Promise<EmailResult> {
     try {
-      // Generate template for logging/preview purposes
-      const _template = welcomeEmailTemplate(userName);
-
-      // In production, this would call a Supabase Edge Function or external API
-      // For now, we log it and return success (Supabase handles welcome in verification flow)
-      const logEntry = logEmail({
-        type: "welcome",
-        recipientEmail: email,
-        subject: `Welcome to ${emailConfig.appName}!`,
-        status: "sent",
-      });
-
-      logger.info("Welcome email logged", { email, userName });
-      return { success: true, messageId: logEntry.id };
+      const html = welcomeEmailTemplate(userName);
+      const subject = `Welcome to ${emailConfig.appName}!`;
+      const result = await sendEmailViaEdge({ to: email, subject, html });
+      if (result.success) {
+        logger.info("Welcome email sent", { email });
+      } else {
+        logger.warn("Welcome email failed", { email, error: result.error });
+      }
+      return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      logEmail({
-        type: "welcome",
-        recipientEmail: email,
-        subject: `Welcome to ${emailConfig.appName}!`,
-        status: "failed",
-        error: errorMessage,
-      });
       return { success: false, error: errorMessage };
     }
   },
@@ -203,27 +151,16 @@ export const EmailService = {
     content: string,
   ): Promise<EmailResult> {
     try {
-      const _template = notificationEmailTemplate(subject, content);
-
-      // In production, this would use an email service
-      const logEntry = logEmail({
-        type: "notification",
-        recipientEmail: email,
-        subject,
-        status: "sent",
-      });
-
-      logger.info("Notification email logged", { email, subject });
-      return { success: true, messageId: logEntry.id };
+      const html = notificationEmailTemplate(subject, content);
+      const result = await sendEmailViaEdge({ to: email, subject, html });
+      if (result.success) {
+        logger.info("Notification email sent", { email, subject });
+      } else {
+        logger.warn("Notification email failed", { email, subject, error: result.error });
+      }
+      return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      logEmail({
-        type: "notification",
-        recipientEmail: email,
-        subject,
-        status: "failed",
-        error: errorMessage,
-      });
       return { success: false, error: errorMessage };
     }
   },
@@ -237,43 +174,19 @@ export const EmailService = {
     inviteLink: string,
   ): Promise<EmailResult> {
     try {
-      const _template = partnerInviteEmailTemplate(inviterName, inviteLink);
-
-      // In production, this would use an email service
-      const logEntry = logEmail({
-        type: "partner_invite",
-        recipientEmail: email,
-        subject: `${inviterName} invited you to ${emailConfig.appName}`,
-        status: "sent",
-      });
-
-      logger.info("Partner invite email logged", { email, inviterName });
-      return { success: true, messageId: logEntry.id };
+      const subject = `${inviterName} invited you to ${emailConfig.appName}`;
+      const html = partnerInviteEmailTemplate(inviterName, inviteLink);
+      const result = await sendEmailViaEdge({ to: email, subject, html });
+      if (result.success) {
+        logger.info("Partner invite email sent", { email });
+      } else {
+        logger.warn("Partner invite email failed", { email, error: result.error });
+      }
+      return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      logEmail({
-        type: "partner_invite",
-        recipientEmail: email,
-        subject: `${inviterName} invited you to ${emailConfig.appName}`,
-        status: "failed",
-        error: errorMessage,
-      });
       return { success: false, error: errorMessage };
     }
-  },
-
-  /**
-   * Get email log entries
-   */
-  getEmailLog(limit: number = 50): EmailLogEntry[] {
-    return emailLog.slice(0, limit);
-  },
-
-  /**
-   * Get email log by recipient
-   */
-  getEmailLogByRecipient(email: string): EmailLogEntry[] {
-    return emailLog.filter(entry => entry.recipientEmail === email);
   },
 
   /**
@@ -306,7 +219,7 @@ export const EmailService = {
   /**
    * Get email templates for preview
    */
-  getTemplatePreview(type: EmailLogEntry["type"]): string {
+  getTemplatePreview(type: EmailTemplateType): string {
     const sampleLink = `${emailConfig.appUrl}/sample-link`;
 
     switch (type) {

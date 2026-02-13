@@ -103,12 +103,14 @@ serve(async req => {
     }
 
     // Create event (queued)
+    let eventId: string | null = null;
     const { data: ev, error: evErr } = await supabaseClient
       .from("email_send_events")
       .insert({
         campaign_id: campaignId,
-        user_id: null,
+        user_id: user.id,
         to_email: to,
+        subject,
         provider,
         provider_message_id: null,
         status: "queued",
@@ -119,26 +121,43 @@ serve(async req => {
       .single();
 
     if (evErr) throw evErr;
+    eventId = ev?.id ? String(ev.id) : null;
 
-    const sent = await sendResendEmail({ to, subject, html: content, from, apiKey: resendKey });
+    try {
+      const sent = await sendResendEmail({ to, subject, html: content, from, apiKey: resendKey });
 
-    await supabaseClient
-      .from("email_send_events")
-      .update({
-        provider_message_id: sent.id,
-        status: "sent",
-        sent_at: new Date().toISOString(),
-      })
-      .eq("id", ev.id);
+      await supabaseClient
+        .from("email_send_events")
+        .update({
+          provider_message_id: sent.id,
+          status: "sent",
+          error_message: null,
+          sent_at: new Date().toISOString(),
+        })
+        .eq("id", ev.id);
 
-    return new Response(JSON.stringify({ ok: true, provider, id: sent.id }), {
-      status: 200,
-      headers: {
-        ...corsHeaders,
-        ...buildRateLimitHeaders(rate),
-        "Content-Type": "application/json",
-      },
-    });
+      return new Response(JSON.stringify({ ok: true, provider, id: sent.id }), {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          ...buildRateLimitHeaders(rate),
+          "Content-Type": "application/json",
+        },
+      });
+    } catch (sendErr) {
+      const msg = sendErr instanceof Error ? sendErr.message : String(sendErr);
+      if (eventId) {
+        await supabaseClient
+          .from("email_send_events")
+          .update({
+            status: "failed",
+            error_message: msg,
+            sent_at: new Date().toISOString(),
+          })
+          .eq("id", eventId);
+      }
+      throw sendErr;
+    }
   } catch (e) {
     console.error("send-email error:", e);
     return new Response(

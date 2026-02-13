@@ -1,11 +1,12 @@
 /**
  * Admin Email Management Panel
  *
- * Allows administrators to view sent emails, resend verification emails,
- * and configure email settings.
+ * Displays real email send events from Supabase (`email_send_events`).
+ * Also allows administrators to request verification emails (Supabase Auth),
+ * and preview email templates.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,12 +46,34 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { EmailService, EmailLogEntry, emailConfig } from "@/lib/email";
+import { EmailService, emailConfig } from "@/lib/email";
+import { fromExtended } from "@/lib/supabaseExtensions";
 
-type EmailType = EmailLogEntry["type"] | "all";
-type EmailStatus = EmailLogEntry["status"] | "all";
+type EmailStatus = "queued" | "sent" | "failed";
 
-const getTypeBadge = (type: EmailLogEntry["type"]) => {
+type EmailSendEventRow = {
+  id: string;
+  campaign_id: string | null;
+  user_id: string | null;
+  to_email: string;
+  subject: string | null;
+  provider: string | null;
+  provider_message_id: string | null;
+  status: EmailStatus;
+  error_message: string | null;
+  sent_at: string | null;
+  created_at: string;
+  email_campaigns?: { name: string | null; subject: string | null } | null;
+};
+
+type TemplateType =
+  | "verification"
+  | "password_reset"
+  | "welcome"
+  | "notification"
+  | "partner_invite";
+
+const getTypeBadge = (type: TemplateType) => {
   switch (type) {
     case "verification":
       return (
@@ -87,8 +110,14 @@ const getTypeBadge = (type: EmailLogEntry["type"]) => {
   }
 };
 
-const getStatusBadge = (status: EmailLogEntry["status"]) => {
+const getStatusBadge = (status: EmailStatus) => {
   switch (status) {
+    case "queued":
+      return (
+        <Badge variant="outline" className="gap-1 border-amber-500 text-amber-500">
+          <Clock className="w-3 h-3" /> Queued
+        </Badge>
+      );
     case "sent":
       return (
         <Badge variant="outline" className="gap-1 border-green-500 text-green-500">
@@ -101,33 +130,40 @@ const getStatusBadge = (status: EmailLogEntry["status"]) => {
           <XCircle className="w-3 h-3" /> Failed
         </Badge>
       );
-    case "pending":
-      return (
-        <Badge variant="outline" className="gap-1 border-amber-500 text-amber-500">
-          <Clock className="w-3 h-3" /> Pending
-        </Badge>
-      );
     default:
       return <Badge variant="secondary">{status}</Badge>;
   }
 };
 
-export function EmailManagement() {
-  const [emailLog, setEmailLog] = useState<EmailLogEntry[]>([]);
+function formatMaybeDate(value: string | null | undefined): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return format(d, "MMM d, yyyy h:mm a");
+}
+
+export function EmailManagement(): JSX.Element {
+  const [events, setEvents] = useState<EmailSendEventRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<EmailType>("all");
-  const [statusFilter, setStatusFilter] = useState<EmailStatus>("all");
-  const [resendingId, setResendingId] = useState<string | null>(null);
-  const [previewType, setPreviewType] = useState<EmailLogEntry["type"] | null>(null);
+  const [statusFilter, setStatusFilter] = useState<EmailStatus | "all">("all");
+  const [providerFilter, setProviderFilter] = useState<string>("all");
   const [previewHtml, setPreviewHtml] = useState<string>("");
+  const [resendTargetEmail, setResendTargetEmail] = useState("");
+  const [resending, setResending] = useState(false);
 
   // Load email log
-  const loadEmailLog = useCallback(() => {
+  const loadEmailLog = useCallback(async () => {
     setIsLoading(true);
     try {
-      const log = EmailService.getEmailLog(100);
-      setEmailLog(log);
+      const { data, error } = await fromExtended("email_send_events")
+        .select(
+          "id,campaign_id,user_id,to_email,subject,provider,provider_message_id,status,error_message,sent_at,created_at,email_campaigns(name,subject)",
+        )
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      setEvents((data ?? []) as unknown as EmailSendEventRow[]);
     } catch (error) {
       toast.error("Failed to load email log");
     } finally {
@@ -136,54 +172,53 @@ export function EmailManagement() {
   }, []);
 
   useEffect(() => {
-    loadEmailLog();
+    void loadEmailLog();
     // Refresh every 30 seconds
-    const interval = setInterval(loadEmailLog, 30000);
+    const interval = setInterval(() => void loadEmailLog(), 30000);
     return () => clearInterval(interval);
   }, [loadEmailLog]);
 
   // Filter emails
-  const filteredEmails = emailLog.filter(entry => {
-    const matchesSearch =
-      entry.recipientEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      entry.subject.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === "all" || entry.type === typeFilter;
-    const matchesStatus = statusFilter === "all" || entry.status === statusFilter;
-    return matchesSearch && matchesType && matchesStatus;
-  });
-
-  // Resend verification email
-  const handleResendVerification = async (email: string, logId: string) => {
-    setResendingId(logId);
-    try {
-      const result = await EmailService.sendVerificationEmail(email);
-      if (result.success) {
-        toast.success(`Verification email resent to ${email}`);
-        loadEmailLog();
-      } else {
-        toast.error(result.error || "Failed to resend email");
-      }
-    } catch (error) {
-      toast.error("An error occurred while resending email");
-    } finally {
-      setResendingId(null);
-    }
-  };
+  const filteredEmails = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return events.filter(ev => {
+      const subj = String(ev.subject || ev.email_campaigns?.subject || "").trim();
+      const provider = String(ev.provider || "").trim();
+      const msgId = String(ev.provider_message_id || "").trim();
+      const matchesSearch =
+        !q ||
+        ev.to_email.toLowerCase().includes(q) ||
+        subj.toLowerCase().includes(q) ||
+        provider.toLowerCase().includes(q) ||
+        msgId.toLowerCase().includes(q);
+      const matchesStatus = statusFilter === "all" || ev.status === statusFilter;
+      const matchesProvider = providerFilter === "all" || provider === providerFilter;
+      return matchesSearch && matchesStatus && matchesProvider;
+    });
+  }, [events, providerFilter, searchQuery, statusFilter]);
 
   // Show template preview
-  const handlePreviewTemplate = (type: EmailLogEntry["type"]) => {
+  const handlePreviewTemplate = (type: TemplateType) => {
     const html = EmailService.getTemplatePreview(type);
-    setPreviewType(type);
     setPreviewHtml(html);
   };
 
   // Stats
   const stats = {
-    total: emailLog.length,
-    sent: emailLog.filter(e => e.status === "sent").length,
-    failed: emailLog.filter(e => e.status === "failed").length,
-    verification: emailLog.filter(e => e.type === "verification").length,
+    total: events.length,
+    queued: events.filter(e => e.status === "queued").length,
+    sent: events.filter(e => e.status === "sent").length,
+    failed: events.filter(e => e.status === "failed").length,
   };
+
+  const providerOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const ev of events) {
+      const p = String(ev.provider || "").trim();
+      if (p) set.add(p);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [events]);
 
   return (
     <div className="space-y-6">
@@ -232,11 +267,11 @@ export function EmailManagement() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-amber-500/20">
-                <AlertCircle className="w-5 h-5 text-amber-400" />
+                <Clock className="w-5 h-5 text-amber-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{stats.verification}</p>
-                <p className="text-xs text-white/60">Verifications</p>
+                <p className="text-2xl font-bold text-white">{stats.queued}</p>
+                <p className="text-xs text-white/60">Queued</p>
               </div>
             </div>
           </CardContent>
@@ -269,12 +304,14 @@ export function EmailManagement() {
                     <Mail className="w-5 h-5" />
                     Email Log
                   </CardTitle>
-                  <CardDescription>View and manage sent emails</CardDescription>
+                  <CardDescription>
+                    Provider send events (Supabase table: <code>email_send_events</code>)
+                  </CardDescription>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={loadEmailLog}
+                  onClick={() => void loadEmailLog()}
                   disabled={isLoading}
                   className="gap-2"
                 >
@@ -288,35 +325,35 @@ export function EmailManagement() {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                   <Input
-                    placeholder="Search by email or subject..."
+                    placeholder="Search by recipient, subject, provider, message id…"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     className="pl-9 bg-slate-800/50 border-slate-700"
                   />
                 </div>
-                <Select value={typeFilter} onValueChange={v => setTypeFilter(v as EmailType)}>
+                <Select value={providerFilter} onValueChange={setProviderFilter}>
                   <SelectTrigger className="w-[180px] bg-slate-800/50 border-slate-700">
                     <Filter className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Type" />
+                    <SelectValue placeholder="Provider" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="verification">Verification</SelectItem>
-                    <SelectItem value="password_reset">Password Reset</SelectItem>
-                    <SelectItem value="welcome">Welcome</SelectItem>
-                    <SelectItem value="notification">Notification</SelectItem>
-                    <SelectItem value="partner_invite">Partner Invite</SelectItem>
+                    <SelectItem value="all">All Providers</SelectItem>
+                    {providerOptions.map(p => (
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                <Select value={statusFilter} onValueChange={v => setStatusFilter(v as EmailStatus)}>
+                <Select value={statusFilter} onValueChange={v => setStatusFilter(v as any)}>
                   <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="queued">Queued</SelectItem>
                     <SelectItem value="sent">Sent</SelectItem>
                     <SelectItem value="failed">Failed</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -336,52 +373,44 @@ export function EmailManagement() {
               ) : (
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-3">
-                    {filteredEmails.map(entry => (
-                      <div
-                        key={entry.id}
-                        className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-slate-600/50 transition-colors"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
-                              {getTypeBadge(entry.type)}
-                              {getStatusBadge(entry.status)}
-                            </div>
-                            <p className="text-white font-medium truncate">
-                              {entry.recipientEmail}
-                            </p>
-                            <p className="text-white/60 text-sm truncate">{entry.subject}</p>
-                            <p className="text-white/40 text-xs mt-1">
-                              {format(new Date(entry.sentAt), "MMM d, yyyy h:mm a")}
-                            </p>
-                            {entry.error && (
-                              <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
-                                <AlertCircle className="w-3 h-3" />
-                                {entry.error}
+                    {filteredEmails.map(entry => {
+                      const subject = String(
+                        entry.subject || entry.email_campaigns?.subject || "",
+                      ).trim();
+                      const subjectDisplay = subject || "(no subject recorded)";
+                      const provider = String(entry.provider || "").trim() || "—";
+                      const createdAt = entry.created_at || entry.sent_at || "";
+
+                      return (
+                        <div
+                          key={entry.id}
+                          className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-slate-600/50 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                {getStatusBadge(entry.status)}
+                                <Badge variant="secondary" className="gap-1">
+                                  <Mail className="w-3 h-3" />
+                                  {provider}
+                                </Badge>
+                              </div>
+                              <p className="text-white font-medium truncate">{entry.to_email}</p>
+                              <p className="text-white/60 text-sm truncate">{subjectDisplay}</p>
+                              <p className="text-white/40 text-xs mt-1">
+                                {formatMaybeDate(createdAt)}
                               </p>
-                            )}
-                          </div>
-                          {entry.type === "verification" && entry.status === "sent" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                handleResendVerification(entry.recipientEmail, entry.id)
-                              }
-                              disabled={resendingId === entry.id}
-                              className="gap-1"
-                            >
-                              {resendingId === entry.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <Send className="w-3 h-3" />
+                              {entry.error_message && (
+                                <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                                  <AlertCircle className="w-3 h-3" />
+                                  {entry.error_message}
+                                </p>
                               )}
-                              Resend
-                            </Button>
-                          )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </ScrollArea>
               )}
@@ -483,14 +512,55 @@ export function EmailManagement() {
                   <div className="flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5" />
                     <div>
-                      <p className="text-blue-400 font-medium">Using Supabase Email Service</p>
+                      <p className="text-blue-400 font-medium">Auth vs provider logs</p>
                       <p className="text-white/70 text-sm mt-1">
-                        Email verification and password reset emails are handled by Supabase Auth.
-                        To customize email templates, go to your Supabase Dashboard &gt;
-                        Authentication &gt; Email Templates.
+                        Verification and password reset emails are handled by Supabase Auth (not
+                        recorded in <code>email_send_events</code>). Admin/provider-sent emails
+                        (Edge Function <code>send-email</code>) appear in the log tab.
                       </p>
                     </div>
                   </div>
+                </div>
+
+                <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 space-y-3">
+                  <p className="text-white/80 text-sm font-medium">Resend verification email</p>
+                  <div className="flex flex-col md:flex-row gap-2">
+                    <Input
+                      value={resendTargetEmail}
+                      onChange={e => setResendTargetEmail(e.target.value)}
+                      placeholder="user@domain.com"
+                      className="bg-slate-900/40 border-slate-700"
+                    />
+                    <Button
+                      onClick={async () => {
+                        const email = resendTargetEmail.trim();
+                        if (!email) return;
+                        setResending(true);
+                        try {
+                          const result = await EmailService.sendVerificationEmail(email);
+                          if (result.success) {
+                            toast.success(`Verification email requested for ${email}`);
+                          } else {
+                            toast.error(result.error || "Failed to request verification email");
+                          }
+                        } finally {
+                          setResending(false);
+                        }
+                      }}
+                      disabled={resending || !resendTargetEmail.trim()}
+                      className="gap-2"
+                    >
+                      {resending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                      Send
+                    </Button>
+                  </div>
+                  <p className="text-xs text-white/50">
+                    Note: Supabase Auth emails are not recorded in <code>email_send_events</code>.
+                  </p>
                 </div>
 
                 {emailConfig.smtp && (

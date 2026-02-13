@@ -4,7 +4,7 @@
  * Exports all email-related functionality
  */
 
-export { EmailService, type EmailResult, type EmailLogEntry } from "./EmailService";
+export { EmailService, type EmailResult, type EmailTemplateType } from "./EmailService";
 export {
   emailConfig,
   isEmailConfigured,
