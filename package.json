@@ -10,6 +10,7 @@
     "build:sfw": "cross-env VITE_APP_VERSION=sfw vite build",
     "build:nsfw": "cross-env VITE_APP_VERSION=nsfw vite build",
     "build:hybrid": "cross-env VITE_APP_VERSION=hybrid vite build",
+    "nsfwbuild": "cross-env NODE_ENV=production CAPACITOR_BUILD=1 VITE_PLATFORM=capacitor VITE_APP_VERSION=nsfw VITE_DISTRIBUTION_CHANNEL=direct vite build",
     "build:sfw:store": "cross-env VITE_APP_VERSION=sfw VITE_DISTRIBUTION_CHANNEL=store vite build",
     "build:sfw:direct": "cross-env VITE_APP_VERSION=sfw VITE_DISTRIBUTION_CHANNEL=direct vite build",
     "build:nsfw:direct": "cross-env VITE_APP_VERSION=nsfw VITE_DISTRIBUTION_CHANNEL=direct vite build",

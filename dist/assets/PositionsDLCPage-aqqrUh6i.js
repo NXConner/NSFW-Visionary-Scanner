@@ -1,1 +1,0 @@
-import{j as t}from"./vendor-DMwLAq3k.js";import{PositionsGallery as r}from"./PositionsGallery-OAOVQ-Gq.js";import"./index-C81HWxU1.js";import"./useGenericStorage-BTcMCgJJ.js";import"./upload-Dt3bW6L_.js";import"./supabaseExtensions-CLc2KGOI.js";import"./nsfwAssets-DQCWIeW6.js";function f({initialPositionId:o}){return t.jsx(r,{initialPositionId:o})}export{f as default};
