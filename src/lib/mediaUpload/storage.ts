@@ -8,6 +8,7 @@ export const STORAGE_BUCKETS = {
   AUDIO: "audio",
   SCREENSHOTS: "screenshots",
   RECORDINGS: "recordings",
+  WALLPAPERS: "wallpapers",
   EXPERT_CONTENT: "expert-content",
   NSFW_CONTENT: "nsfw-content",
 } as const;

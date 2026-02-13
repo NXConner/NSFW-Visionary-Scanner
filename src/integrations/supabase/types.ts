@@ -19502,6 +19502,7 @@ export type Database = {
           notifications_enabled: boolean | null
           reminder_days: number[] | null
           reminder_time: string | null
+          settings: Json | null
           theme: string | null
           theme_preset: string | null
           updated_at: string
@@ -19518,6 +19519,7 @@ export type Database = {
           notifications_enabled?: boolean | null
           reminder_days?: number[] | null
           reminder_time?: string | null
+          settings?: Json | null
           theme?: string | null
           theme_preset?: string | null
           updated_at?: string
@@ -19534,6 +19536,7 @@ export type Database = {
           notifications_enabled?: boolean | null
           reminder_days?: number[] | null
           reminder_time?: string | null
+          settings?: Json | null
           theme?: string | null
           theme_preset?: string | null
           updated_at?: string

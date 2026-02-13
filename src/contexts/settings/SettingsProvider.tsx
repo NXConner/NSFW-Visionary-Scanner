@@ -12,6 +12,8 @@ import { applyThemeToDocument, themePresets, type ThemePresetId } from "@/design
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { uploadFile } from "@/lib/mediaUpload/upload";
+import { STORAGE_BUCKETS } from "@/lib/mediaUpload/storage";
 import {
   clearCustomWallpaperBlob,
   dataUrlToBlob,
@@ -25,7 +27,8 @@ import {
   SETTINGS_KEY,
   defaultPresetForMode,
 } from "./constants";
-import { isLocalStorageAvailable, safelyParseSettings } from "./localStorage";
+import { isLocalStorageAvailable, normalizeStoredSettings, safelyParseSettings } from "./localStorage";
+import { parseCloudSettingsPayload, type CloudWallpaperV1 } from "./cloud";
 import type {
   APIAccessSettings,
   AchievementSettings,
@@ -92,6 +95,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     initial.customWallpaper,
   );
   const [customWallpaperStoredAsBlob, setCustomWallpaperStoredAsBlob] = useState<boolean>(false);
+  const [cloudWallpaper, setCloudWallpaper] = useState<CloudWallpaperV1>({ kind: "none" });
   const [wallpaperBlur, setWallpaperBlurState] = useState<number>(initial.wallpaperBlur);
   const [wallpaperOpacity, setWallpaperOpacityState] = useState<number>(initial.wallpaperOpacity);
   const [fontSize, setFontSizeState] = useState<FontSize>(initial.fontSize);
@@ -151,6 +155,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [apiAccess, setApiAccessState] = useState<APIAccessSettings>(initial.apiAccess);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
+  const suppressCloudSyncRef = useRef(false);
+  const cloudHydratedForUserIdRef = useRef<string | null>(null);
+  const lastCloudSettingsHashRef = useRef<string | null>(null);
+  const activeCloudLoadUserIdRef = useRef<string | null>(null);
+  const wallpaperUploadInFlightRef = useRef(false);
+
   const activeWallpaperObjectUrlRef = useRef<string | null>(null);
   const theme: ThemeMode = themePresets[themePreset]?.mode ?? DEFAULT_SETTINGS.theme;
 
@@ -185,9 +195,17 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     (overrides: Partial<StoredSettings> = {}) => {
       try {
         if (!isLocalStorageAvailable()) return;
-        const persistedCustomWallpaper = customWallpaperStoredAsBlob
+        const hasOverrideWallpaper = Object.prototype.hasOwnProperty.call(overrides, "customWallpaper");
+        const overrideWallpaper = hasOverrideWallpaper ? (overrides as any).customWallpaper : undefined;
+        const storeAsBlob = hasOverrideWallpaper
+          ? overrideWallpaper === CUSTOM_WALLPAPER_BLOB_SENTINEL
+          : customWallpaperStoredAsBlob;
+        const nextWallpaperValue = hasOverrideWallpaper ? overrideWallpaper : customWallpaper;
+        const persistedCustomWallpaper = storeAsBlob
           ? CUSTOM_WALLPAPER_BLOB_SENTINEL
-          : customWallpaper;
+          : typeof nextWallpaperValue === "string"
+            ? nextWallpaperValue
+            : null;
         const payload: StoredSettings = {
           theme,
           themePreset,
@@ -223,6 +241,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           themeExtended,
           apiAccess,
           ...overrides,
+          // Ensure customWallpaper is always persisted as either a stable string or the blob sentinel.
+          customWallpaper: persistedCustomWallpaper,
         };
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(payload));
       } catch (error) {
@@ -311,53 +331,199 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     };
   }, [createWallpaperObjectUrl, persistSettings, revokeActiveObjectUrl]);
 
-  const syncToCloud = useCallback(async () => {
-    if (!user) return;
+  const buildCloudSettingsPayload = useCallback(() => {
+    const settings: StoredSettings = {
+      theme,
+      themePreset,
+      // Object URLs are device-local and must never be synced.
+      customWallpaper: customWallpaperStoredAsBlob ? null : customWallpaper,
+      wallpaperBlur,
+      wallpaperOpacity,
+      fontSize,
+      fontFamily,
+      customAccentColor,
+      customInterfaceColors,
+      colorBlindMode,
+      measurementUnits,
+      pressureUnits,
+      hapticEnabled,
+      notificationsEnabled,
+      reminderTime,
+      reminderDays,
+      uiFxEnabled,
+      uiFxCardsEnabled,
+      uiFxCardTiltEnabled,
+      uiFxButtonsEnabled,
+      uiFxGlowEnabled,
+      uiFxRippleEnabled,
+      uiFxWallpaperMotionEnabled,
+      arOverlay,
+      offlineMode,
+      notificationPreferences,
+      profileSettings,
+      voiceGuidance,
+      achievements,
+      healthTracking,
+      dashboard,
+      themeExtended,
+      apiAccess,
+    };
 
-    setIsSyncing(true);
-    try {
-      const { error } = await supabase.from("user_preferences").upsert(
-        {
-          user_id: user.id,
-          theme,
-          theme_preset: themePreset,
-          font_size: fontSize,
-          color_blind_mode: colorBlindMode,
-          haptic_enabled: hapticEnabled,
-          notifications_enabled: notificationsEnabled,
-          reminder_time: reminderTime,
-          reminder_days: reminderDays,
-        },
-        { onConflict: "user_id" },
-      );
+    const wallpaper: CloudWallpaperV1 = customWallpaperStoredAsBlob
+      ? cloudWallpaper.kind === "upload"
+        ? cloudWallpaper
+        : { kind: "none" }
+      : customWallpaper
+        ? { kind: "preset", value: customWallpaper }
+        : { kind: "none" };
 
-      if (error) throw error;
-      toast.success("Settings synced to cloud");
-    } catch (error) {
-      toast.error("Failed to sync settings");
-    } finally {
-      setIsSyncing(false);
-    }
+    return { v: 1 as const, settings, wallpaper };
   }, [
-    user,
-    theme,
-    themePreset,
-    fontSize,
+    achievements,
+    apiAccess,
+    arOverlay,
+    cloudWallpaper,
     colorBlindMode,
+    customAccentColor,
+    customInterfaceColors,
+    customWallpaper,
+    customWallpaperStoredAsBlob,
+    dashboard,
+    fontFamily,
+    fontSize,
     hapticEnabled,
+    healthTracking,
+    measurementUnits,
     notificationsEnabled,
-    reminderTime,
+    notificationPreferences,
+    offlineMode,
+    pressureUnits,
+    profileSettings,
     reminderDays,
+    reminderTime,
+    theme,
+    themeExtended,
+    themePreset,
+    uiFxButtonsEnabled,
+    uiFxCardTiltEnabled,
+    uiFxCardsEnabled,
+    uiFxEnabled,
+    uiFxGlowEnabled,
+    uiFxRippleEnabled,
+    uiFxWallpaperMotionEnabled,
+    voiceGuidance,
+    wallpaperBlur,
+    wallpaperOpacity,
   ]);
+
+  const pushCloudSettings = useCallback(
+    async (opts: { silent?: boolean; force?: boolean } = {}): Promise<void> => {
+      const silent = Boolean(opts.silent);
+      const force = Boolean(opts.force);
+      if (!user?.id) return;
+      if (suppressCloudSyncRef.current) return;
+
+      const payload = buildCloudSettingsPayload();
+      let hash = "";
+      try {
+        hash = JSON.stringify(payload);
+      } catch {
+        // If stringify fails (shouldn't), force a push and avoid caching.
+        hash = `__unhashable__:${Date.now()}`;
+      }
+
+      if (!force && lastCloudSettingsHashRef.current === hash) return;
+
+      setIsSyncing(true);
+      try {
+        const { error } = await supabase.from("user_preferences").upsert(
+          {
+            user_id: user.id,
+            theme,
+            theme_preset: themePreset,
+            font_size: fontSize,
+            color_blind_mode: colorBlindMode,
+            haptic_enabled: hapticEnabled,
+            notifications_enabled: notificationsEnabled,
+            reminder_time: reminderTime,
+            reminder_days: reminderDays,
+            settings: payload,
+          },
+          { onConflict: "user_id" },
+        );
+
+        if (error) throw error;
+        lastCloudSettingsHashRef.current = hash;
+        cloudHydratedForUserIdRef.current = user.id;
+        if (!silent) toast.success("Settings synced to cloud");
+      } catch (error) {
+        if (!silent) toast.error("Failed to sync settings");
+      } finally {
+        setIsSyncing(false);
+      }
+    },
+    [
+      buildCloudSettingsPayload,
+      colorBlindMode,
+      fontSize,
+      hapticEnabled,
+      notificationsEnabled,
+      reminderDays,
+      reminderTime,
+      theme,
+      themePreset,
+      user?.id,
+    ],
+  );
+
+  const syncToCloud = useCallback(async (): Promise<void> => {
+    await pushCloudSettings({ silent: false, force: true });
+  }, [pushCloudSettings]);
 
   // Track if we've already loaded settings for this user to prevent loops
   const hasLoadedCloudSettingsRef = useRef<string | null>(null);
+
+  const applySettingsSnapshot = useCallback((s: StoredSettings): void => {
+    setThemePresetState(s.themePreset);
+    setWallpaperBlurState(s.wallpaperBlur);
+    setWallpaperOpacityState(s.wallpaperOpacity);
+    setFontSizeState(s.fontSize);
+    setFontFamilyState(s.fontFamily);
+    setCustomAccentColorState(s.customAccentColor);
+    setCustomInterfaceColorsState(s.customInterfaceColors ?? DEFAULT_CUSTOM_INTERFACE_COLORS);
+    setColorBlindModeState(s.colorBlindMode);
+    setMeasurementUnitsState(s.measurementUnits);
+    setPressureUnitsState(s.pressureUnits);
+    setHapticEnabledState(s.hapticEnabled);
+    setNotificationsEnabledState(s.notificationsEnabled);
+    setReminderTimeState(s.reminderTime);
+    setReminderDaysState(s.reminderDays);
+    setUiFxEnabledState(s.uiFxEnabled);
+    setUiFxCardsEnabledState(s.uiFxCardsEnabled);
+    setUiFxCardTiltEnabledState(s.uiFxCardTiltEnabled);
+    setUiFxButtonsEnabledState(s.uiFxButtonsEnabled);
+    setUiFxGlowEnabledState(s.uiFxGlowEnabled);
+    setUiFxRippleEnabledState(s.uiFxRippleEnabled);
+    setUiFxWallpaperMotionEnabledState(s.uiFxWallpaperMotionEnabled);
+    setAROverlayState(s.arOverlay);
+    setOfflineModeState(s.offlineMode);
+    setNotificationPreferencesState(s.notificationPreferences);
+    setProfileSettingsState(s.profileSettings);
+    setVoiceGuidanceState(s.voiceGuidance);
+    setAchievementsState(s.achievements);
+    setHealthTrackingState(s.healthTracking);
+    setDashboardState(s.dashboard);
+    setThemeExtendedState(s.themeExtended);
+    setApiAccessState(s.apiAccess);
+  }, []);
 
   const loadCloudSettings = useCallback(
     async (userId: string) => {
       // Prevent multiple loads for the same user
       if (hasLoadedCloudSettingsRef.current === userId) return;
       hasLoadedCloudSettingsRef.current = userId;
+      activeCloudLoadUserIdRef.current = userId;
+      suppressCloudSyncRef.current = true;
 
       try {
         const { data, error } = await supabase
@@ -368,67 +534,131 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
         if (error) throw error;
 
-        if (data) {
-          // Apply cloud settings
-          if (data.theme_preset) setThemePresetState(data.theme_preset as ThemePresetId);
-          if (data.font_size) setFontSizeState(data.font_size as FontSize);
-          if (data.color_blind_mode)
-            setColorBlindModeState(data.color_blind_mode as ColorBlindMode);
-          if (typeof data.haptic_enabled === "boolean") setHapticEnabledState(data.haptic_enabled);
-          if (typeof data.notifications_enabled === "boolean")
-            setNotificationsEnabledState(data.notifications_enabled);
-          if (data.reminder_time) setReminderTimeState(data.reminder_time);
-          if (data.reminder_days) setReminderDaysState(data.reminder_days);
+        // If another user started loading after we did, ignore late results.
+        if (activeCloudLoadUserIdRef.current !== userId) return;
 
-          persistSettings({
-            themePreset: data.theme_preset as ThemePresetId,
-            fontSize: data.font_size as FontSize,
-            colorBlindMode: data.color_blind_mode as ColorBlindMode,
-            hapticEnabled: data.haptic_enabled,
-            notificationsEnabled: data.notifications_enabled,
-            reminderTime: data.reminder_time,
-            reminderDays: data.reminder_days,
-          });
-
-          // Only show toast once per session
-          toast.success("Settings loaded from cloud");
-        } else {
-          // No cloud settings exist, sync current to cloud
-          setIsSyncing(true);
-          try {
-            await supabase.from("user_preferences").upsert(
-              {
-                user_id: userId,
-                theme,
-                theme_preset: themePreset,
-                font_size: fontSize,
-                color_blind_mode: colorBlindMode,
-                haptic_enabled: hapticEnabled,
-                notifications_enabled: notificationsEnabled,
-                reminder_time: reminderTime,
-                reminder_days: reminderDays,
-              },
-              { onConflict: "user_id" },
-            );
-          } finally {
-            setIsSyncing(false);
-          }
+        if (!data) {
+          // No cloud settings exist yet: seed from local state (silent).
+          await pushCloudSettings({ silent: true, force: true });
+          cloudHydratedForUserIdRef.current = userId;
+          return;
         }
+
+        // Prefer the settings JSON blob if present.
+        const parsed = data.settings ? parseCloudSettingsPayload(data.settings) : null;
+        if (parsed) {
+          const normalized = normalizeStoredSettings(parsed.settings as Partial<StoredSettings>);
+          applySettingsSnapshot(normalized);
+
+          // Persist the normalized snapshot locally. For cloud-uploaded wallpapers we persist the
+          // blob sentinel so we don't wipe any existing local wallpaper state if the download fails.
+          persistSettings(
+            parsed.wallpaper.kind === "upload"
+              ? { ...normalized, customWallpaper: CUSTOM_WALLPAPER_BLOB_SENTINEL }
+              : normalized,
+          );
+
+          setCloudWallpaper(parsed.wallpaper);
+
+          // Apply wallpaper (preset/upload/none)
+          if (parsed.wallpaper.kind === "preset") {
+            revokeActiveObjectUrl();
+            setCustomWallpaperStoredAsBlob(false);
+            setCustomWallpaperState(parsed.wallpaper.value || null);
+            persistSettings({ ...normalized, customWallpaper: parsed.wallpaper.value || null });
+            void clearCustomWallpaperBlob();
+            applyThemeToDocument(
+              normalized.themePreset,
+              parsed.wallpaper.value || null,
+              normalized.wallpaperBlur,
+              normalized.wallpaperOpacity,
+            );
+          } else if (parsed.wallpaper.kind === "upload") {
+            try {
+              const { data: blob, error: dlErr } = await supabase.storage
+                .from(parsed.wallpaper.bucket)
+                .download(parsed.wallpaper.path);
+              if (dlErr || !blob) throw dlErr ?? new Error("Wallpaper download failed");
+              if (activeCloudLoadUserIdRef.current !== userId) return;
+
+              await setCustomWallpaperBlob(blob);
+              if (activeCloudLoadUserIdRef.current !== userId) return;
+
+              revokeActiveObjectUrl();
+              const next = createWallpaperObjectUrl(blob, parsed.wallpaper.ext ?? undefined);
+              setCustomWallpaperStoredAsBlob(true);
+              setCustomWallpaperState(next);
+              persistSettings({ ...normalized, customWallpaper: CUSTOM_WALLPAPER_BLOB_SENTINEL });
+              applyThemeToDocument(normalized.themePreset, next, normalized.wallpaperBlur, normalized.wallpaperOpacity);
+            } catch (err) {
+              logger.warn("[settings] Failed to restore wallpaper from cloud", {
+                error: err instanceof Error ? err.message : String(err),
+              });
+            }
+          } else {
+            // none
+            revokeActiveObjectUrl();
+            setCustomWallpaperStoredAsBlob(false);
+            setCustomWallpaperState(null);
+            persistSettings({ ...normalized, customWallpaper: null });
+            void clearCustomWallpaperBlob();
+            applyThemeToDocument(normalized.themePreset, null, normalized.wallpaperBlur, normalized.wallpaperOpacity);
+          }
+
+          // Cache remote payload hash to prevent immediate no-op pushes.
+          try {
+            lastCloudSettingsHashRef.current = JSON.stringify({
+              v: 1,
+              settings: {
+                ...normalized,
+                customWallpaper: parsed.wallpaper.kind === "upload" ? null : normalized.customWallpaper,
+              },
+              wallpaper: parsed.wallpaper,
+            });
+          } catch {
+            lastCloudSettingsHashRef.current = null;
+          }
+
+          cloudHydratedForUserIdRef.current = userId;
+          toast.success("Settings loaded from cloud");
+          return;
+        }
+
+        // Back-compat: apply legacy scalar columns if settings blob is missing.
+        const legacy: Partial<StoredSettings> = {};
+        if (data.theme_preset) legacy.themePreset = data.theme_preset as ThemePresetId;
+        if (data.font_size) legacy.fontSize = data.font_size as FontSize;
+        if (data.color_blind_mode) legacy.colorBlindMode = data.color_blind_mode as ColorBlindMode;
+        if (typeof data.haptic_enabled === "boolean") legacy.hapticEnabled = data.haptic_enabled;
+        if (typeof data.notifications_enabled === "boolean")
+          legacy.notificationsEnabled = data.notifications_enabled;
+        if (data.reminder_time) legacy.reminderTime = data.reminder_time;
+        if (data.reminder_days) legacy.reminderDays = data.reminder_days;
+
+        const current = safelyParseSettings();
+        const merged = normalizeStoredSettings({ ...current, ...legacy });
+        applySettingsSnapshot(merged);
+        persistSettings(merged);
+        setCloudWallpaper({ kind: "none" });
+        cloudHydratedForUserIdRef.current = userId;
+        toast.success("Settings loaded from cloud");
       } catch (error) {
         // Reset the ref so we can retry on next mount
         hasLoadedCloudSettingsRef.current = null;
+        cloudHydratedForUserIdRef.current = null;
+      }
+      finally {
+        if (activeCloudLoadUserIdRef.current === userId) {
+          suppressCloudSyncRef.current = false;
+        }
       }
     },
     [
+      applySettingsSnapshot,
+      createWallpaperObjectUrl,
       persistSettings,
-      theme,
-      themePreset,
-      fontSize,
-      colorBlindMode,
-      hapticEnabled,
-      notificationsEnabled,
-      reminderTime,
-      reminderDays,
+      pushCloudSettings,
+      revokeActiveObjectUrl,
     ],
   );
 
@@ -439,8 +669,116 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     } else {
       // Reset when user logs out so we can load again on next login
       hasLoadedCloudSettingsRef.current = null;
+      activeCloudLoadUserIdRef.current = null;
+      suppressCloudSyncRef.current = false;
+      cloudHydratedForUserIdRef.current = null;
+      lastCloudSettingsHashRef.current = null;
+      setCloudWallpaper({ kind: "none" });
     }
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Background cloud sync (debounced) — persists ALL settings across devices.
+  useEffect(() => {
+    if (!user?.id) return;
+    if (cloudHydratedForUserIdRef.current !== user.id) return;
+    if (suppressCloudSyncRef.current) return;
+    if (wallpaperUploadInFlightRef.current) return;
+
+    const t = window.setTimeout(() => {
+      void pushCloudSettings({ silent: true });
+    }, 750);
+
+    return () => window.clearTimeout(t);
+  }, [pushCloudSettings, user?.id]);
+
+  // If a user already has a local custom wallpaper blob (IndexedDB) but the cloud has no upload ref,
+  // automatically upload it once so it persists across devices.
+  useEffect(() => {
+    if (!user?.id) return;
+    if (cloudHydratedForUserIdRef.current !== user.id) return;
+    if (suppressCloudSyncRef.current) return;
+    if (wallpaperUploadInFlightRef.current) return;
+    if (cloudWallpaper.kind !== "none") return;
+    if (!customWallpaperStoredAsBlob) return;
+
+    wallpaperUploadInFlightRef.current = true;
+
+    void (async () => {
+      try {
+        const blob = await getCustomWallpaperBlob();
+        if (!blob) return;
+
+        const ext = inferExtFromBlobType(blob);
+        const mimeType = blob.type || "application/octet-stream";
+        const file = new File([blob], `wallpaper.${ext}`, { type: mimeType });
+
+        const uploaded = await uploadFile(file, {
+          bucket: STORAGE_BUCKETS.WALLPAPERS,
+          folder: "wallpapers",
+          allowedTypes: [
+            "image/jpeg",
+            "image/jpg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+            "video/mp4",
+            "video/webm",
+            "video/quicktime",
+          ],
+          maxSize: mimeType.startsWith("video/") ? 50 * 1024 * 1024 : 10 * 1024 * 1024,
+          userScoped: true,
+          compress: !mimeType.startsWith("video/"),
+        });
+        if (!uploaded?.path) throw new Error("Upload failed");
+
+        const ref: CloudWallpaperV1 = {
+          kind: "upload",
+          bucket: String(uploaded.bucket || STORAGE_BUCKETS.WALLPAPERS),
+          path: String(uploaded.path || ""),
+          mimeType: String(uploaded.mimeType || mimeType),
+          sizeBytes: Number(uploaded.sizeBytes ?? blob.size) || blob.size,
+          updatedAtMs: Date.now(),
+          ext,
+          isVideo: mimeType.startsWith("video/"),
+        };
+
+        setCloudWallpaper(ref);
+
+        const latest = safelyParseSettings();
+        const payload = {
+          v: 1 as const,
+          settings: { ...latest, customWallpaper: null } as StoredSettings,
+          wallpaper: ref,
+        };
+
+        const hash = JSON.stringify(payload);
+        const { error } = await supabase.from("user_preferences").upsert(
+          {
+            user_id: user.id,
+            theme: latest.theme,
+            theme_preset: latest.themePreset,
+            font_size: latest.fontSize,
+            color_blind_mode: latest.colorBlindMode,
+            haptic_enabled: latest.hapticEnabled,
+            notifications_enabled: latest.notificationsEnabled,
+            reminder_time: latest.reminderTime,
+            reminder_days: latest.reminderDays,
+            settings: payload,
+          },
+          { onConflict: "user_id" },
+        );
+        if (error) throw error;
+
+        lastCloudSettingsHashRef.current = hash;
+      } catch (err) {
+        logger.warn("[settings] Auto-upload of existing wallpaper failed", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      } finally {
+        wallpaperUploadInFlightRef.current = false;
+      }
+    })();
+  }, [cloudWallpaper.kind, customWallpaperStoredAsBlob, user?.id]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -545,9 +883,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         themePresets[themePreset]?.mode === mode ? themePreset : defaultPresetForMode[mode];
       setThemePresetState(nextPreset);
       persistSettings({ theme: mode, themePreset: nextPreset });
-      if (user) void syncToCloud();
     },
-    [persistSettings, syncToCloud, themePreset, user],
+    [persistSettings, themePreset],
   );
 
   const setThemePreset = useCallback(
@@ -557,9 +894,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       persistSettings({ themePreset: preset, theme: resolvedTheme });
       // Apply immediately so the UI doesn't "snap back" or appear to cycle.
       applyThemeToDocument(preset, customWallpaper, wallpaperBlur, wallpaperOpacity);
-      if (user) void syncToCloud();
     },
-    [customWallpaper, persistSettings, syncToCloud, theme, user, wallpaperBlur, wallpaperOpacity],
+    [customWallpaper, persistSettings, theme, wallpaperBlur, wallpaperOpacity],
   );
 
   const setCustomWallpaperFromFile = useCallback(
@@ -574,12 +910,110 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setCustomWallpaperBlob(file).catch(() => {
         toast.error("Failed to save wallpaper");
       });
+
+      // Best-effort cloud upload for cross-device persistence.
+      if (!user?.id) return;
+      const prevUpload = cloudWallpaper.kind === "upload" ? cloudWallpaper : null;
+      wallpaperUploadInFlightRef.current = true;
+
+      void (async () => {
+        try {
+          const validTypes = [
+            "image/jpeg",
+            "image/jpg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+            "video/mp4",
+            "video/webm",
+            "video/quicktime",
+          ];
+          if (!validTypes.includes(file.type)) {
+            throw new Error("Invalid wallpaper type");
+          }
+
+          const maxSize = file.type.startsWith("video/") ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+          if (file.size > maxSize) {
+            throw new Error("Wallpaper file too large");
+          }
+
+          const uploaded = await uploadFile(file, {
+            bucket: STORAGE_BUCKETS.WALLPAPERS,
+            folder: "wallpapers",
+            allowedTypes: validTypes,
+            maxSize,
+            userScoped: true,
+            compress: !file.type.startsWith("video/"),
+          });
+          if (!uploaded?.path) throw new Error("Upload failed");
+
+          const ref: CloudWallpaperV1 = {
+            kind: "upload",
+            bucket: String(uploaded.bucket || STORAGE_BUCKETS.WALLPAPERS),
+            path: String(uploaded.path || ""),
+            mimeType: String(uploaded.mimeType || file.type || "application/octet-stream"),
+            sizeBytes: Number(uploaded.sizeBytes ?? file.size) || file.size,
+            updatedAtMs: Date.now(),
+            ext: getWallpaperExtHintFromFile(file) ?? null,
+            isVideo: file.type.startsWith("video/"),
+          };
+          if (!ref.path) throw new Error("Upload returned empty path");
+
+          setCloudWallpaper(ref);
+
+          // Best-effort cleanup: delete the previously synced upload (if any).
+          if (prevUpload && prevUpload.bucket === ref.bucket && prevUpload.path !== ref.path) {
+            try {
+              await supabase.storage.from(prevUpload.bucket).remove([prevUpload.path]);
+            } catch {
+              // ignore
+            }
+          }
+
+          // Persist cloud settings using the latest local snapshot to avoid stale React closures.
+          const latest = safelyParseSettings();
+          const payload = {
+            v: 1 as const,
+            settings: { ...latest, customWallpaper: null } as StoredSettings,
+            wallpaper: ref,
+          };
+
+          const hash = JSON.stringify(payload);
+          const { error } = await supabase.from("user_preferences").upsert(
+            {
+              user_id: user.id,
+              theme: latest.theme,
+              theme_preset: latest.themePreset,
+              font_size: latest.fontSize,
+              color_blind_mode: latest.colorBlindMode,
+              haptic_enabled: latest.hapticEnabled,
+              notifications_enabled: latest.notificationsEnabled,
+              reminder_time: latest.reminderTime,
+              reminder_days: latest.reminderDays,
+              settings: payload,
+            },
+            { onConflict: "user_id" },
+          );
+          if (error) throw error;
+
+          lastCloudSettingsHashRef.current = hash;
+          cloudHydratedForUserIdRef.current = user.id;
+        } catch (err) {
+          logger.warn("[settings] Wallpaper cloud upload failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        } finally {
+          wallpaperUploadInFlightRef.current = false;
+        }
+      })();
     },
     [
       createWallpaperObjectUrl,
+      cloudWallpaper,
       persistSettings,
       revokeActiveObjectUrl,
       themePreset,
+      user?.id,
       wallpaperBlur,
       wallpaperOpacity,
     ],
@@ -588,12 +1022,21 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setCustomWallpaper = useCallback(
     (value: string | null) => {
       if (!value) {
+        // If we were using a cloud-uploaded wallpaper, clear the ref and (best-effort) delete the object.
+        const prevUpload = cloudWallpaper.kind === "upload" ? cloudWallpaper : null;
+        setCloudWallpaper({ kind: "none" });
         revokeActiveObjectUrl();
         setCustomWallpaperStoredAsBlob(false);
         setCustomWallpaperState(null);
         persistSettings({ customWallpaper: null });
         applyThemeToDocument(themePreset, null, wallpaperBlur, wallpaperOpacity);
         void clearCustomWallpaperBlob();
+
+        if (user?.id && prevUpload) {
+          void supabase.storage.from(prevUpload.bucket).remove([prevUpload.path]).catch(() => {
+            // ignore
+          });
+        }
         return;
       }
 
@@ -619,6 +1062,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       }
 
       // Preset gradient / remote URL string: store inline
+      // If we were previously using a cloud-uploaded wallpaper, clean it up.
+      const prevUpload = cloudWallpaper.kind === "upload" ? cloudWallpaper : null;
+      if (prevUpload && user?.id) {
+        setCloudWallpaper({ kind: "none" });
+        void supabase.storage.from(prevUpload.bucket).remove([prevUpload.path]).catch(() => {
+          // ignore
+        });
+      }
       revokeActiveObjectUrl();
       setCustomWallpaperStoredAsBlob(false);
       setCustomWallpaperState(value);
@@ -627,10 +1078,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       void clearCustomWallpaperBlob();
     },
     [
+      cloudWallpaper,
       createWallpaperObjectUrl,
       persistSettings,
       revokeActiveObjectUrl,
       themePreset,
+      user?.id,
       wallpaperBlur,
       wallpaperOpacity,
     ],
@@ -658,9 +1111,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     (size: FontSize) => {
       setFontSizeState(size);
       persistSettings({ fontSize: size });
-      if (user) void syncToCloud();
     },
-    [persistSettings, syncToCloud, user],
+    [persistSettings],
   );
 
   const setFontFamily = useCallback(
@@ -691,9 +1143,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     (mode: ColorBlindMode) => {
       setColorBlindModeState(mode);
       persistSettings({ colorBlindMode: mode });
-      if (user) void syncToCloud();
     },
-    [persistSettings, syncToCloud, user],
+    [persistSettings],
   );
 
   const setMeasurementUnits = useCallback(
@@ -716,36 +1167,32 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     (enabled: boolean) => {
       setHapticEnabledState(enabled);
       persistSettings({ hapticEnabled: enabled });
-      if (user) void syncToCloud();
     },
-    [persistSettings, syncToCloud, user],
+    [persistSettings],
   );
 
   const setNotificationsEnabled = useCallback(
     (enabled: boolean) => {
       setNotificationsEnabledState(enabled);
       persistSettings({ notificationsEnabled: enabled });
-      if (user) void syncToCloud();
     },
-    [persistSettings, syncToCloud, user],
+    [persistSettings],
   );
 
   const setReminderTime = useCallback(
     (time: string) => {
       setReminderTimeState(time);
       persistSettings({ reminderTime: time });
-      if (user) void syncToCloud();
     },
-    [persistSettings, syncToCloud, user],
+    [persistSettings],
   );
 
   const setReminderDays = useCallback(
     (days: number[]) => {
       setReminderDaysState(days);
       persistSettings({ reminderDays: days });
-      if (user) void syncToCloud();
     },
-    [persistSettings, syncToCloud, user],
+    [persistSettings],
   );
 
   const setUiFxEnabled = useCallback(
