@@ -21,7 +21,7 @@ import {
 import {
   get2FAStatus,
   enable2FA,
-  verify2FA,
+  verify2FASetup,
   getActiveSessions,
   revokeSession,
   getSecurityAlerts,
@@ -120,7 +120,7 @@ export const SecurityPrivacyEnhancements = () => {
     }
 
     try {
-      const success = await verify2FA("totp", twoFactorCode);
+      const success = await verify2FASetup(twoFactorCode, "totp");
       if (success) {
         setShow2FASetup(false);
         setTwoFactorCode("");

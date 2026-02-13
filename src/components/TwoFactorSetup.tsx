@@ -19,19 +19,25 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  initiate2FASetup,
-  verify2FACode,
   disable2FA,
+  enable2FA,
   get2FAStatus,
   regenerateBackupCodes,
-  TwoFactorSetup as TwoFactorSetupData,
-  TwoFactorStatus,
-} from "@/lib/twoFactorAuth";
+  verify2FA,
+  verify2FASetup,
+  type TwoFactorAuthentication,
+  type TwoFactorSetupResult,
+} from "@/lib/securityPrivacyEnhancements";
 
 export function TwoFactorSetup() {
   const { user } = useAuth();
-  const [status, setStatus] = useState<TwoFactorStatus | null>(null);
-  const [setupData, setSetupData] = useState<TwoFactorSetupData | null>(null);
+  const [status, setStatus] = useState<{
+    enabled: boolean;
+    verified: boolean;
+    backupCodesAvailable: number;
+    recoveryCodesRemaining: number;
+  } | null>(null);
+  const [setupData, setSetupData] = useState<TwoFactorSetupResult | null>(null);
   const [verificationCode, setVerificationCode] = useState("");
   const [disableCode, setDisableCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,12 +47,32 @@ export function TwoFactorSetup() {
   const [copiedCodes, setCopiedCodes] = useState(false);
 
   useEffect(() => {
-    loadStatus();
+    void loadStatus();
   }, []);
 
   const loadStatus = async () => {
-    const s = await get2FAStatus();
-    setStatus(s);
+    try {
+      const methods = (await get2FAStatus()) as unknown as TwoFactorAuthentication[];
+      const totp = methods.find(m => m.method === "totp") ?? null;
+      const enabled = Boolean(totp?.is_enabled && totp?.is_verified);
+      const backupCodesAvailable = totp?.totp_backup_codes_encrypted?.length ?? 0;
+      const recoveryTotal = totp?.recovery_codes_encrypted?.length ?? 0;
+      const recoveryUsed = totp?.recovery_codes_used?.length ?? 0;
+      const recoveryCodesRemaining = Math.max(0, recoveryTotal - recoveryUsed);
+      setStatus({
+        enabled,
+        verified: enabled,
+        backupCodesAvailable,
+        recoveryCodesRemaining,
+      });
+    } catch (e) {
+      setStatus({
+        enabled: false,
+        verified: false,
+        backupCodesAvailable: 0,
+        recoveryCodesRemaining: 0,
+      });
+    }
   };
 
   const handleStartSetup = async () => {
@@ -57,8 +83,12 @@ export function TwoFactorSetup() {
 
     setLoading(true);
     try {
-      const data = await initiate2FASetup(user.email);
-      setSetupData(data);
+      const result = await enable2FA("totp");
+      if (!result) {
+        toast.error("Failed to initialize 2FA setup");
+        return;
+      }
+      setSetupData(result);
       setShowSetup(true);
     } catch (error) {
       toast.error("Failed to initialize 2FA setup");
@@ -75,7 +105,7 @@ export function TwoFactorSetup() {
 
     setLoading(true);
     try {
-      const success = await verify2FACode(verificationCode);
+      const success = await verify2FASetup(verificationCode, "totp");
       if (success) {
         await loadStatus();
         setShowSetup(false);
@@ -95,12 +125,16 @@ export function TwoFactorSetup() {
 
     setLoading(true);
     try {
-      const success = await disable2FA(disableCode);
-      if (success) {
-        await loadStatus();
-        setShowDisable(false);
-        setDisableCode("");
+      const ok = await verify2FA("totp", disableCode);
+      if (!ok) {
+        toast.error("Invalid code");
+        return;
       }
+      const disabled = await disable2FA("totp");
+      if (!disabled) return;
+      await loadStatus();
+      setShowDisable(false);
+      setDisableCode("");
     } finally {
       setLoading(false);
     }
@@ -116,8 +150,8 @@ export function TwoFactorSetup() {
   };
 
   const handleCopyBackupCodes = async () => {
-    if (setupData?.backupCodes) {
-      await navigator.clipboard.writeText(setupData.backupCodes.join("\n"));
+    if (setupData?.backup_codes?.length) {
+      await navigator.clipboard.writeText(setupData.backup_codes.join("\n"));
       setCopiedCodes(true);
       setTimeout(() => setCopiedCodes(false), 2000);
       toast.success("Backup codes copied to clipboard");
@@ -133,6 +167,17 @@ export function TwoFactorSetup() {
       </Card>
     );
   }
+
+  const qrSrc = (() => {
+    const qr = String(setupData?.qr_code ?? "").trim();
+    if (!qr) return null;
+    if (qr.startsWith("data:")) return qr;
+    if (qr.startsWith("<svg")) {
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qr)}`;
+    }
+    if (qr.startsWith("http://") || qr.startsWith("https://")) return qr;
+    return null;
+  })();
 
   return (
     <Card>
@@ -163,7 +208,8 @@ export function TwoFactorSetup() {
                 <div>
                   <p className="font-medium">2FA is active</p>
                   <p className="text-sm text-muted-foreground">
-                    {status.backupCodesRemaining} backup codes remaining
+                    {status.recoveryCodesRemaining} recovery codes remaining •{" "}
+                    {status.backupCodesAvailable} backup codes available
                   </p>
                 </div>
               </div>
@@ -180,7 +226,8 @@ export function TwoFactorSetup() {
                   <p className="font-medium">Confirm Disable 2FA</p>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Enter your 2FA code or backup code to disable two-factor authentication.
+                  Enter a valid 2FA code, backup code, or recovery code to disable two-factor
+                  authentication.
                 </p>
                 <div className="space-y-2">
                   <Label>Verification Code</Label>
@@ -208,6 +255,29 @@ export function TwoFactorSetup() {
                 </div>
               </div>
             )}
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    const codes = await regenerateBackupCodes("totp");
+                    if (!codes?.length) return;
+                    setSetupData({ ...(setupData ?? {}), backup_codes: codes });
+                    setShowSetup(true);
+                    toast.success("New backup codes generated");
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+              >
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Regenerate backup codes
+              </Button>
+            </div>
           </>
         ) : showSetup && setupData ? (
           <div className="space-y-6">
@@ -223,14 +293,20 @@ export function TwoFactorSetup() {
                 Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
               </p>
               <div className="flex flex-col items-center gap-4 p-4 bg-white rounded-lg">
-                <QrCode className="w-32 h-32 text-black" />
-                <p className="text-xs text-muted-foreground text-center">
-                  QR code preview - use the secret key below
-                </p>
+                {qrSrc ? (
+                  <img src={qrSrc} alt="2FA QR Code" className="w-40 h-40" />
+                ) : (
+                  <>
+                    <QrCode className="w-32 h-32 text-black" />
+                    <p className="text-xs text-muted-foreground text-center">
+                      QR code unavailable. Use the secret key below.
+                    </p>
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <code className="flex-1 p-2 bg-muted rounded text-sm font-mono break-all">
-                  {setupData.secret}
+                  {setupData.secret ?? ""}
                 </code>
                 <Button variant="outline" size="icon" onClick={handleCopySecret}>
                   {copiedSecret ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -240,7 +316,7 @@ export function TwoFactorSetup() {
 
             <Separator />
 
-            {/* Step 2: Backup Codes */}
+            {/* Step 2: Backup + Recovery Codes */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
@@ -249,11 +325,11 @@ export function TwoFactorSetup() {
                 <h3 className="font-semibold">Save Backup Codes</h3>
               </div>
               <p className="text-sm text-muted-foreground">
-                Save these backup codes in a secure place. Each code can only be used once.
+                Save these codes in a secure place. Codes are shown only once on generation.
               </p>
               <div className="p-4 bg-muted rounded-lg space-y-2">
                 <div className="grid grid-cols-2 gap-2">
-                  {setupData.backupCodes.map((code, i) => (
+                  {(setupData.backup_codes ?? []).map((code, i) => (
                     <code key={i} className="text-sm font-mono">
                       {code}
                     </code>
@@ -273,6 +349,21 @@ export function TwoFactorSetup() {
                   Copy All Codes
                 </Button>
               </div>
+
+              {(setupData.recovery_codes ?? []).length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Recovery Codes (one-time)</p>
+                  <div className="p-4 bg-muted rounded-lg space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      {(setupData.recovery_codes ?? []).map((code, i) => (
+                        <code key={i} className="text-sm font-mono">
+                          {code}
+                        </code>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <Separator />
