@@ -21,12 +21,37 @@ async function formatJsonWithPrettier(jsonText) {
   }
 }
 
+function inferSupabaseBaseUrl() {
+  const env = process.env ?? {};
+
+  const urlCandidates = [env.SUPABASE_URL, env.VITE_SUPABASE_URL].filter(Boolean);
+  for (const raw of urlCandidates) {
+    try {
+      const u = new URL(String(raw));
+      // We want the origin only; the OpenAPI paths already include /functions/v1/*.
+      return u.origin;
+    } catch {
+      // keep looking
+    }
+  }
+
+  const projectRef = String(
+    env.SUPABASE_PROJECT_REF || env.VITE_SUPABASE_PROJECT_ID || env.VITE_SUPABASE_PROJECT_REF || "",
+  ).trim();
+  if (projectRef) return `https://${projectRef}.supabase.co`;
+
+  // Safe, functional default for local Supabase CLI.
+  return "http://localhost:54321";
+}
+
 function listFunctionNames() {
   const entries = readdirSync(functionsDir, { withFileTypes: true });
   return entries
     .filter(e => e.isDirectory())
     .map(e => e.name)
-    .filter(name => name !== "tsconfig.json")
+    // Supabase Edge Functions are directories under supabase/functions.
+    // Ignore shared/internal folders (e.g. _shared) and config folders.
+    .filter(name => name !== "tsconfig.json" && !name.startsWith("_"))
     .sort();
 }
 
@@ -102,14 +127,7 @@ const spec = {
     description:
       "Auto-generated minimal OpenAPI spec for Supabase Edge Functions (invoke via /functions/v1/*).",
   },
-  servers: [
-    {
-      url: "https://{projectRef}.supabase.co",
-      variables: {
-        projectRef: { default: "YOUR_PROJECT_REF" },
-      },
-    },
-  ],
+  servers: [{ url: inferSupabaseBaseUrl() }],
   tags: [{ name: "edge-functions" }],
   components: { securitySchemes: { bearerAuth } },
   paths,

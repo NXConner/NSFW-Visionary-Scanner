@@ -7,12 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://{projectRef}.supabase.co",
-      "variables": {
-        "projectRef": {
-          "default": "YOUR_PROJECT_REF"
-        }
-      }
+      "url": "http://localhost:54321"
     }
   ],
   "tags": [
@@ -30,46 +25,6 @@
     }
   },
   "paths": {
-    "/functions/v1/_shared": {
-      "post": {
-        "operationId": "_shared",
-        "summary": "Supabase Edge Function: _shared",
-        "tags": ["edge-functions"],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "500": {
-            "description": "Server Error"
-          }
-        }
-      }
-    },
     "/functions/v1/admin-beta-access": {
       "post": {
         "operationId": "admin_beta_access",
@@ -310,6 +265,46 @@
         }
       }
     },
+    "/functions/v1/admin-system-health": {
+      "post": {
+        "operationId": "admin_system_health",
+        "summary": "Supabase Edge Function: admin-system-health",
+        "tags": ["edge-functions"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Server Error"
+          }
+        }
+      }
+    },
     "/functions/v1/ai-health-chat": {
       "post": {
         "operationId": "ai_health_chat",
@@ -514,6 +509,46 @@
       "post": {
         "operationId": "apply_referral_code",
         "summary": "Supabase Edge Function: apply-referral-code",
+        "tags": ["edge-functions"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Server Error"
+          }
+        }
+      }
+    },
+    "/functions/v1/calculate-nsfw-wellness-score": {
+      "post": {
+        "operationId": "calculate_nsfw_wellness_score",
+        "summary": "Supabase Edge Function: calculate-nsfw-wellness-score",
         "tags": ["edge-functions"],
         "security": [
           {
@@ -1185,10 +1220,90 @@
         }
       }
     },
+    "/functions/v1/deliver-webhook": {
+      "post": {
+        "operationId": "deliver_webhook",
+        "summary": "Supabase Edge Function: deliver-webhook",
+        "tags": ["edge-functions"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Server Error"
+          }
+        }
+      }
+    },
     "/functions/v1/dlc-device-management": {
       "post": {
         "operationId": "dlc_device_management",
         "summary": "Supabase Edge Function: dlc-device-management",
+        "tags": ["edge-functions"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Server Error"
+          }
+        }
+      }
+    },
+    "/functions/v1/encrypt-credentials": {
+      "post": {
+        "operationId": "encrypt_credentials",
+        "summary": "Supabase Edge Function: encrypt-credentials",
         "tags": ["edge-functions"],
         "security": [
           {
