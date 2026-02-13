@@ -62,10 +62,16 @@ function run(command, args, options = {}) {
 }
 
 function commandExists(command) {
-  const result = run("bash", ["-lc", `command -v ${command}`], {
-    stdio: "ignore",
-  });
-  return result.ok;
+  // Cross-platform: avoid relying on bash/which.
+  // We only need to know whether the executable is resolvable on PATH.
+  try {
+    const result = spawnSync(command, ["--version"], { encoding: "utf8", stdio: "ignore" });
+    // If the executable doesn't exist, Node sets result.error with code ENOENT.
+    if (result.error && String(result.error.code || "") === "ENOENT") return false;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function dockerAvailable() {
