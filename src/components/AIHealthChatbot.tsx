@@ -81,7 +81,11 @@ export const AIHealthChatbot = ({ compact = false }: { compact?: boolean }) => {
     } finally {
       setSending(false);
       // Best-effort scroll to end after response.
-      endRef.current?.scrollIntoView({ behavior: "smooth" });
+      // (jsdom doesn't implement scrollIntoView; guard to avoid unhandled rejections in tests.)
+      const el = endRef.current as unknown as { scrollIntoView?: (opts?: unknown) => void } | null;
+      if (el && typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
     }
   }, [aiHistory, input, sending]);
 
