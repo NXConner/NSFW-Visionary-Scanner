@@ -183,6 +183,83 @@ async function main(): Promise<void> {
   }
 
   // ------------------------------------------------------------
+  // Education + learning baseline (applies to all builds)
+  // ------------------------------------------------------------
+  try {
+    const modulesTotal = await countExact("sexual_health_education_modules", "id");
+    if (modulesTotal > 0) {
+      checks.push({
+        level: "ok",
+        message: `sexual_health_education_modules present (${modulesTotal} rows)`,
+      });
+    } else {
+      checks.push({
+        level: warnOnly ? "warn" : appEnv === "production" ? "fail" : "warn",
+        message:
+          "sexual_health_education_modules has 0 rows. Publish real module content or hide the education hub in production.",
+      });
+    }
+
+    // Modules that would render an empty-state (no html/text/video). This is allowed, but should be intentional.
+    const modulesEmpty = await countExact("sexual_health_education_modules", "id", q =>
+      q.is("content_html", null).is("content_text", null).is("video_url", null),
+    );
+    if (modulesEmpty > 0) {
+      checks.push({
+        level: warnOnly ? "warn" : "warn",
+        message: `sexual_health_education_modules: ${modulesEmpty} modules have no content_html/content_text/video_url`,
+      });
+    } else if (modulesTotal > 0) {
+      checks.push({
+        level: "ok",
+        message: "sexual_health_education_modules: all modules have content or video_url",
+      });
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    checks.push({
+      level: warnOnly ? "warn" : appEnv === "production" ? "fail" : "warn",
+      message: `Education modules check failed: ${msg}`,
+    });
+  }
+
+  try {
+    const publishedCourses = await countExact("learning_courses", "id", q =>
+      q.eq("is_published", true),
+    );
+    const modules = await countExact("learning_modules", "id");
+    const lessons = await countExact("learning_lessons", "id");
+
+    if (publishedCourses > 0) {
+      checks.push({
+        level: "ok",
+        message: `learning_courses published (${publishedCourses} rows)`,
+      });
+    } else {
+      checks.push({
+        level: warnOnly ? "warn" : appEnv === "production" ? "fail" : "warn",
+        message:
+          "learning_courses has 0 published rows (is_published=true). Publish at least one course for production.",
+      });
+    }
+
+    checks.push({
+      level: modules > 0 ? "ok" : warnOnly ? "warn" : appEnv === "production" ? "fail" : "warn",
+      message: `learning_modules count=${modules}`,
+    });
+    checks.push({
+      level: lessons > 0 ? "ok" : warnOnly ? "warn" : appEnv === "production" ? "fail" : "warn",
+      message: `learning_lessons count=${lessons}`,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    checks.push({
+      level: warnOnly ? "warn" : appEnv === "production" ? "fail" : "warn",
+      message: `Interactive learning check failed: ${msg}`,
+    });
+  }
+
+  // ------------------------------------------------------------
   // Storage bucket presence (best-effort)
   // ------------------------------------------------------------
   try {
