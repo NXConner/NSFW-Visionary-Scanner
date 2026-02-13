@@ -107,6 +107,11 @@ export function useARMeasurement(options: UseARMeasurementOptions = {}) {
   const stabilityCountRef = useRef(0);
   const frameCountRef = useRef(0);
   const captureReadyCalledRef = useRef(false);
+  const orientationRef = useRef<{ beta: number | null; gamma: number | null; updatedAt: number }>({
+    beta: null,
+    gamma: null,
+    updatedAt: 0,
+  });
 
   // Get smoothing factor based on sensitivity
   const smoothingFactor = useMemo(() => {
@@ -119,6 +124,34 @@ export function useARMeasurement(options: UseARMeasurementOptions = {}) {
         return 0.3;
     }
   }, [sensitivity]);
+
+  // Best-effort device orientation capture (for angle quality).
+  // - On some platforms (notably iOS), this may require a user gesture + permission.
+  // - If we cannot observe orientation, we treat angle quality as "not blocking" (100).
+  useEffect(() => {
+    if (!state.isActive) return;
+
+    const handler = (ev: DeviceOrientationEvent) => {
+      const beta = typeof ev.beta === "number" ? ev.beta : null;
+      const gamma = typeof ev.gamma === "number" ? ev.gamma : null;
+      if (beta === null && gamma === null) return;
+      orientationRef.current = { beta, gamma, updatedAt: Date.now() };
+    };
+
+    try {
+      window.addEventListener("deviceorientation", handler, { passive: true });
+    } catch {
+      // ignore
+    }
+
+    return () => {
+      try {
+        window.removeEventListener("deviceorientation", handler as any);
+      } catch {
+        // ignore
+      }
+    };
+  }, [state.isActive]);
 
   // Start AR measurement
   const start = useCallback(() => {
@@ -192,7 +225,30 @@ export function useARMeasurement(options: UseARMeasurementOptions = {}) {
       // Assess quality metrics
       const lighting = assessLightingQuality(brightnessData ?? [128]);
       const stability = assessStability(previousPointsRef.current, currentPoints);
-      const angle = assessAngleQuality(0, 0, 15); // Placeholder - would need gyro data
+      const angle = (() => {
+        const snap = orientationRef.current;
+        const ageMs = Date.now() - (snap.updatedAt || 0);
+        if (ageMs > 2500) return 100;
+
+        const beta = snap.beta;
+        const gamma = snap.gamma;
+
+        // Prefer a "roll-like" value that stays near 0 in typical upright portrait use.
+        // Use screen orientation to decide which axis best represents roll.
+        let screenAngle: number | null = null;
+        try {
+          const raw =
+            (window.screen as any)?.orientation?.angle ?? (window as any).orientation ?? null;
+          screenAngle = typeof raw === "number" ? raw : null;
+        } catch {
+          screenAngle = null;
+        }
+
+        const useBetaAsRoll = screenAngle === 90 || screenAngle === -90 || screenAngle === 270;
+        const rollDeg = useBetaAsRoll ? beta : gamma;
+        if (typeof rollDeg !== "number" || Number.isNaN(rollDeg)) return 100;
+        return assessAngleQuality(rollDeg, 0, 15);
+      })();
       const distance = Math.min(
         100,
         Math.max(
