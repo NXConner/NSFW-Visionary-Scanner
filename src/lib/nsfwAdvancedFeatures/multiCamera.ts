@@ -170,3 +170,39 @@ export async function stopRecording(sessionId: string, durationSeconds: number):
     return false;
   }
 }
+
+export async function updateMultiCameraSessionMetadata(
+  sessionId: string,
+  patch: {
+    session_name?: string;
+    quality?: MultiCameraSession["quality"];
+  },
+): Promise<MultiCameraSession | null> {
+  try {
+    const update: Partial<Pick<MultiCameraSession, "session_name" | "quality" | "updated_at">> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (typeof patch.session_name === "string") update.session_name = patch.session_name;
+    if (patch.quality) update.quality = patch.quality;
+
+    // No-op updates should not hit the DB.
+    if (!update.session_name && !update.quality) return await getMultiCameraSessionById(sessionId);
+
+    const { data, error } = await supabase
+      .from("multi_camera_sessions")
+      .update(update)
+      .eq("id", sessionId)
+      .select("*")
+      .maybeSingle();
+
+    if (error || !data) {
+      logger.error("Error updating session metadata", { error: error?.message });
+      return null;
+    }
+
+    return data as MultiCameraSession;
+  } catch (error) {
+    logger.error("Error in updateMultiCameraSessionMetadata", { error });
+    return null;
+  }
+}

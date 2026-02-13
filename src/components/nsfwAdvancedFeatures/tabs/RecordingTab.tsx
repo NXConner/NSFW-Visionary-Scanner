@@ -7,6 +7,7 @@ import { logger } from "@/lib/logger";
 import {
   createMultiCameraSession,
   getMultiCameraSessions,
+  persistMultiCameraRecordingUploads,
   startRecording,
   stopRecording,
   type MultiCameraSession,
@@ -14,9 +15,6 @@ import {
 import { useVideoRecording } from "@/hooks/useVideoRecording";
 import { Play, Square } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { supabase } from "@/integrations/supabase/client";
-import { fromExtended } from "@/lib/supabaseExtensions";
-import { ensureRecordingForCameraStream } from "@/lib/videoEditing";
 import { PartnerSyncRecordingPanel } from "./PartnerSyncRecordingPanel";
 
 type VideoRefs = Record<number, HTMLVideoElement | null>;
@@ -138,6 +136,7 @@ export function RecordingTab({ isActive }: { isActive: boolean }): JSX.Element {
     setLoading(true);
     try {
       const { durationSeconds, blobs } = await stopMultiCameraRecording();
+      const streamsForMeta = cameraStreams;
       stopAllStreams();
       const duration =
         durationSeconds ??
@@ -151,61 +150,13 @@ export function RecordingTab({ isActive }: { isActive: boolean }): JSX.Element {
 
       if (blobs.length > 0) {
         const uploads = await uploadRecordingSet({ sessionId: currentSession.id, blobs });
-        // Persist per-camera stream metadata best-effort
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user && uploads.length > 0) {
-          const isPartnerRecorder =
-            currentSession.partner_id === user.id && currentSession.user_id !== user.id;
-          const streamRows = await Promise.all(
-            uploads.map(async u => {
-              const stream = cameraStreams[u.cameraIndex];
-              const track = stream?.getVideoTracks?.()[0];
-              const deviceId =
-                typeof track?.getSettings === "function" ? track.getSettings().deviceId : null;
-              const cameraName = track?.label || null;
-              const resolvedUrl = u.bucket === "recordings" ? null : u.publicUrl;
-              const { data: inserted, error } = await fromExtended("camera_streams")
-                .insert({
-                  session_id: currentSession.id,
-                  user_id: user.id,
-                  camera_index: u.cameraIndex,
-                  camera_name: cameraName,
-                  device_id: deviceId,
-                  device_type: isPartnerRecorder ? "partner_device" : "webcam",
-                  is_active: false,
-                  is_recording: false,
-                  video_url: resolvedUrl,
-                  video_storage_path: u.path,
-                  video_duration_seconds: duration,
-                  video_size_bytes: u.sizeBytes,
-                  codec: u.mimeType,
-                })
-                .select(
-                  "id, session_id, camera_index, camera_name, device_type, video_url, video_storage_path, video_duration_seconds, created_at",
-                )
-                .single();
-              if (error) return null;
-              return inserted;
-            }),
-          );
-
-          // Ensure we also have `video_recordings` rows (required for video_edits FK).
-          await Promise.all(
-            streamRows.filter(Boolean).map((row: any) =>
-              ensureRecordingForCameraStream({
-                sessionId: currentSession.id,
-                cameraStream: row,
-                durationSeconds: duration,
-              }),
-            ),
-          );
-
-          await supabase
-            .from("multi_camera_sessions")
-            .update({ camera_count: uploads.length, updated_at: new Date().toISOString() })
-            .eq("id", currentSession.id);
+        if (uploads.length > 0) {
+          await persistMultiCameraRecordingUploads({
+            session: currentSession,
+            uploads,
+            durationSeconds: duration,
+            cameraStreams: streamsForMeta,
+          });
         }
       }
       await load();
