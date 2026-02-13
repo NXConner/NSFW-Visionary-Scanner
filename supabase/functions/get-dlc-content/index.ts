@@ -73,7 +73,7 @@ serve(async req => {
       });
     }
 
-    const { isPrivileged } = await getPrivilegedFlags(supabaseClient, user.id);
+    const { isPrivileged } = await getPrivilegedFlags(supabaseClient, user.id, user.email);
 
     // Optional packageId request (if client wants a specific package)
     let requestedPackageId: string | null = null;

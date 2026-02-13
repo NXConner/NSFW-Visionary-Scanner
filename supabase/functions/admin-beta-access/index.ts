@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
+import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,16 +22,6 @@ type ReqBody =
       notes?: string | null;
     }
   | { action: "list" };
-
-/**
- * Check if a user has admin/super_admin role in the database
- * No hardcoded emails - all authorization is database-driven
- */
-async function isAdminUser(supabase: any, userId: string): Promise<boolean> {
-  const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-  if (error) return false;
-  return (data || []).some((r: any) => r.role === "admin" || r.role === "super_admin");
-}
 
 function normalizeEmail(v: unknown): string {
   return String(v ?? "")
@@ -97,9 +88,9 @@ serve(async req => {
       });
     }
 
-    // Database-driven admin check - no hardcoded emails
-    const okAdmin = await isAdminUser(supabase, requester.id);
-    if (!okAdmin) {
+    // Privileged check (admin/super_admin), supports DB roles + core-email allowlist.
+    const { isPrivileged } = await getPrivilegedFlags(supabase, requester.id, requester.email);
+    if (!isPrivileged) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

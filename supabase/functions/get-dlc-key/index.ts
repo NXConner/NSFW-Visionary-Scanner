@@ -116,7 +116,7 @@ serve(async req => {
     }
 
     // Privileged users (admin/super_admin) bypass verification + license gates.
-    const { isPrivileged } = await getPrivilegedFlags(supabase, user.id);
+    const { isPrivileged } = await getPrivilegedFlags(supabase, user.id, user.email);
 
     if (!isPrivileged) {
       // Age gate

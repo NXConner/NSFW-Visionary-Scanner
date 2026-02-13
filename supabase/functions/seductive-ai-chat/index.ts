@@ -102,7 +102,7 @@ serve(async req => {
       });
     }
 
-    const { isPrivileged } = await getPrivilegedFlags(supabase, user.id);
+    const { isPrivileged } = await getPrivilegedFlags(supabase, user.id, user.email);
 
     if (!isPrivileged) {
       const { data: age, error: ageError } = await supabase

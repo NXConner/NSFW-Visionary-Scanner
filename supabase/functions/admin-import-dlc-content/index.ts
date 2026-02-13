@@ -1,13 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
+import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const SUPER_ADMIN_EMAIL = "n8ter8@gmail.com";
 
 type ImportType = "positions" | "videos" | "topics";
 
@@ -104,13 +103,6 @@ function slugify(input: string): string {
     .slice(0, 80);
 }
 
-async function isAdminUser(supabase: any, userId: string, email?: string | null): Promise<boolean> {
-  if (email && email.toLowerCase().trim() === SUPER_ADMIN_EMAIL) return true;
-  const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-  if (error) return false;
-  return (data || []).some((r: any) => r.role === "admin" || r.role === "super_admin");
-}
-
 function safeArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.map(x => String(x || "").trim()).filter(Boolean);
@@ -171,8 +163,8 @@ serve(async req => {
       });
     }
 
-    const okAdmin = await isAdminUser(supabase, user.id, user.email);
-    if (!okAdmin) {
+    const { isPrivileged } = await getPrivilegedFlags(supabase, user.id, user.email);
+    if (!isPrivileged) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

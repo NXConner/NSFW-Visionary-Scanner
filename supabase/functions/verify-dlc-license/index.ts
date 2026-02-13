@@ -71,7 +71,7 @@ serve(async req => {
     }
 
     const userId = authedUser.id;
-    const { isPrivileged } = await getPrivilegedFlags(supabaseClient, userId);
+    const { isPrivileged } = await getPrivilegedFlags(supabaseClient, userId, authedUser.email);
 
     if (!licenseKey) {
       return new Response(JSON.stringify({ error: "Missing required fields: licenseKey" }), {

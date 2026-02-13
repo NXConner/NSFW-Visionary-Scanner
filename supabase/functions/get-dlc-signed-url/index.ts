@@ -93,7 +93,7 @@ serve(async req => {
     // Privileged bypass (admin/super_admin)
     // - Allows signing URLs without DLC license ownership and without age verification rows.
     // - Still enforces asset namespace constraints and uses signed URLs (no public bucket access).
-    const { isPrivileged, isSuperAdmin } = await getPrivilegedFlags(supabase, user.id);
+    const { isPrivileged, isSuperAdmin } = await getPrivilegedFlags(supabase, user.id, user.email);
 
     const body = (await req.json()) as ReqBody;
     const packageId = String(body.packageId || "");

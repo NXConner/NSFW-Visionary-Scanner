@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
+import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,20 +9,11 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const SUPER_ADMIN_EMAIL = "n8ter8@gmail.com";
-
 type ReqBody = {
   jobId: string;
   reason?: string;
   dryRun?: boolean;
 };
-
-async function isAdminUser(supabase: any, userId: string, email?: string | null): Promise<boolean> {
-  if (email && email.toLowerCase().trim() === SUPER_ADMIN_EMAIL) return true;
-  const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-  if (error) return false;
-  return (data || []).some((r: any) => r.role === "admin" || r.role === "super_admin");
-}
 
 serve(async req => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -67,8 +59,8 @@ serve(async req => {
       });
     }
 
-    const okAdmin = await isAdminUser(supabase, user.id, user.email);
-    if (!okAdmin) {
+    const { isPrivileged } = await getPrivilegedFlags(supabase, user.id, user.email);
+    if (!isPrivileged) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

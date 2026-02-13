@@ -63,7 +63,7 @@ serve(async req => {
       });
     }
 
-    const { isPrivileged } = await getPrivilegedFlags(supabase, user.id);
+    const { isPrivileged } = await getPrivilegedFlags(supabase, user.id, user.email);
 
     // Ensure age gate for adult features (privileged users bypass verification gates)
     if (!isPrivileged) {
