@@ -16,7 +16,7 @@ import {
 } from "@/lib/advancedScannerFeatures";
 import { uploadFile } from "@/lib/mediaUpload";
 import { StatusBadge } from "@/components/advancedScannerFeatures/shared/StatusBadge";
-import { Camera, ImagePlus, Play, RefreshCw } from "lucide-react";
+import { Camera, Image, Play, RefreshCw } from "lucide-react";
 
 function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
@@ -329,7 +329,7 @@ export function ReconstructionTab({ isActive }: { isActive: boolean }): JSX.Elem
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-medium flex items-center gap-2">
-                    <ImagePlus className="w-4 h-4" />
+                    <Image className="w-4 h-4" />
                     Add angle images
                   </div>
                   <Button

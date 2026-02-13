@@ -27,7 +27,11 @@ import {
   SETTINGS_KEY,
   defaultPresetForMode,
 } from "./constants";
-import { isLocalStorageAvailable, normalizeStoredSettings, safelyParseSettings } from "./localStorage";
+import {
+  isLocalStorageAvailable,
+  normalizeStoredSettings,
+  safelyParseSettings,
+} from "./localStorage";
 import { parseCloudSettingsPayload, type CloudWallpaperV1 } from "./cloud";
 import type {
   APIAccessSettings,
@@ -195,8 +199,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     (overrides: Partial<StoredSettings> = {}) => {
       try {
         if (!isLocalStorageAvailable()) return;
-        const hasOverrideWallpaper = Object.prototype.hasOwnProperty.call(overrides, "customWallpaper");
-        const overrideWallpaper = hasOverrideWallpaper ? (overrides as any).customWallpaper : undefined;
+        const hasOverrideWallpaper = Object.prototype.hasOwnProperty.call(
+          overrides,
+          "customWallpaper",
+        );
+        const overrideWallpaper = hasOverrideWallpaper
+          ? (overrides as any).customWallpaper
+          : undefined;
         const storeAsBlob = hasOverrideWallpaper
           ? overrideWallpaper === CUSTOM_WALLPAPER_BLOB_SENTINEL
           : customWallpaperStoredAsBlob;
@@ -209,7 +218,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         const payload: StoredSettings = {
           theme,
           themePreset,
-          customWallpaper: persistedCustomWallpaper,
           wallpaperBlur,
           wallpaperOpacity,
           fontSize,
@@ -589,7 +597,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
               setCustomWallpaperStoredAsBlob(true);
               setCustomWallpaperState(next);
               persistSettings({ ...normalized, customWallpaper: CUSTOM_WALLPAPER_BLOB_SENTINEL });
-              applyThemeToDocument(normalized.themePreset, next, normalized.wallpaperBlur, normalized.wallpaperOpacity);
+              applyThemeToDocument(
+                normalized.themePreset,
+                next,
+                normalized.wallpaperBlur,
+                normalized.wallpaperOpacity,
+              );
             } catch (err) {
               logger.warn("[settings] Failed to restore wallpaper from cloud", {
                 error: err instanceof Error ? err.message : String(err),
@@ -602,7 +615,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             setCustomWallpaperState(null);
             persistSettings({ ...normalized, customWallpaper: null });
             void clearCustomWallpaperBlob();
-            applyThemeToDocument(normalized.themePreset, null, normalized.wallpaperBlur, normalized.wallpaperOpacity);
+            applyThemeToDocument(
+              normalized.themePreset,
+              null,
+              normalized.wallpaperBlur,
+              normalized.wallpaperOpacity,
+            );
           }
 
           // Cache remote payload hash to prevent immediate no-op pushes.
@@ -611,7 +629,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
               v: 1,
               settings: {
                 ...normalized,
-                customWallpaper: parsed.wallpaper.kind === "upload" ? null : normalized.customWallpaper,
+                customWallpaper:
+                  parsed.wallpaper.kind === "upload" ? null : normalized.customWallpaper,
               },
               wallpaper: parsed.wallpaper,
             });
@@ -646,8 +665,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         // Reset the ref so we can retry on next mount
         hasLoadedCloudSettingsRef.current = null;
         cloudHydratedForUserIdRef.current = null;
-      }
-      finally {
+      } finally {
         if (activeCloudLoadUserIdRef.current === userId) {
           suppressCloudSyncRef.current = false;
         }
@@ -1033,9 +1051,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         void clearCustomWallpaperBlob();
 
         if (user?.id && prevUpload) {
-          void supabase.storage.from(prevUpload.bucket).remove([prevUpload.path]).catch(() => {
-            // ignore
-          });
+          void supabase.storage
+            .from(prevUpload.bucket)
+            .remove([prevUpload.path])
+            .catch(() => {
+              // ignore
+            });
         }
         return;
       }
@@ -1066,9 +1087,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       const prevUpload = cloudWallpaper.kind === "upload" ? cloudWallpaper : null;
       if (prevUpload && user?.id) {
         setCloudWallpaper({ kind: "none" });
-        void supabase.storage.from(prevUpload.bucket).remove([prevUpload.path]).catch(() => {
-          // ignore
-        });
+        void supabase.storage
+          .from(prevUpload.bucket)
+          .remove([prevUpload.path])
+          .catch(() => {
+            // ignore
+          });
       }
       revokeActiveObjectUrl();
       setCustomWallpaperStoredAsBlob(false);

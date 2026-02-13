@@ -223,6 +223,7 @@ export { default as Shield } from "lucide-react/dist/esm/icons/shield.js";
 export { default as ShieldAlert } from "lucide-react/dist/esm/icons/shield-alert.js";
 export { default as ShieldCheck } from "lucide-react/dist/esm/icons/shield-check.js";
 export { default as ShieldOff } from "lucide-react/dist/esm/icons/shield-off.js";
+export { default as ShieldX } from "lucide-react/dist/esm/icons/shield-x.js";
 export { default as ShoppingBag } from "lucide-react/dist/esm/icons/shopping-bag.js";
 export { default as ShoppingCart } from "lucide-react/dist/esm/icons/shopping-cart.js";
 export { default as Shuffle } from "lucide-react/dist/esm/icons/shuffle.js";
