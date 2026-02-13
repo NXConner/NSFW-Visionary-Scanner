@@ -43,6 +43,35 @@ export const REPOSITORY_CONFIGS = {
   },
 } as const;
 
+type CacheEntry = { at: number; items: VisualContent[] };
+const CACHE_TTL_MS = 10 * 60 * 1000;
+const cache = new Map<string, CacheEntry>();
+const inflight = new Map<string, Promise<VisualContent[]>>();
+
+function nowMs(): number {
+  return Date.now();
+}
+
+function cacheKey(featureId: string, category?: string): string {
+  const f = String(featureId || "")
+    .trim()
+    .toLowerCase();
+  const c = category ? String(category).trim().toLowerCase() : "";
+  return `${f}::${c}`;
+}
+
+function uniqByUrl(items: VisualContent[]): VisualContent[] {
+  const seen = new Set<string>();
+  const out: VisualContent[] = [];
+  for (const it of items) {
+    const key = String(it.url || "");
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(it);
+  }
+  return out;
+}
+
 /**
  * Fetches visual content from GitHub repositories
  */
@@ -123,9 +152,77 @@ export async function getVisualContentForFeature(
     }
   }
 
-  // This would typically fetch from a database or API
-  // For now, returns empty array - will be populated by GitHub fetcher
-  return [];
+  const fid = String(featureId || "")
+    .trim()
+    .toLowerCase();
+  const cat = category ? String(category).trim().toLowerCase() : "";
+
+  // Cache (in-memory) to avoid repeated GitHub API hits.
+  const key = cacheKey(fid, cat);
+  const cached = cache.get(key);
+  if (cached && nowMs() - cached.at < CACHE_TTL_MS) {
+    return cached.items;
+  }
+
+  const existing = inflight.get(key);
+  if (existing) return await existing;
+
+  const promise = (async (): Promise<VisualContent[]> => {
+    // Only positions-related features currently have configured external sources.
+    // Other feature areas are expected to use curated/first-party content (DLC/import pipeline).
+    const isPositions =
+      fid.includes("positions") || fid === "visual-content" || fid === "visual-content-system";
+    if (!isPositions) {
+      cache.set(key, { at: nowMs(), items: [] });
+      return [];
+    }
+
+    const sources = [
+      REPOSITORY_CONFIGS.RANDOM_SEX_POSITION,
+      REPOSITORY_CONFIGS.SEX_POSITIONS,
+    ] as const;
+
+    const all: VisualContent[] = [];
+
+    for (const src of sources) {
+      // If a category is specified, try that path first (fast path); if it yields nothing,
+      // fall back to the repo root (still filtered client-side).
+      const primary = cat
+        ? await fetchVisualContentFromGitHub(src.owner, src.repo, cat, src.branch)
+        : [];
+      const fallback =
+        primary.length > 0
+          ? []
+          : await fetchVisualContentFromGitHub(src.owner, src.repo, "", src.branch);
+
+      const merged = [...primary, ...fallback];
+      all.push(...merged);
+    }
+
+    // Normalize + filter by category when provided.
+    const filtered = cat
+      ? all.filter(it => {
+          const itemCat = String(it.category || "").toLowerCase();
+          if (itemCat === cat) return true;
+          if (itemCat.includes(cat)) return true;
+          return it.tags?.some(t => String(t).toLowerCase() === cat) ?? false;
+        })
+      : all;
+
+    // Hard cap to keep UI responsive if a repo has very large trees.
+    const capped = uniqByUrl(filtered).slice(0, 800);
+
+    // Stable-ish ordering for determinism in UI.
+    capped.sort((a, b) => String(a.title || a.id).localeCompare(String(b.title || b.id)));
+
+    cache.set(key, { at: nowMs(), items: capped });
+    return capped;
+  })().finally(() => {
+    inflight.delete(key);
+  });
+
+  inflight.set(key, promise);
+  return await promise;
 }
 
 /**
