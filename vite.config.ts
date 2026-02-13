@@ -164,6 +164,7 @@ export default defineConfig(({ mode }) => ({
     setupFiles: ["./src/test/setup.ts"],
     globals: true,
     css: true,
+    exclude: ["e2e/**"],
     environmentOptions: {
       jsdom: {
         url: "http://localhost/",
