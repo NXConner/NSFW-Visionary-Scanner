@@ -140,7 +140,6 @@ export function MeasurementsComparisonCard({
                 userValueCm={latest.lengthCm}
                 communityValueCm={community?.avgLengthCm ?? null}
                 averageManValueCm={avgMan.length.valueCm}
-                isPlaceholderCommunity={community?.isPlaceholder}
               />
               <TripleComparisonViz
                 metricLabel="Girth Comparison"
@@ -148,7 +147,6 @@ export function MeasurementsComparisonCard({
                 userValueCm={latest.girthCm}
                 communityValueCm={community?.avgGirthCm ?? null}
                 averageManValueCm={avgMan.girth.valueCm}
-                isPlaceholderCommunity={community?.isPlaceholder}
               />
             </div>
 

@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 import type { CommunityAverages } from "./types";
-import { AVERAGE_MAN_BASELINE } from "./baselines";
 
 type RpcRow = {
   sample_size: number | string | null;
@@ -21,20 +20,18 @@ function asNumber(v: unknown): number | null {
   return null;
 }
 
-/**
- * Get placeholder community data based on research-backed average man baseline.
- * Used when real community data is insufficient (below minSample threshold).
- */
-export function getPlaceholderCommunityAverages(): CommunityAverages {
+export function getEmptyCommunityAverages(params: {
+  days: number;
+  sampleSize?: number;
+  computedAtIso?: string;
+}): CommunityAverages {
   return {
-    sampleSize: 0,
+    sampleSize: typeof params.sampleSize === "number" ? params.sampleSize : 0,
     isSufficient: false,
-    isPlaceholder: true,
-    avgLengthCm: AVERAGE_MAN_BASELINE.erectLengthCm,
-    avgGirthCm: AVERAGE_MAN_BASELINE.erectGirthCm,
-    windowDays: 0,
-    computedAtIso: new Date().toISOString(),
-    placeholderNote: "Based on published research averages (Veale et al. 2015). Real community data will appear once enough users contribute.",
+    avgLengthCm: null,
+    avgGirthCm: null,
+    windowDays: Math.max(1, Math.floor(params.days)),
+    computedAtIso: params.computedAtIso ?? new Date().toISOString(),
   };
 }
 
@@ -56,43 +53,43 @@ export async function fetchCommunityAverages(
     });
 
     if (error) {
-      logger.warn("Community averages RPC failed, using placeholder", { error: error.message, days, minSample });
-      return getPlaceholderCommunityAverages();
+      logger.warn("Community averages RPC failed", { error: error.message, days, minSample });
+      return getEmptyCommunityAverages({ days });
     }
 
     const row: RpcRow | null = Array.isArray(data)
       ? ((data[0] as RpcRow | undefined) ?? null)
       : ((data as RpcRow | null) ?? null);
-    
+
     if (!row) {
-      return getPlaceholderCommunityAverages();
+      return getEmptyCommunityAverages({ days });
     }
 
     const sampleSize = asNumber(row.sample_size) ?? 0;
     const windowDays = asNumber(row.window_days) ?? days;
     const isSufficient = Boolean(row.is_sufficient) && sampleSize >= Math.max(1, minSample);
 
-    // If not sufficient, return placeholder with actual sample count
     if (!isSufficient) {
-      const placeholder = getPlaceholderCommunityAverages();
       return {
-        ...placeholder,
         sampleSize,
+        isSufficient: false,
+        avgLengthCm: null,
+        avgGirthCm: null,
         windowDays,
+        computedAtIso: row.computed_at ?? new Date().toISOString(),
       };
     }
 
     return {
       sampleSize,
       isSufficient: true,
-      isPlaceholder: false,
       avgLengthCm: asNumber(row.avg_length),
       avgGirthCm: asNumber(row.avg_girth),
       windowDays,
       computedAtIso: row.computed_at ?? new Date().toISOString(),
     };
   } catch (err) {
-    logger.warn("Community averages fetch crashed, using placeholder", { error: err, days, minSample });
-    return getPlaceholderCommunityAverages();
+    logger.warn("Community averages fetch crashed", { error: err, days, minSample });
+    return getEmptyCommunityAverages({ days });
   }
 }

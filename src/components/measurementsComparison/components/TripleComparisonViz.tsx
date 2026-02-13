@@ -9,13 +9,13 @@ type Props = {
   userValueCm: number;
   communityValueCm: number | null;
   averageManValueCm: number;
-  isPlaceholderCommunity?: boolean;
 };
 
 type BarData = {
   label: string;
   shortLabel: string;
   valueCm: number;
+  unavailable?: boolean;
   icon: React.ReactNode;
   colorClass: string;
   bgClass: string;
@@ -28,10 +28,8 @@ export function TripleComparisonViz({
   userValueCm,
   communityValueCm,
   averageManValueCm,
-  isPlaceholderCommunity = false,
 }: Props) {
-  // Use community or fall back to average man for display
-  const effectiveCommunity = communityValueCm ?? averageManValueCm;
+  const communityUnavailable = communityValueCm == null;
 
   const bars: BarData[] = [
     {
@@ -44,13 +42,14 @@ export function TripleComparisonViz({
       borderClass: "border-primary/30",
     },
     {
-      label: isPlaceholderCommunity ? "Community*" : "Community",
+      label: communityUnavailable ? "Community" : "Community",
       shortLabel: "Comm",
-      valueCm: effectiveCommunity,
+      valueCm: communityValueCm ?? 0,
+      unavailable: communityUnavailable,
       icon: <Users className="w-3.5 h-3.5" />,
-      colorClass: "text-accent-foreground",
-      bgClass: "bg-accent",
-      borderClass: "border-accent/30",
+      colorClass: communityUnavailable ? "text-muted-foreground" : "text-accent-foreground",
+      bgClass: communityUnavailable ? "bg-muted" : "bg-accent",
+      borderClass: communityUnavailable ? "border-border/30" : "border-accent/30",
     },
     {
       label: "Avg Man",
@@ -64,10 +63,10 @@ export function TripleComparisonViz({
   ];
 
   // Calculate max for scaling bars
-  const maxValue = Math.max(0.001, ...bars.map((b) => b.valueCm));
-  
+  const maxValue = Math.max(0.001, ...bars.map(b => (b.unavailable ? 0 : b.valueCm)));
+
   // Find the highest value bar for highlighting
-  const maxBarValue = Math.max(...bars.map(b => b.valueCm));
+  const maxBarValue = Math.max(...bars.filter(b => !b.unavailable).map(b => b.valueCm));
 
   return (
     <div className="rounded-xl border border-border/50 bg-background/40 p-4 space-y-4">
@@ -78,7 +77,7 @@ export function TripleComparisonViz({
         {bars.map((bar, idx) => {
           const widthPct = Math.max(5, (bar.valueCm / maxValue) * 100);
           const isHighest = bar.valueCm === maxBarValue;
-          
+
           return (
             <div key={bar.label} className="space-y-1">
               <div className="flex items-center justify-between text-xs">
@@ -87,7 +86,7 @@ export function TripleComparisonViz({
                   <span className="font-medium">{bar.label}</span>
                 </div>
                 <span className="font-mono text-muted-foreground">
-                  {formatLength(bar.valueCm, unitSystem)}
+                  {bar.unavailable ? "—" : formatLength(bar.valueCm, unitSystem)}
                 </span>
               </div>
               <div className="relative h-6 rounded-full bg-muted/30 overflow-hidden">
@@ -97,7 +96,7 @@ export function TripleComparisonViz({
                   transition={{ duration: 0.6, delay: idx * 0.1, ease: "easeOut" }}
                   className={`absolute inset-y-0 left-0 rounded-full ${bar.bgClass} ${bar.borderClass} border shadow-sm flex items-center justify-end pr-2`}
                 >
-                  {widthPct > 25 && (
+                  {widthPct > 25 && !bar.unavailable && (
                     <span className="text-[10px] font-mono text-primary-foreground/90">
                       {formatLength(bar.valueCm, unitSystem === "dual" ? "metric" : unitSystem)}
                     </span>
@@ -124,7 +123,7 @@ export function TripleComparisonViz({
         <div className="flex items-end justify-center gap-4 h-28">
           {bars.map((bar, idx) => {
             const heightPct = Math.max(10, (bar.valueCm / maxValue) * 100);
-            
+
             return (
               <div key={bar.label} className="flex flex-col items-center gap-1.5">
                 <motion.div
@@ -148,9 +147,9 @@ export function TripleComparisonViz({
         </div>
       </div>
 
-      {isPlaceholderCommunity && (
+      {communityUnavailable && (
         <p className="text-[10px] text-muted-foreground text-center italic">
-          *Community data uses research averages until sufficient real user data is collected.
+          Community averages are not available yet (insufficient anonymous samples).
         </p>
       )}
     </div>

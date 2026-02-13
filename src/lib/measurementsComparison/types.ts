@@ -17,10 +17,8 @@ export type MeasurementSummary = {
 export type CommunityAverages = {
   sampleSize: number;
   isSufficient: boolean;
-  isPlaceholder?: boolean;
   avgLengthCm: number | null;
   avgGirthCm: number | null;
   windowDays: number;
   computedAtIso: string;
-  placeholderNote?: string;
 };
