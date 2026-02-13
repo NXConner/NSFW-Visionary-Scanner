@@ -96,20 +96,31 @@ export function NsfwConsentGate({
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground whitespace-pre-line">{policy.body}</p>
-              <label className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={checked.has(policy.policy_key)}
-                  onCheckedChange={value => {
-                    setChecked(prev => {
-                      const next = new Set(prev);
-                      if (value) next.add(policy.policy_key);
-                      else next.delete(policy.policy_key);
-                      return next;
-                    });
-                  }}
-                />
-                I agree to this consent statement.
-              </label>
+              <div className="flex items-center gap-2 text-sm">
+                {(() => {
+                  const consentLabelId = `nsfw-consent-${String(policy.policy_key || "")}`.replace(
+                    /[^a-zA-Z0-9_-]/g,
+                    "_",
+                  );
+                  return (
+                    <>
+                      <Checkbox
+                        checked={checked.has(policy.policy_key)}
+                        aria-labelledby={consentLabelId}
+                        onCheckedChange={value => {
+                          setChecked(prev => {
+                            const next = new Set(prev);
+                            if (value) next.add(policy.policy_key);
+                            else next.delete(policy.policy_key);
+                            return next;
+                          });
+                        }}
+                      />
+                      <span id={consentLabelId}>I agree to this consent statement.</span>
+                    </>
+                  );
+                })()}
+              </div>
             </CardContent>
           </Card>
         ))}

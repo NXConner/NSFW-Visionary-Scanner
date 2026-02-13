@@ -43,18 +43,26 @@ import type { FilterType } from "@/lib/imageFilters";
 
 // New panels
 import { CropRotatePanel, type CropRotateState } from "./CropRotatePanel";
-import { ColorGradingPanel, type ColorGradingState, defaultColorGrading } from "./ColorGradingPanel";
-import { BlurFocusPanel, type BlurFocusState, defaultBlurFocus } from "./BlurFocusPanel";
-import { OverlaysPanel, type OverlayState, defaultOverlays } from "./OverlaysPanel";
-import { PresetsFiltersPanel, type PresetState, defaultPresetState } from "./PresetsFiltersPanel";
-import { AIEnhancementPanel, type AIEnhancementState, defaultAIEnhancement } from "./AIEnhancementPanel";
+import { ColorGradingPanel } from "./ColorGradingPanel";
+import { defaultColorGrading, type ColorGradingState } from "./ColorGradingPanel.model";
+import { BlurFocusPanel } from "./BlurFocusPanel";
+import { defaultBlurFocus, type BlurFocusState } from "./BlurFocusPanel.model";
+import { OverlaysPanel } from "./OverlaysPanel";
+import { defaultOverlays, type OverlayState } from "./OverlaysPanel.model";
+import { PresetsFiltersPanel } from "./PresetsFiltersPanel";
+import { defaultPresetState, type PresetState } from "./PresetsFiltersPanel.model";
+import { AIEnhancementPanel } from "./AIEnhancementPanel";
+import { defaultAIEnhancement, type AIEnhancementState } from "./AIEnhancementPanel.model";
 
 interface FilterConfig {
   key: FilterType;
   label: string;
   description: string;
   icon: React.ReactNode;
-  options: Record<string, { label: string; min: number; max: number; step: number; default: number }>;
+  options: Record<
+    string,
+    { label: string; min: number; max: number; step: number; default: number }
+  >;
 }
 
 const FILTER_CONFIGS: FilterConfig[] = [
@@ -122,7 +130,7 @@ export function PhotoEditorTab() {
   const [saturation, setSaturation] = useState([100]);
   const [rotation, setRotation] = useState(0);
   const [zoom, setZoom] = useState([100]);
-  
+
   // Filter state
   const [activeFilter, setActiveFilter] = useState<FilterType | null>(null);
   const [filterOptions, setFilterOptions] = useState<Record<string, number>>({});
@@ -141,7 +149,7 @@ export function PhotoEditorTab() {
   const [overlays, setOverlays] = useState<OverlayState>(defaultOverlays);
   const [presetState, setPresetState] = useState<PresetState>(defaultPresetState);
   const [aiEnhancement, setAIEnhancement] = useState<AIEnhancementState>(defaultAIEnhancement);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = useCallback(() => {
@@ -151,12 +159,12 @@ export function PhotoEditorTab() {
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
       return;
     }
-    
+
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
@@ -183,11 +191,11 @@ export function PhotoEditorTab() {
 
   const applySelectedFilter = useCallback(async () => {
     if (!imageSrc || !activeFilter) return;
-    
+
     setApplyingFilter(true);
     try {
       const { applyFilterToImage } = await import("@/lib/imageFilters");
-      
+
       // Load image
       const img = new Image();
       img.crossOrigin = "anonymous";
@@ -196,7 +204,7 @@ export function PhotoEditorTab() {
         img.onerror = () => reject(new Error("Failed to load image"));
         img.src = imageSrc;
       });
-      
+
       // Apply filter with current options
       const config = FILTER_CONFIGS.find(f => f.key === activeFilter);
       const opts: Record<string, number> = {};
@@ -205,7 +213,7 @@ export function PhotoEditorTab() {
           opts[key] = filterOptions[key] ?? def.default;
         }
       }
-      
+
       const result = applyFilterToImage(img, activeFilter, opts);
       setFilteredSrc(result);
     } catch (err) {
@@ -229,7 +237,7 @@ export function PhotoEditorTab() {
   const handleDownload = useCallback(() => {
     const src = filteredSrc || imageSrc;
     if (!src) return;
-    
+
     const link = document.createElement("a");
     link.href = src;
     link.download = `edited-photo-${Date.now()}.jpg`;
@@ -237,24 +245,27 @@ export function PhotoEditorTab() {
     toast.success("Image downloaded");
   }, [filteredSrc, imageSrc]);
 
-  const handleSelectFilter = useCallback((filterKey: FilterType) => {
-    if (activeFilter === filterKey) {
-      setActiveFilter(null);
-      setFilteredSrc(null);
-      setFilterOptions({});
-    } else {
-      setActiveFilter(filterKey);
-      // Reset to defaults for new filter
-      const config = FILTER_CONFIGS.find(f => f.key === filterKey);
-      if (config) {
-        const defaults: Record<string, number> = {};
-        for (const [key, def] of Object.entries(config.options)) {
-          defaults[key] = def.default;
+  const handleSelectFilter = useCallback(
+    (filterKey: FilterType) => {
+      if (activeFilter === filterKey) {
+        setActiveFilter(null);
+        setFilteredSrc(null);
+        setFilterOptions({});
+      } else {
+        setActiveFilter(filterKey);
+        // Reset to defaults for new filter
+        const config = FILTER_CONFIGS.find(f => f.key === filterKey);
+        if (config) {
+          const defaults: Record<string, number> = {};
+          for (const [key, def] of Object.entries(config.options)) {
+            defaults[key] = def.default;
+          }
+          setFilterOptions(defaults);
         }
-        setFilterOptions(defaults);
       }
-    }
-  }, [activeFilter]);
+    },
+    [activeFilter],
+  );
 
   const displaySrc = filteredSrc || imageSrc;
   const activeConfig = FILTER_CONFIGS.find(f => f.key === activeFilter);
@@ -266,9 +277,7 @@ export function PhotoEditorTab() {
           <ImageIcon className="w-6 h-6" />
           Photo Editor
         </CardTitle>
-        <CardDescription>
-          Edit, filter, and enhance your progress photos
-        </CardDescription>
+        <CardDescription>Edit, filter, and enhance your progress photos</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid lg:grid-cols-3 gap-6">
@@ -281,9 +290,7 @@ export function PhotoEditorTab() {
               className="hidden"
               onChange={handleFileChange}
             />
-            <div
-              className="aspect-video bg-muted/30 rounded-lg border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden"
-            >
+            <div className="aspect-video bg-muted/30 rounded-lg border-2 border-dashed border-border flex items-center justify-center relative overflow-hidden">
               {hasImage && displaySrc ? (
                 <div
                   className="w-full h-full flex items-center justify-center"
@@ -484,38 +491,23 @@ export function PhotoEditorTab() {
                   </div>
 
                   {/* Presets */}
-                  <PresetsFiltersPanel
-                    state={presetState}
-                    onChange={setPresetState}
-                  />
+                  <PresetsFiltersPanel state={presetState} onChange={setPresetState} />
                 </TabsContent>
 
                 <TabsContent value="crop" className="mt-0">
-                  <CropRotatePanel
-                    state={cropState}
-                    onChange={setCropState}
-                  />
+                  <CropRotatePanel state={cropState} onChange={setCropState} />
                 </TabsContent>
 
                 <TabsContent value="color" className="mt-0">
-                  <ColorGradingPanel
-                    state={colorGrading}
-                    onChange={setColorGrading}
-                  />
+                  <ColorGradingPanel state={colorGrading} onChange={setColorGrading} />
                 </TabsContent>
 
                 <TabsContent value="blur" className="mt-0">
-                  <BlurFocusPanel
-                    state={blurFocus}
-                    onChange={setBlurFocus}
-                  />
+                  <BlurFocusPanel state={blurFocus} onChange={setBlurFocus} />
                 </TabsContent>
 
                 <TabsContent value="overlays" className="mt-0">
-                  <OverlaysPanel
-                    state={overlays}
-                    onChange={setOverlays}
-                  />
+                  <OverlaysPanel state={overlays} onChange={setOverlays} />
                 </TabsContent>
 
                 <TabsContent value="filters" className="space-y-4 mt-0">
@@ -546,13 +538,17 @@ export function PhotoEditorTab() {
                       {activeConfig && (
                         <div className="space-y-3 pt-3 border-t border-border">
                           <div className="flex items-center justify-between">
-                            <Label className="text-sm font-medium">{activeConfig.label} Options</Label>
+                            <Label className="text-sm font-medium">
+                              {activeConfig.label} Options
+                            </Label>
                             <Badge variant="secondary" className="text-xs">
                               {applyingFilter ? "Processing..." : "Live Preview"}
                             </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground">{activeConfig.description}</p>
-                          
+                          <p className="text-xs text-muted-foreground">
+                            {activeConfig.description}
+                          </p>
+
                           {Object.entries(activeConfig.options).map(([key, opt]) => (
                             <div key={key} className="space-y-2">
                               <div className="flex justify-between">
@@ -563,7 +559,9 @@ export function PhotoEditorTab() {
                               </div>
                               <Slider
                                 value={[filterOptions[key] ?? opt.default]}
-                                onValueChange={([v]) => setFilterOptions(prev => ({ ...prev, [key]: v }))}
+                                onValueChange={([v]) =>
+                                  setFilterOptions(prev => ({ ...prev, [key]: v }))
+                                }
                                 min={opt.min}
                                 max={opt.max}
                                 step={opt.step}

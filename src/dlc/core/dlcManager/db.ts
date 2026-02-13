@@ -1,14 +1,24 @@
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 import { getDeviceId, getDevicePlatform } from "../device";
-import type { AgeVerification, AppUpdateSource, DLCPackage, DLCLicense, DLCInstallation } from "../types";
-import { serializeAgeVerification, serializeDLCInstallation, serializeDLCLicense, serializeDLCPackage } from "../serializers";
+import type {
+  AgeVerification,
+  AppUpdateSource,
+  DLCPackage,
+  DLCLicense,
+  DLCInstallation,
+} from "../types";
+import {
+  serializeAgeVerification,
+  serializeDLCInstallation,
+  serializeDLCLicense,
+  serializeDLCPackage,
+} from "../serializers";
 
 type DbRow = Record<string, unknown>;
 
 async function safeSelectAll(table: string, filter?: (q: any) => any): Promise<DbRow[]> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let q = (supabase as any).from(table).select("*");
     if (filter) q = filter(q);
     const { data, error } = await q;
@@ -48,7 +58,6 @@ export async function fetchInstallationsFromDb(userId: string): Promise<DLCInsta
 export async function fetchAgeVerificationFromDb(userId: string): Promise<AgeVerification | null> {
   if (!userId) return null;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("dlc_age_verifications")
       .select("*")
@@ -75,7 +84,6 @@ export async function upsertAgeVerification(params: {
     const nowIso = new Date().toISOString();
     const devicePlatform = getDevicePlatform();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any).from("dlc_age_verifications").upsert(
       {
         user_id: userId,
@@ -108,7 +116,6 @@ export async function fetchUpdateSourceFromDb(params: {
 }): Promise<AppUpdateSource | null> {
   if (!params.userId || !params.deviceId) return null;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("dlc_update_sources")
       .select("*")
@@ -141,7 +148,6 @@ export async function acknowledgeUpdateSource(params: {
   if (!params.userId || !params.deviceId) return;
   const nowIso = new Date().toISOString();
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from("dlc_update_sources").upsert(
       {
         user_id: params.userId,
@@ -176,7 +182,6 @@ export async function upsertInstallation(params: {
   const nowIso = new Date().toISOString();
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("dlc_installations")
       .upsert(
@@ -218,7 +223,6 @@ export async function deleteInstallation(params: {
   if (!params.userId || !params.packageId) return;
   const deviceId = getDeviceId();
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from("dlc_installations")
       .delete()
@@ -229,4 +233,3 @@ export async function deleteInstallation(params: {
     logger.warn("[dlc] deleteInstallation failed", { error: err });
   }
 }
-

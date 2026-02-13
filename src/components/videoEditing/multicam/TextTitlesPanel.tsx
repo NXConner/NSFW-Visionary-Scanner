@@ -3,7 +3,6 @@
  * Animated titles, lower thirds, captions, watermarks
  */
 
-import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -11,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import type { TextOverlay, TextOverlaysState } from "./TextTitlesPanel.model";
 import {
   Type,
   AlignLeft,
@@ -21,33 +21,6 @@ import {
   MoveVertical,
   Sparkles,
 } from "lucide-react";
-
-export interface TextOverlay {
-  id: string;
-  type: "title" | "lowerThird" | "caption" | "watermark";
-  text: string;
-  subtitle?: string;
-  position: { x: number; y: number };
-  fontSize: number;
-  fontFamily: string;
-  color: string;
-  backgroundColor: string;
-  opacity: number;
-  animation: "none" | "fadeIn" | "slideUp" | "typewriter" | "glitch";
-  alignment: "left" | "center" | "right";
-  startTime: number;
-  duration: number;
-}
-
-export interface TextOverlaysState {
-  overlays: TextOverlay[];
-  activeOverlayId: string | null;
-}
-
-export const defaultTextState: TextOverlaysState = {
-  overlays: [],
-  activeOverlayId: null,
-};
 
 const OVERLAY_TEMPLATES = [
   { type: "title" as const, label: "Title", icon: <Type className="w-4 h-4" /> },
@@ -82,7 +55,14 @@ export function TextTitlesPanel({ state, onChange, currentTime }: Props) {
     const newOverlay: TextOverlay = {
       id: `text-${Date.now()}`,
       type,
-      text: type === "title" ? "Title Text" : type === "lowerThird" ? "Name" : type === "caption" ? "Caption text" : "Watermark",
+      text:
+        type === "title"
+          ? "Title Text"
+          : type === "lowerThird"
+            ? "Name"
+            : type === "caption"
+              ? "Caption text"
+              : "Watermark",
       subtitle: type === "lowerThird" ? "Subtitle" : undefined,
       position: { x: 50, y: type === "lowerThird" ? 85 : type === "caption" ? 90 : 50 },
       fontSize: type === "title" ? 48 : type === "lowerThird" ? 24 : 18,
@@ -147,6 +127,15 @@ export function TextTitlesPanel({ state, onChange, currentTime }: Props) {
             <div
               key={overlay.id}
               onClick={() => onChange({ ...state, activeOverlayId: overlay.id })}
+              onKeyDown={e => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onChange({ ...state, activeOverlayId: overlay.id });
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-pressed={overlay.id === state.activeOverlayId}
               className={`
                 flex items-center justify-between p-2 rounded border cursor-pointer
                 ${overlay.id === state.activeOverlayId ? "border-primary bg-primary/5" : "border-border"}
@@ -159,7 +148,10 @@ export function TextTitlesPanel({ state, onChange, currentTime }: Props) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={e => { e.stopPropagation(); removeOverlay(overlay.id); }}
+                onClick={e => {
+                  e.stopPropagation();
+                  removeOverlay(overlay.id);
+                }}
                 className="h-6 w-6 p-0"
               >
                 <Trash2 className="w-3 h-3" />
@@ -243,7 +235,11 @@ export function TextTitlesPanel({ state, onChange, currentTime }: Props) {
                   key={a.key}
                   variant={activeOverlay.animation === a.key ? "default" : "outline"}
                   size="sm"
-                  onClick={() => updateOverlay(activeOverlay.id, { animation: a.key as TextOverlay["animation"] })}
+                  onClick={() =>
+                    updateOverlay(activeOverlay.id, {
+                      animation: a.key as TextOverlay["animation"],
+                    })
+                  }
                   className="h-6 text-[8px] px-1"
                 >
                   {a.label}

@@ -29,8 +29,12 @@ import { downloadManager } from "../downloadManager";
 import { getInstalledContentVersion } from "@/lib/contentPackage";
 
 function semverCompare(a: string, b: string): number {
-  const pa = String(a || "").split(".").map(n => Number(n));
-  const pb = String(b || "").split(".").map(n => Number(n));
+  const pa = String(a || "")
+    .split(".")
+    .map(n => Number(n));
+  const pb = String(b || "")
+    .split(".")
+    .map(n => Number(n));
   for (let i = 0; i < 3; i++) {
     const av = Number.isFinite(pa[i]) ? pa[i] : 0;
     const bv = Number.isFinite(pb[i]) ? pb[i] : 0;
@@ -265,7 +269,6 @@ export class DLCManager {
     // Best-effort device binding check (server-side enforcement remains authoritative).
     // If the query fails due to schema/policy differences, fail open for UI gating.
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("dlc_license_devices")
         .select("device_id,is_active")
@@ -277,7 +280,12 @@ export class DLCManager {
         const bound = data.some((d: any) => String(d.device_id) === deviceId);
         // If there are bindings and we're not in them, mark unauthorized.
         if (data.length > 0 && !bound) {
-          return { ...local, isValid: false, error: "device_not_authorized", deviceAuthorized: false };
+          return {
+            ...local,
+            isValid: false,
+            error: "device_not_authorized",
+            deviceAuthorized: false,
+          };
         }
       }
     } catch {
@@ -290,7 +298,9 @@ export class DLCManager {
   async activateLicense(
     licenseKey: string,
   ): Promise<{ success: boolean; packageId?: string; error?: string }> {
-    const key = String(licenseKey || "").trim().toUpperCase();
+    const key = String(licenseKey || "")
+      .trim()
+      .toUpperCase();
     if (!key) return { success: false, error: "License key required" };
 
     const { data: auth } = await supabase.auth.getUser();
@@ -331,7 +341,8 @@ export class DLCManager {
     if (!lic) return { success: false, error: "License required" };
 
     const validation = await this.validateLicense(id);
-    if (!validation.isValid) return { success: false, error: validation.error || "Invalid license" };
+    if (!validation.isValid)
+      return { success: false, error: validation.error || "Invalid license" };
 
     const pkg = this.getPackage(id);
     if (!pkg) return { success: false, error: "Package not found" };
@@ -380,7 +391,10 @@ export class DLCManager {
     if (!userId) return { success: false, error: "Please sign in" };
 
     const pkg = this.getPackage(id);
-    const packageIdsToRemove = new Set<string>([id, ...((pkg?.includedPackages || []) as string[])]);
+    const packageIdsToRemove = new Set<string>([
+      id,
+      ...((pkg?.includedPackages || []) as string[]),
+    ]);
 
     for (const pid of packageIdsToRemove) {
       await deleteInstallation({ userId, packageId: pid });
@@ -442,7 +456,9 @@ export class DLCManager {
         changelog: Array.isArray(data.package.changelog) ? data.package.changelog : [],
         downloadSizeBytes: Number(data.package.size || 0) || 0,
         isRequired: false,
-        releaseDate: data.package.releaseDate ? new Date(String(data.package.releaseDate)) : undefined,
+        releaseDate: data.package.releaseDate
+          ? new Date(String(data.package.releaseDate))
+          : undefined,
       } satisfies DLCUpdate;
     });
 
@@ -549,4 +565,3 @@ export class DLCManager {
 }
 
 export const dlcManager = new DLCManager();
-

@@ -8,45 +8,9 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import {
-  Volume2,
-  VolumeX,
-  Music,
-  Mic,
-  RefreshCw,
-  TrendingUp,
-  TrendingDown,
-} from "lucide-react";
-
-export interface AudioState {
-  volume: number;
-  muted: boolean;
-  fadeInDuration: number;
-  fadeOutDuration: number;
-  enableBackgroundMusic: boolean;
-  backgroundMusicVolume: number;
-  enableVoiceOver: boolean;
-  voiceOverVolume: number;
-  ducking: boolean;
-  duckingAmount: number;
-  normalize: boolean;
-  denoiseLevel: number;
-}
-
-export const defaultAudioState: AudioState = {
-  volume: 100,
-  muted: false,
-  fadeInDuration: 0,
-  fadeOutDuration: 0,
-  enableBackgroundMusic: false,
-  backgroundMusicVolume: 50,
-  enableVoiceOver: false,
-  voiceOverVolume: 100,
-  ducking: true,
-  duckingAmount: 70,
-  normalize: false,
-  denoiseLevel: 0,
-};
+import { Volume2, VolumeX, Music, Mic, RefreshCw, TrendingUp, TrendingDown } from "lucide-react";
+import type { AudioState } from "./AudioToolsPanel.model";
+import { defaultAudioState } from "./AudioToolsPanel.model";
 
 interface Props {
   state: AudioState;
@@ -163,10 +127,7 @@ export function AudioToolsPanel({ state, onChange }: Props) {
             />
             <div className="flex items-center justify-between">
               <Label className="text-[10px]">Auto-Duck</Label>
-              <Switch
-                checked={state.ducking}
-                onCheckedChange={v => update("ducking", v)}
-              />
+              <Switch checked={state.ducking} onCheckedChange={v => update("ducking", v)} />
             </div>
             {state.ducking && (
               <div className="space-y-1">
@@ -220,10 +181,7 @@ export function AudioToolsPanel({ state, onChange }: Props) {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label className="text-[10px]">Normalize Audio</Label>
-          <Switch
-            checked={state.normalize}
-            onCheckedChange={v => update("normalize", v)}
-          />
+          <Switch checked={state.normalize} onCheckedChange={v => update("normalize", v)} />
         </div>
         <div className="space-y-1">
           <div className="flex justify-between">

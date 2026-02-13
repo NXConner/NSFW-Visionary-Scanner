@@ -8,38 +8,8 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RefreshCw, Droplets, Sun, Moon, Palette } from "lucide-react";
-
-export interface ColorGradingState {
-  hue: number;
-  saturation: number;
-  luminance: number;
-  temperature: number;
-  tint: number;
-  highlights: number;
-  shadows: number;
-  whites: number;
-  blacks: number;
-  vibrance: number;
-  splitToneHighlightsHue: number;
-  splitToneShadowsHue: number;
-  splitToneBalance: number;
-}
-
-export const defaultColorGrading: ColorGradingState = {
-  hue: 0,
-  saturation: 0,
-  luminance: 0,
-  temperature: 0,
-  tint: 0,
-  highlights: 0,
-  shadows: 0,
-  whites: 0,
-  blacks: 0,
-  vibrance: 0,
-  splitToneHighlightsHue: 30,
-  splitToneShadowsHue: 220,
-  splitToneBalance: 0,
-};
+import type { ColorGradingState } from "./ColorGradingPanel.model";
+import { defaultColorGrading } from "./ColorGradingPanel.model";
 
 interface Props {
   state: ColorGradingState;
@@ -68,9 +38,15 @@ export function ColorGradingPanel({ state, onChange }: Props) {
 
       <Tabs defaultValue="basic" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="basic" className="text-xs">Basic</TabsTrigger>
-          <TabsTrigger value="tone" className="text-xs">Tone</TabsTrigger>
-          <TabsTrigger value="split" className="text-xs">Split</TabsTrigger>
+          <TabsTrigger value="basic" className="text-xs">
+            Basic
+          </TabsTrigger>
+          <TabsTrigger value="tone" className="text-xs">
+            Tone
+          </TabsTrigger>
+          <TabsTrigger value="split" className="text-xs">
+            Split
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="basic" className="space-y-3 mt-3">

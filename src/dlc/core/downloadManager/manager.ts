@@ -27,7 +27,6 @@ function normalizeChecksumHex(value: string): string {
 async function resolveDistribution(packageId: string): Promise<ResolvedPackageDistribution | null> {
   // Prefer db-backed per-package distribution fields if present.
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("dlc_packages")
       .select("download_url, checksum_sha256, download_size_bytes")
@@ -139,7 +138,10 @@ export class DownloadManager {
 
     const resolved = await resolveDistribution(id);
     if (!resolved) {
-      this.upsert(id, { status: "failed", error: "No downloadable content available for this package" });
+      this.upsert(id, {
+        status: "failed",
+        error: "No downloadable content available for this package",
+      });
       return;
     }
 
@@ -286,4 +288,3 @@ export class DownloadManager {
 }
 
 export const downloadManager = new DownloadManager();
-

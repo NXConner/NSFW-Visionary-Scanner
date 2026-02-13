@@ -8,34 +8,8 @@ import { cn } from "@/lib/utils";
 import { Check, RotateCcw, Sparkles, Palette, Droplets, Eye } from "lucide-react";
 import { useState, useCallback } from "react";
 import { triggerHaptic } from "@/lib/haptics";
-
-export interface CustomInterfaceColors {
-  primary: string | null;
-  secondary: string | null;
-  accent: string | null;
-  background: string | null;
-  foreground: string | null;
-  muted: string | null;
-  mutedForeground: string | null;
-  border: string | null;
-  card: string | null;
-  cardForeground: string | null;
-  destructive: string | null;
-}
-
-export const DEFAULT_CUSTOM_COLORS: CustomInterfaceColors = {
-  primary: null,
-  secondary: null,
-  accent: null,
-  background: null,
-  foreground: null,
-  muted: null,
-  mutedForeground: null,
-  border: null,
-  card: null,
-  cardForeground: null,
-  destructive: null,
-};
+import type { CustomInterfaceColors } from "@/contexts/settings/types";
+import { DEFAULT_CUSTOM_INTERFACE_COLORS } from "@/contexts/settings/constants";
 
 interface ColorPreset {
   id: string;
@@ -455,7 +429,7 @@ export const InterfaceColorCustomizer = ({ value, onChange }: InterfaceColorCust
 
   const applyPreset = useCallback(
     (preset: ColorPreset) => {
-      const newColors = { ...DEFAULT_CUSTOM_COLORS };
+      const newColors = { ...DEFAULT_CUSTOM_INTERFACE_COLORS };
       Object.entries(preset.colors).forEach(([key, val]) => {
         if (key in newColors) {
           (newColors as Record<string, string | null>)[key] = val ?? null;
@@ -468,7 +442,7 @@ export const InterfaceColorCustomizer = ({ value, onChange }: InterfaceColorCust
   );
 
   const resetAll = useCallback(() => {
-    onChange(DEFAULT_CUSTOM_COLORS);
+    onChange(DEFAULT_CUSTOM_INTERFACE_COLORS);
     triggerHaptic("selection");
   }, [onChange]);
 

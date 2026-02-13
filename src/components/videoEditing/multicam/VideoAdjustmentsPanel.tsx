@@ -7,45 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Sun,
-  Moon,
-  Contrast,
-  Palette,
-  RefreshCw,
-  Sparkles,
-  Eye,
-} from "lucide-react";
-
-export interface VideoAdjustmentsState {
-  brightness: number;
-  contrast: number;
-  saturation: number;
-  temperature: number;
-  tint: number;
-  highlights: number;
-  shadows: number;
-  sharpness: number;
-  hdr: boolean;
-  hdrIntensity: number;
-  blackAndWhite: boolean;
-  bwIntensity: number;
-}
-
-export const defaultVideoAdjustments: VideoAdjustmentsState = {
-  brightness: 0,
-  contrast: 0,
-  saturation: 0,
-  temperature: 0,
-  tint: 0,
-  highlights: 0,
-  shadows: 0,
-  sharpness: 0,
-  hdr: false,
-  hdrIntensity: 50,
-  blackAndWhite: false,
-  bwIntensity: 100,
-};
+import { Sun, Moon, Contrast, Palette, RefreshCw, Sparkles, Eye } from "lucide-react";
+import type { VideoAdjustmentsState } from "./VideoAdjustmentsPanel.model";
+import { defaultVideoAdjustments } from "./VideoAdjustmentsPanel.model";
 
 interface Props {
   state: VideoAdjustmentsState;
@@ -53,7 +17,10 @@ interface Props {
 }
 
 export function VideoAdjustmentsPanel({ state, onChange }: Props) {
-  const update = <K extends keyof VideoAdjustmentsState>(key: K, value: VideoAdjustmentsState[K]) => {
+  const update = <K extends keyof VideoAdjustmentsState>(
+    key: K,
+    value: VideoAdjustmentsState[K],
+  ) => {
     onChange({ ...state, [key]: value });
   };
 
@@ -73,9 +40,15 @@ export function VideoAdjustmentsPanel({ state, onChange }: Props) {
 
       <Tabs defaultValue="light" className="w-full">
         <TabsList className="grid w-full grid-cols-3 h-8">
-          <TabsTrigger value="light" className="text-xs">Light</TabsTrigger>
-          <TabsTrigger value="color" className="text-xs">Color</TabsTrigger>
-          <TabsTrigger value="effects" className="text-xs">Effects</TabsTrigger>
+          <TabsTrigger value="light" className="text-xs">
+            Light
+          </TabsTrigger>
+          <TabsTrigger value="color" className="text-xs">
+            Color
+          </TabsTrigger>
+          <TabsTrigger value="effects" className="text-xs">
+            Effects
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="light" className="space-y-2 mt-2">

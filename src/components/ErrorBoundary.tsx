@@ -75,9 +75,7 @@ class ErrorBoundary extends Component<Props, State> {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-foreground">
-                  {this.props.section
-                    ? `Error in ${this.props.section}`
-                    : "Something went wrong"}
+                  {this.props.section ? `Error in ${this.props.section}` : "Something went wrong"}
                 </h1>
               </div>
             </div>
@@ -128,22 +126,6 @@ class ErrorBoundary extends Component<Props, State> {
 
     return this.props.children;
   }
-}
-
-/**
- * HOC to wrap a component with an error boundary
- */
-export function withErrorBoundary<P extends object>(
-  WrappedComponent: React.ComponentType<P>,
-  section?: string
-) {
-  return function WithErrorBoundaryWrapper(props: P) {
-    return (
-      <ErrorBoundary section={section}>
-        <WrappedComponent {...props} />
-      </ErrorBoundary>
-    );
-  };
 }
 
 export default ErrorBoundary;
