@@ -1,5 +1,7 @@
 // Glossary Manager with AI Q&A
 import { v4 as uuidv4 } from "uuid";
+import { invokeAiHealthChat } from "@/lib/edge/aiHealthChat";
+import { isLovablePolicyBuild } from "@/lib/featureFlags";
 
 export interface GlossaryTerm {
   id: string;
@@ -294,31 +296,69 @@ export class GlossaryManager {
 
   // AI Q&A (Simulated)
   async askQuestion(question: string): Promise<AIQuestion> {
-    // Check if we can answer from existing content
-    const searchResults = this.search(question);
-    let answer = "";
+    const q = String(question || "").trim();
 
-    if (searchResults.length > 0) {
-      const top = searchResults[0];
+    // 1) Try to answer from existing content
+    const searchResults = q ? this.search(q) : [];
+    const top = searchResults[0];
+    const topRelevance = top?.relevance ?? 0;
+
+    let kbAnswer = "";
+    if (top) {
       if (top.type === "term") {
         const term = top.item as GlossaryTerm;
-        answer = `**${term.term}**: ${term.definition}`;
+        kbAnswer = `${term.term}: ${term.definition}`;
         if (term.examples?.length) {
-          answer += `\n\nExample: ${term.examples[0]}`;
+          kbAnswer += `\n\nExample: ${term.examples[0]}`;
         }
       } else {
         const faq = top.item as FAQItem;
-        answer = faq.answer;
+        kbAnswer = faq.answer;
       }
-    } else {
-      // Fallback response
+    }
+
+    // 2) Optional: use real AI (Edge Function) for questions not covered by KB
+    // This is best-effort and will gracefully fall back in store/lovable builds.
+    let answer = kbAnswer;
+    const shouldTryAi = Boolean(q) && (!kbAnswer || topRelevance < 70);
+    if (shouldTryAi && !isLovablePolicyBuild()) {
+      try {
+        const contextLines = searchResults.slice(0, 3).map(r => {
+          if (r.type === "term") {
+            const t = r.item as GlossaryTerm;
+            return `- Term: ${t.term} — ${t.definition}`;
+          }
+          const f = r.item as FAQItem;
+          return `- FAQ: ${f.question} — ${f.answer}`;
+        });
+
+        const promptParts = [
+          "You are the in-app help assistant for MorphoScan Pro / Visionary Scanner Suite.",
+          "Answer the user's question about app features and how to use the app. Keep it concise and actionable.",
+          "If the question is medical/health-related, provide general educational information and encourage consulting a healthcare professional when appropriate.",
+          contextLines.length ? `Relevant in-app knowledge base:\n${contextLines.join("\n")}` : "",
+          `User question: ${q}`,
+        ].filter(Boolean);
+
+        const ai = await invokeAiHealthChat({
+          messages: [{ role: "user", content: promptParts.join("\n\n") }],
+        });
+        if (ai.ok && ai.text) {
+          answer = ai.text;
+        }
+      } catch {
+        // ignore (fallback to kbAnswer or default message)
+      }
+    }
+
+    if (!answer) {
       answer =
-        "I don't have specific information about that topic in my knowledge base. Please try rephrasing your question or check the glossary and FAQ sections for related information.";
+        "I couldn't find that in the in-app knowledge base. Try rephrasing, or search the glossary/FAQ for related terms. If you still can’t find it, describe what screen you’re on and what you’re trying to do.";
     }
 
     const aiQuestion: AIQuestion = {
       id: uuidv4(),
-      question,
+      question: q,
       answer,
       timestamp: new Date().toISOString(),
     };

@@ -7,8 +7,8 @@
  */
 import { SUPPORT_CONTACT_EMAIL, PRIVACY_CONTACT_EMAIL, DPO_CONTACT_EMAIL } from "@/config/brand";
 
-// Reserved domain intended for documentation/examples and guaranteed non-routable.
-export const PLACEHOLDER_LINK_URL = "https://your-link.invalid";
+// User-facing input hint (intentionally not a real copy/paste domain).
+export const PLACEHOLDER_LINK_URL = "https://...";
 
 export const APP_ROUTES = {
   privacy: "/privacy",
@@ -60,4 +60,3 @@ export const CONTACT_LINKS = {
   privacyMailto: `mailto:${PRIVACY_CONTACT_EMAIL}`,
   dpoMailto: `mailto:${DPO_CONTACT_EMAIL}`,
 } as const;
-
