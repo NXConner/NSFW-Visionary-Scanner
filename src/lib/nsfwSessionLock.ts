@@ -1,4 +1,5 @@
 import type { NsfwPrivacySettings } from "./nsfwPrivacySettings";
+import { appendAuditLogEntry } from "@/lib/auditLogStorage";
 
 const UNLOCKED_AT_KEY = "morphoscan_nsfw_session_unlocked_at";
 const PANIC_LOCK_KEY = "morphoscan_nsfw_panic_lock";
@@ -57,6 +58,21 @@ export function setNsfwPanicLock(): void {
   } catch {
     // ignore
   }
+}
+
+/**
+ * User-triggered emergency exit: immediately lock NSFW surfaces and append an audit log entry.
+ *
+ * Keep this synchronous (fire-and-forget audit write) so UI can respond instantly.
+ */
+export function triggerNsfwPanicExit(params?: { reason?: string }): void {
+  setNsfwPanicLock();
+  const details = params?.reason ? String(params.reason) : "panic_exit";
+  void appendAuditLogEntry({
+    action: "nsfw_panic_exit",
+    category: "nsfw",
+    details,
+  });
 }
 
 export function clearNsfwPanicLock(): void {

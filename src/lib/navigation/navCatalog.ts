@@ -240,14 +240,18 @@ export const ADMIN_NAV_CATEGORY: NavCategory = {
       kind: "route",
       to: "/admin/dlc",
     },
-    {
-      id: "admin-nsfw",
-      label: "NSFW Content",
-      icon: Flame,
-      adminOnly: true,
-      kind: "route",
-      to: "/admin/nsfw",
-    },
+    ...(BUILD_ALLOW_ADULT_BUNDLE
+      ? [
+          {
+            id: "admin-nsfw",
+            label: "NSFW Content",
+            icon: Flame,
+            adminOnly: true,
+            kind: "route",
+            to: "/admin/nsfw",
+          },
+        ]
+      : []),
     {
       id: "admin-users",
       label: "User Management",

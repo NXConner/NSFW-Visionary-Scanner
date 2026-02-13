@@ -169,6 +169,8 @@ export const useAIScanAnalysis = (options: UseAIScanAnalysisOptions = {}) => {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Analysis failed";
         setError(message);
+        // Always clear prior result on error so UIs/tests don't display stale data.
+        setResult(null);
 
         logger.scanEvent("error", undefined, { error: message });
 
@@ -187,7 +189,27 @@ export const useAIScanAnalysis = (options: UseAIScanAnalysisOptions = {}) => {
     [onSuccess, onError, saveToHistory],
   );
 
-  const analyzeScan = analyzeImage;
+  const analyzeScan = useCallback(
+    async (input: unknown): Promise<AIScanAnalysisResult | null> => {
+      const normalized = normalizeScanInput(input);
+      if (!normalized) {
+        const message = "Invalid scan data";
+        setError(message);
+        setResult(null);
+        setIsAnalyzing(false);
+        setProgress(0);
+
+        if (onError) {
+          onError(message);
+        } else {
+          toast.error(message);
+        }
+        return null;
+      }
+      return analyzeImage(normalized);
+    },
+    [analyzeImage, onError],
+  );
 
   const reset = useCallback(() => {
     setResult(null);
@@ -196,6 +218,7 @@ export const useAIScanAnalysis = (options: UseAIScanAnalysisOptions = {}) => {
   }, []);
 
   const resetAnalysis = reset;
+  const clearAnalysis = reset;
 
   // Get analysis history for the current user (using scan_history table)
   const getAnalysisHistory = useCallback(async (limit: number = 10) => {
@@ -249,18 +272,28 @@ export const useAIScanAnalysis = (options: UseAIScanAnalysisOptions = {}) => {
     analyzeScan,
     reset,
     resetAnalysis,
+    clearAnalysis,
     getAnalysisHistory,
     compareAnalyses,
 
     // State
     isAnalyzing,
     result,
+    analysis: result,
     error,
     progress,
   };
 };
 
 // Helper functions
+function normalizeScanInput(input: unknown): string | null {
+  if (typeof input === "string") return input;
+  if (!input || typeof input !== "object") return null;
+  const maybe = (input as { imageBase64?: unknown }).imageBase64;
+  if (typeof maybe !== "string") return null;
+  return maybe.trim() ? maybe : null;
+}
+
 function validateOverallHealth(value: string): AIScanAnalysisResult["overallHealth"] {
   const validValues: AIScanAnalysisResult["overallHealth"][] = [
     "good",
