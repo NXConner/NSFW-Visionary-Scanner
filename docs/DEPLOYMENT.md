@@ -112,6 +112,16 @@ docker build -t morphoscanpro:latest .
 docker run -p 8080:8080 morphoscanpro:latest
 ```
 
+### Docker Compose (recommended for local)
+
+```bash
+# Build + run the SPA (nginx)
+docker compose up --build web
+
+# (Optional) also start a local Postgres container for scripts/tests that use DATABASE_URL
+docker compose up --build
+```
+
 ## CI/CD Deployment
 
 Deployments are automated via GitHub Actions on:

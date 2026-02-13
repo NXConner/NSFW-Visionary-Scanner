@@ -1,0 +1,42 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # These are build-time values (Vite embeds them into the bundle).
+        # Compose will read from your local `.env` if present.
+        VITE_APP_ENV: ${VITE_APP_ENV:-production}
+        VITE_APP_VERSION: ${VITE_APP_VERSION:-nsfw}
+        VITE_DISTRIBUTION_CHANNEL: ${VITE_DISTRIBUTION_CHANNEL:-direct}
+        VITE_CONTENT_POLICY: ${VITE_CONTENT_POLICY:-nsfw}
+        VITE_FEATURE_FLAGS: ${VITE_FEATURE_FLAGS:-{}}
+        VITE_FORCE_SW_CLEANUP: ${VITE_FORCE_SW_CLEANUP:-false}
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY:-}
+        VITE_CLIENT_ENCRYPTION_SALT: ${VITE_CLIENT_ENCRYPTION_SALT:-}
+        VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        VITE_ADMIN_EMAIL: ${VITE_ADMIN_EMAIL:-}
+        VITE_ADMIN_SUPER_EMAIL: ${VITE_ADMIN_SUPER_EMAIL:-}
+        VITE_ADDITIONAL_ADMINS: ${VITE_ADDITIONAL_ADMINS:-}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  # Optional local Postgres for scripts/tests that use DATABASE_URL.
+  # The client app itself uses Supabase (external) and does not require this container.
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:

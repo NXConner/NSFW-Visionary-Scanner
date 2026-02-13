@@ -1,0 +1,39 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+coverage
+playwright-report
+test-results
+artifacts
+
+# VCS / editor
+.git
+.github
+.cursor
+.vscode
+.idea
+
+# Local env (never bake secrets into images)
+.env
+.env.*
+!.env.example
+
+# Mobile + SDK (huge, not needed for web build)
+android-sdk
+android
+ios
+
+# Supabase (not required to build the client bundle)
+supabase
+
+# Docs & local tooling not needed in image
+docs
+performance-tests
+e2e
+deleted files
+
+# OS noise
+**/.DS_Store
+**/Thumbs.db
