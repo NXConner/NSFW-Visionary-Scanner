@@ -110,18 +110,19 @@ if (w) {
   w.ResizeObserver = MockResizeObserver;
 }
 
-// requestAnimationFrame is missing in some jsdom configurations; keep animations deterministic.
-if (typeof g.requestAnimationFrame !== "function") {
-  Object.defineProperty(g, "requestAnimationFrame", {
-    value: (cb: FrameRequestCallback) => setTimeout(() => cb(Date.now()), 0) as unknown as number,
-    configurable: true,
-  });
-}
-if (typeof g.cancelAnimationFrame !== "function") {
-  Object.defineProperty(g, "cancelAnimationFrame", {
-    value: (id: number) => clearTimeout(id as unknown as NodeJS.Timeout),
-    configurable: true,
-  });
+// Keep animation-driven component libraries deterministic and avoid async raf-driven updates
+// that can leak outside React's act() wrappers.
+const rafImpl = (cb: FrameRequestCallback) => {
+  cb(Date.now());
+  return 0 as unknown as number;
+};
+const cafImpl = (_id: number) => {};
+
+Object.defineProperty(g, "requestAnimationFrame", { value: rafImpl, configurable: true });
+Object.defineProperty(g, "cancelAnimationFrame", { value: cafImpl, configurable: true });
+if (w) {
+  Object.defineProperty(w, "requestAnimationFrame", { value: rafImpl, configurable: true });
+  Object.defineProperty(w, "cancelAnimationFrame", { value: cafImpl, configurable: true });
 }
 
 // jsdom implements scrollIntoView, but it can trigger async layout effects in component libraries
