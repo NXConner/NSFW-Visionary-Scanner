@@ -461,7 +461,7 @@ class DLCManager {
       await supabase.from("dlc_age_verifications").upsert(
         {
           user_id: auth.user.id,
-          verification_method: "self_attested",
+          verification_method: "self_declared",
           verified_at: new Date().toISOString(),
           is_verified: true,
           declared_age: age,
