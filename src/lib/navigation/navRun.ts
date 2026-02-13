@@ -1,5 +1,6 @@
 import type { NavigateFunction } from "react-router-dom";
 import type { NavItem } from "./navTypes";
+import { logger } from "@/lib/logger";
 
 export type RunNavContext = {
   navigate: NavigateFunction;
@@ -12,17 +13,19 @@ export type RunNavContext = {
 };
 
 export function runNavItem(item: NavItem, ctx: RunNavContext) {
-  console.log("[runNavItem] Executing:", { id: item.id, kind: item.kind, to: item.to });
+  if (import.meta.env.DEV) {
+    logger.debug("[nav] runNavItem", { id: item.id, kind: item.kind, to: item.to });
+  }
 
   if (item.kind === "route") {
     const to = item.to ?? "/";
-    console.log("[runNavItem] Navigating to route:", to);
+    if (import.meta.env.DEV) logger.debug("[nav] navigate route", { to });
     ctx.navigate(to);
     ctx.afterNavigate?.();
     return;
   }
 
-  console.log("[runNavItem] Navigating to tab:", item.id);
+  if (import.meta.env.DEV) logger.debug("[nav] navigate tab", { tabId: item.id });
   ctx.navigateTab(item.id);
   ctx.afterNavigate?.();
 }

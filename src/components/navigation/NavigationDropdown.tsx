@@ -26,6 +26,7 @@ import {
 } from "@/lib/navigation/navCatalog";
 import { getNavItemVisibility } from "@/lib/navigation/navVisibility";
 import { runNavItem } from "@/lib/navigation/navRun";
+import { logger } from "@/lib/logger";
 
 interface NavigationDropdownProps {
   activeTab: string;
@@ -52,21 +53,22 @@ export const NavigationDropdown = ({ activeTab, onTabChange }: NavigationDropdow
   };
 
   const handleNavClick = (item: NavItem) => {
-    // Always log for debugging navigation issues
-    console.log("[Navigation] Click:", { itemId: item.id, kind: item.kind, to: item.to });
+    if (import.meta.env.DEV) {
+      logger.debug("[nav] click", { itemId: item.id, kind: item.kind, to: item.to });
+    }
 
     if (BUILD_ALLOW_ADULT_BUNDLE && item.nsfwOnly) {
       // Adult-only navigation is only available in direct bundles.
       // If user doesn't have NSFW DLC yet, route to the promo/landing page (store entry).
       // If they have DLC but aren't age verified yet, route to the hub which prompts verification.
       if (nsfw.requiresDLC) {
-        console.log("[Navigation] Requires DLC, navigating to /nsfw/landing");
+        if (import.meta.env.DEV) logger.debug("[nav] nsfw requires DLC -> /nsfw/landing");
         navigate("/nsfw/landing");
         setOpen(false);
         return;
       }
       if (nsfw.requiresAgeVerification) {
-        console.log("[Navigation] Requires age verification, navigating to /nsfw");
+        if (import.meta.env.DEV) logger.debug("[nav] nsfw requires age verification -> /nsfw");
         navigate("/nsfw");
         setOpen(false);
         return;
@@ -80,20 +82,18 @@ export const NavigationDropdown = ({ activeTab, onTabChange }: NavigationDropdow
       nsfwAvailable,
     });
 
-    console.log("[Navigation] Visibility check:", { visible, locked });
-
     if (!visible) {
-      console.log("[Navigation] Item not visible, aborting");
+      if (import.meta.env.DEV) logger.debug("[nav] not visible (skip)", { itemId: item.id });
       return;
     }
     if (locked) {
-      console.log("[Navigation] Item locked, redirecting to subscription");
+      if (import.meta.env.DEV)
+        logger.debug("[nav] locked -> subscription tiers", { itemId: item.id });
       onTabChange("subscription-tiers");
       setOpen(false);
       return;
     }
 
-    console.log("[Navigation] Running nav item");
     runNavItem(item, {
       navigate,
       navigateTab: onTabChange,

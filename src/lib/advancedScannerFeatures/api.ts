@@ -6,7 +6,9 @@ import type {
   BatchScanSession,
   Exported3DModel,
   MeasurementTemplate,
+  MultiAngleScanImage,
   MultiAngleScanSession,
+  RecentScanSummary,
   TimeLapseComparison,
 } from "./types";
 
@@ -49,6 +51,35 @@ export async function createMultiAngleScanSession(
   return (data ?? null) as unknown as MultiAngleScanSession | null;
 }
 
+export async function getMultiAngleScanSessions(params?: {
+  limit?: number;
+  includeCompleted?: boolean;
+}): Promise<MultiAngleScanSession[]> {
+  const userId = await requireUserId();
+  const limit = clamp(Number(params?.limit ?? 30), 1, 200);
+  const includeCompleted = Boolean(params?.includeCompleted ?? true);
+
+  let q = fromExtended("multi_angle_scan_sessions").select("*").eq("user_id", userId);
+  if (!includeCompleted) q = q.eq("is_complete", false);
+
+  const { data, error } = await q.order("created_at", { ascending: false }).limit(limit);
+  if (error) throw error;
+  return (data ?? []) as unknown as MultiAngleScanSession[];
+}
+
+export async function getMultiAngleScanImages(sessionId: string): Promise<MultiAngleScanImage[]> {
+  const userId = await requireUserId();
+  void userId; // ownership is enforced via RLS on session ownership
+
+  const { data, error } = await fromExtended("multi_angle_scan_images")
+    .select("*")
+    .eq("session_id", sessionId)
+    .order("angle_index", { ascending: true })
+    .limit(200);
+  if (error) throw error;
+  return (data ?? []) as unknown as MultiAngleScanImage[];
+}
+
 export async function addAngleToSession(
   sessionId: string,
   angleIndex: number,
@@ -59,28 +90,34 @@ export async function addAngleToSession(
   const userId = await requireUserId();
   void userId; // auth is enforced via RLS on session ownership
 
-  // Insert/replace for the same angle index (client-side de-dup)
-  const { error: insertErr } = await fromExtended("multi_angle_scan_images").insert({
-    session_id: sessionId,
-    angle_index: angleIndex,
-    angle_degrees: angleDegrees,
-    image_url: imageUrl,
-    measurements: measurements ?? null,
-    created_at: nowIso(),
-  });
+  // Insert/replace for the same angle index (upsert).
+  const { error: upsertErr } = await fromExtended("multi_angle_scan_images").upsert(
+    {
+      session_id: sessionId,
+      angle_index: angleIndex,
+      angle_degrees: angleDegrees,
+      image_url: imageUrl,
+      measurements: measurements ?? null,
+      created_at: nowIso(),
+    },
+    { onConflict: "session_id,angle_index" },
+  );
 
-  if (insertErr) {
-    logger.warn("Failed to add angle image", { sessionId, angleIndex, error: insertErr.message });
-    throw insertErr;
+  if (upsertErr) {
+    logger.warn("Failed to upsert angle image", {
+      sessionId,
+      angleIndex,
+      error: upsertErr.message,
+    });
+    throw upsertErr;
   }
 
   // Recompute angles_captured and mark complete if target reached
-  const { data: images, error: countErr } = await fromExtended("multi_angle_scan_images")
-    .select("id", { count: "exact", head: false })
+  const { count, error: countErr } = await fromExtended("multi_angle_scan_images")
+    .select("id", { count: "exact", head: true })
     .eq("session_id", sessionId);
-
   if (countErr) throw countErr;
-  const count = Array.isArray(images) ? images.length : 0;
+  const captured = Number(count ?? 0);
 
   const { data: session, error: sessionErr } = await fromExtended("multi_angle_scan_sessions")
     .select("target_angles")
@@ -89,10 +126,10 @@ export async function addAngleToSession(
   if (sessionErr) throw sessionErr;
 
   const target = Number((session as Record<string, unknown>)?.target_angles ?? 8);
-  const isComplete = count >= target;
+  const isComplete = captured >= target;
 
   const { error: updErr } = await fromExtended("multi_angle_scan_sessions")
-    .update({ angles_captured: count, is_complete: isComplete, updated_at: nowIso() })
+    .update({ angles_captured: captured, is_complete: isComplete, updated_at: nowIso() })
     .eq("id", sessionId);
   if (updErr) throw updErr;
 
@@ -204,6 +241,21 @@ export async function getTimeLapseComparisons(): Promise<TimeLapseComparison[]> 
   return (data ?? []) as unknown as TimeLapseComparison[];
 }
 
+export async function getRecentScans(params?: { limit?: number }): Promise<RecentScanSummary[]> {
+  const userId = await requireUserId();
+  const limit = clamp(Number(params?.limit ?? 50), 1, 200);
+
+  const { data, error } = await fromExtended("scans")
+    .select("id, scanned_at, created_at, length, girth, curvature_angle")
+    .eq("user_id", userId)
+    .order("scanned_at", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data ?? []) as unknown as RecentScanSummary[];
+}
+
 export async function createMeasurementTemplate(
   templateName: string,
   measurementPoints: unknown,
@@ -284,6 +336,20 @@ export async function createBatchScanSession(
     .single();
   if (error) throw error;
   return (data ?? null) as unknown as BatchScanSession | null;
+}
+
+export async function getBatchScanSessions(params?: {
+  limit?: number;
+}): Promise<BatchScanSession[]> {
+  const userId = await requireUserId();
+  const limit = clamp(Number(params?.limit ?? 50), 1, 200);
+  const { data, error } = await fromExtended("batch_scan_sessions")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as unknown as BatchScanSession[];
 }
 
 export async function export3DModel(

@@ -10,6 +10,8 @@ import { ScannerExperience } from "@/scanner/ui/ScannerExperience";
 import { ARMeasurementOverlay } from "@/scanner/overlays/ar";
 import { useARMeasurement } from "@/hooks/useARMeasurement";
 import { useSettings } from "@/contexts/settings";
+import { ScannerSettingsPanel } from "@/components/scannerOverlays/ScannerSettingsPanel";
+import { usePersistentScannerSettings } from "@/scanner/ui/hooks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -35,6 +37,9 @@ export function ScannerCaptureScreen(): React.ReactElement {
   // AR overlay state
   const [arEnabled, setArEnabled] = useState(true);
   const [showARControls, setShowARControls] = useState(false);
+  const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
+
+  const [scannerSettings, setScannerSettings] = usePersistentScannerSettings();
 
   // Settings from context
   const settingsContext = useSettings();
@@ -49,10 +54,12 @@ export function ScannerCaptureScreen(): React.ReactElement {
         navigator.vibrate([50, 30, 50]);
       }
     },
-    onQualityChange: quality => {
+    onQualityChange: _quality => {
       // Could log quality changes for analytics
     },
   });
+
+  const { start: startARMeasurement, stop: stopARMeasurement } = arMeasurement;
 
   // Handle AR setting changes
   const handleSettingChange = useCallback(
@@ -64,15 +71,16 @@ export function ScannerCaptureScreen(): React.ReactElement {
     [setARSettings, arSettings],
   );
 
+  // Keep AR measurement engine in sync with the UI toggle.
+  React.useEffect(() => {
+    if (arEnabled) startARMeasurement();
+    else stopARMeasurement();
+  }, [arEnabled, startARMeasurement, stopARMeasurement]);
+
   // Toggle AR overlay
   const toggleAR = useCallback(() => {
     setArEnabled(prev => !prev);
-    if (!arEnabled) {
-      arMeasurement.start();
-    } else {
-      arMeasurement.stop();
-    }
-  }, [arEnabled, arMeasurement]);
+  }, []);
 
   return (
     <div className="relative h-full w-full">
@@ -212,23 +220,23 @@ export function ScannerCaptureScreen(): React.ReactElement {
                 </div>
 
                 {/* Full Settings Link */}
-                <Sheet>
+                <Sheet open={advancedSettingsOpen} onOpenChange={setAdvancedSettingsOpen}>
                   <SheetTrigger asChild>
                     <Button variant="outline" className="w-full" size="sm">
                       <Settings2 className="h-4 w-4 mr-2" />
                       Advanced Settings
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-80">
+                  <SheetContent side="right" className="w-[95vw] sm:max-w-[520px] overflow-y-auto">
                     <SheetHeader>
-                      <SheetTitle>AR Overlay Settings</SheetTitle>
+                      <SheetTitle>Scanner Overlay Settings</SheetTitle>
                     </SheetHeader>
                     <div className="mt-6 space-y-6">
-                      {/* Full settings panel would go here */}
-                      <p className="text-sm text-muted-foreground">
-                        Configure detailed AR measurement overlay settings in the main Settings
-                        page.
-                      </p>
+                      <ScannerSettingsPanel
+                        settings={scannerSettings}
+                        onSettingsChange={next => setScannerSettings(next)}
+                        onClose={() => setAdvancedSettingsOpen(false)}
+                      />
                     </div>
                   </SheetContent>
                 </Sheet>

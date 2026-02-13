@@ -4,6 +4,7 @@
  */
 
 import { isNative, getPlatform } from "./init";
+import { logger } from "@/lib/logger";
 
 interface MobileError {
   message: string;
@@ -35,7 +36,7 @@ const logError = (error: Error | string): void => {
     errorLog.shift();
   }
 
-  console.error("[MobileError]", errorObj);
+  logger.error("[mobile] uncaught error", { error: errorObj });
 };
 
 /**
@@ -73,7 +74,7 @@ export const installMobileErrorHandler = (): void => {
     }
   };
 
-  console.log("[MobileErrorHandler] Installed global error handlers");
+  logger.info("[mobile] installed global error handlers");
 };
 
 export default {

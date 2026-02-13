@@ -103,3 +103,12 @@ export interface Exported3DModel {
   last_downloaded_at: string | null;
   created_at: string;
 }
+
+export interface RecentScanSummary {
+  id: string;
+  scanned_at: string | null;
+  created_at: string;
+  length: number | null;
+  girth: number | null;
+  curvature_angle: number | null;
+}

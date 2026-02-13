@@ -7,7 +7,6 @@ import { Progress } from "@/components/ui/progress";
 import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 import { uploadFile, uploadFiles } from "@/lib/mediaUpload";
 import type { DateNightPlanInput } from "@/lib/partnerSync";
-import { PLACEHOLDER_LINK_URL } from "@/config/urls";
 import { toast } from "sonner";
 import { Mic, Square, UploadCloud, X } from "lucide-react";
 
@@ -268,7 +267,7 @@ export function DateNightMediaSection({ plan, onUpdate }: DateNightMediaSectionP
           <Input
             value={(plan.links ?? []).join(", ")}
             onChange={e => updateList(e.target.value, "links")}
-            placeholder={PLACEHOLDER_LINK_URL}
+            placeholder="https://... (comma-separated)"
           />
         </div>
         <div className="space-y-2">

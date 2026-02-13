@@ -362,8 +362,10 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
               .then(verified => {
                 if (!cancelled) {
                   if (DEV_MODE) {
-                    console.log("[DLC] Age verification status:", verified);
-                    console.log("[DLC] DEV_BYPASS_AGE_VERIFICATION:", DEV_BYPASS_AGE_VERIFICATION);
+                    logger.debug("[dlc] age verification status", { verified });
+                    logger.debug("[dlc] dev bypass age verification", {
+                      enabled: DEV_BYPASS_AGE_VERIFICATION,
+                    });
                   }
                   setIsAgeVerified(DEV_BYPASS_AGE_VERIFICATION || verified);
                 }
@@ -595,11 +597,11 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
   // Age verification
   const verifyAge = useCallback(async (age: number, consent: boolean) => {
     if (DEV_MODE) {
-      console.log("[DLC] Verifying age:", { age, consent });
+      logger.debug("[dlc] verifying age", { age, consent });
     }
     const result = await dlcManager.verifyAge(age, consent);
     if (DEV_MODE) {
-      console.log("[DLC] Age verification result:", result);
+      logger.debug("[dlc] age verification result", { verified: result });
     }
     setIsAgeVerified(result);
     // Force a refresh to update all dependent components

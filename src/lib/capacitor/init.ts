@@ -6,6 +6,7 @@
 import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { StatusBar, Style } from "@capacitor/status-bar";
+import { logger } from "@/lib/logger";
 
 // Track initialization state
 let isInitialized = false;
@@ -68,9 +69,9 @@ export const hideSplashScreen = async (): Promise<void> => {
 
   try {
     await SplashScreen.hide({ fadeOutDuration: 300 });
-    console.log("[Capacitor] Splash screen hidden");
+    if (import.meta.env.DEV) logger.debug("[cap] splash hidden");
   } catch (error) {
-    console.warn("[Capacitor] Failed to hide splash screen:", error);
+    logger.warn("[cap] failed to hide splash screen", { error });
     // Don't throw - app should continue even if splash fails
   }
 };
@@ -84,9 +85,9 @@ const configureStatusBar = async (): Promise<void> => {
   try {
     await StatusBar.setStyle({ style: Style.Dark });
     await StatusBar.setBackgroundColor({ color: "#0a0a0a" });
-    console.log("[Capacitor] Status bar configured");
+    if (import.meta.env.DEV) logger.debug("[cap] status bar configured");
   } catch (error) {
-    console.warn("[Capacitor] Failed to configure status bar:", error);
+    logger.warn("[cap] failed to configure status bar", { error });
   }
 };
 
@@ -96,15 +97,15 @@ const configureStatusBar = async (): Promise<void> => {
  */
 export const initializeCapacitor = async (): Promise<void> => {
   if (isInitialized) {
-    console.log("[Capacitor] Already initialized");
+    if (import.meta.env.DEV) logger.debug("[cap] already initialized");
     return;
   }
 
   const platform = getPlatform();
-  console.log(`[Capacitor] Initializing on platform: ${platform}`);
+  logger.info("[cap] initializing", { platform });
 
   if (!isLikelyNativeEnvironment()) {
-    console.log("[Capacitor] Web platform - skipping native initialization");
+    if (import.meta.env.DEV) logger.debug("[cap] web platform (skip native init)");
     isInitialized = true;
     return;
   }
@@ -115,9 +116,9 @@ export const initializeCapacitor = async (): Promise<void> => {
 
     // Mark as initialized
     isInitialized = true;
-    console.log("[Capacitor] Initialization complete");
+    logger.info("[cap] initialization complete", { platform });
   } catch (error) {
-    console.error("[Capacitor] Initialization error:", error);
+    logger.error("[cap] initialization error", { error });
     initializationError = error as Error;
     // Still mark as initialized to prevent retries
     isInitialized = true;
@@ -143,7 +144,7 @@ export const safeCapacitorCall = async <T>(fn: () => Promise<T>, fallback: T): P
   try {
     return await fn();
   } catch (error) {
-    console.warn("[Capacitor] Plugin call failed:", error);
+    logger.warn("[cap] plugin call failed", { error });
     return fallback;
   }
 };
