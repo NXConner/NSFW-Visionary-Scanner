@@ -27,7 +27,7 @@
     "db:reset": "supabase db reset",
     "db:push": "supabase db push",
     "db:diff": "supabase db diff",
-    "db:types": "supabase gen types typescript --local > src/integrations/supabase/types.ts",
+    "db:types": "node scripts/gen-supabase-types.mjs",
     "db:types:check": "node scripts/check-supabase-types.mjs",
     "db:migrate:legacy": "node-pg-migrate -m supabase/migrations up",
     "db:rollback:legacy": "node-pg-migrate -m supabase/migrations down --steps 1",
