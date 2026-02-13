@@ -1,12 +1,14 @@
 # Phase 1 — Analysis & Strategic Roadmap (Repo Reality-Based)
 
-**Date**: 2026-02-12  
+**Date**: 2026-02-13  
 **Workspace**: `/workspace` (git repo)  
 **Canonical product identity found in repo**: **Visionary Scanner Suite** (MorphoScan Pro + NSFW Visionary Scanner)
 
 This Phase 1 report is intentionally **reality-based**: it describes what is implemented in this codebase today, what is still missing to ship safely, and the chosen path forward:
 
 - **Track A (Ship current product)**: Productionize Visionary Scanner Suite (SFW/NSFW/Hybrid variants) with Stripe + Push + Store submission.
+
+> **Note (identity mismatch):** Some external prompts reference **“Pavement Performance Suite”**. This repository is clearly and consistently implemented/documented as **Visionary Scanner Suite / MorphoScan Pro** (scanner + health tracking + DLC/Stripe + Supabase). Aligning this repo to a pavement-analysis product would be a separate re-scope and is **not** included in this roadmap.
 
 ---
 
@@ -63,7 +65,9 @@ Visionary Scanner Suite is a **privacy-first health tracking and “scanner” S
   - Push: `FIREBASE_SERVICE_ACCOUNT`, `APNS_*`
 - **Manual production QA is not completed** (device matrix, performance, a11y).
 - **Store submission and signing are manual** (keystore/certs are local-only).
-- **Residual placeholder/legacy links exist** (e.g., `example.com` in several UI files).
+- **Residual placeholder/legacy links exist** (ex: partner-sync “links” input placeholder; some copy still refers to TBD/placeholder values).
+- **Remaining “implementation placeholder” UI blocks exist** (scanner capture advanced settings sheet; advanced scanner sessions list loading).
+- **Debug console logging remains in production components** (navigation + mobile init handlers); should be routed through `logger` and gated by environment.
 - **Android APK boot hangs on loader if Capacitor assets/scheme are misconfigured** (ensure `CAPACITOR_BUILD=1`, `androidScheme=https`, and re-sync before Gradle build).
 
 ---
@@ -96,14 +100,18 @@ Visionary Scanner Suite is a **privacy-first health tracking and “scanner” S
   - Replace or remove `example.com` and other placeholders from UI and tests.
   - Centralize “support/privacy/terms” URLs in a single config module to prevent drift.
 
-- **P0.6 Remove production mocks/stubs for real backend integrations**
-  - Replace the **client-side mock AI response** in `src/components/AIHealthChatbot.tsx` with a real call to the **`ai-health-chat`** Edge Function.
-  - Fix **client/server contract mismatches** for `ai-health-chat` (some callers send `{ message, context }` while the function expects `{ messages: [...] }` and streams SSE).
-  - Replace the **`VideoCaptureTab` mock sessions** with real `multi_camera_sessions` data and persist actual recordings to Storage/DB.
+- **P0.6 Privileged access guarantee (admin + super_admin)**
+  - Ensure **admin** and **super_admin** are treated as **lifetime premium**, bypass all gates (email verification, age gates, DLC locks) and stay unlocked across refreshes/devices.
+  - Confirm DB roles (`user_roles`) remain the source-of-truth, with **email allowlist fallback** for core accounts to avoid “locked flash” and offline issues.
+  - Validate privileged behavior in: nav visibility, DLC gating, email verification gate, NSFW session lock, admin routes.
 
-- **P0.7 Align DB constraints with UI-supported options**
-  - `multi_camera_sessions.quality` constraint currently excludes `"2k"` while UI + recording utilities support `"2k"`.
-  - Add a forward migration to include `"2k"` and update type unions accordingly.
+- **P0.7 Replace remaining “implementation placeholder” UI blocks**
+  - Implement the scanner capture **Advanced Settings** sheet content (remove “would go here” placeholder; embed real settings panel).
+  - Implement loading and listing for **Advanced Scanner Features** sessions (3D sessions + batch sessions) instead of the “Load sessions would go here” stub.
+
+- **P0.8 Observability hardening**
+  - Remove `console.log` noise in production code paths; replace with structured `logger` calls with environment gating.
+  - Ensure sensitive data is never logged (emails, tokens, encryption keys).
 
 ### P1 — Phase 8 polish (performance, bundle, accessibility)
 
@@ -145,7 +153,7 @@ These features exist; here’s their **max potential** state and what to do next
 
 - **Video tooling (recording + editing)**
   - Max: thumbnails, previews, streaming-safe playback, client-side compression fallback, and reliable chunk merge pipeline.
-  - Next: implement real thumbnail generation and upgrade the current `compressVideo()` stub to a best-effort encoder with graceful fallback.
+  - Next: expand test coverage for chunk merge + upload recovery + thumbnail upload permissions across browsers and Capacitor WebView.
 
 ### P3 — Optional expansions (only after ship-safety)
 
@@ -157,25 +165,25 @@ These features exist; here’s their **max potential** state and what to do next
 
 ## Phased Implementation Roadmap (table)
 
-| Priority | Task Description                                                             | Task Type (Max-Feature/New-Feature/Refactor/Fix) | Files to Modify/Create                                                                                                                                    |
-| -------: | ---------------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|       P0 | Configure Stripe secrets + webhook endpoint + live price IDs                 | Fix                                              | `docs/guides/integrations/payments/STRIPE_SETUP_GUIDE.md`, Supabase secrets, `.env` (local only), `src/lib/pricing.ts`, `src/lib/stripe.ts`               |
-|       P0 | End-to-end Stripe QA (subscription + DLC if used)                            | Fix                                              | `supabase/functions/stripe-webhook/index.ts`, `supabase/functions/create-checkout-session/*`, `src/components/payments/*`                                 |
-|       P0 | Configure push notifications (FCM/APNs) + verify on devices                  | Fix                                              | `docs/guides/integrations/notifications/FCM_SETUP.md`, Supabase secrets, `android/app/google-services.json` (local only), `ios/*` (local only)            |
-|       P0 | Run production QA checklist + fix failures                                   | Fix                                              | `docs/guides/testing/PRODUCTION_TESTING_GUIDE.md`, targeted `src/**` as issues found                                                                      |
-|       P0 | Android boot loader hang fix (Capacitor scheme + build sync)                 | Fix                                              | `capacitor.config.ts`, `docs/guides/build/MOBILE_BUILD_GUIDE.md`                                                                                          |
-|       P0 | Remove placeholder URLs (`example.com`) and centralize legal/support URLs    | Fix/Refactor                                     | `src/components/partnerSync/dateNights/DateNightMediaSection.tsx`, tests containing `example.com`, new `src/config/urls.ts`                                |
-|       P0 | Replace AIHealthChatbot mock response with real Edge Function streaming      | Fix                                              | `src/components/AIHealthChatbot.tsx`, new `src/lib/edge/aiHealthChat.ts`, update `src/components/__tests__/AIHealthChatbot.test.tsx`                        |
-|       P0 | Fix `ai-health-chat` contract mismatch across callers                        | Fix/Refactor                                     | `src/lib/liveSupportChat.ts`, any callers using `supabase.functions.invoke("ai-health-chat")`                                                             |
-|       P0 | Replace VideoCaptureTab `mockSessions` with real `multi_camera_sessions`     | Fix/Refactor                                     | `src/components/videoCapture/VideoCaptureTab.tsx`, `src/lib/nsfwAdvancedFeatures/multiCamera.ts`, shared session helpers                                   |
-|       P0 | Add `"2k"` support to `multi_camera_sessions.quality` constraint + types     | Fix                                              | new migration under `supabase/migrations/`, `src/lib/nsfwAdvancedFeatures/types.ts`                                                                        |
-|       P1 | Accessibility audit + fixes on primary flows                                 | Fix                                              | `src/components/**`, `src/pages/**`, `eslint.config.js` (rules tuning only if needed)                                                                     |
-|       P1 | Performance + bundle optimization pass (verify lazy boundaries)              | Refactor                                         | `src/pages/indexLazyTabs.ts`, heavy feature modules, `vite.config.ts`                                                                                     |
-|       P2 | Social login (Google/Apple) via Supabase OAuth                               | New-Feature                                      | `src/pages/Auth.tsx`, `src/pages/AuthCallback.tsx`, `src/contexts/AuthContext.tsx`, docs update                                                           |
-|       P2 | Biometric/AppLock UX completion                                              | Max-Feature                                      | `src/components/AppLock.tsx`, `src/hooks/useBiometricAuth.ts`                                                                                             |
-|       P2 | Analytics Dashboard (privacy-compliant)                                      | New-Feature                                      | `src/lib/analytics.ts`, new `src/pages/AnalyticsDashboard.tsx`, admin routing if needed                                                                   |
-|       P2 | DLC production hardening (idempotency/refunds/signed URLs/restore purchases) | Fix/Max-Feature                                  | `docs/archive/nsfw/NSFW_DLC_REMAINING_WORK.md`, `supabase/functions/stripe-webhook/index.ts`, new migration for webhook events table                      |
-|       P3 | Mobile polish + store assets + compliance review                             | Max-Feature                                      | `docs/product/store/app-store-listing.md`, `docs/security/compliance/COMPLIANCE_DISTRIBUTION.md`, platform-specific assets                                |
+| Priority | Task Description                                                             | Task Type (Max-Feature/New-Feature/Refactor/Fix) | Files to Modify/Create                                                                                                                                  |
+| -------: | ---------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|       P0 | Configure Stripe secrets + webhook endpoint + live price IDs                 | Fix                                              | `docs/guides/integrations/payments/STRIPE_SETUP_GUIDE.md`, Supabase secrets, `.env` (local only), `src/lib/pricing.ts`, `src/lib/stripe.ts`             |
+|       P0 | End-to-end Stripe QA (subscription + DLC if used)                            | Fix                                              | `supabase/functions/stripe-webhook/index.ts`, `supabase/functions/create-checkout-session/*`, `src/components/payments/*`                               |
+|       P0 | Configure push notifications (FCM/APNs) + verify on devices                  | Fix                                              | `docs/guides/integrations/notifications/FCM_SETUP.md`, Supabase secrets, `android/app/google-services.json` (local only), `ios/*` (local only)          |
+|       P0 | Run production QA checklist + fix failures                                   | Fix                                              | `docs/guides/testing/PRODUCTION_TESTING_GUIDE.md`, targeted `src/**` as issues found                                                                    |
+|       P0 | Android boot loader hang fix (Capacitor scheme + build sync)                 | Fix                                              | `capacitor.config.ts`, `docs/guides/build/MOBILE_BUILD_GUIDE.md`                                                                                        |
+|       P0 | Privileged access: admin + super_admin = lifetime premium + gate bypass      | Fix                                              | `src/contexts/AuthContext.tsx`, `src/hooks/useUserRoles.ts`, `src/dlc/context/DLCContext.tsx`, `src/components/EmailVerificationGate.tsx`, RLS policies |
+|       P0 | Remove placeholder URLs and make placeholders user-safe                      | Fix/Refactor                                     | `src/components/partnerSync/dateNights/DateNightMediaSection.tsx`, `src/config/urls.ts`                                                                 |
+|       P0 | Scanner capture “Advanced Settings” sheet: replace placeholder with real UI  | Fix                                              | `src/scanner/ui/routes/ScannerCaptureScreen.tsx` (and/or new `src/scanner/ui/components/*`)                                                             |
+|       P0 | Advanced Scanner Features: implement session loading (3D + batch)            | Fix                                              | `src/components/AdvancedScannerFeatures.tsx`, `src/lib/advancedScannerFeatures/api.ts`                                                                  |
+|       P0 | Remove production `console.log` noise (route through logger; env-gated)      | Refactor                                         | `src/lib/navigation/navRun.ts`, `src/components/navigation/NavigationDropdown.tsx`, `src/lib/capacitor/*`, `src/dlc/context/DLCContext.tsx`             |
+|       P1 | Accessibility audit + fixes on primary flows                                 | Fix                                              | `src/components/**`, `src/pages/**`, `eslint.config.js` (rules tuning only if needed)                                                                   |
+|       P1 | Performance + bundle optimization pass (verify lazy boundaries)              | Refactor                                         | `src/pages/indexLazyTabs.ts`, heavy feature modules, `vite.config.ts`                                                                                   |
+|       P2 | Social login (Google/Apple) via Supabase OAuth                               | New-Feature                                      | `src/pages/Auth.tsx`, `src/pages/AuthCallback.tsx`, `src/contexts/AuthContext.tsx`, docs update                                                         |
+|       P2 | Biometric/AppLock UX completion                                              | Max-Feature                                      | `src/components/AppLock.tsx`, `src/hooks/useBiometricAuth.ts`                                                                                           |
+|       P2 | Analytics Dashboard (privacy-compliant)                                      | New-Feature                                      | `src/lib/analytics.ts`, new `src/pages/AnalyticsDashboard.tsx`, admin routing if needed                                                                 |
+|       P2 | DLC production hardening (idempotency/refunds/signed URLs/restore purchases) | Fix/Max-Feature                                  | `docs/archive/nsfw/NSFW_DLC_REMAINING_WORK.md`, `supabase/functions/stripe-webhook/index.ts`, new migration for webhook events table                    |
+|       P3 | Mobile polish + store assets + compliance review                             | Max-Feature                                      | `docs/product/store/app-store-listing.md`, `docs/security/compliance/COMPLIANCE_DISTRIBUTION.md`, platform-specific assets                              |
 
 ---
 
@@ -185,7 +193,8 @@ These features exist; here’s their **max potential** state and what to do next
 2. **P0: Push secrets + device verification**
 3. **P0: Execute production QA checklist**
 4. **P0: Fix placeholder URLs / centralize outbound links**
-5. **P0: Replace production mocks/stubs (AI chatbot + video capture sessions)**
-6. **P0: Align DB constraints/types (multi-camera quality = include 2k)**
-7. **P1: Accessibility audit + performance/bundle pass**
-8. **(Optional) DLC hardening** per `docs/archive/nsfw/NSFW_DLC_REMAINING_WORK.md`
+5. **P0: Privileged access guarantee (admin/super_admin lifetime unlock)**
+6. **P0: Replace remaining “would go here” UI placeholders (scanner capture + advanced scanner sessions)**
+7. **P0: Remove production console logging noise (logger + env gating)**
+8. **P1: Accessibility audit + performance/bundle pass**
+9. **(Optional) DLC hardening** per `docs/archive/nsfw/NSFW_DLC_REMAINING_WORK.md`
