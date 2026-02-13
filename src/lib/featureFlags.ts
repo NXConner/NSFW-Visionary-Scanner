@@ -4,6 +4,8 @@
  * Integrated with DLC system for dynamic feature unlocking
  */
 
+import { getLastKnownUserId, getPersistedRolesForUser } from "@/lib/auth/rolesCache";
+
 export type AppVersion = "sfw" | "nsfw" | "hybrid";
 
 /**
@@ -83,7 +85,6 @@ export const isLovableHost = (): boolean => {
 };
 
 const CONTENT_POLICY_OVERRIDE_KEY = "morphoscan_content_policy_override";
-const USER_ROLES_STORAGE_KEY = "user_roles";
 const SUPER_ADMIN_STORAGE_KEY = "lovable_super_admin_status";
 
 export type ContentPolicy = "lovable" | "direct";
@@ -252,10 +253,9 @@ const parseJson = <T>(raw: string | null, fallback: T): T => {
 };
 
 const getStoredRoles = (): string[] => {
-  if (!isBrowser()) return [];
-  const parsed = parseJson<unknown>(window.localStorage.getItem(USER_ROLES_STORAGE_KEY), []);
-  if (!Array.isArray(parsed)) return [];
-  return parsed.filter(role => typeof role === "string") as string[];
+  // IMPORTANT: Only trust roles that match the last known user id.
+  // This prevents stale privileged access when switching accounts without a clean sign-out.
+  return getPersistedRolesForUser(getLastKnownUserId());
 };
 
 const isSuperAdminPersisted = (): boolean => {

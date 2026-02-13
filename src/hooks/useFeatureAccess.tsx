@@ -6,6 +6,7 @@ import { useDLCFeature } from "@/dlc/context/DLCContext";
 import { useBetaAccess } from "@/lib/betaAccess";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { isAnySuperAdminPersisted } from "@/lib/superAdmin";
+import { isAnyPrivilegedRolePersisted } from "@/lib/auth/rolesCache";
 
 export type SubscriptionTier = "free" | "pro" | "premium" | "admin";
 
@@ -37,6 +38,21 @@ export interface FeatureAccess {
   // Limits
   scanLimit: number;
   aiQueriesLimit: number;
+}
+
+function normalizeSubscriptionTierId(value: unknown): SubscriptionTier | null {
+  const s = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  if (!s) return null;
+  if (s === "free") return "free";
+  if (s === "pro") return "pro";
+  if (s === "premium") return "premium";
+  if (s === "admin") return "admin";
+  // Supabase/Stripe variants (e.g. "tier3_premium_lifetime")
+  if (s.includes("premium")) return "premium";
+  if (s.includes("pro")) return "pro";
+  return null;
 }
 
 const UI_FEATURE_TOGGLES_STORAGE_KEY = "morphoscan_ui_feature_toggles_v1";
@@ -116,7 +132,7 @@ const PREMIUM_FEATURES: FeatureAccess = {
 // CRITICAL: Module-level cached super admin check - runs ONCE at import time
 // This ensures privileged status is known BEFORE any component renders
 // NO DEPENDENCY ON USER ID - directly checks if any super admin is persisted
-const INITIAL_PRIVILEGED_STATUS = isAnySuperAdminPersisted();
+const INITIAL_PRIVILEGED_STATUS = isAnySuperAdminPersisted() || isAnyPrivilegedRolePersisted();
 
 export const useFeatureAccess = () => {
   const { user, isSuperAdmin, hasFullAccess, allFeaturesUnlocked, rolesLoading } = useAuth();
@@ -182,7 +198,8 @@ export const useFeatureAccess = () => {
       // Role-based override (admin/super_admin => full access)
       // NOTE: this must be DB-backed (not localStorage) to be reliable.
       if (isAdmin || isSuperAdminRole) {
-        resolvedTier = "admin";
+        // Admin users have lifetime-premium entitlements, but "admin" remains a role concept.
+        resolvedTier = "premium";
         resolvedFeatures = PREMIUM_FEATURES;
         setTier(resolvedTier);
         setFeatures(resolvedFeatures);
@@ -210,9 +227,10 @@ export const useFeatureAccess = () => {
         setFeatures(resolvedFeatures);
       } else {
         // Determine tier based on explicit tier field, env price IDs, or fallback heuristics
-        const explicitTier = (subscription.subscription_tier ||
-          subscription.plan_id) as SubscriptionTier | null;
-        if (explicitTier === "premium") {
+        const explicitTier = normalizeSubscriptionTierId(
+          subscription.subscription_tier || subscription.plan_id,
+        );
+        if (explicitTier === "premium" || explicitTier === "admin") {
           resolvedTier = "premium";
           resolvedFeatures = PREMIUM_FEATURES;
           setTier(resolvedTier);

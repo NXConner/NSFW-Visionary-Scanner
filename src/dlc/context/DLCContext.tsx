@@ -20,6 +20,11 @@ import type {
 import { logger } from "@/lib/logger";
 import { clearSuperAdminCache, isSuperAdminCached } from "@/lib/superAdmin";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import {
+  getLastKnownUserId,
+  getPersistedRolesForUser,
+  hasPrivilegedRole as hasPrivilegedRoleFn,
+} from "@/lib/auth/rolesCache";
 
 // ============================================
 // Development Mode Configuration
@@ -120,13 +125,9 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
   // This allows admin accounts to bypass age + DLC gates immediately on app start.
   const cachedPrivilegedRoleStatus = useMemo(() => {
     try {
-      const raw = localStorage.getItem("user_roles");
-      if (!raw) return false;
-      const parsed = JSON.parse(raw) as unknown;
-      if (!Array.isArray(parsed)) return false;
-      return parsed.some(
-        r => typeof r === "string" && (r === "admin" || r === "super_admin"),
-      );
+      const lastUserId = getLastKnownUserId();
+      const roles = getPersistedRolesForUser(lastUserId);
+      return hasPrivilegedRoleFn(roles);
     } catch {
       return false;
     }
@@ -134,7 +135,7 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
 
   const cachedPrivilegedStatus = cachedSuperAdminStatus || cachedPrivilegedRoleStatus;
   const { isAdmin, isSuperAdmin: isSuperAdminRole } = useUserRoles();
-  const hasPrivilegedRole = isAdmin || isSuperAdminRole;
+  const hasPrivilegedRoleNow = isAdmin || isSuperAdminRole;
 
   // State
   const [isInitialized, setIsInitialized] = useState(false);
@@ -379,12 +380,12 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
   }, []);
 
   useEffect(() => {
-    if (!hasPrivilegedRole) return;
+    if (!hasPrivilegedRoleNow) return;
     setAdminOverrideActive(true);
     setAdminNsfwMasterEnabled(true);
     setAdminEnabledPackageIds(new Set());
     setIsAgeVerified(true);
-  }, [hasPrivilegedRole]);
+  }, [hasPrivilegedRoleNow]);
 
   // Keep privileged override in sync with auth state (login/logout without refresh).
   useEffect(() => {

@@ -10,11 +10,11 @@ import { LockedFeature } from "./LockedFeature";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { isAnySuperAdminPersisted } from "@/lib/superAdmin";
+import { isAnyPrivilegedRolePersisted } from "@/lib/auth/rolesCache";
 
-// CRITICAL: Module-level cached super admin check - runs ONCE at import time
-// This ensures privileged status is known BEFORE any component renders
-// NO DEPENDENCY ON USER ID - directly checks if any super admin is persisted
-const INITIAL_SUPER_ADMIN_STATUS = isAnySuperAdminPersisted();
+// CRITICAL: Module-level cached privileged check - runs ONCE at import time
+// This ensures admin/super_admin bypass is known BEFORE any component renders.
+const INITIAL_PRIVILEGED_STATUS = isAnySuperAdminPersisted() || isAnyPrivilegedRolePersisted();
 
 interface FeatureGateProps {
   packageId?: string;
@@ -43,9 +43,9 @@ export function FeatureGate({
   // This ensures privileged status is known on the VERY FIRST render
 
   // SUPER ADMIN BYPASS: Immediately grant access for privileged users
-  // INITIAL_SUPER_ADMIN_STATUS is computed at module load time - before any render
+  // INITIAL_PRIVILEGED_STATUS is computed at module load time - before any render
   const isPrivileged =
-    INITIAL_SUPER_ADMIN_STATUS ||
+    INITIAL_PRIVILEGED_STATUS ||
     isSuperAdmin ||
     hasFullAccess ||
     allFeaturesUnlocked ||

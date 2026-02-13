@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { clearSuperAdminCache } from "@/lib/superAdmin";
+import {
+  clearPersistedRoles,
+  getLastKnownUserId,
+  getPersistedRolesForUser,
+  writePersistedRolesPayload,
+} from "@/lib/auth/rolesCache";
 
 type AppRole = "admin" | "super_admin" | "pro" | "user";
 
@@ -19,36 +25,35 @@ interface UseUserRolesReturn {
 // Cache for roles to prevent excessive DB calls on re-renders
 let cachedRoles: { userId: string; roles: AppRole[]; timestamp: number } | null = null;
 const CACHE_TTL = 30000; // 30 seconds
-const USER_ROLES_STORAGE_KEY = "user_roles";
-
-const persistRoles = (nextRoles: AppRole[]) => {
+const INITIAL_PERSISTED_ROLES = (() => {
   try {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(USER_ROLES_STORAGE_KEY, JSON.stringify(nextRoles));
+    const lastUserId = getLastKnownUserId();
+    const roles = getPersistedRolesForUser(lastUserId);
+    return roles.filter(
+      r => r === "admin" || r === "super_admin" || r === "pro" || r === "user",
+    ) as AppRole[];
   } catch {
-    // localStorage may be unavailable
+    return [] as AppRole[];
   }
-};
-
-const clearPersistedRoles = () => {
-  try {
-    if (typeof window === "undefined") return;
-    window.localStorage.removeItem(USER_ROLES_STORAGE_KEY);
-  } catch {
-    // localStorage may be unavailable
-  }
-};
+})();
 
 export const useUserRoles = (): UseUserRolesReturn => {
   const [user, setUser] = useState<any>(null);
-  const [roles, setRoles] = useState<AppRole[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [roles, setRoles] = useState<AppRole[]>(INITIAL_PERSISTED_ROLES);
+  // If we already have persisted roles, do SWR (don't block UI while we revalidate).
+  const [isLoading, setIsLoading] = useState(INITIAL_PERSISTED_ROLES.length === 0);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const rolesRef = useRef<AppRole[]>(INITIAL_PERSISTED_ROLES);
+
+  useEffect(() => {
+    rolesRef.current = roles;
+  }, [roles]);
 
   const fetchRoles = async () => {
     try {
-      setIsLoading(true);
+      // Only block UI if we have no cached/persisted roles to render from.
+      if (rolesRef.current.length === 0) setIsLoading(true);
       setError(null);
 
       // Race against a 2-second timeout to prevent UI blocking
@@ -86,7 +91,7 @@ export const useUserRoles = (): UseUserRolesReturn => {
         now - cachedRoles.timestamp < CACHE_TTL
       ) {
         setRoles(cachedRoles.roles);
-        persistRoles(cachedRoles.roles);
+        writePersistedRolesPayload(user.id, cachedRoles.roles);
         return;
       }
 
@@ -118,7 +123,7 @@ export const useUserRoles = (): UseUserRolesReturn => {
       cachedRoles = { userId: user.id, roles: dbRoles, timestamp: now };
 
       setRoles(dbRoles);
-      persistRoles(dbRoles);
+      writePersistedRolesPayload(user.id, dbRoles);
     } catch (err) {
       if (!mountedRef.current) return;
       setError(err instanceof Error ? err.message : "Failed to fetch roles");

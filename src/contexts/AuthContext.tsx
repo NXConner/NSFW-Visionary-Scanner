@@ -11,7 +11,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { analytics } from "@/lib/analytics";
 import { logger } from "@/lib/logger";
-import { checkSuperAdminRole, clearSuperAdminCache, isSuperAdminCached } from "@/lib/superAdmin";
+import { clearSuperAdminCache, isSuperAdminCached } from "@/lib/superAdmin";
 import {
   persistUserData,
   clearPersistedUserData,
@@ -20,6 +20,12 @@ import {
 } from "@/lib/auth/userPersistence";
 import { EmailService } from "@/lib/email";
 import { getEmailRedirectUrl, isEmailPreVerified } from "@/lib/email/emailConfig";
+import {
+  clearPersistedRoles,
+  getLastKnownUserId,
+  getPersistedRolesForUser,
+  writePersistedRolesPayload,
+} from "@/lib/auth/rolesCache";
 import {
   emitSupabaseInvalidApiKeyEvent,
   isInvalidSupabaseApiKeyError,
@@ -32,9 +38,10 @@ interface AuthContextType {
   rolesLoading: boolean; // Separate loading state for super admin role check
   // Email Verification
   isEmailVerified: boolean;
-  // Super Admin Properties (database-driven)
+  // Privileged Properties (database-driven)
   isSuperAdmin: boolean;
-  role: "super_admin" | "user";
+  isAdmin: boolean;
+  role: "super_admin" | "admin" | "user";
   subscription: string;
   subscriptionStatus: string;
   allFeaturesUnlocked: boolean;
@@ -58,39 +65,73 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// CRITICAL: Module-level cached super admin check - runs ONCE at import time
-// This ensures privileged status is known BEFORE any component renders
-function getInitialSuperAdminStatus(): boolean {
+function normalizeEmail(v: unknown): string {
+  return String(v ?? "")
+    .trim()
+    .toLowerCase();
+}
+
+// Core privileged emails (defaults; can be overridden per-environment)
+const CORE_SUPER_ADMIN_EMAIL = normalizeEmail(import.meta.env.VITE_ADMIN_SUPER_EMAIL || "n8ter8@gmail.com");
+const CORE_ADMIN_EMAIL = normalizeEmail(import.meta.env.VITE_ADMIN_EMAIL || "butterflii18@gmail.com");
+
+function getInitialPrivilegedStatus(): { isSuperAdmin: boolean; isAdmin: boolean } {
   try {
-    const storedUserId = localStorage.getItem("lovable_last_user_id");
-    if (storedUserId) {
-      return isSuperAdminCached(storedUserId);
-    }
+    const storedUserId = getLastKnownUserId();
+    const roles = getPersistedRolesForUser(storedUserId);
+    const isSuper =
+      (storedUserId ? isSuperAdminCached(storedUserId) : false) || roles.includes("super_admin");
+    const isAdmin = roles.includes("admin");
+    return { isSuperAdmin: isSuper, isAdmin };
   } catch {
-    // localStorage may not be available
+    return { isSuperAdmin: false, isAdmin: false };
   }
-  return false;
 }
 
 // This value is computed ONCE when the module loads - guaranteed before first render
-const INITIAL_SUPER_ADMIN_STATUS = getInitialSuperAdminStatus();
+const INITIAL_PRIVILEGED_STATUS = getInitialPrivilegedStatus();
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // SUPER ADMIN EARLY UNLOCK: Use module-level cached value as initial state
-  // This ensures isSuperAdmin is TRUE from the very first render for returning super admins
-  const [isSuperAdmin, setIsSuperAdmin] = useState(INITIAL_SUPER_ADMIN_STATUS);
-  const [rolesLoading, setRolesLoading] = useState(!INITIAL_SUPER_ADMIN_STATUS); // Skip loading if already known
+  // PRIVILEGED EARLY UNLOCK: Use module-level cached values as initial state.
+  // This ensures admin/super_admin bypass is active from the very first render for returning users.
+  const [isSuperAdmin, setIsSuperAdmin] = useState(INITIAL_PRIVILEGED_STATUS.isSuperAdmin);
+  const [isAdmin, setIsAdmin] = useState(INITIAL_PRIVILEGED_STATUS.isAdmin);
+  const initialHasFullAccess =
+    INITIAL_PRIVILEGED_STATUS.isSuperAdmin || INITIAL_PRIVILEGED_STATUS.isAdmin;
+  const [rolesLoading, setRolesLoading] = useState(!initialHasFullAccess); // Skip loading if already known
 
-  // Load super admin status from database with 2s timeout fallback
-  const loadSuperAdminStatus = useCallback(async (userId: string | null) => {
+  function persistSuperAdminStatus(userId: string, enabled: boolean): void {
+    try {
+      if (enabled) {
+        localStorage.setItem(
+          "lovable_super_admin_status",
+          JSON.stringify({ userId, isSuperAdmin: true }),
+        );
+      } else {
+        localStorage.removeItem("lovable_super_admin_status");
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // Load privileged status from database with 2s timeout fallback
+  const loadPrivilegedStatus = useCallback(async (params: { userId: string | null; email?: string | null }) => {
     setRolesLoading(true);
+    const userId = params.userId;
+    const emailNorm = normalizeEmail(params.email);
+    const coreSuper = Boolean(emailNorm && CORE_SUPER_ADMIN_EMAIL && emailNorm === CORE_SUPER_ADMIN_EMAIL);
+    const coreAdmin = Boolean(emailNorm && CORE_ADMIN_EMAIL && emailNorm === CORE_ADMIN_EMAIL);
+
     if (!userId) {
       setIsSuperAdmin(false);
+      setIsAdmin(false);
       clearSuperAdminCache();
+      clearPersistedRoles();
       try {
         localStorage.removeItem("lovable_last_user_id");
       } catch {
@@ -109,17 +150,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       // Race against timeout to prevent hanging forever
-      const isSuper = await Promise.race([
-        checkSuperAdminRole(userId),
-        new Promise<boolean>(resolve =>
-          setTimeout(() => resolve(isSuperAdminCached(userId)), 2000),
+      const rolesResult = await Promise.race([
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+        new Promise<{ data: null; error: { message: string } }>(resolve =>
+          setTimeout(() => resolve({ data: null, error: { message: "Role check timeout" } }), 2000),
         ),
       ]);
-      setIsSuperAdmin(isSuper);
+
+      const { data, error } = rolesResult as any;
+      if (error) throw new Error(String((error as any).message || "Role check failed"));
+
+      const dbRoles = (data || [])
+        .map((r: any) => String(r?.role ?? "").trim().toLowerCase())
+        .filter(Boolean) as string[];
+      const roleSet = new Set<string>(dbRoles);
+      if (coreAdmin) roleSet.add("admin");
+      if (coreSuper) roleSet.add("super_admin");
+      // super_admin implies admin privileges in the app UX layer
+      if (roleSet.has("super_admin")) roleSet.add("admin");
+
+      const nextIsSuper = roleSet.has("super_admin");
+      const nextIsAdmin = roleSet.has("admin");
+
+      setIsSuperAdmin(nextIsSuper);
+      setIsAdmin(nextIsAdmin);
+
+      // Persist role info so cold starts can unlock immediately (safe per-user binding).
+      writePersistedRolesPayload(userId, Array.from(roleSet.values()));
+      persistSuperAdminStatus(userId, nextIsSuper);
     } catch (err) {
       console.error("[auth] Failed to check super admin status:", err);
-      // On error, use cached value if available
-      setIsSuperAdmin(isSuperAdminCached(userId));
+      // On error, fall back to cached/persisted role state.
+      const persistedRoles = getPersistedRolesForUser(userId);
+      const fallbackIsSuper =
+        isSuperAdminCached(userId) || persistedRoles.includes("super_admin") || coreSuper;
+      const fallbackIsAdmin = persistedRoles.includes("admin") || coreAdmin || fallbackIsSuper;
+      setIsSuperAdmin(fallbackIsSuper);
+      setIsAdmin(fallbackIsAdmin);
     } finally {
       setRolesLoading(false);
     }
@@ -146,8 +213,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
 
-      // Load super admin status from database
-      loadSuperAdminStatus(session?.user?.id ?? null);
+      // Load privileged status from database
+      loadPrivilegedStatus({ userId: session?.user?.id ?? null, email: session?.user?.email ?? null });
 
       try {
         if (event === "SIGNED_IN" && session?.user?.id) {
@@ -161,6 +228,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           analytics.trackUserAction("auth_signed_out", "auth");
           clearSuperAdminCache();
           clearPersistedUserData();
+          clearPersistedRoles();
         }
         if (event === "TOKEN_REFRESHED" && session?.user) {
           // Update persisted data with fresh session
@@ -189,8 +257,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(result.data.session.user);
           // Persist session data for future restores
           persistUserData(result.data.session.user, wasRememberMeSelected());
-          // Load super admin status from database
-          await loadSuperAdminStatus(result.data.session.user.id);
+          // Load privileged status from database
+          await loadPrivilegedStatus({ userId: result.data.session.user.id, email: result.data.session.user.email ?? null });
         } else {
           // No session from Supabase - check if we have persisted user data
           // This can help show UI quickly while session refreshes
@@ -202,7 +270,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               if (refreshData.session && mounted) {
                 setSession(refreshData.session);
                 setUser(refreshData.session.user);
-                await loadSuperAdminStatus(refreshData.session.user.id);
+                await loadPrivilegedStatus({ userId: refreshData.session.user.id, email: refreshData.session.user.email ?? null });
                 return;
               }
             } catch {
@@ -211,7 +279,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
           setSession(null);
           setUser(null);
-          await loadSuperAdminStatus(null);
+          await loadPrivilegedStatus({ userId: null });
         }
       } catch {
         // Ignore errors - fallback will handle
@@ -231,7 +299,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       clearTimeout(fallback);
       subscription.unsubscribe();
     };
-  }, [loadSuperAdminStatus]);
+  }, [loadPrivilegedStatus]);
 
   const signIn = useCallback(
     async (email: string, password: string, rememberMe: boolean = false) => {
@@ -370,6 +438,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // ignore
     }
     clearSuperAdminCache();
+    clearPersistedRoles();
     const { error } = await supabase.auth.signOut();
     if (error) {
       logger.warn("Sign out failed", { component: "auth", error: error.message });
@@ -418,18 +487,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return user?.email_confirmed_at !== null && user?.email_confirmed_at !== undefined;
   }, [user?.email_confirmed_at, user?.email]);
 
-  // Compute super admin properties based on database-driven role check
-  const superAdminProps = useMemo(
+  // Compute privileged properties based on database-driven role check
+  const privilegedProps = useMemo(
     () => ({
       isSuperAdmin,
-      role: isSuperAdmin ? "super_admin" : "user",
-      subscription: isSuperAdmin ? "tier3_premium_lifetime" : "free",
-      subscriptionStatus: isSuperAdmin ? "active" : "inactive",
-      allFeaturesUnlocked: isSuperAdmin,
-      badge: isSuperAdmin ? "Super Admin" : null,
-      hasFullAccess: isSuperAdmin,
+      isAdmin,
+      role: isSuperAdmin ? "super_admin" : isAdmin ? "admin" : "user",
+      subscription: isSuperAdmin || isAdmin ? "tier3_premium_lifetime" : "free",
+      subscriptionStatus: isSuperAdmin || isAdmin ? "active" : "inactive",
+      allFeaturesUnlocked: isSuperAdmin || isAdmin,
+      badge: isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : null,
+      hasFullAccess: isSuperAdmin || isAdmin,
     }),
-    [isSuperAdmin],
+    [isAdmin, isSuperAdmin],
   );
 
   const contextValue = useMemo(
@@ -440,14 +510,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       rolesLoading,
       // Email Verification
       isEmailVerified,
-      // Super Admin Properties (database-driven)
-      isSuperAdmin: superAdminProps.isSuperAdmin,
-      role: superAdminProps.role as "super_admin" | "user",
-      subscription: superAdminProps.subscription,
-      subscriptionStatus: superAdminProps.subscriptionStatus,
-      allFeaturesUnlocked: superAdminProps.allFeaturesUnlocked,
-      badge: superAdminProps.badge,
-      hasFullAccess: superAdminProps.hasFullAccess,
+      // Privileged Properties (database-driven)
+      isSuperAdmin: privilegedProps.isSuperAdmin,
+      isAdmin: privilegedProps.isAdmin,
+      role: privilegedProps.role as "super_admin" | "admin" | "user",
+      subscription: privilegedProps.subscription,
+      subscriptionStatus: privilegedProps.subscriptionStatus,
+      allFeaturesUnlocked: privilegedProps.allFeaturesUnlocked,
+      badge: privilegedProps.badge,
+      hasFullAccess: privilegedProps.hasFullAccess,
       // Auth Methods
       signIn,
       signUp,
@@ -465,7 +536,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       loading,
       rolesLoading,
       isEmailVerified,
-      superAdminProps,
+      privilegedProps,
       signIn,
       signUp,
       signInWithGoogle,
