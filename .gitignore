@@ -71,6 +71,6 @@ ios/App/App/GoogleService-Info.plist
 external-repos/
 
 # Core dumps (never commit)
-core
-core.*
+/core
+/core.*
 *.core
