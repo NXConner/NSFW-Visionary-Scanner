@@ -8,8 +8,9 @@ export type ScannerTelemetryState = {
   /** Forward-back tilt (deg), rounded. */
   tiltY: number;
   /**
-   * Real distance estimation is not wired yet. This stays 0 until a real estimator exists.
-   * Kept here to avoid fake data in dev/prod.
+   * Estimated camera-to-subject distance in inches (best-effort).
+   * - Uses real device/browser data when available (e.g. `focusDistance`).
+   * - 0 means "unknown" (no reliable estimator available).
    */
   estimatedDistance: number;
 

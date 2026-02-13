@@ -40,8 +40,9 @@ export function ScannerTelemetryProvider({
   const [isStabilized, setIsStabilized] = React.useState(false);
   const [tiltX, setTiltX] = React.useState(0);
   const [tiltY, setTiltY] = React.useState(0);
-  // Real distance estimation is not available yet (avoid simulated values).
-  // This stays 0 unless a real estimator is wired in.
+  // Real distance estimation (best-effort):
+  // - When the browser exposes `MediaTrackSettings.focusDistance`, we convert it to inches.
+  // - Otherwise we keep 0 to indicate "unknown" (and avoid fake/simulated values).
   const [estimatedDistance, setEstimatedDistance] = React.useState(0);
 
   const [autoCapturing, setAutoCapturing] = React.useState(false);
@@ -50,6 +51,32 @@ export function ScannerTelemetryProvider({
   const stabilityRef = React.useRef<{ x: number; y: number; z: number } | null>(null);
   const lastMotionAtRef = React.useRef(0);
   const lastOrientAtRef = React.useRef(0);
+
+  const readEstimatedDistanceInches = React.useCallback((): number => {
+    try {
+      const videoEl = videoRef.current;
+      const stream = (videoEl?.srcObject as MediaStream | null) ?? null;
+      const track = stream?.getVideoTracks?.()?.[0] ?? null;
+      if (!track || typeof track.getSettings !== "function") return 0;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const settings = track.getSettings() as any;
+      const focusDistance = settings?.focusDistance;
+      // Per spec this is "double" in meters. Many browsers don't implement it.
+      if (
+        typeof focusDistance !== "number" ||
+        !Number.isFinite(focusDistance) ||
+        focusDistance <= 0
+      ) {
+        return 0;
+      }
+      const inches = focusDistance * 39.3701;
+      // Clamp to a reasonable human-held range for display/logic.
+      const clamped = Math.max(0, Math.min(96, inches));
+      return Math.round(clamped * 10) / 10;
+    } catch {
+      return 0;
+    }
+  }, [videoRef]);
 
   const videoEl = videoRef.current ?? null;
   const qualityMetricsEnabled =
@@ -135,12 +162,26 @@ export function ScannerTelemetryProvider({
     return () => window.removeEventListener("deviceorientation", handleOrientation);
   }, [enabled, scanMode, scannerSettings.showTiltIndicator]);
 
-  // Distance estimation intentionally disabled until a real estimator is wired in.
   React.useEffect(() => {
     if (!enabled) return;
+    if (scanMode !== "camera") return;
     if (!scannerSettings.showDistanceIndicator) return;
-    setEstimatedDistance(d => (d > 0 ? d : 0));
-  }, [enabled, scannerSettings.showDistanceIndicator]);
+    let cancelled = false;
+
+    const tick = () => {
+      if (cancelled) return;
+      const next = readEstimatedDistanceInches();
+      setEstimatedDistance(prev => (prev === next ? prev : next));
+    };
+
+    // Initial read (fast UI feedback), then poll at a low rate.
+    tick();
+    const interval = window.setInterval(tick, 900);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [enabled, scanMode, scannerSettings.showDistanceIndicator, readEstimatedDistanceInches]);
 
   // Auto-capture arming logic
   React.useEffect(() => {
@@ -155,6 +196,8 @@ export function ScannerTelemetryProvider({
     const tiltOk = Math.abs(tiltX) < 10 && Math.abs(tiltY) < 10;
     const distanceOk =
       !scannerSettings.showDistanceIndicator ||
+      // If we can't estimate distance on this device/browser, don't block auto-capture.
+      estimatedDistance <= 0 ||
       (estimatedDistance >= 12 && estimatedDistance <= 18);
 
     // Require focus + quality thresholds for real scanner-grade auto-capture.

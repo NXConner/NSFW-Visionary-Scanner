@@ -475,9 +475,11 @@ export function ScannerCameraSurface({
             distance={
               !scannerSettings.showDistanceIndicator
                 ? 100
-                : estimatedDistance > 0 && estimatedDistance >= 12 && estimatedDistance <= 18
-                  ? 100
-                  : 55
+                : estimatedDistance <= 0
+                  ? 80
+                  : estimatedDistance >= 12 && estimatedDistance <= 18
+                    ? 100
+                    : 55
             }
             tilt={Math.max(0, Math.min(100, 100 - Math.max(Math.abs(tiltX), Math.abs(tiltY)) * 4))}
           />
