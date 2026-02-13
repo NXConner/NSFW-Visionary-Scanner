@@ -9,13 +9,13 @@ type Props = {
   userValueCm: number;
   communityValueCm: number | null;
   averageManValueCm: number;
-  isPlaceholderCommunity?: boolean;
 };
 
 type BarData = {
   label: string;
   shortLabel: string;
   valueCm: number;
+  isAvailable: boolean;
   icon: React.ReactNode;
   colorClass: string;
   bgClass: string;
@@ -28,25 +28,25 @@ export function TripleComparisonViz({
   userValueCm,
   communityValueCm,
   averageManValueCm,
-  isPlaceholderCommunity = false,
 }: Props) {
-  // Use community or fall back to average man for display
-  const effectiveCommunity = communityValueCm ?? averageManValueCm;
+  const communityAvailable = communityValueCm != null && Number.isFinite(communityValueCm);
 
   const bars: BarData[] = [
     {
       label: "You",
       shortLabel: "You",
       valueCm: userValueCm,
+      isAvailable: true,
       icon: <User className="w-3.5 h-3.5" />,
       colorClass: "text-primary",
       bgClass: "bg-primary",
       borderClass: "border-primary/30",
     },
     {
-      label: isPlaceholderCommunity ? "Community*" : "Community",
+      label: communityAvailable ? "Community" : "Community (N/A)",
       shortLabel: "Comm",
-      valueCm: effectiveCommunity,
+      valueCm: communityAvailable ? (communityValueCm as number) : 0,
+      isAvailable: communityAvailable,
       icon: <Users className="w-3.5 h-3.5" />,
       colorClass: "text-accent-foreground",
       bgClass: "bg-accent",
@@ -56,6 +56,7 @@ export function TripleComparisonViz({
       label: "Avg Man",
       shortLabel: "Avg",
       valueCm: averageManValueCm,
+      isAvailable: true,
       icon: <Globe className="w-3.5 h-3.5" />,
       colorClass: "text-secondary-foreground",
       bgClass: "bg-secondary",
@@ -64,10 +65,10 @@ export function TripleComparisonViz({
   ];
 
   // Calculate max for scaling bars
-  const maxValue = Math.max(0.001, ...bars.map(b => b.valueCm));
+  const maxValue = Math.max(0.001, ...bars.filter(b => b.isAvailable).map(b => b.valueCm));
 
   // Find the highest value bar for highlighting
-  const maxBarValue = Math.max(...bars.map(b => b.valueCm));
+  const maxBarValue = Math.max(...bars.filter(b => b.isAvailable).map(b => b.valueCm));
 
   return (
     <div className="rounded-xl border border-border/50 bg-background/40 p-4 space-y-4">
@@ -76,8 +77,8 @@ export function TripleComparisonViz({
       {/* Horizontal bar comparison */}
       <div className="space-y-3">
         {bars.map((bar, idx) => {
-          const widthPct = Math.max(5, (bar.valueCm / maxValue) * 100);
-          const isHighest = bar.valueCm === maxBarValue;
+          const widthPct = bar.isAvailable ? Math.max(5, (bar.valueCm / maxValue) * 100) : 5;
+          const isHighest = bar.isAvailable && bar.valueCm === maxBarValue;
 
           return (
             <div key={bar.label} className="space-y-1">
@@ -87,7 +88,7 @@ export function TripleComparisonViz({
                   <span className="font-medium">{bar.label}</span>
                 </div>
                 <span className="font-mono text-muted-foreground">
-                  {formatLength(bar.valueCm, unitSystem)}
+                  {bar.isAvailable ? formatLength(bar.valueCm, unitSystem) : "—"}
                 </span>
               </div>
               <div className="relative h-6 rounded-full bg-muted/30 overflow-hidden">
@@ -95,9 +96,11 @@ export function TripleComparisonViz({
                   initial={{ width: 0 }}
                   animate={{ width: `${widthPct}%` }}
                   transition={{ duration: 0.6, delay: idx * 0.1, ease: "easeOut" }}
-                  className={`absolute inset-y-0 left-0 rounded-full ${bar.bgClass} ${bar.borderClass} border shadow-sm flex items-center justify-end pr-2`}
+                  className={`absolute inset-y-0 left-0 rounded-full ${bar.bgClass} ${bar.borderClass} border shadow-sm flex items-center justify-end pr-2 ${
+                    bar.isAvailable ? "" : "opacity-40"
+                  }`}
                 >
-                  {widthPct > 25 && (
+                  {bar.isAvailable && widthPct > 25 && (
                     <span className="text-[10px] font-mono text-primary-foreground/90">
                       {formatLength(bar.valueCm, unitSystem === "dual" ? "metric" : unitSystem)}
                     </span>
@@ -123,7 +126,7 @@ export function TripleComparisonViz({
       <div className="pt-2 border-t border-border/30">
         <div className="flex items-end justify-center gap-4 h-28">
           {bars.map((bar, idx) => {
-            const heightPct = Math.max(10, (bar.valueCm / maxValue) * 100);
+            const heightPct = bar.isAvailable ? Math.max(10, (bar.valueCm / maxValue) * 100) : 10;
 
             return (
               <div key={bar.label} className="flex flex-col items-center gap-1.5">
@@ -131,7 +134,9 @@ export function TripleComparisonViz({
                   initial={{ height: 0 }}
                   animate={{ height: `${heightPct}%` }}
                   transition={{ duration: 0.7, delay: idx * 0.15, ease: "easeOut" }}
-                  className={`w-10 sm:w-12 rounded-t-lg ${bar.bgClass} ${bar.borderClass} border border-b-0 shadow-sm relative overflow-hidden`}
+                  className={`w-10 sm:w-12 rounded-t-lg ${bar.bgClass} ${bar.borderClass} border border-b-0 shadow-sm relative overflow-hidden ${
+                    bar.isAvailable ? "" : "opacity-40"
+                  }`}
                   style={{ minHeight: "12px" }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
@@ -147,12 +152,6 @@ export function TripleComparisonViz({
           })}
         </div>
       </div>
-
-      {isPlaceholderCommunity && (
-        <p className="text-[10px] text-muted-foreground text-center italic">
-          *Community data uses research averages until sufficient real user data is collected.
-        </p>
-      )}
     </div>
   );
 }

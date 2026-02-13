@@ -35,7 +35,7 @@ export function useMeasurementComparison(options: UseMeasurementComparisonOption
   const latest: MeasurementPoint | null = useMemo(() => points[0] ?? null, [points]);
   const personal: MeasurementSummary = useMemo(() => summarize(points), [points]);
 
-  // Initialize with placeholder data so UI always has something to show
+  // Initialize with an empty snapshot (no synthetic community averages).
   const [community, setCommunity] = useState<CommunityAverages>(getPlaceholderCommunityAverages());
   const [isCommunityLoading, setIsCommunityLoading] = useState(false);
 
@@ -44,7 +44,7 @@ export function useMeasurementComparison(options: UseMeasurementComparisonOption
 
     const run = async () => {
       if (!user) {
-        // Even without user, show placeholder data
+        // Without auth, keep community averages empty (requires sign-in).
         setCommunity(getPlaceholderCommunityAverages());
         return;
       }

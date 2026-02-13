@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 import type { CommunityAverages } from "./types";
-import { AVERAGE_MAN_BASELINE } from "./baselines";
 
 type RpcRow = {
   sample_size: number | string | null;
@@ -22,20 +21,21 @@ function asNumber(v: unknown): number | null {
 }
 
 /**
- * Get placeholder community data based on research-backed average man baseline.
- * Used when real community data is insufficient (below minSample threshold).
+ * Back-compat helper (historically returned research baselines).
+ *
+ * We no longer return any synthetic averages. When community data is unavailable,
+ * we return an "empty" snapshot with NULL averages and sampleSize=0.
  */
 export function getPlaceholderCommunityAverages(): CommunityAverages {
   return {
     sampleSize: 0,
     isSufficient: false,
-    isPlaceholder: true,
-    avgLengthCm: AVERAGE_MAN_BASELINE.erectLengthCm,
-    avgGirthCm: AVERAGE_MAN_BASELINE.erectGirthCm,
+    isPlaceholder: false,
+    avgLengthCm: null,
+    avgGirthCm: null,
     windowDays: 0,
     computedAtIso: new Date().toISOString(),
-    placeholderNote:
-      "Based on published research averages (Veale et al. 2015). Real community data will appear once enough users contribute.",
+    placeholderNote: "Community averages are not available yet.",
   };
 }
 
@@ -57,7 +57,7 @@ export async function fetchCommunityAverages(
     });
 
     if (error) {
-      logger.warn("Community averages RPC failed, using placeholder", {
+      logger.warn("Community averages RPC failed, returning empty snapshot", {
         error: error.message,
         days,
         minSample,
@@ -77,13 +77,16 @@ export async function fetchCommunityAverages(
     const windowDays = asNumber(row.window_days) ?? days;
     const isSufficient = Boolean(row.is_sufficient) && sampleSize >= Math.max(1, minSample);
 
-    // If not sufficient, return placeholder with actual sample count
+    // If not sufficient, return real sample count but NULL averages (no synthetic values).
     if (!isSufficient) {
-      const placeholder = getPlaceholderCommunityAverages();
       return {
-        ...placeholder,
         sampleSize,
         windowDays,
+        isSufficient: false,
+        isPlaceholder: false,
+        avgLengthCm: null,
+        avgGirthCm: null,
+        computedAtIso: row.computed_at ?? new Date().toISOString(),
       };
     }
 
@@ -97,7 +100,7 @@ export async function fetchCommunityAverages(
       computedAtIso: row.computed_at ?? new Date().toISOString(),
     };
   } catch (err) {
-    logger.warn("Community averages fetch crashed, using placeholder", {
+    logger.warn("Community averages fetch crashed, returning empty snapshot", {
       error: err,
       days,
       minSample,
