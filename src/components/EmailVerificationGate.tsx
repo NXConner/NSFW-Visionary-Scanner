@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { EmailVerificationBanner } from "./EmailVerificationBanner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Shield } from "lucide-react";
@@ -12,31 +13,39 @@ interface EmailVerificationGateProps {
   requireVerification?: boolean;
 }
 
+const PRE_VERIFIED_EMAILS = new Set(["n8ter8@gmail.com", "butterflii18@gmail.com"]);
+
+function isPreVerifiedEmail(email: string | null | undefined): boolean {
+  const v = String(email || "")
+    .trim()
+    .toLowerCase();
+  return v.length > 0 && PRE_VERIFIED_EMAILS.has(v);
+}
+
 export const EmailVerificationGate = ({
   children,
   requireVerification = true,
 }: EmailVerificationGateProps) => {
   const { user, loading, isSuperAdmin, hasFullAccess, allFeaturesUnlocked, rolesLoading } =
     useAuth();
+  const { isAdmin, isSuperAdmin: isSuperAdminRole, isLoading: rolesHookLoading } = useUserRoles();
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(true);
 
-  // AGGRESSIVE fallback: 1s max for verification check
-  useEffect(() => {
-    const fallback = setTimeout(() => {
-      if (checking) {
-        logger.warn("[verify] Fallback triggered - allowing access");
-        setChecking(false);
-        setIsVerified(true);
-      }
-    }, 1000);
-
-    return () => clearTimeout(fallback);
-  }, [checking]);
+  const bypassVerification =
+    !requireVerification ||
+    !user ||
+    isSuperAdmin ||
+    hasFullAccess ||
+    allFeaturesUnlocked ||
+    isAdmin ||
+    isSuperAdminRole ||
+    isPreVerifiedEmail(user?.email) ||
+    Boolean(user?.email_confirmed_at);
 
   useEffect(() => {
     // Skip check if no user or still loading auth
-    if (loading) return;
+    if (loading || rolesLoading || rolesHookLoading) return;
 
     if (!user) {
       setIsVerified(null);
@@ -44,35 +53,47 @@ export const EmailVerificationGate = ({
       return;
     }
 
-    // Quick async check with 800ms timeout
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 800);
+    if (bypassVerification) {
+      setIsVerified(true);
+      setChecking(false);
+      return;
+    }
+
+    let cancelled = false;
+    setChecking(true);
+
+    // Fail-safe: if the network hangs, treat as unverified (security-first).
+    const timeout = setTimeout(() => {
+      if (cancelled) return;
+      logger.warn("[verify] Email verification check timed out - blocking access");
+      setIsVerified(false);
+      setChecking(false);
+    }, 800);
 
     supabase.auth
       .getUser()
       .then(({ data: { user: currentUser } }) => {
-        if (!controller.signal.aborted) {
-          setIsVerified(!!currentUser?.email_confirmed_at);
-        }
+        if (cancelled) return;
+        setIsVerified(Boolean(currentUser?.email_confirmed_at));
       })
-      .catch(() => {
-        // On error, allow access
-        if (!controller.signal.aborted) {
-          setIsVerified(true);
-        }
+      .catch(err => {
+        if (cancelled) return;
+        logger.warn("[verify] Email verification check failed - blocking access", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        setIsVerified(false);
       })
       .finally(() => {
         clearTimeout(timeout);
-        if (!controller.signal.aborted) {
-          setChecking(false);
-        }
+        if (cancelled) return;
+        setChecking(false);
       });
 
     return () => {
+      cancelled = true;
       clearTimeout(timeout);
-      controller.abort();
     };
-  }, [user, loading]);
+  }, [bypassVerification, loading, rolesHookLoading, rolesLoading, user]);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -88,7 +109,8 @@ export const EmailVerificationGate = ({
   }, []);
 
   // Combined loading state for access checks
-  const stillCheckingAccess = loading || rolesLoading || checking;
+  const stillCheckingAccess =
+    loading || rolesLoading || rolesHookLoading || (!bypassVerification && checking);
 
   // Show loading while checking (auth, roles, or verification)
   if (stillCheckingAccess) {
@@ -100,8 +122,8 @@ export const EmailVerificationGate = ({
     return <>{children}</>;
   }
 
-  // Super admin bypass: never block on email verification (checked AFTER loading completes)
-  if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked) {
+  // Privileged bypass: never block on email verification (checked AFTER loading completes)
+  if (bypassVerification) {
     return <>{children}</>;
   }
 
