@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -6,7 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useData } from "@/contexts/DataContext";
-import { encryptData, decryptData } from "@/lib/encryption";
+import { decryptDataWithPassphrase, encryptDataWithPassphrase } from "@/lib/encryption";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Cloud,
   CloudOff,
@@ -28,8 +30,20 @@ interface CloudBackupSettings {
 }
 
 const STORAGE_KEY = "morphoscan_cloud_settings";
+const BACKUP_BUCKET = "user-uploads";
+const BACKUP_FOLDER = "cloud-backups";
+
+function safeIsoForPath(iso: string): string {
+  return String(iso || "").replace(/[:.]/g, "-");
+}
+
+function buildBackupPath(userId: string, iso: string): string {
+  const fileName = `app-backup-${safeIsoForPath(iso)}.json`;
+  return `${userId}/${BACKUP_FOLDER}/${fileName}`;
+}
 
 export const CloudBackup = () => {
+  const { user } = useAuth();
   const { scans, diaryEntries, exportData, importData } = useData();
   const [settings, setSettings] = useState<CloudBackupSettings>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -45,21 +59,74 @@ export const CloudBackup = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [customKey, setCustomKey] = useState("");
+  const [remoteLastBackupAt, setRemoteLastBackupAt] = useState<string | null>(null);
+  const [remoteBackupCount, setRemoteBackupCount] = useState<number | null>(null);
 
   const saveSettings = (newSettings: CloudBackupSettings) => {
     setSettings(newSettings);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
   };
 
+  const refreshRemoteBackupMeta = useCallback(async () => {
+    if (!user?.id) {
+      setRemoteLastBackupAt(null);
+      setRemoteBackupCount(null);
+      return;
+    }
+
+    const prefix = `${user.id}/${BACKUP_FOLDER}`;
+    const { data, error } = await supabase.storage.from(BACKUP_BUCKET).list(prefix, {
+      limit: 50,
+      offset: 0,
+      sortBy: { column: "name", order: "desc" },
+    });
+
+    if (error) {
+      // Silent: storage policies may not be configured yet in a given environment.
+      setRemoteLastBackupAt(null);
+      setRemoteBackupCount(null);
+      return;
+    }
+
+    const files = Array.isArray(data) ? data : [];
+    setRemoteBackupCount(files.length);
+    const newest = files
+      .filter(f => (f as any)?.name)
+      .map(f => ({
+        name: String((f as any).name),
+        created_at: String((f as any).created_at || ""),
+      }))
+      .sort((a, b) => {
+        // Prefer server-side created_at if present, else fall back to filename ordering.
+        if (a.created_at && b.created_at) return b.created_at.localeCompare(a.created_at);
+        return b.name.localeCompare(a.name);
+      })[0];
+    setRemoteLastBackupAt(newest?.created_at || null);
+  }, [user?.id]);
+
+  useEffect(() => {
+    void refreshRemoteBackupMeta();
+  }, [refreshRemoteBackupMeta]);
+
+  const effectiveLastBackup = useMemo(() => {
+    return remoteLastBackupAt || settings.lastBackup;
+  }, [remoteLastBackupAt, settings.lastBackup]);
+
   const handleEnableCloud = () => {
-    if (!settings.enabled && !customKey) {
+    if (!user) {
+      toast.error("Sign in required to use cloud backup");
+      return;
+    }
+
+    const nextKey = (customKey || settings.encryptionKey).trim();
+    if (!settings.enabled && !nextKey) {
       toast.error("Please enter an encryption key first");
       return;
     }
     saveSettings({
       ...settings,
       enabled: !settings.enabled,
-      encryptionKey: customKey || settings.encryptionKey,
+      encryptionKey: nextKey,
     });
     toast.success(settings.enabled ? "Cloud backup disabled" : "Cloud backup enabled");
   };
@@ -69,31 +136,49 @@ export const CloudBackup = () => {
       toast.error("Enable cloud backup first");
       return;
     }
+    if (!user) {
+      toast.error("Sign in required to back up");
+      return;
+    }
+    if (!settings.encryptionKey.trim()) {
+      toast.error("Missing encryption key");
+      return;
+    }
 
     setIsUploading(true);
     try {
       const data = exportData();
-      const encrypted = await encryptData(JSON.stringify(data));
+      const encryptedPayload = await encryptDataWithPassphrase(
+        JSON.stringify(data),
+        settings.encryptionKey.trim(),
+      );
 
-      // Store in localStorage as "cloud" simulation
-      // In production, this would upload to actual cloud storage
-      const cloudData = {
-        data: encrypted,
-        timestamp: new Date().toISOString(),
-        checksum: btoa(JSON.stringify(data).slice(0, 50)),
-      };
-      localStorage.setItem("morphoscan_cloud_backup", JSON.stringify(cloudData));
+      const nowIso = new Date().toISOString();
+      const path = buildBackupPath(user.id, nowIso);
+      const blob = new Blob([encryptedPayload], { type: "application/json" });
+
+      const { error } = await supabase.storage.from(BACKUP_BUCKET).upload(path, blob, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: "application/json",
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
 
       saveSettings({
         ...settings,
-        lastBackup: new Date().toISOString(),
+        lastBackup: nowIso,
       });
 
+      void refreshRemoteBackupMeta();
       toast.success("Backup uploaded successfully", {
         description: `${scans.length} scans and ${diaryEntries.length} diary entries backed up`,
       });
     } catch (error) {
-      toast.error("Backup failed", { description: "Could not encrypt data" });
+      const msg = error instanceof Error ? error.message : "Backup failed";
+      toast.error("Backup failed", { description: msg });
     }
     setIsUploading(false);
   };
@@ -101,23 +186,65 @@ export const CloudBackup = () => {
   const handleRestoreFromCloud = async () => {
     setIsDownloading(true);
     try {
-      const cloudBackup = localStorage.getItem("morphoscan_cloud_backup");
-      if (!cloudBackup) {
+      if (!user) {
+        toast.error("Sign in required to restore");
+        return;
+      }
+      const key = settings.encryptionKey.trim();
+      if (!key) {
+        toast.error("Enter your encryption key to restore");
+        return;
+      }
+
+      const prefix = `${user.id}/${BACKUP_FOLDER}`;
+      const { data: files, error: listError } = await supabase.storage
+        .from(BACKUP_BUCKET)
+        .list(prefix, {
+          limit: 50,
+          offset: 0,
+          sortBy: { column: "name", order: "desc" },
+        });
+      if (listError) throw new Error(listError.message);
+
+      const best = (Array.isArray(files) ? files : [])
+        .filter(f => (f as any)?.name)
+        .map(f => ({
+          name: String((f as any).name),
+          created_at: String((f as any).created_at || ""),
+        }))
+        .sort((a, b) => {
+          if (a.created_at && b.created_at) return b.created_at.localeCompare(a.created_at);
+          return b.name.localeCompare(a.name);
+        })[0];
+
+      if (!best?.name) {
         toast.error("No cloud backup found");
         setIsDownloading(false);
         return;
       }
 
-      const { data: encryptedData } = JSON.parse(cloudBackup);
-      const decrypted = await decryptData(encryptedData);
-      const parsedData = JSON.parse(decrypted);
+      const fullPath = `${prefix}/${best.name}`;
+      const { data: fileBlob, error: downloadError } = await supabase.storage
+        .from(BACKUP_BUCKET)
+        .download(fullPath);
+      if (downloadError) throw new Error(downloadError.message);
+      const encryptedPayload = await fileBlob.text();
 
-      await importData(parsedData);
+      const decrypted = await decryptDataWithPassphrase(encryptedPayload, key);
+      const parsedData = JSON.parse(decrypted) as { scans?: any[]; diaryEntries?: any[] };
+      const toImport = {
+        scans: Array.isArray(parsedData.scans) ? parsedData.scans : [],
+        diaryEntries: Array.isArray(parsedData.diaryEntries) ? parsedData.diaryEntries : [],
+      };
+
+      await importData(toImport);
       toast.success("Data restored successfully", {
-        description: `${parsedData.scans?.length || 0} scans and ${parsedData.diaryEntries?.length || 0} entries restored`,
+        description: `${toImport.scans.length} scans and ${toImport.diaryEntries.length} entries restored`,
       });
+      void refreshRemoteBackupMeta();
     } catch (error) {
-      toast.error("Restore failed", { description: "Could not decrypt data or invalid format" });
+      const msg = error instanceof Error ? error.message : "Restore failed";
+      toast.error("Restore failed", { description: msg });
     }
     setIsDownloading(false);
   };
@@ -212,11 +339,11 @@ export const CloudBackup = () => {
         )}
 
         {/* Last Backup Status */}
-        {settings.lastBackup && (
+        {effectiveLastBackup && (
           <div className="flex items-center gap-2 p-3 rounded-lg bg-success/10 border border-success/20">
             <CheckCircle2 className="w-4 h-4 text-success" />
             <span className="text-sm text-success">
-              Last backup: {new Date(settings.lastBackup).toLocaleString()}
+              Last backup: {new Date(effectiveLastBackup).toLocaleString()}
             </span>
           </div>
         )}
@@ -254,8 +381,14 @@ export const CloudBackup = () => {
         <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
           <AlertCircle className="w-4 h-4 text-warning mt-0.5" />
           <p className="text-xs text-muted-foreground">
-            Cloud backup stores encrypted data locally as a simulation. In production, this would
-            connect to secure cloud storage.
+            Backups are stored in Supabase Storage (bucket: <code>{BACKUP_BUCKET}</code>) under your
+            user folder. Keep your encryption key safe: without it, restores are not possible.
+            {typeof remoteBackupCount === "number" ? (
+              <>
+                {" "}
+                Detected <strong>{remoteBackupCount}</strong> backup file(s) in storage.
+              </>
+            ) : null}
           </p>
         </div>
       </CardContent>
