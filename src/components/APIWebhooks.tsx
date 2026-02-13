@@ -39,9 +39,10 @@ export const APIWebhooks = () => {
   const webhookPlaceholder = useMemo(() => {
     const envUrl = String(import.meta.env.VITE_PUBLIC_APP_URL ?? "").trim();
     const base =
-      envUrl ||
-      (typeof window !== "undefined" ? String(window.location.origin || "").trim() : "");
-    return base ? `${base.replace(/\/$/, "")}/webhooks/pavement-events` : "/webhooks/pavement-events";
+      envUrl || (typeof window !== "undefined" ? String(window.location.origin || "").trim() : "");
+    return base
+      ? `${base.replace(/\/$/, "")}/webhooks/pavement-events`
+      : "/webhooks/pavement-events";
   }, []);
 
   const loadData = useCallback(async () => {

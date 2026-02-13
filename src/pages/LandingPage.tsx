@@ -44,32 +44,31 @@ export default function LandingPage() {
       <section className="relative overflow-hidden min-h-[90vh]">
         {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-background" />
-        
+
         <div className="container mx-auto px-4 pt-12 lg:pt-16 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-
             {/* Privacy badge - ABOVE scanner */}
             <Badge variant="secondary" className="px-4 py-1.5 text-sm mb-6">
               <Shield className="h-3.5 w-3.5 mr-1.5" />
               100% Private & Secure
             </Badge>
-            
+
             {/* MorphoScan title - ABOVE scanner */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-8">
               <span className="bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
                 MorphoScan
               </span>
             </h1>
-            
+
             {/* Interactive Scanner - centered */}
             <div className="relative py-4">
               <TacticalScannerBackground />
             </div>
-            
+
             {/* Description text - BELOW scanner */}
             <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mt-6 mb-8">
-              Advanced health tracking and analysis with complete privacy. 
-              Your data never leaves your device.
+              Advanced health tracking and analysis with complete privacy. Your data never leaves
+              your device.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -84,7 +83,12 @@ export default function LandingPage() {
                     Get Started Free
                     <ArrowRight className="h-5 w-5" />
                   </Button>
-                  <Button size="lg" variant="outline" onClick={() => navigate("/auth")} className="text-lg px-8">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => navigate("/auth")}
+                    className="text-lg px-8"
+                  >
                     Sign In
                   </Button>
                 </>
@@ -114,9 +118,7 @@ export default function LandingPage() {
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Comprehensive Health Tracking
-            </h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Comprehensive Health Tracking</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               Everything you need to monitor, track, and improve your health journey
             </p>
@@ -167,12 +169,10 @@ export default function LandingPage() {
                   <Lock className="h-3.5 w-3.5 mr-1.5" />
                   Privacy First
                 </Badge>
-                <h2 className="text-3xl md:text-4xl font-bold">
-                  Your Data, Your Control
-                </h2>
+                <h2 className="text-3xl md:text-4xl font-bold">Your Data, Your Control</h2>
                 <p className="text-muted-foreground text-lg">
-                  We built MorphoScan with privacy as the foundation. Your sensitive health data 
-                  is processed locally on your device and never uploaded to any server.
+                  We built MorphoScan with privacy as the foundation. Your sensitive health data is
+                  processed locally on your device and never uploaded to any server.
                 </p>
                 <ul className="space-y-3">
                   <PrivacyFeature text="All processing happens on your device" />
@@ -191,7 +191,9 @@ export default function LandingPage() {
                         </div>
                         <div>
                           <p className="font-semibold">Local Processing</p>
-                          <p className="text-sm text-muted-foreground">Data never leaves your device</p>
+                          <p className="text-sm text-muted-foreground">
+                            Data never leaves your device
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -225,16 +227,13 @@ export default function LandingPage() {
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center space-y-8">
-            <h2 className="text-3xl md:text-4xl font-bold">
-              Available On Your Platform
-            </h2>
+            <h2 className="text-3xl md:text-4xl font-bold">Available On Your Platform</h2>
             <p className="text-muted-foreground text-lg">
-              {BUILD_IS_STORE 
+              {BUILD_IS_STORE
                 ? "Download from your preferred app store"
-                : "Use directly in your browser or download our apps"
-              }
+                : "Use directly in your browser or download our apps"}
             </p>
-            
+
             <div className="flex flex-wrap justify-center gap-4 pt-4">
               {BUILD_IS_STORE ? (
                 <>
@@ -271,12 +270,10 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <Card className="max-w-4xl mx-auto bg-gradient-to-br from-primary/10 via-background to-accent/10 border-primary/20">
             <CardContent className="p-8 md:p-12 text-center space-y-6">
-              <h2 className="text-3xl md:text-4xl font-bold">
-                Start Your Health Journey Today
-              </h2>
+              <h2 className="text-3xl md:text-4xl font-bold">Start Your Health Journey Today</h2>
               <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-                Join thousands of users who trust MorphoScan for their health tracking needs.
-                Free to start, premium features available.
+                Join thousands of users who trust MorphoScan for their health tracking needs. Free
+                to start, premium features available.
               </p>
               <div className="pt-4">
                 <Button size="lg" onClick={handleGetStarted} className="gap-2 text-lg px-8">
@@ -298,13 +295,22 @@ export default function LandingPage() {
               <span className="text-muted-foreground text-sm">© {new Date().getFullYear()}</span>
             </div>
             <div className="flex gap-6 text-sm text-muted-foreground">
-              <button onClick={() => navigate("/privacy")} className="hover:text-foreground transition-colors">
+              <button
+                onClick={() => navigate("/privacy")}
+                className="hover:text-foreground transition-colors"
+              >
                 Privacy Policy
               </button>
-              <button onClick={() => navigate("/terms")} className="hover:text-foreground transition-colors">
+              <button
+                onClick={() => navigate("/terms")}
+                className="hover:text-foreground transition-colors"
+              >
                 Terms of Service
               </button>
-              <button onClick={() => navigate("/contact")} className="hover:text-foreground transition-colors">
+              <button
+                onClick={() => navigate("/contact")}
+                className="hover:text-foreground transition-colors"
+              >
                 Contact
               </button>
             </div>
@@ -315,7 +321,15 @@ export default function LandingPage() {
   );
 }
 
-function FeatureCard({ icon: Icon, title, description }: { icon: any; title: string; description: string }) {
+function FeatureCard({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: any;
+  title: string;
+  description: string;
+}) {
   return (
     <Card className="glass-card border-border/50 hover:border-primary/30 transition-colors">
       <CardContent className="p-6 space-y-4">

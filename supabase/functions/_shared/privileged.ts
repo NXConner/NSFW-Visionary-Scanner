@@ -18,7 +18,9 @@ export type PrivilegedFlags = {
 };
 
 export function normalizeRole(role: unknown): string {
-  return String(role ?? "").trim().toLowerCase();
+  return String(role ?? "")
+    .trim()
+    .toLowerCase();
 }
 
 export function flagsFromRoles(roles: string[]): Omit<PrivilegedFlags, "roles"> {
@@ -42,4 +44,3 @@ export async function getPrivilegedFlags(supabase: any, userId: string): Promise
   const roles = await fetchUserRoles(supabase, userId);
   return { roles, ...flagsFromRoles(roles) };
 }
-

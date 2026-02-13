@@ -174,7 +174,7 @@ export const PrivacyDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-4">
-            {privacyGuarantees.map((item) => (
+            {privacyGuarantees.map(item => (
               <div
                 key={item.label}
                 className="flex items-start gap-3 p-3 rounded-lg bg-success/5 border border-success/20"

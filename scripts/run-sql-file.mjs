@@ -213,4 +213,3 @@ main().catch(err => {
   process.stderr.write(`[run-sql-file] Fatal: ${msg}\n`);
   process.exit(1);
 });
-

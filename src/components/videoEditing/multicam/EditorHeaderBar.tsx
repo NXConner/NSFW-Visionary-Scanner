@@ -29,7 +29,11 @@ export function EditorHeaderBar(props: {
     <div className="px-4 py-3 border-b flex flex-col gap-2">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <Input value={editName} onChange={e => setEditName(e.target.value)} className="max-w-[520px]" />
+          <Input
+            value={editName}
+            onChange={e => setEditName(e.target.value)}
+            className="max-w-[520px]"
+          />
           <Badge variant="secondary" className="hidden sm:inline-flex">
             {formatTimecode(playheadSeconds)}
           </Badge>
@@ -55,4 +59,3 @@ export function EditorHeaderBar(props: {
     </div>
   );
 }
-

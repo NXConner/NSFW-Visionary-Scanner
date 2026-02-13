@@ -36,9 +36,7 @@ export const getNsfwFallbackCategories = async (): Promise<string[]> => {
   );
 };
 
-export const findNsfwFallbackPositionById = async (
-  id: string,
-): Promise<Position | null> => {
+export const findNsfwFallbackPositionById = async (id: string): Promise<Position | null> => {
   if (!BUILD_ALLOW_ADULT_BUNDLE) return null;
   const safeId = String(id || "").trim();
   if (!safeId) return null;

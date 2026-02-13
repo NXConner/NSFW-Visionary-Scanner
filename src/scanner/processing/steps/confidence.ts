@@ -65,4 +65,3 @@ export function computeConfidence(input: ConfidenceInputs): { score: number; con
   const bounded = clamp(Math.round(score), 5, 100);
   return { score: bounded, context: ctx.join(" ") };
 }
-

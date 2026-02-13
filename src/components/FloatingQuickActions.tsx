@@ -1,14 +1,5 @@
 import { useState, memo } from "react";
-import {
-  Command,
-  NotebookPen,
-  Settings,
-  Scan,
-  Heart,
-  Brain,
-  TrendingUp,
-  X,
-} from "lucide-react";
+import { Command, NotebookPen, Settings, Scan, Heart, Brain, TrendingUp, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -55,7 +46,7 @@ export const FloatingQuickActions = memo(function FloatingQuickActions({
                   transition={{ delay: index * 0.03, duration: 0.15 }}
                   className={cn(
                     "flex flex-col items-center gap-1 rounded-xl border border-border/40 bg-secondary/30 p-2.5 text-center transition-all duration-200",
-                    "hover:border-primary/50 hover:bg-primary/10 hover:scale-105 active:scale-95"
+                    "hover:border-primary/50 hover:bg-primary/10 hover:scale-105 active:scale-95",
                   )}
                   onClick={() => {
                     onNavigate(action.id);
@@ -63,9 +54,7 @@ export const FloatingQuickActions = memo(function FloatingQuickActions({
                   }}
                 >
                   <action.icon className={cn("h-5 w-5", action.color)} />
-                  <span className="text-[10px] font-medium leading-tight">
-                    {action.label}
-                  </span>
+                  <span className="text-[10px] font-medium leading-tight">{action.label}</span>
                 </motion.button>
               ))}
             </div>
@@ -80,16 +69,13 @@ export const FloatingQuickActions = memo(function FloatingQuickActions({
           "h-14 w-14 rounded-full shadow-lg transition-all duration-300",
           open
             ? "bg-destructive/10 border-destructive/50 hover:bg-destructive/20"
-            : "shadow-primary/30 hover:shadow-primary/50 hover:scale-105"
+            : "shadow-primary/30 hover:shadow-primary/50 hover:scale-105",
         )}
         aria-label={open ? "Close quick actions" : "Open quick actions"}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
-        <motion.div
-          animate={{ rotate: open ? 45 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
+        <motion.div animate={{ rotate: open ? 45 : 0 }} transition={{ duration: 0.2 }}>
           {open ? <X className="h-5 w-5" /> : <Command className="h-5 w-5" />}
         </motion.div>
       </Button>

@@ -4,17 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { formatLength, round1, clamp } from "@/lib/measurementsComparison";
 import type { UnitSystem } from "@/lib/measurementsComparison";
 
-function RatioBar({
-  label,
-  ratio,
-}: {
-  label: string;
-  ratio: number | null;
-}) {
+function RatioBar({ label, ratio }: { label: string; ratio: number | null }) {
   // Ratio bar: 1.0 = baseline, 0..2.5 visual range (clamped)
   const min = 0;
   const max = 2.5;
-  const normalized = ratio == null ? 0 : (clamp(ratio, min, max) - min) / (max - min) * 100;
+  const normalized = ratio == null ? 0 : ((clamp(ratio, min, max) - min) / (max - min)) * 100;
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-2">
@@ -23,7 +17,10 @@ function RatioBar({
           {ratio == null ? "—" : `${round1(ratio)}×`}
         </div>
       </div>
-      <Progress value={ratio == null ? 0 : normalized} className={`h-2 ${ratio == null ? "opacity-50" : ""}`} />
+      <Progress
+        value={ratio == null ? 0 : normalized}
+        className={`h-2 ${ratio == null ? "opacity-50" : ""}`}
+      />
       <div className="flex items-center justify-between text-[10px] text-muted-foreground">
         <span>0×</span>
         <span>1×</span>
@@ -87,7 +84,9 @@ export function GrowthVisuals(props: {
       ? erectLengthCm / flaccidLengthCm
       : null;
   const girthRatio =
-    flaccidGirthCm != null && erectGirthCm != null && flaccidGirthCm > 0 ? erectGirthCm / flaccidGirthCm : null;
+    flaccidGirthCm != null && erectGirthCm != null && flaccidGirthCm > 0
+      ? erectGirthCm / flaccidGirthCm
+      : null;
 
   return (
     <section className="space-y-3">
@@ -124,10 +123,10 @@ export function GrowthVisuals(props: {
           <RatioBar label="Girth ratio (erect ÷ flaccid)" ratio={girthRatio} />
         </div>
         <div className="mt-2 text-[11px] text-muted-foreground">
-          Tip: ratios become more meaningful with <span className="font-medium">paired</span> entries logged close together.
+          Tip: ratios become more meaningful with <span className="font-medium">paired</span>{" "}
+          entries logged close together.
         </div>
       </Card>
     </section>
   );
 }
-

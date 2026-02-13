@@ -48,8 +48,7 @@ const profileTemplates: ExpertProfileSeed[] = [
     key: "clinical-advisor",
     expert_name: "Clinical Advisory Team",
     expert_title: "Men's Sexual Health Advisor",
-    bio:
-      "Provides evidence-informed guidance on sexual wellness, safe practices, and progress tracking.",
+    bio: "Provides evidence-informed guidance on sexual wellness, safe practices, and progress tracking.",
     specialties: ["PE safety", "Erection health", "Progress tracking"],
     credentials: ["Clinical advisory panel"],
     years_experience: 10,
@@ -72,8 +71,7 @@ const profileTemplates: ExpertProfileSeed[] = [
     key: "pelvic-floor-specialist",
     expert_name: "Pelvic Floor Specialist",
     expert_title: "Pelvic Health Educator",
-    bio:
-      "Focuses on pelvic floor coordination, safe training habits, and comfort-focused routines.",
+    bio: "Focuses on pelvic floor coordination, safe training habits, and comfort-focused routines.",
     specialties: ["Pelvic floor", "Breathing coordination", "Recovery"],
     credentials: ["Pelvic health training"],
     years_experience: 8,
@@ -96,8 +94,7 @@ const profileTemplates: ExpertProfileSeed[] = [
     key: "wellness-educator",
     expert_name: "Sexual Wellness Educator",
     expert_title: "Communication & Wellness Coach",
-    bio:
-      "Supports healthy communication, realistic expectations, and confidence-centered wellness goals.",
+    bio: "Supports healthy communication, realistic expectations, and confidence-centered wellness goals.",
     specialties: ["Communication", "Confidence", "Lifestyle support"],
     credentials: ["Wellness education"],
     years_experience: 6,
@@ -382,9 +379,7 @@ export async function seedExpertContent() {
         "question_text",
         qaRows.map(q => q.question_text),
       );
-    const qaMap = new Map(
-      (existingQa || []).map(q => [String(q.question_text), String(q.id)]),
-    );
+    const qaMap = new Map((existingQa || []).map(q => [String(q.question_text), String(q.id)]));
     const qaUpserts = qaRows.map(q => ({
       id: qaMap.get(q.question_text),
       ...q,

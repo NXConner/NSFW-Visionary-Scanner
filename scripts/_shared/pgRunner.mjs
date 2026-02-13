@@ -91,4 +91,3 @@ export async function runSqlStatements({
 
   return { results, hadError };
 }
-

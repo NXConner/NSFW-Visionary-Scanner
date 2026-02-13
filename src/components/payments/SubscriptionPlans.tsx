@@ -127,7 +127,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({
 
               <CardContent>
                 <ul className="space-y-2">
-                  {plan.features.map((feature) => (
+                  {plan.features.map(feature => (
                     <li key={feature} className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
                       <span className="text-sm">{feature}</span>

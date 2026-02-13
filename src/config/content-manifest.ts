@@ -1,11 +1,15 @@
 /**
  * Content Manifest - Single Point of Truth for Repo Differences
- * 
+ *
  * This file is the "Bridge" between SFW and NSFW variants.
  * Only this file (and buildFlags.ts) should differ between repositories.
  */
 
-import { BUILD_APP_VERSION, BUILD_DISTRIBUTION_CHANNEL, BUILD_ALLOW_ADULT_BUNDLE } from "@/lib/buildFlags";
+import {
+  BUILD_APP_VERSION,
+  BUILD_DISTRIBUTION_CHANNEL,
+  BUILD_ALLOW_ADULT_BUNDLE,
+} from "@/lib/buildFlags";
 
 export interface ContentManifest {
   version: "sfw" | "nsfw";
@@ -32,7 +36,7 @@ export interface ContentManifest {
 export const APP_CONFIG: ContentManifest = {
   version: BUILD_APP_VERSION === "nsfw" ? "nsfw" : "sfw",
   distributionChannel: BUILD_DISTRIBUTION_CHANNEL === "store" ? "store" : "direct",
-  
+
   enabledScanners: [
     "standard_vision",
     "curvature_analysis",
@@ -40,16 +44,16 @@ export const APP_CONFIG: ContentManifest = {
     "quality_assessment",
     ...(BUILD_ALLOW_ADULT_BUNDLE ? ["adult_content_scanner"] : []),
   ],
-  
+
   filterSensitivity: BUILD_ALLOW_ADULT_BUNDLE ? 0.3 : 0.9,
   adultContentEnabled: BUILD_ALLOW_ADULT_BUNDLE,
-  
+
   apiEndpoints: {
     scanner_v1: "/api/scanner/v1",
     ai_analysis: "/api/ai/analyze",
     measurements: "/api/measurements",
   },
-  
+
   features: {
     healthAnalysis: true,
     measurementTracking: true,

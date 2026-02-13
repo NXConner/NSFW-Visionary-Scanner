@@ -8,11 +8,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LockedFeature } from "@/dlc/components/LockedFeature";
 import { useDLCFeature } from "@/dlc/context/DLCContext";
-import {
-  usePartnerConnection,
-  usePartnerConsent,
-  usePartnerPermissions,
-} from "@/lib/partnerSync";
+import { usePartnerConnection, usePartnerConsent, usePartnerPermissions } from "@/lib/partnerSync";
 import { useI18n } from "@/lib/i18n";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,10 +36,16 @@ export function PartnerSyncTab({ onNavigateToTab }: PartnerSyncTabProps = {}) {
   const { isAdmin, isSuperAdmin: isSuperAdminRole } = useUserRoles();
   const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked } = useAuth();
   const [activeTab, setActiveTab] = useState("thoughts");
-  
+
   // SUPER ADMIN BYPASS: Check for privileged status immediately
-  const isPrivileged = INITIAL_SUPER_ADMIN_STATUS || isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole;
-  
+  const isPrivileged =
+    INITIAL_SUPER_ADMIN_STATUS ||
+    isSuperAdmin ||
+    hasFullAccess ||
+    allFeaturesUnlocked ||
+    isAdmin ||
+    isSuperAdminRole;
+
   const {
     activeConnection,
     currentUserId,
@@ -67,8 +69,12 @@ export function PartnerSyncTab({ onNavigateToTab }: PartnerSyncTabProps = {}) {
       : null;
 
   const { permissions, updatePermission } = usePartnerPermissions(connectionId);
-  const { needsConsent, partnerNeedsConsent, acceptConsent, loading: consentLoading } =
-    usePartnerConsent(connectionId);
+  const {
+    needsConsent,
+    partnerNeedsConsent,
+    acceptConsent,
+    loading: consentLoading,
+  } = usePartnerConsent(connectionId);
   const consentReady = !needsConsent && !partnerNeedsConsent;
 
   // SUPER ADMIN BYPASS: Skip loading and locked state for privileged users
@@ -138,7 +144,9 @@ export function PartnerSyncTab({ onNavigateToTab }: PartnerSyncTabProps = {}) {
             partnerId={partnerId}
             currentUserId={currentUserId}
             consentReady={consentReady}
-            onNavigateToHub={onNavigateToTab ? () => onNavigateToTab("date-night-planner") : undefined}
+            onNavigateToHub={
+              onNavigateToTab ? () => onNavigateToTab("date-night-planner") : undefined
+            }
           />
         </TabsContent>
         <TabsContent value="positions" className="space-y-4">

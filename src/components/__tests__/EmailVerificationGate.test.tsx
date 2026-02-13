@@ -138,7 +138,9 @@ describe("EmailVerificationGate", () => {
       });
 
       // Even if Supabase reports unverified, pre-verified whitelist must not be blocked.
-      mockGetUser.mockResolvedValue({ data: { user: { email: preVerifiedEmail, email_confirmed_at: null } } });
+      mockGetUser.mockResolvedValue({
+        data: { user: { email: preVerifiedEmail, email_confirmed_at: null } },
+      });
 
       render(
         <EmailVerificationGate requireVerification>

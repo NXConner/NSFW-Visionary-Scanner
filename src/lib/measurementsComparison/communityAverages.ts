@@ -34,7 +34,8 @@ export function getPlaceholderCommunityAverages(): CommunityAverages {
     avgGirthCm: AVERAGE_MAN_BASELINE.erectGirthCm,
     windowDays: 0,
     computedAtIso: new Date().toISOString(),
-    placeholderNote: "Based on published research averages (Veale et al. 2015). Real community data will appear once enough users contribute.",
+    placeholderNote:
+      "Based on published research averages (Veale et al. 2015). Real community data will appear once enough users contribute.",
   };
 }
 
@@ -56,14 +57,18 @@ export async function fetchCommunityAverages(
     });
 
     if (error) {
-      logger.warn("Community averages RPC failed, using placeholder", { error: error.message, days, minSample });
+      logger.warn("Community averages RPC failed, using placeholder", {
+        error: error.message,
+        days,
+        minSample,
+      });
       return getPlaceholderCommunityAverages();
     }
 
     const row: RpcRow | null = Array.isArray(data)
       ? ((data[0] as RpcRow | undefined) ?? null)
       : ((data as RpcRow | null) ?? null);
-    
+
     if (!row) {
       return getPlaceholderCommunityAverages();
     }
@@ -92,7 +97,11 @@ export async function fetchCommunityAverages(
       computedAtIso: row.computed_at ?? new Date().toISOString(),
     };
   } catch (err) {
-    logger.warn("Community averages fetch crashed, using placeholder", { error: err, days, minSample });
+    logger.warn("Community averages fetch crashed, using placeholder", {
+      error: err,
+      days,
+      minSample,
+    });
     return getPlaceholderCommunityAverages();
   }
 }

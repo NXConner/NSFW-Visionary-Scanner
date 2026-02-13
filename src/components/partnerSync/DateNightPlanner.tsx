@@ -12,7 +12,12 @@ type DateNightPlannerProps = {
   onNavigateToHub?: () => void;
 };
 
-export function DateNightPlanner({ partnerId, currentUserId, consentReady, onNavigateToHub }: DateNightPlannerProps) {
+export function DateNightPlanner({
+  partnerId,
+  currentUserId,
+  consentReady,
+  onNavigateToHub,
+}: DateNightPlannerProps) {
   const { t } = useI18n();
   const {
     proposals,
@@ -30,16 +35,12 @@ export function DateNightPlanner({ partnerId, currentUserId, consentReady, onNav
 
   if (!partnerId) {
     return (
-      <div className="text-sm text-muted-foreground">
-        {t("partnerSync.dates.connectHint")}
-      </div>
+      <div className="text-sm text-muted-foreground">{t("partnerSync.dates.connectHint")}</div>
     );
   }
   if (!consentReady) {
     return (
-      <div className="text-sm text-muted-foreground">
-        {t("partnerSync.settings.consentNeeded")}
-      </div>
+      <div className="text-sm text-muted-foreground">{t("partnerSync.settings.consentNeeded")}</div>
     );
   }
 

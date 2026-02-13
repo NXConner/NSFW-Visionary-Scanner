@@ -164,9 +164,7 @@ export async function getSupportTickets(
 ): Promise<SupportTicket[]> {
   const userId = await requireUserId();
 
-  let q = fromExtended("support_tickets")
-    .select("*")
-    .eq("user_id", userId);
+  let q = fromExtended("support_tickets").select("*").eq("user_id", userId);
   if (status) q = q.eq("status", status);
   const { data, error } = await q.order("created_at", { ascending: false }).limit(100);
   if (error) throw error;
@@ -286,8 +284,11 @@ export async function createGroupChat(
 
   // Add creator as an admin member (may fail for private groups depending on RLS; we handle separately in migrations).
   try {
-    await fromExtended("group_chat_members")
-      .insert({ group_id: groupData?.id, user_id: userId, role: "admin" });
+    await fromExtended("group_chat_members").insert({
+      group_id: groupData?.id,
+      user_id: userId,
+      role: "admin",
+    });
   } catch {
     // ignore; user may need an explicit policy to self-join private groups
   }
@@ -308,8 +309,11 @@ export async function getGroupChats(category?: GroupChat["category"]): Promise<G
 
 export async function joinGroupChat(groupId: string): Promise<boolean> {
   const userId = await requireUserId();
-  const { error } = await fromExtended("group_chat_members")
-    .insert({ group_id: groupId, user_id: userId, role: "member" });
+  const { error } = await fromExtended("group_chat_members").insert({
+    group_id: groupId,
+    user_id: userId,
+    role: "member",
+  });
   if (error) throw error;
   return true;
 }

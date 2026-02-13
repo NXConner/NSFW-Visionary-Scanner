@@ -21,7 +21,13 @@ interface LockSettings {
 }
 
 export const AppLock = ({ children }: AppLockProps) => {
-  const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked, loading: authLoading, rolesLoading } = useAuth();
+  const {
+    isSuperAdmin,
+    hasFullAccess,
+    allFeaturesUnlocked,
+    loading: authLoading,
+    rolesLoading,
+  } = useAuth();
   const [isLocked, setIsLocked] = useState(false);
   const [enteredPin, setEnteredPin] = useState("");
   const [attempts, setAttempts] = useState(0);
@@ -57,7 +63,7 @@ export const AppLock = ({ children }: AppLockProps) => {
     const timeout = setTimeout(() => setRolesTimeout(true), 3000);
     return () => clearTimeout(timeout);
   }, []);
-  
+
   // Use timeout override if rolesLoading is taking too long
   const effectiveRolesLoading = rolesLoading && !rolesTimeout;
 
@@ -105,7 +111,13 @@ export const AppLock = ({ children }: AppLockProps) => {
       clearTimeout(timeout);
       events.forEach(event => window.removeEventListener(event, resetTimer));
     };
-  }, [allFeaturesUnlocked, hasFullAccess, isSuperAdmin, lockSettings?.autoLockMinutes, lockSettings?.enabled]);
+  }, [
+    allFeaturesUnlocked,
+    hasFullAccess,
+    isSuperAdmin,
+    lockSettings?.autoLockMinutes,
+    lockSettings?.enabled,
+  ]);
 
   // Visibility change - lock when tab hidden
   useEffect(() => {

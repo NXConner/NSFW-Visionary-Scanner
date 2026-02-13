@@ -104,8 +104,7 @@ export const ar: TranslationDictionary = {
   "partnerSync.common.removeItem": "إزالة عنصر",
 
   "partnerSync.connection.title": "مزامنة الشريك",
-  "partnerSync.connection.subtitle":
-    "اتصل بشريك لمشاركة التقدم والنبضات وخطط الموعد والوضعيات.",
+  "partnerSync.connection.subtitle": "اتصل بشريك لمشاركة التقدم والنبضات وخطط الموعد والوضعيات.",
   "partnerSync.connection.connected": "متصل",
   "partnerSync.connection.accepted": "مقبول",
   "partnerSync.connection.partnerId": "معرف الشريك",
@@ -376,48 +375,27 @@ export const ar: TranslationDictionary = {
   "partnerSync.recommendations.datesTitle": "ليالي الموعد",
   "partnerSync.recommendations.positionsTitle": "الوضعيات",
   "partnerSync.recommendations.safetyTitle": "السلامة والراحة",
-  "partnerSync.recommendations.pings.1":
-    "اجعل النبضات قصيرة ومحددة لرد سريع.",
-  "partnerSync.recommendations.pings.2":
-    "وازن بين النبرة المرحة والرومانسية لتجنب الإرهاق.",
+  "partnerSync.recommendations.pings.1": "اجعل النبضات قصيرة ومحددة لرد سريع.",
+  "partnerSync.recommendations.pings.2": "وازن بين النبرة المرحة والرومانسية لتجنب الإرهاق.",
   "partnerSync.recommendations.pings.3": "استخدم المواضيع لمواءمة التوقعات.",
-  "partnerSync.recommendations.pings.4":
-    "تابع برد لتأكيد الاهتمام والحدود.",
-  "partnerSync.recommendations.pings.5":
-    "جدول النبضات خلال ساعات هدوء شريكك.",
-  "partnerSync.recommendations.pings.6":
-    "استخدم التفاعلات لتأكيد الاستلام بسرعة.",
-  "partnerSync.recommendations.dates.1":
-    "خطط الليلة إلى أقسام (خروج، عشاء، في المنزل).",
-  "partnerSync.recommendations.dates.2":
-    "حدد المشتتات مسبقًا للحفاظ على التركيز.",
-  "partnerSync.recommendations.dates.3":
-    "أضف تحققًا قصيرًا للوتيرة والراحة.",
-  "partnerSync.recommendations.dates.4":
-    "احتفظ بخطة بديلة للتوقيت أو المكان أو الطاقة.",
-  "partnerSync.recommendations.dates.5":
-    "استخدم التذكيرات للتنقل والحجوزات.",
-  "partnerSync.recommendations.dates.6":
-    "سجّل التأملات بعد الموعد للتحسين لاحقًا.",
-  "partnerSync.recommendations.positions.1":
-    "ابدأ باختيار مشترك ثم اختر واحدًا لشريكك.",
-  "partnerSync.recommendations.positions.2":
-    "استخدم الملاحظات لتوضيح ما يعجبك.",
-  "partnerSync.recommendations.positions.3":
-    "وازن الشدة بخيارات سهلة ومتقدمة.",
-  "partnerSync.recommendations.positions.4":
-    "علّم الوضعيات التي جُرّبت للحفاظ على التحديث.",
-  "partnerSync.recommendations.positions.5":
-    "استخدم قوائم الأمان والحدود قبل تجربة جديد.",
-  "partnerSync.recommendations.positions.6":
-    "استخدم التبديل للتفاوض على بدائل بسرعة.",
-  "partnerSync.recommendations.safety.1":
-    "أكد الموافقة والحدود قبل البدء.",
-  "partnerSync.recommendations.safety.2":
-    "اتفقوا على كلمة توقف/توقف مؤقت للفحص الفوري.",
-  "partnerSync.recommendations.safety.3":
-    "اترك وقتًا للرعاية اللاحقة أو نهاية هادئة.",
-  "partnerSync.recommendations.safety.4":
-    "استخدم إعدادات الخصوصية لتفاصيل الموقع.",
+  "partnerSync.recommendations.pings.4": "تابع برد لتأكيد الاهتمام والحدود.",
+  "partnerSync.recommendations.pings.5": "جدول النبضات خلال ساعات هدوء شريكك.",
+  "partnerSync.recommendations.pings.6": "استخدم التفاعلات لتأكيد الاستلام بسرعة.",
+  "partnerSync.recommendations.dates.1": "خطط الليلة إلى أقسام (خروج، عشاء، في المنزل).",
+  "partnerSync.recommendations.dates.2": "حدد المشتتات مسبقًا للحفاظ على التركيز.",
+  "partnerSync.recommendations.dates.3": "أضف تحققًا قصيرًا للوتيرة والراحة.",
+  "partnerSync.recommendations.dates.4": "احتفظ بخطة بديلة للتوقيت أو المكان أو الطاقة.",
+  "partnerSync.recommendations.dates.5": "استخدم التذكيرات للتنقل والحجوزات.",
+  "partnerSync.recommendations.dates.6": "سجّل التأملات بعد الموعد للتحسين لاحقًا.",
+  "partnerSync.recommendations.positions.1": "ابدأ باختيار مشترك ثم اختر واحدًا لشريكك.",
+  "partnerSync.recommendations.positions.2": "استخدم الملاحظات لتوضيح ما يعجبك.",
+  "partnerSync.recommendations.positions.3": "وازن الشدة بخيارات سهلة ومتقدمة.",
+  "partnerSync.recommendations.positions.4": "علّم الوضعيات التي جُرّبت للحفاظ على التحديث.",
+  "partnerSync.recommendations.positions.5": "استخدم قوائم الأمان والحدود قبل تجربة جديد.",
+  "partnerSync.recommendations.positions.6": "استخدم التبديل للتفاوض على بدائل بسرعة.",
+  "partnerSync.recommendations.safety.1": "أكد الموافقة والحدود قبل البدء.",
+  "partnerSync.recommendations.safety.2": "اتفقوا على كلمة توقف/توقف مؤقت للفحص الفوري.",
+  "partnerSync.recommendations.safety.3": "اترك وقتًا للرعاية اللاحقة أو نهاية هادئة.",
+  "partnerSync.recommendations.safety.4": "استخدم إعدادات الخصوصية لتفاصيل الموقع.",
   "partnerSync.preview.subtitle": "معاينة اللوحات مع الحالات الفارغة وفحص التخطيط.",
 };

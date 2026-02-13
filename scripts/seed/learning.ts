@@ -749,7 +749,12 @@ const quizzes: QuizSeed[] = [
         id: "q1",
         question_text: "What is the safest response to sharp pain during a session?",
         question_type: "multiple_choice",
-        options: ["Push through it", "Pause and stop the session", "Increase intensity", "Ignore it"],
+        options: [
+          "Push through it",
+          "Pause and stop the session",
+          "Increase intensity",
+          "Ignore it",
+        ],
         correct_answer: "Pause and stop the session",
         explanation: "Sharp pain is a stop signal and should not be ignored.",
         points: 1,
@@ -767,7 +772,12 @@ const quizzes: QuizSeed[] = [
         id: "q3",
         question_text: "Which choice best supports recovery?",
         question_type: "multiple_choice",
-        options: ["Skipping sleep", "Adding more intensity", "Rest days and hydration", "Ignoring EQ changes"],
+        options: [
+          "Skipping sleep",
+          "Adding more intensity",
+          "Rest days and hydration",
+          "Ignoring EQ changes",
+        ],
         correct_answer: "Rest days and hydration",
         explanation: "Recovery relies on rest and circulation support.",
         points: 1,
@@ -776,7 +786,12 @@ const quizzes: QuizSeed[] = [
         id: "q4",
         question_text: "What is a reasonable weekly routine structure?",
         question_type: "multiple_choice",
-        options: ["Daily intense sessions", "2-4 sessions with rest days", "Only once per month", "Never rest"],
+        options: [
+          "Daily intense sessions",
+          "2-4 sessions with rest days",
+          "Only once per month",
+          "Never rest",
+        ],
         correct_answer: "2-4 sessions with rest days",
         explanation: "Rest days prevent overuse and improve safety.",
         points: 1,
@@ -802,7 +817,12 @@ const quizzes: QuizSeed[] = [
         id: "q1",
         question_text: "What is a common sign of Peyronie's disease?",
         question_type: "multiple_choice",
-        options: ["Sudden height change", "Curvature or plaques", "Improved flexibility", "Hair loss"],
+        options: [
+          "Sudden height change",
+          "Curvature or plaques",
+          "Improved flexibility",
+          "Hair loss",
+        ],
         correct_answer: "Curvature or plaques",
         explanation: "Curvature and plaques are common indicators.",
         points: 1,
@@ -820,7 +840,12 @@ const quizzes: QuizSeed[] = [
         id: "q3",
         question_text: "What should you bring to a clinician appointment?",
         question_type: "multiple_choice",
-        options: ["Only questions", "Photos and symptom notes", "No data", "Unrelated medical records"],
+        options: [
+          "Only questions",
+          "Photos and symptom notes",
+          "No data",
+          "Unrelated medical records",
+        ],
         correct_answer: "Photos and symptom notes",
         explanation: "Documentation helps clinicians assess progression.",
         points: 1,
@@ -838,7 +863,12 @@ const quizzes: QuizSeed[] = [
         id: "q5",
         question_text: "Why track pain levels?",
         question_type: "multiple_choice",
-        options: ["To ignore them", "To monitor progression and triggers", "To replace medical care", "To avoid rest"],
+        options: [
+          "To ignore them",
+          "To monitor progression and triggers",
+          "To replace medical care",
+          "To avoid rest",
+        ],
         correct_answer: "To monitor progression and triggers",
         explanation: "Pain logs support informed care decisions.",
         points: 1,
@@ -869,7 +899,12 @@ const quizzes: QuizSeed[] = [
         id: "q2",
         question_text: "How should breathing coordinate with contraction?",
         question_type: "multiple_choice",
-        options: ["Hold breath", "Inhale to relax, exhale to lift", "Exhale to relax", "No breathing needed"],
+        options: [
+          "Hold breath",
+          "Inhale to relax, exhale to lift",
+          "Exhale to relax",
+          "No breathing needed",
+        ],
         correct_answer: "Inhale to relax, exhale to lift",
         explanation: "Breathing supports controlled contractions.",
         points: 1,
@@ -896,7 +931,12 @@ const quizzes: QuizSeed[] = [
         id: "q5",
         question_text: "Why include mobility work?",
         question_type: "multiple_choice",
-        options: ["To replace training", "To reduce tension and improve control", "To increase strain", "No benefit"],
+        options: [
+          "To replace training",
+          "To reduce tension and improve control",
+          "To increase strain",
+          "No benefit",
+        ],
         correct_answer: "To reduce tension and improve control",
         explanation: "Mobility supports pelvic floor function.",
         points: 1,
@@ -913,7 +953,12 @@ const quizzes: QuizSeed[] = [
         id: "q1",
         question_text: "When should measurements be taken?",
         question_type: "multiple_choice",
-        options: ["Randomly", "Same position and conditions each time", "Only after workouts", "Only once"],
+        options: [
+          "Randomly",
+          "Same position and conditions each time",
+          "Only after workouts",
+          "Only once",
+        ],
         correct_answer: "Same position and conditions each time",
         explanation: "Consistency improves accuracy.",
         points: 1,
@@ -945,7 +990,12 @@ const quizzes: QuizSeed[] = [
         id: "q4",
         question_text: "What improves data privacy?",
         question_type: "multiple_choice",
-        options: ["Sharing screenshots", "App lock and secure backups", "Public cloud links", "No passwords"],
+        options: [
+          "Sharing screenshots",
+          "App lock and secure backups",
+          "Public cloud links",
+          "No passwords",
+        ],
         correct_answer: "App lock and secure backups",
         explanation: "Security tools protect sensitive data.",
         points: 1,
@@ -954,7 +1004,12 @@ const quizzes: QuizSeed[] = [
         id: "q5",
         question_text: "How should trends be interpreted?",
         question_type: "multiple_choice",
-        options: ["Single data points", "Multiple data points over time", "Only the largest value", "Ignore context"],
+        options: [
+          "Single data points",
+          "Multiple data points over time",
+          "Only the largest value",
+          "Ignore context",
+        ],
         correct_answer: "Multiple data points over time",
         explanation: "Trends require multiple consistent measurements.",
         points: 1,
@@ -1009,9 +1064,7 @@ export async function seedLearningContent() {
     estimated_duration_minutes: module.estimated_duration_minutes,
   }));
 
-  const moduleCourseIds = moduleRows
-    .map(m => m.course_id)
-    .filter(Boolean) as string[];
+  const moduleCourseIds = moduleRows.map(m => m.course_id).filter(Boolean) as string[];
   const { data: existingModules } = await supabase
     .from("learning_modules")
     .select("id, course_id, title")
@@ -1040,7 +1093,9 @@ export async function seedLearningContent() {
 
   const moduleByKey = new Map<string, string>();
   modules.forEach(module => {
-    const moduleId = upsertedModules.find(m => m.title === module.title && m.course_id === courseByKey.get(module.courseKey))?.id;
+    const moduleId = upsertedModules.find(
+      m => m.title === module.title && m.course_id === courseByKey.get(module.courseKey),
+    )?.id;
     if (moduleId) moduleByKey.set(module.key, moduleId);
   });
 
@@ -1076,7 +1131,9 @@ export async function seedLearningContent() {
 
   const lessonByKey = new Map<string, string>();
   lessons.forEach(lesson => {
-    const lessonId = upsertedLessons.find(l => l.title === lesson.title && l.module_id === moduleByKey.get(lesson.moduleKey))?.id;
+    const lessonId = upsertedLessons.find(
+      l => l.title === lesson.title && l.module_id === moduleByKey.get(lesson.moduleKey),
+    )?.id;
     if (lessonId) lessonByKey.set(lesson.key, lessonId);
   });
 

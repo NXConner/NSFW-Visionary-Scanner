@@ -42,8 +42,7 @@ export function SupabaseConfigGate({ children }: SupabaseConfigGateProps) {
     }
   });
 
-  const shouldShowBlockingGate =
-    !bypassForTests && !supabaseConfig.isConfigured && !nativeRuntime;
+  const shouldShowBlockingGate = !bypassForTests && !supabaseConfig.isConfigured && !nativeRuntime;
 
   useEffect(() => {
     if (!shouldShowBlockingGate) return;

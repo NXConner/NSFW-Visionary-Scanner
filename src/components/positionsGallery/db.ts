@@ -9,7 +9,11 @@ export async function fetchPositionCategories(): Promise<string[]> {
   if (error) return [];
   return (
     Array.from(
-      new Set((data || []).map((r: { category?: string }) => String(r.category || "").trim()).filter(Boolean)),
+      new Set(
+        (data || [])
+          .map((r: { category?: string }) => String(r.category || "").trim())
+          .filter(Boolean),
+      ),
     ) as string[]
   ).sort((a, b) => a.localeCompare(b));
 }

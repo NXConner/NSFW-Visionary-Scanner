@@ -45,4 +45,3 @@ export function writeNsfwScannerPolicy(next: NsfwScannerPolicy): void {
     // ignore
   }
 }
-

@@ -14,11 +14,14 @@ function hasWindow(): boolean {
 }
 
 export function sanitizeSupabaseUrl(raw: string): string {
-  const input = String(raw ?? "").replace(/\s+/g, "").trim();
+  const input = String(raw ?? "")
+    .replace(/\s+/g, "")
+    .trim();
   if (!input) return "";
 
   // Allow users to paste "project-ref.supabase.co" without scheme.
-  const withScheme = input.startsWith("http://") || input.startsWith("https://") ? input : `https://${input}`;
+  const withScheme =
+    input.startsWith("http://") || input.startsWith("https://") ? input : `https://${input}`;
 
   try {
     const u = new URL(withScheme);
@@ -96,7 +99,8 @@ export function writeSupabaseRuntimeOverride(next: Partial<SupabaseRuntimeOverri
     }
 
     if (publishableKey !== undefined) {
-      if (publishableKey) localStorage.setItem(SUPABASE_RUNTIME_OVERRIDE_KEYS.publishableKey, publishableKey);
+      if (publishableKey)
+        localStorage.setItem(SUPABASE_RUNTIME_OVERRIDE_KEYS.publishableKey, publishableKey);
       else localStorage.removeItem(SUPABASE_RUNTIME_OVERRIDE_KEYS.publishableKey);
     }
 
@@ -116,4 +120,3 @@ export function clearSupabaseRuntimeOverride(): void {
     // ignore
   }
 }
-

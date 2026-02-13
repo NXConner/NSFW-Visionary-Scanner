@@ -10,7 +10,9 @@ function withTimeout(ms: number): { signal: AbortSignal; cancel: () => void } {
 }
 
 function normalizeBaseUrl(url: string): string {
-  return String(url || "").trim().replace(/\/+$/, "");
+  return String(url || "")
+    .trim()
+    .replace(/\/+$/, "");
 }
 
 function isInvalidApiKeyPayload(payload: unknown): boolean {
@@ -41,7 +43,9 @@ export async function checkSupabaseApiKeyValid(params: {
 
   const { signal, cancel } = withTimeout(timeoutMs);
   try {
-    const tryRequest = async (headers: Record<string, string>): Promise<SupabaseApiKeyCheckResult> => {
+    const tryRequest = async (
+      headers: Record<string, string>,
+    ): Promise<SupabaseApiKeyCheckResult> => {
       const res = await fetch(`${url}/auth/v1/settings`, {
         method: "GET",
         headers,
@@ -84,4 +88,3 @@ export async function checkSupabaseApiKeyValid(params: {
     cancel();
   }
 }
-

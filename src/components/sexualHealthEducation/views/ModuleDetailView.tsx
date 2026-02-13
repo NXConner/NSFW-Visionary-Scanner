@@ -92,9 +92,7 @@ export function ModuleDetailView({
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
-                  {section.note && (
-                    <p className="text-xs text-muted-foreground">{section.note}</p>
-                  )}
+                  {section.note && <p className="text-xs text-muted-foreground">{section.note}</p>}
                 </div>
               ))}
               {isAdmin && (

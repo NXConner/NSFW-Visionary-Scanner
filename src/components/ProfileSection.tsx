@@ -43,7 +43,8 @@ import {
 
 export const ProfileSection = () => {
   const { user } = useAuth();
-  const { roles, isAdmin, isSuperAdmin, isPro, isPremium, isLoading, rolesFetched } = useUserRoles();
+  const { roles, isAdmin, isSuperAdmin, isPro, isPremium, isLoading, rolesFetched } =
+    useUserRoles();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -58,21 +59,21 @@ export const ProfileSection = () => {
   useEffect(() => {
     const loadProfile = async () => {
       if (!user) return;
-      
+
       // Set defaults from user object first
       setProfile(prev => ({
         ...prev,
         email: user.email || "",
         name: user.user_metadata?.display_name || user.email?.split("@")[0] || "User",
       }));
-      
+
       // Then fetch from profiles table
       const { data, error } = await supabase
         .from("profiles")
         .select("display_name")
         .eq("user_id", user.id)
         .single();
-      
+
       if (!error && data) {
         setProfile(prev => ({
           ...prev,
@@ -81,41 +82,41 @@ export const ProfileSection = () => {
         }));
       }
     };
-    
+
     loadProfile();
   }, [user]);
 
   // Save profile to database
   const handleSaveProfile = async () => {
     if (!user) return;
-    
+
     setIsSaving(true);
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ 
+        .update({
           display_name: profile.screenName || profile.name,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq("user_id", user.id);
-      
+
       if (error) throw error;
-      
+
       // Also update user metadata
       await supabase.auth.updateUser({
-        data: { display_name: profile.screenName || profile.name }
+        data: { display_name: profile.screenName || profile.name },
       });
-      
+
       toast({
         title: "Profile updated",
         description: "Your screen name has been saved successfully.",
       });
-      
+
       setProfile(prev => ({
         ...prev,
         name: profile.screenName || prev.name,
       }));
-      
+
       setIsEditing(false);
     } catch (error) {
       console.error("Failed to save profile:", error);
@@ -158,7 +159,7 @@ export const ProfileSection = () => {
 
   // Admin/Super Admin = automatic Premium access (Tier 3)
   const hasAdminPremium = isAdmin || isSuperAdmin;
-  
+
   // Determine current plan - admin/super_admin always = Premium
   // Don't determine plan until roles have been fetched
   const getCurrentPlan = (): "free" | "pro" | "premium" | null => {
@@ -169,7 +170,7 @@ export const ProfileSection = () => {
     return "free";
   };
   const currentPlan = getCurrentPlan();
-  
+
   // Tier order: Free → Pro ($9.99) → Premium ($19.99 - highest)
   const plans = [
     {
@@ -278,7 +279,7 @@ export const ProfileSection = () => {
 
                         {/* Role Badges */}
                         <div className="flex flex-wrap justify-center gap-2 mt-3">
-                          {(isLoading || !rolesFetched) ? (
+                          {isLoading || !rolesFetched ? (
                             <Badge variant="outline" className="animate-pulse">
                               Loading...
                             </Badge>
@@ -313,7 +314,10 @@ export const ProfileSection = () => {
                       {isEditing ? (
                         <div className="space-y-4">
                           <div>
-                            <Label htmlFor="profile-screen-name" className="text-sm text-muted-foreground">
+                            <Label
+                              htmlFor="profile-screen-name"
+                              className="text-sm text-muted-foreground"
+                            >
                               Screen Name / Username
                             </Label>
                             <Input
@@ -325,11 +329,15 @@ export const ProfileSection = () => {
                               maxLength={30}
                             />
                             <p className="text-xs text-muted-foreground mt-1">
-                              This is how you'll appear to others ({30 - (profile.screenName?.length || 0)} characters left)
+                              This is how you'll appear to others (
+                              {30 - (profile.screenName?.length || 0)} characters left)
                             </p>
                           </div>
                           <div>
-                            <Label htmlFor="profile-email" className="text-sm text-muted-foreground">
+                            <Label
+                              htmlFor="profile-email"
+                              className="text-sm text-muted-foreground"
+                            >
                               Email
                             </Label>
                             <Input
@@ -340,7 +348,10 @@ export const ProfileSection = () => {
                             />
                           </div>
                           <div>
-                            <Label htmlFor="profile-phone" className="text-sm text-muted-foreground">
+                            <Label
+                              htmlFor="profile-phone"
+                              className="text-sm text-muted-foreground"
+                            >
                               Phone (optional)
                             </Label>
                             <Input
@@ -367,8 +378,8 @@ export const ProfileSection = () => {
                                 "Save Changes"
                               )}
                             </Button>
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               onClick={() => setIsEditing(false)}
                               disabled={isSaving}
                             >

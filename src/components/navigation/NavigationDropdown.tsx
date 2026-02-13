@@ -79,9 +79,9 @@ export const NavigationDropdown = ({ activeTab, onTabChange }: NavigationDropdow
       isSuperAdmin,
       nsfwAvailable,
     });
-    
+
     console.log("[Navigation] Visibility check:", { visible, locked });
-    
+
     if (!visible) {
       console.log("[Navigation] Item not visible, aborting");
       return;

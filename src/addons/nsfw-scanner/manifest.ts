@@ -15,4 +15,3 @@ export const manifest: AddonManifest = {
     requiredDlcFeatureIds: ["nsfw_scanner_mode"],
   },
 };
-

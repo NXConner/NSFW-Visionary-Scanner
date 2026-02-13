@@ -17,7 +17,7 @@ export const APP_ROUTES = {
 } as const;
 
 function readViteEnv(key: string): string | undefined {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const metaEnv = ((import.meta as any)?.env as Record<string, unknown> | undefined) ?? undefined;
   const v = metaEnv?.[key];
   return typeof v === "string" ? v : undefined;
@@ -60,4 +60,3 @@ export const CONTACT_LINKS = {
   privacyMailto: `mailto:${PRIVACY_CONTACT_EMAIL}`,
   dpoMailto: `mailto:${DPO_CONTACT_EMAIL}`,
 } as const;
-

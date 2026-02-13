@@ -112,19 +112,37 @@ export function ScanTab({
         <CardContent className="p-0">
           <div className="relative aspect-[4/3] bg-black/30">
             {refinePicking && currentPreview ? (
-              <BaseAnchorPicker imageDataUrl={currentPreview} onPick={onApplyBasePick} onCancel={onCancelRefine} />
+              <BaseAnchorPicker
+                imageDataUrl={currentPreview}
+                onPick={onApplyBasePick}
+                onCancel={onCancelRefine}
+              />
             ) : currentPreview ? (
-              <img src={currentPreview} alt={`${view} capture`} className="w-full h-full object-contain" />
+              <img
+                src={currentPreview}
+                alt={`${view} capture`}
+                className="w-full h-full object-contain"
+              />
             ) : (
               <div className="absolute inset-0">
-                <video ref={videoRef} className="w-full h-full object-cover" playsInline muted autoPlay />
+                <video
+                  ref={videoRef}
+                  className="w-full h-full object-cover"
+                  playsInline
+                  muted
+                  autoPlay
+                />
                 <CurvatureScanOverlay view={view} step={step} totalSteps={totalSteps} />
                 {!isActive && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="rounded-xl border border-border/50 bg-background/60 backdrop-blur px-4 py-3">
-                      <div className="text-sm font-medium">{isStarting ? "Starting camera…" : "Camera not started"}</div>
+                      <div className="text-sm font-medium">
+                        {isStarting ? "Starting camera…" : "Camera not started"}
+                      </div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        {isStarting ? "Approve the permission prompt if shown." : "Tap “Start Camera” to begin."}
+                        {isStarting
+                          ? "Approve the permission prompt if shown."
+                          : "Tap “Start Camera” to begin."}
                       </div>
                     </div>
                   </div>
@@ -150,7 +168,12 @@ export function ScanTab({
               <Camera className="w-4 h-4" />
               {isStarting ? "Starting…" : "Start Camera"}
             </Button>
-            <Button variant="hero" onClick={onCapture} disabled={!isActive || processing} className="gap-2">
+            <Button
+              variant="hero"
+              onClick={onCapture}
+              disabled={!isActive || processing}
+              className="gap-2"
+            >
               Capture
             </Button>
             <Button variant="outline" onClick={onOpenCalibration} className="gap-2">
@@ -191,7 +214,9 @@ export function ScanTab({
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <div className="text-sm font-medium">Store annotated images in history</div>
-                  <div className="text-xs text-muted-foreground mt-1">Optional. Saved locally (encrypted). Can increase storage usage.</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Optional. Saved locally (encrypted). Can increase storage usage.
+                  </div>
                 </div>
                 <Switch
                   checked={storeAnnotatedImages}
@@ -202,7 +227,9 @@ export function ScanTab({
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <div className="text-sm font-medium">Flip left/right labels (top view)</div>
-                  <div className="text-xs text-muted-foreground mt-1">Use if your camera preview or device orientation mirrors the dorsal image.</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Use if your camera preview or device orientation mirrors the dorsal image.
+                  </div>
                 </div>
                 <Switch
                   checked={flipTopViewLeftRight}
@@ -213,11 +240,15 @@ export function ScanTab({
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <div className="text-sm font-medium">Flip dorsal/ventral labels (side view)</div>
-                  <div className="text-xs text-muted-foreground mt-1">Use if your side-view interpretation is inverted (camera flipped).</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Use if your side-view interpretation is inverted (camera flipped).
+                  </div>
                 </div>
                 <Switch
                   checked={flipSideViewDorsalVentral}
-                  onCheckedChange={checked => void onToggleFlipSideViewDorsalVentral(Boolean(checked))}
+                  onCheckedChange={checked =>
+                    void onToggleFlipSideViewDorsalVentral(Boolean(checked))
+                  }
                   aria-label="Flip dorsal/ventral labels for side view"
                 />
               </div>
@@ -226,9 +257,12 @@ export function ScanTab({
             <div className="grid grid-cols-2 gap-3">
               <div className="p-4 rounded-xl bg-secondary/20 border border-border/50">
                 <div className="text-xs text-muted-foreground">Dorsal angle</div>
-                <div className="text-2xl font-bold">{dorsal?.angleDeg ? `${dorsal.angleDeg}°` : "—"}</div>
+                <div className="text-2xl font-bold">
+                  {dorsal?.angleDeg ? `${dorsal.angleDeg}°` : "—"}
+                </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  Direction: {dorsal?.curvatureDirection ?? "—"} • Conf: {dorsal?.confidence ? `${dorsal.confidence}%` : "—"}
+                  Direction: {dorsal?.curvatureDirection ?? "—"} • Conf:{" "}
+                  {dorsal?.confidence ? `${dorsal.confidence}%` : "—"}
                 </div>
                 <Button
                   size="sm"
@@ -243,9 +277,12 @@ export function ScanTab({
               </div>
               <div className="p-4 rounded-xl bg-secondary/20 border border-border/50">
                 <div className="text-xs text-muted-foreground">Lateral angle</div>
-                <div className="text-2xl font-bold">{lateral?.angleDeg ? `${lateral.angleDeg}°` : "—"}</div>
+                <div className="text-2xl font-bold">
+                  {lateral?.angleDeg ? `${lateral.angleDeg}°` : "—"}
+                </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  Direction: {lateral?.curvatureDirection ?? "—"} • Conf: {lateral?.confidence ? `${lateral.confidence}%` : "—"}
+                  Direction: {lateral?.curvatureDirection ?? "—"} • Conf:{" "}
+                  {lateral?.confidence ? `${lateral.confidence}%` : "—"}
                 </div>
                 <Button
                   size="sm"
@@ -262,11 +299,20 @@ export function ScanTab({
 
             <div className="p-4 rounded-xl bg-secondary/20 border border-border/50">
               <div className="text-xs text-muted-foreground">Estimated length</div>
-              <div className="text-2xl font-bold">{lengthCm ? `${lengthCm.toFixed(1)} cm` : "—"}</div>
-              <div className="text-xs text-muted-foreground mt-1">Best accuracy requires calibration.</div>
+              <div className="text-2xl font-bold">
+                {lengthCm ? `${lengthCm.toFixed(1)} cm` : "—"}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Best accuracy requires calibration.
+              </div>
             </div>
 
-            <Button variant="gradient" className="w-full gap-2" onClick={() => void onSave()} disabled={!canSave || processing}>
+            <Button
+              variant="gradient"
+              className="w-full gap-2"
+              onClick={() => void onSave()}
+              disabled={!canSave || processing}
+            >
               <Save className="w-4 h-4" />
               Save Session (Local)
             </Button>
@@ -274,9 +320,16 @@ export function ScanTab({
             {canSave && hardBlocked ? (
               <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4">
                 <div className="text-sm font-medium">Retake recommended</div>
-                <div className="text-xs text-muted-foreground mt-1">{blockers.slice(0, 2).join(" ")}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {blockers.slice(0, 2).join(" ")}
+                </div>
                 <div className="mt-3">
-                  <Button variant="outline" className="w-full" onClick={() => void onSaveAnyway()} disabled={processing}>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => void onSaveAnyway()}
+                    disabled={processing}
+                  >
                     Save anyway
                   </Button>
                 </div>
@@ -288,4 +341,3 @@ export function ScanTab({
     </div>
   );
 }
-

@@ -300,7 +300,7 @@ export const PremiumAddOns = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <ul className="space-y-2">
-                        {addon.features.map((feature) => (
+                        {addon.features.map(feature => (
                           <li key={feature} className="flex items-start gap-2">
                             <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
                             <span className="text-sm">{feature}</span>

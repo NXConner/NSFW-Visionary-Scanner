@@ -7,7 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/lib/i18n";
 import { buildGoogleCalendarUrl, buildIcsDataUrl, formatDate, formatTime } from "@/lib/partnerSync";
-import type { DateNightPlanDetails, DateNightPlanInput, DateNightReminderItem } from "@/lib/partnerSync";
+import type {
+  DateNightPlanDetails,
+  DateNightPlanInput,
+  DateNightReminderItem,
+} from "@/lib/partnerSync";
 import type { IntimateDateProposal, ProposalModifications } from "@/lib/nsfwAdvancedFeatures";
 import { CalendarCheck, CheckCircle2, Copy, X } from "lucide-react";
 
@@ -54,9 +58,12 @@ export function DateNightList({
         ) : (
           list.map(proposal => {
             const isCreator = proposal.creator_id === currentUserId;
-            const canViewAddress = !proposal.is_location_private || isCreator || proposal.proposal_status === "accepted";
-            const itinerary = (details[proposal.id]?.itinerary ?? []) as DateNightPlanInput["itinerary"];
-            const reminderItems = (details[proposal.id]?.reminders ?? []) as DateNightReminderItem[];
+            const canViewAddress =
+              !proposal.is_location_private || isCreator || proposal.proposal_status === "accepted";
+            const itinerary = (details[proposal.id]?.itinerary ??
+              []) as DateNightPlanInput["itinerary"];
+            const reminderItems = (details[proposal.id]?.reminders ??
+              []) as DateNightReminderItem[];
             const checklistItems = details[proposal.id]?.checklist ?? [];
             const packingItems = details[proposal.id]?.packingList ?? [];
             const aftercareItems = details[proposal.id]?.aftercare ?? [];
@@ -75,7 +82,9 @@ export function DateNightList({
                   </div>
                   <div className="text-sm text-muted-foreground">
                     {proposal.location_name || t("partnerSync.dates.locationTbd")}
-                    {proposal.location_address && canViewAddress ? ` • ${proposal.location_address}` : ""}
+                    {proposal.location_address && canViewAddress
+                      ? ` • ${proposal.location_address}`
+                      : ""}
                   </div>
                   {proposal.text_message && (
                     <div className="text-sm text-muted-foreground">{proposal.text_message}</div>
@@ -89,24 +98,35 @@ export function DateNightList({
                       ))}
                     </div>
                   )}
-                  {(checklistItems.length > 0 || packingItems.length > 0 || aftercareItems.length > 0) && (
+                  {(checklistItems.length > 0 ||
+                    packingItems.length > 0 ||
+                    aftercareItems.length > 0) && (
                     <div className="text-xs text-muted-foreground space-y-1">
                       {checklistItems.length > 0 && (
                         <div>
                           {t("partnerSync.dates.checklist")}:{" "}
-                          {checklistItems.slice(0, 4).map(item => item.item).join(", ")}
+                          {checklistItems
+                            .slice(0, 4)
+                            .map(item => item.item)
+                            .join(", ")}
                         </div>
                       )}
                       {packingItems.length > 0 && (
                         <div>
                           {t("partnerSync.dates.packing")}:{" "}
-                          {packingItems.slice(0, 4).map(item => item.item).join(", ")}
+                          {packingItems
+                            .slice(0, 4)
+                            .map(item => item.item)
+                            .join(", ")}
                         </div>
                       )}
                       {aftercareItems.length > 0 && (
                         <div>
                           {t("partnerSync.dates.aftercare")}:{" "}
-                          {aftercareItems.slice(0, 4).map(item => item.item).join(", ")}
+                          {aftercareItems
+                            .slice(0, 4)
+                            .map(item => item.item)
+                            .join(", ")}
                         </div>
                       )}
                     </div>
@@ -154,7 +174,10 @@ export function DateNightList({
                       {t("partnerSync.dates.addCalendar")}
                     </Button>
                     <Button size="sm" variant="ghost" asChild>
-                      <a href={buildIcsDataUrl(proposal)} download={`${proposal.proposal_title}.ics`}>
+                      <a
+                        href={buildIcsDataUrl(proposal)}
+                        download={`${proposal.proposal_title}.ics`}
+                      >
                         {t("partnerSync.dates.downloadIcs")}
                       </a>
                     </Button>

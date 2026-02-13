@@ -44,11 +44,11 @@ export const NSFWAdvancedFeatures = ({
   const { isAgeVerified } = useDLC();
   // Representative advanced entitlement (present in dlc-advanced, dlc-complete, dlc-subscription).
   const { isAvailable: hasAdvancedDLC, isLoading: dlcLoading } = useDLCFeature("multi_camera");
-  
+
   // SUPER ADMIN BYPASS: Get privileged status from multiple sources
   const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked, loading: authLoading } = useAuth();
   const { isAdmin, isSuperAdmin: isSuperAdminRole, isLoading: rolesLoading } = useUserRoles();
-  
+
   // CRITICAL: Include module-level cached value for instant privileged access
   const hasSuperAdminAccess =
     INITIAL_SUPER_ADMIN_STATUS ||

@@ -210,7 +210,11 @@ export const AdvancedHealthDashboard = () => {
             <CardTitle className="flex items-center justify-between gap-3">
               <span>Deep comparisons</span>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => navigate("/measurements-vs-average-men")}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/measurements-vs-average-men")}
+                >
                   Size Comparison
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => navigate("/growers-vs-showers")}>

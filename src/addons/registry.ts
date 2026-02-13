@@ -48,7 +48,12 @@ export function setAddonContributions(id: AddonId, contributions?: AddonContribu
   const st = addonMap.get(id);
   if (!st) return;
   st.contributions = contributions;
-  st.runtime = { ...st.runtime, status: "ready", lastError: null, updatedAt: new Date().toISOString() };
+  st.runtime = {
+    ...st.runtime,
+    status: "ready",
+    lastError: null,
+    updatedAt: new Date().toISOString(),
+  };
   notify();
 }
 
@@ -58,10 +63,7 @@ export function listAddonContributions(): AddonContributions[] {
     .filter((c): c is AddonContributions => Boolean(c));
 }
 
-export function setAddonRuntimeStatus(
-  id: AddonId,
-  patch: Partial<AddonState["runtime"]>,
-): void {
+export function setAddonRuntimeStatus(id: AddonId, patch: Partial<AddonState["runtime"]>): void {
   const st = addonMap.get(id);
   if (!st) return;
   st.runtime = { ...st.runtime, ...patch, updatedAt: new Date().toISOString() };
@@ -74,7 +76,10 @@ export function listAddonStates(): Array<{
   hasContributions: boolean;
 }> {
   return Array.from(addonMap.values())
-    .map(s => ({ manifest: s.manifest, runtime: s.runtime, hasContributions: Boolean(s.contributions) }))
+    .map(s => ({
+      manifest: s.manifest,
+      runtime: s.runtime,
+      hasContributions: Boolean(s.contributions),
+    }))
     .sort((a, b) => a.manifest.name.localeCompare(b.manifest.name));
 }
-

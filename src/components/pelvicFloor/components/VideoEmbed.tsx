@@ -118,7 +118,9 @@ export function VideoEmbed({
         </div>
 
         {!parsed.ok ? (
-          <p className="text-sm text-muted-foreground">{"reason" in parsed ? parsed.reason : "Invalid URL"}</p>
+          <p className="text-sm text-muted-foreground">
+            {"reason" in parsed ? parsed.reason : "Invalid URL"}
+          </p>
         ) : (
           <div className="aspect-video rounded-lg overflow-hidden bg-secondary border border-border/50">
             <iframe

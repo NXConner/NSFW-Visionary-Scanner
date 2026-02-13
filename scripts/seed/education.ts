@@ -280,11 +280,11 @@ const researchUpdates = [
   },
   {
     title: "Mayo Clinic: Erectile dysfunction overview",
-    summary:
-      "Mayo Clinic describes common causes of ED and when to seek medical care.",
+    summary: "Mayo Clinic describes common causes of ED and when to seek medical care.",
     full_article:
       "The overview emphasizes physical and psychological contributors to ED, lifestyle factors, and the value of professional assessment for persistent concerns.",
-    source_url: "https://www.mayoclinic.org/diseases-conditions/erectile-dysfunction/symptoms-causes/syc-20355776",
+    source_url:
+      "https://www.mayoclinic.org/diseases-conditions/erectile-dysfunction/symptoms-causes/syc-20355776",
     source_name: "Mayo Clinic",
     category: "research",
     tags: ["ed", "health", "lifestyle"],
@@ -293,8 +293,7 @@ const researchUpdates = [
   },
   {
     title: "Cleveland Clinic: Pelvic floor therapy",
-    summary:
-      "Cleveland Clinic outlines pelvic floor therapy basics and benefits.",
+    summary: "Cleveland Clinic outlines pelvic floor therapy basics and benefits.",
     full_article:
       "Pelvic floor therapy can improve control and comfort when guided by qualified clinicians. The resource stresses proper assessment and personalized plans.",
     source_url: "https://my.clevelandclinic.org/health/treatments/21765-pelvic-floor-therapy",
@@ -312,9 +311,7 @@ export async function seedEducationContent() {
     .from("sexual_health_education_modules")
     .select("id, title")
     .in("title", moduleTitles);
-  const moduleMap = new Map(
-    (existingModules || []).map(m => [String(m.title), String(m.id)]),
-  );
+  const moduleMap = new Map((existingModules || []).map(m => [String(m.title), String(m.id)]));
 
   const moduleRows = modules.map(m => ({
     id: moduleMap.get(m.title),
@@ -358,7 +355,9 @@ export async function seedEducationContent() {
     tags: q.tags,
   }));
 
-  const { error: qaError } = await supabase.from("education_qa").upsert(qaRows, { onConflict: "id" });
+  const { error: qaError } = await supabase
+    .from("education_qa")
+    .upsert(qaRows, { onConflict: "id" });
   if (qaError) console.error("Error seeding education QA:", qaError.message);
 
   const expertTitles = expertContent.map(c => c.title);
@@ -397,9 +396,7 @@ export async function seedEducationContent() {
     .from("education_research_updates")
     .select("id, title")
     .in("title", researchTitles);
-  const researchMap = new Map(
-    (existingResearch || []).map(r => [String(r.title), String(r.id)]),
-  );
+  const researchMap = new Map((existingResearch || []).map(r => [String(r.title), String(r.id)]));
 
   const researchRows = researchUpdates.map(r => ({
     id: researchMap.get(r.title),

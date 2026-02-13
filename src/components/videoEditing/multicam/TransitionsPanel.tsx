@@ -7,14 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  ArrowRightLeft,
-  Zap,
-  ZoomIn,
-  Layers,
-  Square,
-  MoveRight,
-} from "lucide-react";
+import { ArrowRightLeft, Zap, ZoomIn, Layers, Square, MoveRight } from "lucide-react";
 
 export interface TransitionConfig {
   type: "cut" | "crossfade" | "dipToBlack" | "wipe" | "zoom" | "glitch" | "slide";
@@ -32,12 +25,32 @@ export const defaultTransition: TransitionConfig = {
 
 const TRANSITION_TYPES = [
   { key: "cut", label: "Cut", icon: <Square className="w-4 h-4" />, desc: "Instant switch" },
-  { key: "crossfade", label: "Crossfade", icon: <Layers className="w-4 h-4" />, desc: "Smooth blend" },
-  { key: "dipToBlack", label: "Dip to Black", icon: <Square className="w-4 h-4" />, desc: "Fade through black" },
-  { key: "wipe", label: "Wipe", icon: <MoveRight className="w-4 h-4" />, desc: "Directional reveal" },
+  {
+    key: "crossfade",
+    label: "Crossfade",
+    icon: <Layers className="w-4 h-4" />,
+    desc: "Smooth blend",
+  },
+  {
+    key: "dipToBlack",
+    label: "Dip to Black",
+    icon: <Square className="w-4 h-4" />,
+    desc: "Fade through black",
+  },
+  {
+    key: "wipe",
+    label: "Wipe",
+    icon: <MoveRight className="w-4 h-4" />,
+    desc: "Directional reveal",
+  },
   { key: "zoom", label: "Zoom", icon: <ZoomIn className="w-4 h-4" />, desc: "Zoom transition" },
   { key: "glitch", label: "Glitch", icon: <Zap className="w-4 h-4" />, desc: "Digital distortion" },
-  { key: "slide", label: "Slide", icon: <ArrowRightLeft className="w-4 h-4" />, desc: "Slide in/out" },
+  {
+    key: "slide",
+    label: "Slide",
+    icon: <ArrowRightLeft className="w-4 h-4" />,
+    desc: "Slide in/out",
+  },
 ];
 
 const DURATION_PRESETS = [

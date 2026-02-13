@@ -115,8 +115,7 @@ serve(async req => {
 
     const provider = "resend";
     const resendKey = Deno.env.get("RESEND_API_KEY") ?? "";
-    const from =
-      Deno.env.get("EMAIL_FROM") ?? "Pavement Performance Suite <n8ter8@gmail.com>";
+    const from = Deno.env.get("EMAIL_FROM") ?? "Pavement Performance Suite <n8ter8@gmail.com>";
 
     if (!resendKey) {
       throw new Error("RESEND_API_KEY is not configured");

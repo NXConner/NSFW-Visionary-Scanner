@@ -55,9 +55,7 @@ export function ExpertsTab({
       <div className="text-center py-8 text-muted-foreground">
         <GraduationCap className="h-12 w-12 mx-auto mb-4 opacity-50" />
         <p>No verified experts available yet</p>
-        <p className="text-sm">
-          Check back soon or contact support to request a specialist match.
-        </p>
+        <p className="text-sm">Check back soon or contact support to request a specialist match.</p>
       </div>
     );
   }

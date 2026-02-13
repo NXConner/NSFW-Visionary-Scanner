@@ -45,7 +45,13 @@ interface UpsellPrompt {
 
 export const SmartUpsell = () => {
   const { tier, features, hasFeature, loading: featureLoading } = useFeatureAccess();
-  const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked, loading: authLoading, rolesLoading } = useAuth();
+  const {
+    isSuperAdmin,
+    hasFullAccess,
+    allFeaturesUnlocked,
+    loading: authLoading,
+    rolesLoading,
+  } = useAuth();
   const { isAdmin, isSuperAdmin: isSuperAdminRole } = useUserRoles();
   const [showPrompt, setShowPrompt] = useState(false);
   const [currentPrompt, setCurrentPrompt] = useState<UpsellPrompt | null>(null);
@@ -54,7 +60,13 @@ export const SmartUpsell = () => {
   // Combined loading state check
   const stillCheckingAccess = featureLoading || authLoading || rolesLoading;
   // SUPER ADMIN BYPASS: Include all privileged status checks
-  const hasSuperAdminAccess = INITIAL_SUPER_ADMIN_STATUS || isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole;
+  const hasSuperAdminAccess =
+    INITIAL_SUPER_ADMIN_STATUS ||
+    isSuperAdmin ||
+    hasFullAccess ||
+    allFeaturesUnlocked ||
+    isAdmin ||
+    isSuperAdminRole;
 
   const handleUpgrade = useCallback(async (targetTier: "pro" | "premium") => {
     try {
@@ -263,7 +275,13 @@ export const SmartUpsell = () => {
  */
 export const InlineUpsellBanner = ({ feature, context }: { feature: string; context?: string }) => {
   const { tier, loading: featureLoading } = useFeatureAccess();
-  const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked, loading: authLoading, rolesLoading } = useAuth();
+  const {
+    isSuperAdmin,
+    hasFullAccess,
+    allFeaturesUnlocked,
+    loading: authLoading,
+    rolesLoading,
+  } = useAuth();
   const { isAdmin, isSuperAdmin: isSuperAdminRole } = useUserRoles();
 
   // SUPER ADMIN BYPASS: Check module-level cache first for instant bypass
@@ -273,7 +291,8 @@ export const InlineUpsellBanner = ({ feature, context }: { feature: string; cont
   // CRITICAL: Must wait for rolesLoading to complete - this is where super admin status is determined
   const stillCheckingAccess = featureLoading || authLoading || rolesLoading;
   if (stillCheckingAccess) return null;
-  if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole) return null;
+  if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole)
+    return null;
   if (tier === "premium" || tier === "admin") return null;
 
   const handleUpgrade = async () => {

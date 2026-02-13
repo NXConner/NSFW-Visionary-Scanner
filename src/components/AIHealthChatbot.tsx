@@ -82,7 +82,13 @@ export const AIHealthChatbot = () => {
     const tempId = `local-${Date.now()}`;
     setMessages(prev => [
       ...prev,
-      { id: tempId, role: "user", content: message, createdAt: new Date().toISOString(), pending: true },
+      {
+        id: tempId,
+        role: "user",
+        content: message,
+        createdAt: new Date().toISOString(),
+        pending: true,
+      },
     ]);
     setInput("");
     setSending(true);
@@ -125,7 +131,10 @@ export const AIHealthChatbot = () => {
           ) : (
             <div className="space-y-4">
               {messages.map(msg => (
-                <div key={msg.id} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : ""}`}>
+                <div
+                  key={msg.id}
+                  className={`flex gap-2 ${msg.role === "user" ? "justify-end" : ""}`}
+                >
                   {msg.role === "assistant" && (
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <Bot className="w-4 h-4 text-primary" />

@@ -13,4 +13,3 @@ export function useAddonContributions(): AddonContributions[] {
 
   return contribs;
 }
-

@@ -16,4 +16,3 @@ export function isStoreBuild(): boolean {
 export function allowAdultScannerSurfaces(): boolean {
   return Boolean(BUILD_ALLOW_ADULT_BUNDLE);
 }
-

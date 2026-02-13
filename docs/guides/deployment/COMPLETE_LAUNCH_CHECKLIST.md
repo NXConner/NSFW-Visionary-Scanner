@@ -74,13 +74,13 @@ adb install android\app\build\outputs\apk\release\app-release.apk
 
 Your project is already connected to Lovable Cloud (Supabase). The following are already configured:
 
-| Secret                       | Status      |
-| ---------------------------- | ----------- |
-| SUPABASE_URL                 | ✅ Set      |
-| SUPABASE_ANON_KEY            | ✅ Set      |
-| SUPABASE_SERVICE_ROLE_KEY    | ✅ Set      |
-| SUPABASE_DB_URL              | ✅ Set      |
-| SUPABASE_PUBLISHABLE_KEY     | ✅ Set      |
+| Secret                    | Status |
+| ------------------------- | ------ |
+| SUPABASE_URL              | ✅ Set |
+| SUPABASE_ANON_KEY         | ✅ Set |
+| SUPABASE_SERVICE_ROLE_KEY | ✅ Set |
+| SUPABASE_DB_URL           | ✅ Set |
+| SUPABASE_PUBLISHABLE_KEY  | ✅ Set |
 
 ### Step 2.2: Stripe Configuration
 
@@ -179,38 +179,38 @@ Run the database linter to check for security issues:
 
 ```sql
 -- Check tables without RLS
-SELECT tablename 
-FROM pg_tables 
-WHERE schemaname = 'public' 
+SELECT tablename
+FROM pg_tables
+WHERE schemaname = 'public'
 AND tablename NOT IN (
-  SELECT tablename 
-  FROM pg_policies 
+  SELECT tablename
+  FROM pg_policies
   WHERE schemaname = 'public'
 );
 ```
 
 **Critical Tables to Verify:**
 
-| Table                  | RLS Enabled | Policies |
-| ---------------------- | ----------- | -------- |
-| profiles               | ✅          | ✅       |
-| scans                  | ✅          | ✅       |
-| subscriptions          | ✅          | ✅       |
-| user_achievements      | ✅          | ✅       |
-| dlc_purchases          | ✅          | ✅       |
+| Table             | RLS Enabled | Policies |
+| ----------------- | ----------- | -------- |
+| profiles          | ✅          | ✅       |
+| scans             | ✅          | ✅       |
+| subscriptions     | ✅          | ✅       |
+| user_achievements | ✅          | ✅       |
+| dlc_purchases     | ✅          | ✅       |
 
 ### Step 3.4: Storage Bucket Security
 
 **Verify bucket policies:**
 
-| Bucket          | Public | RLS    |
-| --------------- | ------ | ------ |
-| scans           | No     | ✅     |
-| progress-photos | No     | ✅     |
-| avatars         | Yes    | ✅     |
-| videos          | No     | ✅     |
-| documents       | No     | ✅     |
-| user-uploads    | No     | ✅     |
+| Bucket          | Public | RLS |
+| --------------- | ------ | --- |
+| scans           | No     | ✅  |
+| progress-photos | No     | ✅  |
+| avatars         | Yes    | ✅  |
+| videos          | No     | ✅  |
+| documents       | No     | ✅  |
+| user-uploads    | No     | ✅  |
 
 ### Step 3.5: Enable MFA for Admin Accounts
 
@@ -381,13 +381,13 @@ xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build -ex
 
 **Screenshots Needed:**
 
-| Platform       | Size          | Count |
-| -------------- | ------------- | ----- |
-| Android Phone  | 1080x1920     | 4-8   |
-| Android Tablet | 1200x1920     | 4-8   |
-| iPhone 6.5"    | 1284x2778     | 4-8   |
-| iPhone 5.5"    | 1242x2208     | 4-8   |
-| iPad 12.9"     | 2048x2732     | 4-8   |
+| Platform       | Size      | Count |
+| -------------- | --------- | ----- |
+| Android Phone  | 1080x1920 | 4-8   |
+| Android Tablet | 1200x1920 | 4-8   |
+| iPhone 6.5"    | 1284x2778 | 4-8   |
+| iPhone 5.5"    | 1242x2208 | 4-8   |
+| iPad 12.9"     | 2048x2732 | 4-8   |
 
 **Graphics Needed:**
 
@@ -420,13 +420,13 @@ adb install android\app\build\outputs\apk\release\app-release.apk
 
 ## Progress Tracker
 
-| Phase                    | Status      | Est. Time |
-| ------------------------ | ----------- | --------- |
-| 1. APK Build             | ⏳ Pending  | 30 min    |
-| 2. Production Env        | ⏳ Pending  | 2 hours   |
-| 3. Security Hardening    | ⏳ Pending  | 2 hours   |
-| 4. Production Testing    | ⏳ Pending  | 2-3 days  |
-| 5. App Store Submission  | ⏳ Pending  | 1-2 days  |
+| Phase                   | Status     | Est. Time |
+| ----------------------- | ---------- | --------- |
+| 1. APK Build            | ⏳ Pending | 30 min    |
+| 2. Production Env       | ⏳ Pending | 2 hours   |
+| 3. Security Hardening   | ⏳ Pending | 2 hours   |
+| 4. Production Testing   | ⏳ Pending | 2-3 days  |
+| 5. App Store Submission | ⏳ Pending | 1-2 days  |
 
 **Total Estimated Time to Launch:** 4-6 days
 

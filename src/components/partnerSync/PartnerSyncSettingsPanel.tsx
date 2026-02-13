@@ -15,10 +15,19 @@ type PartnerSyncSettingsPanelProps = {
 export function PartnerSyncSettingsPanel({ connectionId }: PartnerSyncSettingsPanelProps) {
   const { t } = useI18n();
   const { preferences, updatePreferences, loading: prefsLoading } = usePartnerPreferences();
-  const { policy, updatePolicy, applyRetention, loading: retentionLoading } =
-    usePartnerRetention(connectionId);
-  const { needsConsent, partnerNeedsConsent, acceptConsent, revokeConsent, loading: consentLoading } =
-    usePartnerConsent(connectionId);
+  const {
+    policy,
+    updatePolicy,
+    applyRetention,
+    loading: retentionLoading,
+  } = usePartnerRetention(connectionId);
+  const {
+    needsConsent,
+    partnerNeedsConsent,
+    acceptConsent,
+    revokeConsent,
+    loading: consentLoading,
+  } = usePartnerConsent(connectionId);
   const [panicConfirm, setPanicConfirm] = useState("");
 
   const handlePanicDelete = async () => {
@@ -53,7 +62,11 @@ export function PartnerSyncSettingsPanel({ connectionId }: PartnerSyncSettingsPa
             <Button onClick={() => void acceptConsent()} disabled={consentLoading}>
               {t("partnerSync.settings.acceptConsent")}
             </Button>
-            <Button variant="outline" onClick={() => void revokeConsent()} disabled={consentLoading}>
+            <Button
+              variant="outline"
+              onClick={() => void revokeConsent()}
+              disabled={consentLoading}
+            >
               {t("partnerSync.settings.revokeConsent")}
             </Button>
           </div>
@@ -73,7 +86,9 @@ export function PartnerSyncSettingsPanel({ connectionId }: PartnerSyncSettingsPa
             />
             <div>
               <Label className="text-sm">{t("partnerSync.settings.quietHours")}</Label>
-              <p className="text-xs text-muted-foreground">{t("partnerSync.settings.quietHoursHint")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("partnerSync.settings.quietHoursHint")}
+              </p>
             </div>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
@@ -116,7 +131,9 @@ export function PartnerSyncSettingsPanel({ connectionId }: PartnerSyncSettingsPa
             <div className="flex items-center gap-3">
               <Switch
                 checked={preferences?.allow_push_notifications ?? true}
-                onCheckedChange={value => void updatePreferences({ allow_push_notifications: value })}
+                onCheckedChange={value =>
+                  void updatePreferences({ allow_push_notifications: value })
+                }
               />
               <Label>{t("partnerSync.settings.pushNotifications")}</Label>
             </div>
@@ -135,7 +152,9 @@ export function PartnerSyncSettingsPanel({ connectionId }: PartnerSyncSettingsPa
               <Label>{t("partnerSync.settings.mediaAttachments")}</Label>
             </div>
           </div>
-          {prefsLoading && <div className="text-xs text-muted-foreground">{t("common.loading")}</div>}
+          {prefsLoading && (
+            <div className="text-xs text-muted-foreground">{t("common.loading")}</div>
+          )}
         </CardContent>
       </Card>
 

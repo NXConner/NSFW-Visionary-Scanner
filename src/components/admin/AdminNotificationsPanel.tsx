@@ -45,10 +45,46 @@ interface Notification {
 }
 
 const notifications: Notification[] = [
-  { id: "1", title: "New Feature: Video Capture", message: "Try our new multi-camera recording feature!", type: "info", audience: "all", sentAt: "2024-01-15 10:30", readRate: 78, status: "sent" },
-  { id: "2", title: "Maintenance Notice", message: "Scheduled maintenance on Sunday 2AM-4AM EST", type: "warning", audience: "all", sentAt: "2024-01-14 09:00", readRate: 65, status: "sent" },
-  { id: "3", title: "Premium Discount", message: "20% off all premium packages this week!", type: "success", audience: "free", sentAt: "2024-01-13 14:00", readRate: 82, status: "sent" },
-  { id: "4", title: "Weekly Progress Summary", message: "Check out your weekly health insights", type: "info", audience: "premium", sentAt: "", readRate: 0, status: "scheduled" },
+  {
+    id: "1",
+    title: "New Feature: Video Capture",
+    message: "Try our new multi-camera recording feature!",
+    type: "info",
+    audience: "all",
+    sentAt: "2024-01-15 10:30",
+    readRate: 78,
+    status: "sent",
+  },
+  {
+    id: "2",
+    title: "Maintenance Notice",
+    message: "Scheduled maintenance on Sunday 2AM-4AM EST",
+    type: "warning",
+    audience: "all",
+    sentAt: "2024-01-14 09:00",
+    readRate: 65,
+    status: "sent",
+  },
+  {
+    id: "3",
+    title: "Premium Discount",
+    message: "20% off all premium packages this week!",
+    type: "success",
+    audience: "free",
+    sentAt: "2024-01-13 14:00",
+    readRate: 82,
+    status: "sent",
+  },
+  {
+    id: "4",
+    title: "Weekly Progress Summary",
+    message: "Check out your weekly health insights",
+    type: "info",
+    audience: "premium",
+    sentAt: "",
+    readRate: 0,
+    status: "scheduled",
+  },
 ];
 
 export function AdminNotificationsPanel() {
@@ -110,8 +146,9 @@ export function AdminNotificationsPanel() {
                 <p className="text-2xl font-bold">
                   {Math.round(
                     sentNotifications.reduce((sum, n) => sum + n.readRate, 0) /
-                      sentNotifications.length
-                  )}%
+                      sentNotifications.length,
+                  )}
+                  %
                 </p>
               </div>
               <CheckCircle className="h-8 w-8 text-success" />
@@ -147,9 +184,7 @@ export function AdminNotificationsPanel() {
               <Input
                 placeholder="Notification title..."
                 value={newNotification.title}
-                onChange={e =>
-                  setNewNotification(prev => ({ ...prev, title: e.target.value }))
-                }
+                onChange={e => setNewNotification(prev => ({ ...prev, title: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
@@ -157,9 +192,7 @@ export function AdminNotificationsPanel() {
               <Textarea
                 placeholder="Write your message..."
                 value={newNotification.message}
-                onChange={e =>
-                  setNewNotification(prev => ({ ...prev, message: e.target.value }))
-                }
+                onChange={e => setNewNotification(prev => ({ ...prev, message: e.target.value }))}
                 rows={4}
               />
             </div>
@@ -246,10 +279,7 @@ export function AdminNotificationsPanel() {
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-3">
                     {sentNotifications.map(notif => (
-                      <div
-                        key={notif.id}
-                        className="p-4 rounded-lg bg-muted/50 space-y-2"
-                      >
+                      <div key={notif.id} className="p-4 rounded-lg bg-muted/50 space-y-2">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-2">
                             {getTypeIcon(notif.type)}
@@ -284,10 +314,7 @@ export function AdminNotificationsPanel() {
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-3">
                     {scheduledNotifications.map(notif => (
-                      <div
-                        key={notif.id}
-                        className="p-4 rounded-lg bg-muted/50 space-y-2"
-                      >
+                      <div key={notif.id} className="p-4 rounded-lg bg-muted/50 space-y-2">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-2">
                             {getTypeIcon(notif.type)}
@@ -295,7 +322,9 @@ export function AdminNotificationsPanel() {
                             <Badge variant="secondary">Scheduled</Badge>
                           </div>
                           <div className="flex gap-1">
-                            <Button variant="ghost" size="sm">Edit</Button>
+                            <Button variant="ghost" size="sm">
+                              Edit
+                            </Button>
                             <Button variant="ghost" size="icon" className="text-destructive">
                               <Trash2 className="h-4 w-4" />
                             </Button>

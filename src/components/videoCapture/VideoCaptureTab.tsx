@@ -172,34 +172,35 @@ export function VideoCaptureTab() {
   };
 
   // Start camera stream
-  const startCamera = useCallback(async (deviceId?: string) => {
-    try {
-      const constraints: MediaStreamConstraints = {
-        video: deviceId
-          ? { deviceId: { exact: deviceId } }
-          : { facingMode: "user" },
-        audio: false,
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      const track = stream.getVideoTracks()[0];
-      const settings = track.getSettings();
+  const startCamera = useCallback(
+    async (deviceId?: string) => {
+      try {
+        const constraints: MediaStreamConstraints = {
+          video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: "user" },
+          audio: false,
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        const track = stream.getVideoTracks()[0];
+        const settings = track.getSettings();
 
-      const newCamera: CameraStream = {
-        id: crypto.randomUUID(),
-        stream,
-        deviceId: settings.deviceId || deviceId || "default",
-        label: track.label || `Camera ${cameraStreams.length + 1}`,
-      };
+        const newCamera: CameraStream = {
+          id: crypto.randomUUID(),
+          stream,
+          deviceId: settings.deviceId || deviceId || "default",
+          label: track.label || `Camera ${cameraStreams.length + 1}`,
+        };
 
-      setCameraStreams(prev => [...prev, newCamera]);
-      toast.success(`Camera "${newCamera.label}" connected`);
-      return newCamera;
-    } catch (err) {
-      logger.error("Failed to start camera", { error: err });
-      toast.error("Failed to access camera. Please check permissions.");
-      return null;
-    }
-  }, [cameraStreams.length]);
+        setCameraStreams(prev => [...prev, newCamera]);
+        toast.success(`Camera "${newCamera.label}" connected`);
+        return newCamera;
+      } catch (err) {
+        logger.error("Failed to start camera", { error: err });
+        toast.error("Failed to access camera. Please check permissions.");
+        return null;
+      }
+    },
+    [cameraStreams.length],
+  );
 
   // Stop a camera stream
   const stopCamera = useCallback((cameraId: string) => {
@@ -222,17 +223,20 @@ export function VideoCaptureTab() {
   }, [cameraStreams]);
 
   // Attach stream to video element
-  const setVideoRef = useCallback((cameraId: string, el: HTMLVideoElement | null) => {
-    if (el) {
-      videoRefs.current.set(cameraId, el);
-      const camera = cameraStreams.find(c => c.id === cameraId);
-      if (camera && el.srcObject !== camera.stream) {
-        el.srcObject = camera.stream;
+  const setVideoRef = useCallback(
+    (cameraId: string, el: HTMLVideoElement | null) => {
+      if (el) {
+        videoRefs.current.set(cameraId, el);
+        const camera = cameraStreams.find(c => c.id === cameraId);
+        if (camera && el.srcObject !== camera.stream) {
+          el.srcObject = camera.stream;
+        }
+      } else {
+        videoRefs.current.delete(cameraId);
       }
-    } else {
-      videoRefs.current.delete(cameraId);
-    }
-  }, [cameraStreams]);
+    },
+    [cameraStreams],
+  );
 
   // Handle recording
   const handleStartRecording = useCallback(async () => {
@@ -249,7 +253,11 @@ export function VideoCaptureTab() {
           minute: "2-digit",
         })}`;
       const partnerId = getPartnerUserId(activeConnection, currentUserId);
-      const sessionType = partnerId ? "partner_sync" : cameraStreams.length > 1 ? "multi_camera" : "solo";
+      const sessionType = partnerId
+        ? "partner_sync"
+        : cameraStreams.length > 1
+          ? "multi_camera"
+          : "solo";
       const created = await createMultiCameraSession(resolvedName, sessionType, partnerId, quality);
       if (!created) return;
       sessionId = created.id;
@@ -294,10 +302,13 @@ export function VideoCaptureTab() {
   }, [activeSessionId, loadSessions, recordingTime, stopRecording]);
 
   // Add camera dialog
-  const handleAddCamera = useCallback(async (deviceId?: string) => {
-    await startCamera(deviceId);
-    setShowAddCameraDialog(false);
-  }, [startCamera]);
+  const handleAddCamera = useCallback(
+    async (deviceId?: string) => {
+      await startCamera(deviceId);
+      setShowAddCameraDialog(false);
+    },
+    [startCamera],
+  );
 
   // Partner invite
   const handleSendInvite = useCallback(async () => {
@@ -473,7 +484,10 @@ export function VideoCaptureTab() {
                 </div>
                 <div className="space-y-2">
                   <Label>Video Quality</Label>
-                  <Select value={quality} onValueChange={(v) => setQuality(v as MultiCameraSession["quality"])}>
+                  <Select
+                    value={quality}
+                    onValueChange={v => setQuality(v as MultiCameraSession["quality"])}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -539,11 +553,17 @@ export function VideoCaptureTab() {
                                 </Badge>
                               );
                             })()}
-                            <Badge variant={session.recording_status === "recording" ? "default" : "outline"}>
+                            <Badge
+                              variant={
+                                session.recording_status === "recording" ? "default" : "outline"
+                              }
+                            >
                               {session.recording_status}
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">{formatSessionMeta(session)}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatSessionMeta(session)}
+                          </p>
                         </div>
                         <div className="flex gap-2">
                           <Button size="sm" variant="outline" className="gap-1">
@@ -693,9 +713,7 @@ export function VideoCaptureTab() {
               <Card>
                 <CardContent className="pt-4">
                   <h4 className="font-medium mb-2">Storage Location</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Where recordings are saved
-                  </p>
+                  <p className="text-sm text-muted-foreground mb-3">Where recordings are saved</p>
                   <Select defaultValue="cloud">
                     <SelectTrigger>
                       <SelectValue />
@@ -721,9 +739,7 @@ export function VideoCaptureTab() {
               <Camera className="w-5 h-5" />
               Connect Camera
             </DialogTitle>
-            <DialogDescription>
-              Select a camera to add to your recording session
-            </DialogDescription>
+            <DialogDescription>Select a camera to add to your recording session</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-4">
             {availableDevices.length === 0 ? (
@@ -818,7 +834,11 @@ export function VideoCaptureTab() {
                 <p className="text-sm font-medium mb-2">Invite Code Created!</p>
                 <div className="flex gap-2">
                   <Input value={lastInviteCode} readOnly className="font-mono" />
-                  <Button variant="outline" size="icon" onClick={() => handleCopyCode(lastInviteCode)}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleCopyCode(lastInviteCode)}
+                  >
                     <Copy className="w-4 h-4" />
                   </Button>
                 </div>
@@ -864,7 +884,10 @@ export function VideoCaptureTab() {
             <Button variant="outline" onClick={() => setShowAcceptInviteDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAcceptInvite} disabled={partnerLoading || !inviteCodeInput.trim()}>
+            <Button
+              onClick={handleAcceptInvite}
+              disabled={partnerLoading || !inviteCodeInput.trim()}
+            >
               <Check className="w-4 h-4 mr-2" />
               Accept Invite
             </Button>

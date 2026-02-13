@@ -12,10 +12,10 @@ This is a personal project and is not related to any pavement or pavement perfor
 
 ## Decision Matrix
 
-| Option | Description | App Store Safety | Operational Complexity | Risk of NSFW Leakage |
-| ------ | ----------- | ---------------- | ---------------------- | -------------------- |
-| A | Single Supabase, hard build-time gating + strict RLS | Medium | Low | Medium |
-| B | Dual Supabase (SFW + NSFW projects) | High | Medium | Low |
+| Option | Description                                          | App Store Safety | Operational Complexity | Risk of NSFW Leakage |
+| ------ | ---------------------------------------------------- | ---------------- | ---------------------- | -------------------- |
+| A      | Single Supabase, hard build-time gating + strict RLS | Medium           | Low                    | Medium               |
+| B      | Dual Supabase (SFW + NSFW projects)                  | High             | Medium                 | Low                  |
 
 Recommendation: Option B is safest for app store compliance. Option A is acceptable if you
 implement every control below and keep SFW builds free of NSFW code/assets/strings.
@@ -25,10 +25,11 @@ implement every control below and keep SFW builds free of NSFW code/assets/strin
 ## Option A: Single Supabase with Strict Separation
 
 ### Requirements (must do all)
-1) Build-time gating removes NSFW routes/components from SFW bundles.
-2) RLS blocks all NSFW tables for users without nsfw_access entitlement.
-3) NSFW storage bucket is private with signed URLs only.
-4) Edge functions verify entitlement before returning NSFW data.
+
+1. Build-time gating removes NSFW routes/components from SFW bundles.
+2. RLS blocks all NSFW tables for users without nsfw_access entitlement.
+3. NSFW storage bucket is private with signed URLs only.
+4. Edge functions verify entitlement before returning NSFW data.
 
 ### Step 1: Build-Time Separation (Hard)
 
@@ -43,6 +44,7 @@ npm run build:nsfw:direct
 ```
 
 Rules for SFW build:
+
 - Do not import NSFW routes/components.
 - Do not ship NSFW assets or strings in the SFW bundle.
 - Do not expose NSFW menus, tabs, or deep links.
@@ -115,6 +117,7 @@ using (
 ### Step 5: Edge Functions (NSFW APIs)
 
 For any NSFW function:
+
 - `verify_jwt = true`
 - Check entitlement before returning NSFW data or signed URLs.
 

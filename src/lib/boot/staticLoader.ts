@@ -66,4 +66,3 @@ export function showBootDiagnosticsPanel(): void {
     // ignore
   }
 }
-

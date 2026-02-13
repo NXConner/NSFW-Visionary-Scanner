@@ -7,16 +7,16 @@ import type { EdgeMap } from "../types";
 export function sobelEdges(gray: Uint8Array, width: number, height: number): Uint8Array {
   const len = width * height;
   const out = new Uint8Array(len);
-  
+
   // Process inner pixels only (skip border)
   const h1 = height - 1;
   const w1 = width - 1;
-  
+
   for (let y = 1; y < h1; y++) {
     const rowOffset = y * width;
     const prevRow = rowOffset - width;
     const nextRow = rowOffset + width;
-    
+
     for (let x = 1; x < w1; x++) {
       // Inline index calculation - faster than function calls
       const a00 = gray[prevRow + x - 1]!;
@@ -51,18 +51,18 @@ export function autoThreshold(mag: Uint8Array): number {
   const step = Math.max(1, (len / 2000) | 0);
   const sampleSize = ((len / step) | 0) + 1;
   const sample = new Uint8Array(sampleSize);
-  
+
   let j = 0;
   for (let i = 0; i < len; i += step) {
     sample[j++] = mag[i]!;
   }
-  
+
   // Use counting sort for Uint8 (O(n) instead of O(n log n))
   const counts = new Uint32Array(256);
   for (let i = 0; i < j; i++) {
     counts[sample[i]!]++;
   }
-  
+
   // Find 90th percentile
   const target = (j * 0.9) | 0;
   let cumulative = 0;
@@ -74,7 +74,7 @@ export function autoThreshold(mag: Uint8Array): number {
       break;
     }
   }
-  
+
   return t < 40 ? 40 : t > 220 ? 220 : t;
 }
 
@@ -89,7 +89,7 @@ export function binarizeEdges(
 ): EdgeMap {
   const len = mag.length;
   const data = new Uint8Array(len);
-  
+
   // Use loop unrolling for better performance
   const len4 = len & ~3;
   for (let i = 0; i < len4; i += 4) {
@@ -102,7 +102,6 @@ export function binarizeEdges(
   for (let i = len4; i < len; i++) {
     data[i] = mag[i]! >= threshold ? 1 : 0;
   }
-  
+
   return { width, height, data };
 }
-

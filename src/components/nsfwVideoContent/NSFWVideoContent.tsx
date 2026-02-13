@@ -51,9 +51,7 @@ export const NSFWVideoContent = ({
   const { settings: privacy } = useNsfwPrivacySettings();
   const [activeTab, setActiveTab] = useState<
     "browse" | "playlists" | "downloads" | "history" | "bookmarks"
-  >(
-    initialTab ?? "browse",
-  );
+  >(initialTab ?? "browse");
   const [loading, setLoading] = useState(false);
   const [videos, setVideos] = useState<NSFWVideoType[]>([]);
   const [downloads, setDownloads] = useState<NSFWVideoDownload[]>([]);
@@ -217,7 +215,12 @@ export const NSFWVideoContent = ({
   }, []);
 
   const handleProgress = useCallback(
-    async (payload: { videoId: string; currentTime: number; duration: number; ended?: boolean }) => {
+    async (payload: {
+      videoId: string;
+      currentTime: number;
+      duration: number;
+      ended?: boolean;
+    }) => {
       if (!payload.videoId) return;
       progressRef.current = {
         videoId: payload.videoId,

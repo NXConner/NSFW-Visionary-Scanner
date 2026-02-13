@@ -1,7 +1,7 @@
 # Implementation Plan (Merged) — MorphoScan Pro
 
 **Last updated:** 2025-12-28  
-**Scope:** Merge/normalize existing plans + add the concrete work plan for the current branch.  
+**Scope:** Merge/normalize existing plans + add the concrete work plan for the current branch.
 
 ## Canonical source-of-truth pointers (existing)
 
@@ -12,7 +12,7 @@
 - **Mobile builds**: `docs/guides/build/MOBILE_BUILD_GUIDE.md`
 - **Stripe**: `docs/guides/integrations/payments/STRIPE_SETUP_GUIDE.md`
 
-This file consolidates *what we’re doing now* (fixes + next steps) to avoid scattered trackers.
+This file consolidates _what we’re doing now_ (fixes + next steps) to avoid scattered trackers.
 
 ---
 
@@ -69,6 +69,7 @@ This file consolidates *what we’re doing now* (fixes + next steps) to avoid sc
 5. If results are clean (no category constraint failures), toggle **Dry-run: OFF** → run **Auto import now**
 
 Expected outcome:
+
 - `nsfw_positions_gallery` has a large catalog (up to ~2000 entries per run limit)
 - `Positions Gallery` and the NSFW advanced positions tab both render real content
 
@@ -109,4 +110,3 @@ Follow `docs/archive/nsfw/NSFW_DLC_P2_CHECKLIST.md` / `docs/archive/nsfw/NSFW_DL
 
 This codebase has explicit GitHub sources configured (see `src/lib/githubImageFetcher.ts` and `src/lib/visualContentManager.ts`).  
 If there are additional website sources you’ve embedded elsewhere (e.g., in `docs/dlc-content/*` or other modules), add them to the admin import pipeline as another generator source (same `admin-import-dlc-content` edge function).
-

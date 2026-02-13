@@ -73,8 +73,7 @@ export function buildModuleFallback(input: ModuleFallbackInput): FallbackContent
           "Capture photos or measurements in the recommended order.",
           "Record notes and tag any blockers or risks.",
         ],
-        note:
-          "If you are working with a partner or team, align on the handoff steps before you close out the module.",
+        note: "If you are working with a partner or team, align on the handoff steps before you close out the module.",
       },
       {
         title: "Next steps",

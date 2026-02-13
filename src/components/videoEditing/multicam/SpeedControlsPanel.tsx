@@ -8,13 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import {
-  FastForward,
-  Rewind,
-  Clock,
-  Gauge,
-  RefreshCw,
-} from "lucide-react";
+import { FastForward, Rewind, Clock, Gauge, RefreshCw } from "lucide-react";
 
 export interface SpeedControlState {
   speed: number; // 0.25 to 8
@@ -176,10 +170,7 @@ export function SpeedControlsPanel({ state, onChange }: Props) {
         </div>
         <div className="flex items-center justify-between">
           <Label className="text-[10px]">Frame Blending</Label>
-          <Switch
-            checked={state.frameBlending}
-            onCheckedChange={v => update("frameBlending", v)}
-          />
+          <Switch checked={state.frameBlending} onCheckedChange={v => update("frameBlending", v)} />
         </div>
       </div>
     </div>

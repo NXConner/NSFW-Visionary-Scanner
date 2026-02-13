@@ -15,4 +15,3 @@ export async function listCameraDevices(): Promise<CameraDeviceInfo[]> {
       kind: "videoinput" as const,
     }));
 }
-

@@ -31,14 +31,10 @@ export const LoadingFallback = memo(
 LoadingFallback.displayName = "LoadingFallback";
 
 // Specific loading components for different sections
-export const PageLoadingFallback = memo(() => (
-  <AppLoadingScreen message="Loading page..." />
-));
+export const PageLoadingFallback = memo(() => <AppLoadingScreen message="Loading page..." />);
 
 PageLoadingFallback.displayName = "PageLoadingFallback";
 
-export const RouteLoadingFallback = memo(() => (
-  <AppLoadingScreen message="Loading..." />
-));
+export const RouteLoadingFallback = memo(() => <AppLoadingScreen message="Loading..." />);
 
 RouteLoadingFallback.displayName = "RouteLoadingFallback";

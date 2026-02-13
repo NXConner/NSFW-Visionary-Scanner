@@ -22,4 +22,3 @@ export const overlayPresets: OverlayPreset[] = [
     description: "Angle prompts and symmetry hints for 3-angle capture.",
   },
 ];
-

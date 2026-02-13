@@ -16,7 +16,8 @@ export const EmailVerificationGate = ({
   children,
   requireVerification = true,
 }: EmailVerificationGateProps) => {
-  const { user, loading, isSuperAdmin, hasFullAccess, allFeaturesUnlocked, rolesLoading } = useAuth();
+  const { user, loading, isSuperAdmin, hasFullAccess, allFeaturesUnlocked, rolesLoading } =
+    useAuth();
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(true);
 

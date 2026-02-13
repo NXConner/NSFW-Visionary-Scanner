@@ -57,13 +57,15 @@ function toDateString(d: Date): string {
 }
 
 function avg(values: Array<number | null | undefined>): number | null {
-  const nums = values.filter((v) => typeof v === "number" && Number.isFinite(v)) as number[];
+  const nums = values.filter(v => typeof v === "number" && Number.isFinite(v)) as number[];
   if (nums.length === 0) return null;
   return nums.reduce((a, b) => a + b, 0) / nums.length;
 }
 
 function weightedAverage(parts: Array<{ value: number | null; weight: number }>): number | null {
-  const usable = parts.filter((p) => typeof p.value === "number" && Number.isFinite(p.value)) as Array<{
+  const usable = parts.filter(
+    p => typeof p.value === "number" && Number.isFinite(p.value),
+  ) as Array<{
     value: number;
     weight: number;
   }>;
@@ -117,7 +119,9 @@ function inferFrequencyPerWeek(params: {
   startCurrent: string;
 }): number {
   // Prefer explicit frequency rows if present in the current period.
-  const candidates = params.frequencyRows.filter((r) => String(r.tracking_period_end) >= params.startCurrent);
+  const candidates = params.frequencyRows.filter(
+    r => String(r.tracking_period_end) >= params.startCurrent,
+  );
   if (candidates.length > 0) {
     // Pick the most recent.
     const latest = candidates.sort((a, b) =>
@@ -127,7 +131,8 @@ function inferFrequencyPerWeek(params: {
     const avgPerWeek = typeof latest.average_per_week === "number" ? latest.average_per_week : null;
     if (avgPerWeek != null && Number.isFinite(avgPerWeek) && avgPerWeek >= 0) return avgPerWeek;
 
-    const total = typeof latest.total_activity_count === "number" ? latest.total_activity_count : null;
+    const total =
+      typeof latest.total_activity_count === "number" ? latest.total_activity_count : null;
     if (total != null && Number.isFinite(total) && total >= 0) {
       const pt = latest.period_type || "weekly";
       if (pt === "daily") return total * 7;
@@ -170,17 +175,27 @@ function buildInsights(params: {
     if (s.score >= 55) continue;
     if (s.key === "function") {
       insights.push("Function metrics are lower than your recent baseline.");
-      recommendations.push("Prioritize sleep, hydration, and stress reduction; consider tracking context factors.");
-      recommendations.push("If issues persist or cause distress, consider speaking with a licensed clinician.");
+      recommendations.push(
+        "Prioritize sleep, hydration, and stress reduction; consider tracking context factors.",
+      );
+      recommendations.push(
+        "If issues persist or cause distress, consider speaking with a licensed clinician.",
+      );
     } else if (s.key === "libido") {
       insights.push("Libido metrics are lower than your recent baseline.");
-      recommendations.push("Review sleep, stress, and recovery; consider adjusting routines and reducing overtraining.");
+      recommendations.push(
+        "Review sleep, stress, and recovery; consider adjusting routines and reducing overtraining.",
+      );
     } else if (s.key === "satisfaction") {
       insights.push("Satisfaction metrics are lower than your recent baseline.");
-      recommendations.push("Use a short check-in routine and note what improved comfort, communication, and pacing.");
+      recommendations.push(
+        "Use a short check-in routine and note what improved comfort, communication, and pacing.",
+      );
     } else if (s.key === "frequency") {
       insights.push("Activity frequency appears below your recent baseline.");
-      recommendations.push("Set a realistic weekly goal and track small consistency improvements over time.");
+      recommendations.push(
+        "Set a realistic weekly goal and track small consistency improvements over time.",
+      );
     }
   }
 
@@ -190,14 +205,14 @@ function buildInsights(params: {
   }
 
   // Deduplicate while preserving order
-  const uniq = <T,>(arr: T[]): T[] => Array.from(new Map(arr.map((v) => [String(v), v])).values());
+  const uniq = <T>(arr: T[]): T[] => Array.from(new Map(arr.map(v => [String(v), v])).values());
   return {
     insights: uniq(insights).slice(0, 12),
     recommendations: uniq(recommendations).slice(0, 12),
   };
 }
 
-serve(async (req) => {
+serve(async req => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
@@ -289,7 +304,9 @@ serve(async (req) => {
         .order("entry_date", { ascending: true }),
       supabase
         .from("nsfw_frequency_tracking")
-        .select("tracking_period_start, tracking_period_end, period_type, total_activity_count, average_per_week")
+        .select(
+          "tracking_period_start, tracking_period_end, period_type, total_activity_count, average_per_week",
+        )
         .eq("user_id", user.id)
         .gte("tracking_period_end", startPrev)
         .order("tracking_period_end", { ascending: true }),
@@ -315,12 +332,15 @@ serve(async (req) => {
       satisfactionRows: SatisfactionRow[];
       frequencyRows: FrequencyRow[];
     }) => {
-      const ef = score10To100(avg(rows.functionRows.map((r) => r.erectile_function_score)));
-      const stability = score10To100(avg(rows.functionRows.map((r) => r.erection_stability)));
-      const control = score10To100(avg(rows.functionRows.map((r) => r.control_level)));
-      const quality = avg(rows.functionRows.map((r) => mapQuality(r.erection_quality)));
-      const stamina = minutesToScore(avg(rows.functionRows.map((r) => r.stamina_minutes)), 30);
-      const duration = minutesToScore(avg(rows.functionRows.map((r) => r.erection_duration_minutes)), 30);
+      const ef = score10To100(avg(rows.functionRows.map(r => r.erectile_function_score)));
+      const stability = score10To100(avg(rows.functionRows.map(r => r.erection_stability)));
+      const control = score10To100(avg(rows.functionRows.map(r => r.control_level)));
+      const quality = avg(rows.functionRows.map(r => mapQuality(r.erection_quality)));
+      const stamina = minutesToScore(avg(rows.functionRows.map(r => r.stamina_minutes)), 30);
+      const duration = minutesToScore(
+        avg(rows.functionRows.map(r => r.erection_duration_minutes)),
+        30,
+      );
 
       const functionScore = weightedAverage([
         { value: ef, weight: 0.35 },
@@ -331,16 +351,20 @@ serve(async (req) => {
         { value: duration, weight: 0.1 },
       ]);
 
-      const libidoLevel = score10To100(avg(rows.libidoRows.map((r) => r.libido_level)));
-      const desireIntensity = score10To100(avg(rows.libidoRows.map((r) => r.desire_intensity)));
+      const libidoLevel = score10To100(avg(rows.libidoRows.map(r => r.libido_level)));
+      const desireIntensity = score10To100(avg(rows.libidoRows.map(r => r.desire_intensity)));
       const libidoScore = weightedAverage([
         { value: libidoLevel, weight: 0.7 },
         { value: desireIntensity, weight: 0.3 },
       ]);
 
-      const overallSat = score10To100(avg(rows.satisfactionRows.map((r) => r.overall_satisfaction)));
-      const physicalSat = score10To100(avg(rows.satisfactionRows.map((r) => r.physical_satisfaction)));
-      const emotionalSat = score10To100(avg(rows.satisfactionRows.map((r) => r.emotional_satisfaction)));
+      const overallSat = score10To100(avg(rows.satisfactionRows.map(r => r.overall_satisfaction)));
+      const physicalSat = score10To100(
+        avg(rows.satisfactionRows.map(r => r.physical_satisfaction)),
+      );
+      const emotionalSat = score10To100(
+        avg(rows.satisfactionRows.map(r => r.emotional_satisfaction)),
+      );
       const satisfactionScore = weightedAverage([
         { value: overallSat, weight: 0.6 },
         { value: physicalSat, weight: 0.2 },
@@ -399,7 +423,9 @@ serve(async (req) => {
     }
 
     const delta =
-      prevScores.overall != null ? clamp(currentScores.overall - prevScores.overall, -100, 100) : null;
+      prevScores.overall != null
+        ? clamp(currentScores.overall - prevScores.overall, -100, 100)
+        : null;
 
     const score_trend =
       delta == null ? null : delta > 2 ? "improving" : delta < -2 ? "declining" : "stable";
@@ -416,10 +442,16 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         overall_wellness_score: Number(currentScores.overall.toFixed(2)),
-        function_score: currentScores.functionScore != null ? Number(currentScores.functionScore.toFixed(2)) : null,
-        libido_score: currentScores.libidoScore != null ? Number(currentScores.libidoScore.toFixed(2)) : null,
+        function_score:
+          currentScores.functionScore != null
+            ? Number(currentScores.functionScore.toFixed(2))
+            : null,
+        libido_score:
+          currentScores.libidoScore != null ? Number(currentScores.libidoScore.toFixed(2)) : null,
         satisfaction_score:
-          currentScores.satisfactionScore != null ? Number(currentScores.satisfactionScore.toFixed(2)) : null,
+          currentScores.satisfactionScore != null
+            ? Number(currentScores.satisfactionScore.toFixed(2))
+            : null,
         frequency_score: Number(currentScores.frequencyScore.toFixed(2)),
         relationship_score: null,
         score_trend,
@@ -439,4 +471,3 @@ serve(async (req) => {
     });
   }
 });
-

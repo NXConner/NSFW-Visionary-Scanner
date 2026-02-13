@@ -53,50 +53,47 @@ export const MultiAngleCapture = ({
   const currentAngle = REQUIRED_ANGLES[currentAngleIndex];
   const progress = (captures.length / REQUIRED_ANGLES.length) * 100;
 
-  const handleCapture = useCallback(
-    async () => {
-      if (!currentAngle?.id || !cameraActive) return;
-      setIsCapturing(true);
-      setCaptureError(null);
+  const handleCapture = useCallback(async () => {
+    if (!currentAngle?.id || !cameraActive) return;
+    setIsCapturing(true);
+    setCaptureError(null);
 
-      const imageData = await captureImageAsync({ maxWidth: 2048, maxHeight: 2048, quality: 0.9 });
-      if (!imageData) {
-        setIsCapturing(false);
-        setCaptureError("Unable to capture image. Adjust the camera and retry.");
-        return;
-      }
-
-      const quality = await new Promise<number>(resolve => {
-        const img = new Image();
-        img.onload = () => {
-          const pixels = img.width * img.height;
-          const baseline = 1280 * 720;
-          const score = Math.max(60, Math.min(100, Math.round((pixels / baseline) * 100)));
-          resolve(score);
-        };
-        img.onerror = () => resolve(70);
-        img.src = imageData;
-      });
-
-      const newCapture: CapturedAngle = {
-        id: currentAngle.id,
-        angle: currentAngle.label,
-        image: imageData,
-        timestamp: new Date(),
-        quality,
-      };
-
-      setCaptures(prev => [...prev, newCapture]);
-      onCapture(imageData, currentAngle.id);
-
-      if (currentAngleIndex < REQUIRED_ANGLES.length - 1) {
-        setCurrentAngleIndex(prev => prev + 1);
-      }
-
+    const imageData = await captureImageAsync({ maxWidth: 2048, maxHeight: 2048, quality: 0.9 });
+    if (!imageData) {
       setIsCapturing(false);
-    },
-    [cameraActive, captureImageAsync, currentAngle, currentAngleIndex, onCapture],
-  );
+      setCaptureError("Unable to capture image. Adjust the camera and retry.");
+      return;
+    }
+
+    const quality = await new Promise<number>(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const pixels = img.width * img.height;
+        const baseline = 1280 * 720;
+        const score = Math.max(60, Math.min(100, Math.round((pixels / baseline) * 100)));
+        resolve(score);
+      };
+      img.onerror = () => resolve(70);
+      img.src = imageData;
+    });
+
+    const newCapture: CapturedAngle = {
+      id: currentAngle.id,
+      angle: currentAngle.label,
+      image: imageData,
+      timestamp: new Date(),
+      quality,
+    };
+
+    setCaptures(prev => [...prev, newCapture]);
+    onCapture(imageData, currentAngle.id);
+
+    if (currentAngleIndex < REQUIRED_ANGLES.length - 1) {
+      setCurrentAngleIndex(prev => prev + 1);
+    }
+
+    setIsCapturing(false);
+  }, [cameraActive, captureImageAsync, currentAngle, currentAngleIndex, onCapture]);
 
   const handleComplete = () => {
     if (captures.length >= REQUIRED_ANGLES.length) {

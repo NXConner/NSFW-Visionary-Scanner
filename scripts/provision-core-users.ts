@@ -7,7 +7,9 @@ type AppRole = "super_admin" | "admin" | "pro" | "user";
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
-const SUPER_ADMIN_EMAIL = (process.env.CORE_SUPER_ADMIN_EMAIL || "n8ter8@gmail.com").toLowerCase().trim();
+const SUPER_ADMIN_EMAIL = (process.env.CORE_SUPER_ADMIN_EMAIL || "n8ter8@gmail.com")
+  .toLowerCase()
+  .trim();
 const ADMIN_EMAIL = (process.env.CORE_ADMIN_EMAIL || "butterflii18@gmail.com").toLowerCase().trim();
 
 // Optional: if provided, the script will update the auth password.
@@ -82,7 +84,9 @@ async function ensureAuthUser(params: {
       user_metadata: params.displayName ? { display_name: params.displayName } : undefined,
     });
     if (createError || !created?.user) {
-      throw new Error(`auth.admin.createUser failed for ${email}: ${createError?.message || "no user"}`);
+      throw new Error(
+        `auth.admin.createUser failed for ${email}: ${createError?.message || "no user"}`,
+      );
     }
 
     return { id: created.user.id, email };
@@ -93,17 +97,30 @@ async function ensureAuthUser(params: {
   // Best effort: confirm email + update password if explicitly provided.
   const updatePayload: Record<string, unknown> = { email_confirm: true };
   if (shouldSetPassword(password)) updatePayload.password = password;
-  if (params.displayName) updatePayload.user_metadata = { ...(existing.user.user_metadata || {}), display_name: params.displayName };
+  if (params.displayName)
+    updatePayload.user_metadata = {
+      ...(existing.user.user_metadata || {}),
+      display_name: params.displayName,
+    };
 
-  const { data: updated, error: updateError } = await supabase.auth.admin.updateUserById(userId, updatePayload);
+  const { data: updated, error: updateError } = await supabase.auth.admin.updateUserById(
+    userId,
+    updatePayload,
+  );
   if (updateError || !updated?.user) {
-    throw new Error(`auth.admin.updateUserById failed for ${email}: ${updateError?.message || "no user"}`);
+    throw new Error(
+      `auth.admin.updateUserById failed for ${email}: ${updateError?.message || "no user"}`,
+    );
   }
 
   return { id: updated.user.id, email };
 }
 
-async function upsertProfile(params: { userId: string; email: string; displayName?: string }): Promise<void> {
+async function upsertProfile(params: {
+  userId: string;
+  email: string;
+  displayName?: string;
+}): Promise<void> {
   const { error } = await supabase.from("profiles").upsert(
     {
       user_id: params.userId,
@@ -164,12 +181,19 @@ async function ensureLifetimeSubscription(userId: string): Promise<void> {
   if (extras.length) {
     const extraIds = extras.map(r => r.id).filter(Boolean);
     if (extraIds.length) {
-      const { error: delErr } = await supabase.from("user_subscriptions").delete().in("id", extraIds);
-      if (delErr) throw new Error(`user_subscriptions: failed to delete duplicate rows: ${delErr.message}`);
+      const { error: delErr } = await supabase
+        .from("user_subscriptions")
+        .delete()
+        .in("id", extraIds);
+      if (delErr)
+        throw new Error(`user_subscriptions: failed to delete duplicate rows: ${delErr.message}`);
     }
   }
 
-  const { error: updateError } = await supabase.from("user_subscriptions").update(desired).eq("id", keep.id);
+  const { error: updateError } = await supabase
+    .from("user_subscriptions")
+    .update(desired)
+    .eq("id", keep.id);
   if (updateError) throw new Error(`user_subscriptions.update failed: ${updateError.message}`);
 }
 
@@ -189,7 +213,10 @@ async function ensureBetaTester(userId: string, email: string): Promise<void> {
 
   // Some deployments may not have the optional beta_testers table applied yet.
   // Provisioning should still succeed for roles/subscriptions/partner sync.
-  if (String((error as any).code || "") === "42P01" || /relation .*beta_testers.* does not exist/i.test(error.message)) {
+  if (
+    String((error as any).code || "") === "42P01" ||
+    /relation .*beta_testers.* does not exist/i.test(error.message)
+  ) {
     console.warn(`⚠️  beta_testers table missing; skipping allowlist for ${email}`);
     return;
   }
@@ -252,8 +279,12 @@ async function ensurePartnerConnectionAccepted(params: {
     // Delete any duplicates (reverse-direction rows).
     const extraIds = existing.map(r => r.id).filter(id => id && id !== connectionId);
     if (extraIds.length) {
-      const { error: delError } = await supabase.from("partner_connections").delete().in("id", extraIds);
-      if (delError) throw new Error(`partner_connections.delete duplicates failed: ${delError.message}`);
+      const { error: delError } = await supabase
+        .from("partner_connections")
+        .delete()
+        .in("id", extraIds);
+      if (delError)
+        throw new Error(`partner_connections.delete duplicates failed: ${delError.message}`);
     }
   }
 
@@ -352,4 +383,3 @@ run().catch(err => {
   console.error("❌ Provisioning failed:", err instanceof Error ? err.message : err);
   process.exit(1);
 });
-

@@ -22,7 +22,13 @@ export function EditsList(props: {
     <div className="p-3 space-y-3">
       <div className="flex items-center justify-between gap-2">
         <div className="text-sm font-medium">Queued / processed edits</div>
-        <Button size="sm" variant="outline" onClick={onRefresh} className="gap-2" disabled={loading}>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onRefresh}
+          className="gap-2"
+          disabled={loading}
+        >
           <RefreshCw className="w-4 h-4" />
           Refresh
         </Button>
@@ -73,4 +79,3 @@ export function EditsList(props: {
     </div>
   );
 }
-

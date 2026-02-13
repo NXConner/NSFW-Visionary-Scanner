@@ -23,7 +23,10 @@ const ROLES_STORAGE_KEY = "lovable_user_roles";
 // Persist roles to localStorage
 function persistRoles(userId: string, roles: AppRole[]): void {
   try {
-    localStorage.setItem(ROLES_STORAGE_KEY, JSON.stringify({ userId, roles, timestamp: Date.now() }));
+    localStorage.setItem(
+      ROLES_STORAGE_KEY,
+      JSON.stringify({ userId, roles, timestamp: Date.now() }),
+    );
   } catch {
     // localStorage may not be available
   }
@@ -38,7 +41,8 @@ function getPersistedRoles(userId?: string): AppRole[] {
     // Check if cached for same user and not expired (5 min TTL for localStorage cache)
     if (userId && parsed?.userId === userId && parsed?.roles) {
       const age = Date.now() - (parsed.timestamp || 0);
-      if (age < 300000) { // 5 minutes
+      if (age < 300000) {
+        // 5 minutes
         return parsed.roles as AppRole[];
       }
     }
@@ -64,7 +68,8 @@ function getInitialRoles(): { roles: AppRole[]; userId: string | null } {
     if (!stored) return { roles: [], userId: null };
     const parsed = JSON.parse(stored);
     const age = Date.now() - (parsed.timestamp || 0);
-    if (parsed?.roles && age < 300000) { // 5 minutes
+    if (parsed?.roles && age < 300000) {
+      // 5 minutes
       return { roles: parsed.roles as AppRole[], userId: parsed.userId };
     }
     return { roles: [], userId: null };
@@ -77,9 +82,13 @@ function getInitialRoles(): { roles: AppRole[]; userId: string | null } {
 const INITIAL_CACHED_STATE = getInitialRoles();
 
 // Cache for roles to prevent excessive DB calls on re-renders
-let cachedRoles: { userId: string; roles: AppRole[]; timestamp: number } | null = 
-  INITIAL_CACHED_STATE.roles.length > 0 
-    ? { userId: INITIAL_CACHED_STATE.userId || "", roles: INITIAL_CACHED_STATE.roles, timestamp: Date.now() }
+let cachedRoles: { userId: string; roles: AppRole[]; timestamp: number } | null =
+  INITIAL_CACHED_STATE.roles.length > 0
+    ? {
+        userId: INITIAL_CACHED_STATE.userId || "",
+        roles: INITIAL_CACHED_STATE.roles,
+        timestamp: Date.now(),
+      }
     : null;
 const CACHE_TTL = 30000; // 30 seconds
 
@@ -100,12 +109,15 @@ export const useUserRoles = (): UseUserRolesReturn => {
       // Race against a 2-second timeout to prevent UI blocking
       const userResult = await Promise.race([
         supabase.auth.getUser(),
-        new Promise<{ data: { user: null }; error: null }>((resolve) =>
-          setTimeout(() => resolve({ data: { user: null }, error: null }), 2000)
+        new Promise<{ data: { user: null }; error: null }>(resolve =>
+          setTimeout(() => resolve({ data: { user: null }, error: null }), 2000),
         ),
       ]);
 
-      const { data: { user }, error: userError } = userResult;
+      const {
+        data: { user },
+        error: userError,
+      } = userResult;
 
       if (userError) {
         throw userError;
@@ -147,8 +159,8 @@ export const useUserRoles = (): UseUserRolesReturn => {
       // Database-driven role check with 3s timeout
       const roleResult = await Promise.race([
         supabase.from("user_roles").select("role").eq("user_id", user.id),
-        new Promise<{ data: null; error: { message: string } }>((resolve) =>
-          setTimeout(() => resolve({ data: null, error: { message: "Role check timeout" } }), 3000)
+        new Promise<{ data: null; error: { message: string } }>(resolve =>
+          setTimeout(() => resolve({ data: null, error: { message: "Role check timeout" } }), 3000),
         ),
       ]);
 
@@ -170,14 +182,14 @@ export const useUserRoles = (): UseUserRolesReturn => {
         return;
       }
 
-      const dbRoles = (data?.map((r) => r.role as AppRole) || []).filter(Boolean);
-      
+      const dbRoles = (data?.map(r => r.role as AppRole) || []).filter(Boolean);
+
       // Update memory cache
       cachedRoles = { userId: user.id, roles: dbRoles, timestamp: now };
-      
+
       // CRITICAL: Persist to localStorage for instant load on page refresh
       persistRoles(user.id, dbRoles);
-      
+
       setRoles(dbRoles);
       setRolesFetched(true);
     } catch (err) {

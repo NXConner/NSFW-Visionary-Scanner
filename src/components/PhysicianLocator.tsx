@@ -68,10 +68,7 @@ export const PhysicianLocator = () => {
     return total / rated.length;
   }, [experts]);
 
-  const availableCount = useMemo(
-    () => experts.filter(e => e.is_available).length,
-    [experts],
-  );
+  const availableCount = useMemo(() => experts.filter(e => e.is_available).length, [experts]);
   const availabilityLabel = availableCount > 0 ? "Available now" : "Schedule required";
 
   const topSpecialties = useMemo(() => {
@@ -102,8 +99,8 @@ export const PhysicianLocator = () => {
               <span className="gradient-text">Expert</span> Locator
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Connect with verified pavement experts for inspection, repair planning, and maintenance
-              guidance.
+              Connect with verified pavement experts for inspection, repair planning, and
+              maintenance guidance.
             </p>
           </div>
         </Reveal>

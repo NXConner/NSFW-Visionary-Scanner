@@ -2,7 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { CameraStreamRow, VideoEditRow, VideoRecordingRow } from "@/lib/videoEditing";
 import { clamp, getEditsForRecording, queueVideoEdit, roundTo, uuidLike } from "@/lib/videoEditing";
-import type { CameraSource, CameraSwitchEvent, MaskTrack, MaskKeyframe, TimelineSpecV1, TransitionType } from "@/lib/videoEditing";
+import type {
+  CameraSource,
+  CameraSwitchEvent,
+  MaskTrack,
+  MaskKeyframe,
+  TimelineSpecV1,
+  TransitionType,
+} from "@/lib/videoEditing";
 import { EditsList } from "@/components/videoEditing/multicam/EditsList";
 import { TimelineBar } from "@/components/videoEditing/multicam/TimelineBar";
 import { useMultiCamPlayback } from "@/components/videoEditing/multicam/useMultiCamPlayback";
@@ -81,7 +88,7 @@ export function MultiCamEditor(props: {
   const [masks, setMasks] = useState<MaskTrack[]>([]);
   const [activeMaskId, setActiveMaskId] = useState<string | null>(null);
   const [selectedTransition, setSelectedTransition] = useState<TransitionType>("cut");
-  
+
   // Video filter state
   const [filterState, setFilterState] = useState<VideoFilterState>({
     enabled: false,
@@ -94,7 +101,9 @@ export function MultiCamEditor(props: {
     if (!sources.length) return;
     setCameraSwitches(prev => {
       if (prev.length) return prev;
-      return [{ id: uuidLike(), atSeconds: 0, cameraIndex: sources[0].cameraIndex, transition: "cut" }];
+      return [
+        { id: uuidLike(), atSeconds: 0, cameraIndex: sources[0].cameraIndex, transition: "cut" },
+      ];
     });
   }, [sources]);
 
@@ -183,13 +192,16 @@ export function MultiCamEditor(props: {
     if (!sources.length) return;
     const id = uuidLike();
     setCameraSwitches(prev =>
-      [...prev, {
-        id,
-        atSeconds: roundTo(playback.playhead, 3),
-        cameraIndex: realActiveCameraIndex,
-        transition: selectedTransition,
-        transitionDurationMs: selectedTransition === "crossfade" ? 250 : 0,
-      }].sort((a, b) => a.atSeconds - b.atSeconds),
+      [
+        ...prev,
+        {
+          id,
+          atSeconds: roundTo(playback.playhead, 3),
+          cameraIndex: realActiveCameraIndex,
+          transition: selectedTransition,
+          transitionDurationMs: selectedTransition === "crossfade" ? 250 : 0,
+        },
+      ].sort((a, b) => a.atSeconds - b.atSeconds),
     );
     toast.success("Switch added");
   }, [playback.playhead, realActiveCameraIndex, selectedTransition, sources.length]);
@@ -218,10 +230,23 @@ export function MultiCamEditor(props: {
     const maskId = activeMaskId ?? uuidLike();
     const nextMask: MaskTrack =
       masks.find(m => m.id === maskId) ??
-      ({ id: maskId, name: `Mask ${masks.length + 1}`, mode: "exclude", feather: 0.15, blur: 0, keyframes: [] } satisfies MaskTrack);
+      ({
+        id: maskId,
+        name: `Mask ${masks.length + 1}`,
+        mode: "exclude",
+        feather: 0.15,
+        blur: 0,
+        keyframes: [],
+      } satisfies MaskTrack);
     const newKeyframe: MaskKeyframe = {
       atSeconds: roundTo(playback.playhead, 3),
-      shape: { kind: "rect" as const, xPct: det.box.x, yPct: det.box.y, wPct: det.box.width, hPct: det.box.height },
+      shape: {
+        kind: "rect" as const,
+        xPct: det.box.x,
+        yPct: det.box.y,
+        wPct: det.box.width,
+        hPct: det.box.height,
+      },
       strength: 1,
     };
     const updated: MaskTrack = {
@@ -342,4 +367,3 @@ export function MultiCamEditor(props: {
     </div>
   );
 }
-

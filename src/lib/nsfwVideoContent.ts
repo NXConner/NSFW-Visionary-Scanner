@@ -281,9 +281,7 @@ export async function deleteVideoPlaylist(playlistId: string): Promise<boolean> 
       return false;
     }
 
-    const { error } = await fromExtended("nsfw_video_playlists")
-      .delete()
-      .eq("id", playlistId);
+    const { error } = await fromExtended("nsfw_video_playlists").delete().eq("id", playlistId);
     if (error) {
       logger.error("Error deleting playlist:", { error: error.message });
       toast.error("Failed to delete playlist");
@@ -344,9 +342,7 @@ export async function getPlaylistVideos(playlist: NSFWVideoPlaylist): Promise<NS
     const ids = Array.isArray(playlist.video_ids) ? playlist.video_ids.map(String) : [];
     if (ids.length === 0) return [];
 
-    const { data, error } = await fromExtended("nsfw_video_content")
-      .select("*")
-      .in("id", ids);
+    const { data, error } = await fromExtended("nsfw_video_content").select("*").in("id", ids);
 
     if (error) {
       logger.error("Error fetching playlist videos:", { error: error.message });

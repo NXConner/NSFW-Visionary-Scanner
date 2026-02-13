@@ -57,7 +57,7 @@ function buildAnalysis(options: ScannerHookOptions): ScanAnalysis {
 }
 
 export function useAgnosticScanner(
-  userOptions: Partial<ScannerHookOptions> = {}
+  userOptions: Partial<ScannerHookOptions> = {},
 ): ScannerHookResult {
   const options = { ...DEFAULT_OPTIONS, ...userOptions };
 
@@ -78,9 +78,7 @@ export function useAgnosticScanner(
           metadata.resolution.width > options.maxResolution! ||
           metadata.resolution.height > options.maxResolution!
         ) {
-          throw new Error(
-            `Image exceeds maximum resolution of ${options.maxResolution}px`
-          );
+          throw new Error(`Image exceeds maximum resolution of ${options.maxResolution}px`);
         }
 
         const newScan: ScanResult = {
@@ -95,7 +93,7 @@ export function useAgnosticScanner(
         setScan(newScan);
 
         // Simulate async processing (replace with actual scanner logic)
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         const completedScan: ScanResult = {
           ...newScan,
@@ -128,7 +126,7 @@ export function useAgnosticScanner(
         throw new Error(message);
       }
     },
-    [options]
+    [options],
   );
 
   const reset = useCallback(() => {

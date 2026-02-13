@@ -48,11 +48,13 @@ async function importAesGcmEncryptKey(): Promise<CryptoKey> {
   let keyBytes: Uint8Array | null = null;
   if (explicit) {
     const decoded = decodeB64(explicit);
-    if (decoded.byteLength < 32) throw new Error("CREDENTIALS_ENCRYPTION_KEY_B64 must be >= 32 bytes base64");
+    if (decoded.byteLength < 32)
+      throw new Error("CREDENTIALS_ENCRYPTION_KEY_B64 must be >= 32 bytes base64");
     keyBytes = decoded.slice(0, 32);
   } else if (dlcMaster) {
     const decoded = decodeB64(dlcMaster);
-    if (decoded.byteLength < 32) throw new Error("DLC_KEYRING_MASTER_KEY_B64 must be >= 32 bytes base64");
+    if (decoded.byteLength < 32)
+      throw new Error("DLC_KEYRING_MASTER_KEY_B64 must be >= 32 bytes base64");
     keyBytes = decoded.slice(0, 32);
   } else {
     const serviceRoleKey = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "").trim();
@@ -73,7 +75,7 @@ async function encryptText(params: { key: CryptoKey; plaintext: string }): Promi
   return `v1:${encodeB64(iv)}:${encodeB64(ct)}`;
 }
 
-serve(async (req) => {
+serve(async req => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
@@ -162,4 +164,3 @@ serve(async (req) => {
     });
   }
 });
-

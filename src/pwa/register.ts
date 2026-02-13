@@ -36,8 +36,8 @@ export function registerPwaIfAllowed(): void {
   setTimeout(() => {
     // Use Function constructor to completely hide the import from Rollup's static analysis
     // This prevents "virtual:pwa-register" resolution errors when the module doesn't exist
-    const dynamicImport = new Function('modulePath', 'return import(modulePath)');
-    
+    const dynamicImport = new Function("modulePath", "return import(modulePath)");
+
     dynamicImport("virtual:pwa-register")
       .then((module: { registerSW: (options: unknown) => void }) => {
         const { registerSW } = module;

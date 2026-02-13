@@ -38,11 +38,7 @@ import { AdminDatabasePanel } from "@/components/admin/AdminDatabasePanel";
 import { AdminSettingsPanel } from "@/components/admin/AdminSettingsPanel";
 import { AdminHealthPanel } from "@/components/admin/AdminHealthPanel";
 import { AdminSecurityPanel } from "@/components/admin/AdminSecurityPanel";
-import {
-  SUPPORT_CONTACT_EMAIL,
-  PRIVACY_CONTACT_EMAIL,
-  DPO_CONTACT_EMAIL,
-} from "@/config/brand";
+import { SUPPORT_CONTACT_EMAIL, PRIVACY_CONTACT_EMAIL, DPO_CONTACT_EMAIL } from "@/config/brand";
 import { useAdminMetrics } from "@/hooks/useAdminMetrics";
 
 interface MetricCardProps {
@@ -433,23 +429,23 @@ export default function AdminDashboard({ initialSection }: AdminDashboardProps) 
             )}
 
             {activeSection === "users" && <AdminUsersPanel />}
-            
+
             {activeSection === "content" && <ContentModerationPanel />}
-            
+
             {activeSection === "analytics" && <AdminAnalyticsPanel />}
 
             {activeSection === "dlc" && <AdminDLCPanel />}
-            
+
             {activeSection === "licenses" && <AdminLicensesPanel />}
-            
+
             {activeSection === "notifications" && <AdminNotificationsPanel />}
-            
+
             {activeSection === "database" && <AdminDatabasePanel />}
-            
+
             {activeSection === "settings" && <AdminSettingsPanel />}
-            
+
             {activeSection === "health" && <AdminHealthPanel />}
-            
+
             {activeSection === "security" && <AdminSecurityPanel />}
           </div>
         </div>

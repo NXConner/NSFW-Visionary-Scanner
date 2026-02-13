@@ -50,101 +50,113 @@ export function useThoughtPingTemplates() {
     void load();
   }, [load]);
 
-  const createTemplate = useCallback(async (payload: Partial<ThoughtPingTemplate>) => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error("Please sign in");
+  const createTemplate = useCallback(
+    async (payload: Partial<ThoughtPingTemplate>) => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) {
+          toast.error("Please sign in");
+          return false;
+        }
+        const { error } = await fromExtended("partner_thought_ping_templates").insert({
+          user_id: user.id,
+          title: payload.title ?? "New template",
+          message: payload.message ?? "",
+          detailed_message: payload.detailed_message ?? null,
+          tone_tags: payload.tone_tags ?? [],
+          intensity: payload.intensity ?? "medium",
+          theme: payload.theme ?? null,
+          is_favorite: payload.is_favorite ?? false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+        if (error) {
+          toast.error("Failed to save template");
+          return false;
+        }
+        await load();
+        return true;
+      } catch (error) {
+        logger.error("partner sync: create template failed", { error });
         return false;
       }
-      const { error } = await fromExtended("partner_thought_ping_templates").insert({
-        user_id: user.id,
-        title: payload.title ?? "New template",
-        message: payload.message ?? "",
-        detailed_message: payload.detailed_message ?? null,
-        tone_tags: payload.tone_tags ?? [],
-        intensity: payload.intensity ?? "medium",
-        theme: payload.theme ?? null,
-        is_favorite: payload.is_favorite ?? false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-      if (error) {
-        toast.error("Failed to save template");
-        return false;
-      }
-      await load();
-      return true;
-    } catch (error) {
-      logger.error("partner sync: create template failed", { error });
-      return false;
-    }
-  }, [load]);
+    },
+    [load],
+  );
 
-  const deleteTemplate = useCallback(async (templateId: string) => {
-    try {
-      const { error } = await fromExtended("partner_thought_ping_templates")
-        .delete()
-        .eq("id", templateId);
-      if (error) {
-        toast.error("Failed to delete template");
+  const deleteTemplate = useCallback(
+    async (templateId: string) => {
+      try {
+        const { error } = await fromExtended("partner_thought_ping_templates")
+          .delete()
+          .eq("id", templateId);
+        if (error) {
+          toast.error("Failed to delete template");
+          return false;
+        }
+        await load();
+        return true;
+      } catch (error) {
+        logger.error("partner sync: delete template failed", { error });
         return false;
       }
-      await load();
-      return true;
-    } catch (error) {
-      logger.error("partner sync: delete template failed", { error });
-      return false;
-    }
-  }, [load]);
+    },
+    [load],
+  );
 
-  const createQuickReply = useCallback(async (payload: Partial<QuickReplyTemplate>) => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error("Please sign in");
+  const createQuickReply = useCallback(
+    async (payload: Partial<QuickReplyTemplate>) => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) {
+          toast.error("Please sign in");
+          return false;
+        }
+        const { error } = await fromExtended("partner_quick_reply_templates").insert({
+          user_id: user.id,
+          label: payload.label ?? "Quick reply",
+          message: payload.message ?? "",
+          is_favorite: payload.is_favorite ?? false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+        if (error) {
+          toast.error("Failed to save quick reply");
+          return false;
+        }
+        await load();
+        return true;
+      } catch (error) {
+        logger.error("partner sync: create quick reply failed", { error });
         return false;
       }
-      const { error } = await fromExtended("partner_quick_reply_templates").insert({
-        user_id: user.id,
-        label: payload.label ?? "Quick reply",
-        message: payload.message ?? "",
-        is_favorite: payload.is_favorite ?? false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-      if (error) {
-        toast.error("Failed to save quick reply");
-        return false;
-      }
-      await load();
-      return true;
-    } catch (error) {
-      logger.error("partner sync: create quick reply failed", { error });
-      return false;
-    }
-  }, [load]);
+    },
+    [load],
+  );
 
-  const deleteQuickReply = useCallback(async (replyId: string) => {
-    try {
-      const { error } = await fromExtended("partner_quick_reply_templates")
-        .delete()
-        .eq("id", replyId);
-      if (error) {
-        toast.error("Failed to delete quick reply");
+  const deleteQuickReply = useCallback(
+    async (replyId: string) => {
+      try {
+        const { error } = await fromExtended("partner_quick_reply_templates")
+          .delete()
+          .eq("id", replyId);
+        if (error) {
+          toast.error("Failed to delete quick reply");
+          return false;
+        }
+        await load();
+        return true;
+      } catch (error) {
+        logger.error("partner sync: delete quick reply failed", { error });
         return false;
       }
-      await load();
-      return true;
-    } catch (error) {
-      logger.error("partner sync: delete quick reply failed", { error });
-      return false;
-    }
-  }, [load]);
+    },
+    [load],
+  );
 
   return {
     templates,

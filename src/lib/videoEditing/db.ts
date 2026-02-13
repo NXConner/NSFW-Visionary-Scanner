@@ -84,7 +84,9 @@ export async function getCameraStreamsForSession(sessionId: string): Promise<Cam
   }
 }
 
-export async function getVideoRecordingsForSession(sessionId: string): Promise<VideoRecordingRow[]> {
+export async function getVideoRecordingsForSession(
+  sessionId: string,
+): Promise<VideoRecordingRow[]> {
   try {
     const { data, error } = await fromExtended("video_recordings")
       .select(
@@ -158,7 +160,8 @@ export async function ensureRecordingForCameraStream(params: {
         recording_type: "single",
         video_url: params.cameraStream.video_url ?? null,
         video_storage_path: storagePath,
-        duration_seconds: params.durationSeconds ?? params.cameraStream.video_duration_seconds ?? null,
+        duration_seconds:
+          params.durationSeconds ?? params.cameraStream.video_duration_seconds ?? null,
         file_size_bytes: null,
         is_private: true,
         share_with_partner: true,
@@ -178,4 +181,3 @@ export async function ensureRecordingForCameraStream(params: {
     return null;
   }
 }
-

@@ -58,7 +58,11 @@ function mapTemplateCategory(
     .trim()
     .toLowerCase();
   if (!normalized) return "custom";
-  if (normalized.includes("romantic") || normalized.includes("sensual") || normalized.includes("making love")) {
+  if (
+    normalized.includes("romantic") ||
+    normalized.includes("sensual") ||
+    normalized.includes("making love")
+  ) {
     return "romantic";
   }
   if (
@@ -84,7 +88,11 @@ function mapTemplateCategory(
     return "adventurous";
   }
   if (normalized.includes("quick")) return "quick";
-  if (normalized.includes("slow") || normalized.includes("all night") || normalized.includes("passion")) {
+  if (
+    normalized.includes("slow") ||
+    normalized.includes("all night") ||
+    normalized.includes("passion")
+  ) {
     return "passionate";
   }
   return "custom";
@@ -142,33 +150,25 @@ export function useDateNights(partnerId: string | null, pageSize: number = 10) {
       setDetails({});
       return;
     }
-    const [itinerary, checklist, packing, distractions, positions, aftercare, reminders, reflections] =
-      await Promise.all([
-        fromExtended("intimate_date_itinerary_items")
-          .select("*")
-          .in("proposal_id", proposalIds),
-        fromExtended("intimate_date_checklist_items")
-          .select("*")
-          .in("proposal_id", proposalIds),
-        fromExtended("intimate_date_packing_items")
-          .select("*")
-          .in("proposal_id", proposalIds),
-        fromExtended("intimate_date_distractions")
-          .select("*")
-          .in("proposal_id", proposalIds),
-        fromExtended("intimate_date_positions")
-          .select("*")
-          .in("proposal_id", proposalIds),
-        fromExtended("intimate_date_aftercare_items")
-          .select("*")
-          .in("proposal_id", proposalIds),
-        fromExtended("intimate_date_reminders")
-          .select("*")
-          .in("proposal_id", proposalIds),
-        fromExtended("intimate_date_reflections")
-          .select("*")
-          .in("proposal_id", proposalIds),
-      ]);
+    const [
+      itinerary,
+      checklist,
+      packing,
+      distractions,
+      positions,
+      aftercare,
+      reminders,
+      reflections,
+    ] = await Promise.all([
+      fromExtended("intimate_date_itinerary_items").select("*").in("proposal_id", proposalIds),
+      fromExtended("intimate_date_checklist_items").select("*").in("proposal_id", proposalIds),
+      fromExtended("intimate_date_packing_items").select("*").in("proposal_id", proposalIds),
+      fromExtended("intimate_date_distractions").select("*").in("proposal_id", proposalIds),
+      fromExtended("intimate_date_positions").select("*").in("proposal_id", proposalIds),
+      fromExtended("intimate_date_aftercare_items").select("*").in("proposal_id", proposalIds),
+      fromExtended("intimate_date_reminders").select("*").in("proposal_id", proposalIds),
+      fromExtended("intimate_date_reflections").select("*").in("proposal_id", proposalIds),
+    ]);
 
     const next: Record<string, ProposalDetails> = {};
     for (const id of proposalIds) {
@@ -503,30 +503,33 @@ export function useDateNights(partnerId: string | null, pageSize: number = 10) {
     [load, proposals],
   );
 
-  const addReflection = useCallback(async (proposalId: string, rating: number, notes: string) => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return false;
-      const { error } = await fromExtended("intimate_date_reflections").insert({
-        proposal_id: proposalId,
-        user_id: user.id,
-        rating,
-        notes,
-        created_at: new Date().toISOString(),
-      });
-      if (error) {
-        toast.error("Failed to save reflection");
+  const addReflection = useCallback(
+    async (proposalId: string, rating: number, notes: string) => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return false;
+        const { error } = await fromExtended("intimate_date_reflections").insert({
+          proposal_id: proposalId,
+          user_id: user.id,
+          rating,
+          notes,
+          created_at: new Date().toISOString(),
+        });
+        if (error) {
+          toast.error("Failed to save reflection");
+          return false;
+        }
+        await load();
+        return true;
+      } catch (error) {
+        logger.error("partner sync: add reflection failed", { error });
         return false;
       }
-      await load();
-      return true;
-    } catch (error) {
-      logger.error("partner sync: add reflection failed", { error });
-      return false;
-    }
-  }, [load]);
+    },
+    [load],
+  );
 
   const respondWithModification = useCallback(
     async (proposalId: string, modifications: ProposalModifications) => {

@@ -12,7 +12,7 @@ describe("NotFound", () => {
     render(
       <MemoryRouter initialEntries={["/unknown-page"]}>
         <NotFound />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     expect(screen.getByText("404")).toBeInTheDocument();
@@ -23,7 +23,7 @@ describe("NotFound", () => {
     render(
       <MemoryRouter initialEntries={["/unknown-page"]}>
         <NotFound />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     const homeLink = screen.getByText("Return to Home");
@@ -35,7 +35,7 @@ describe("NotFound", () => {
     render(
       <MemoryRouter initialEntries={["/some-missing-route"]}>
         <NotFound />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     expect(console.warn).toHaveBeenCalledWith("404 Not Found:", "/some-missing-route");

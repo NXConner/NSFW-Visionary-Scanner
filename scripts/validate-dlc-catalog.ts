@@ -44,8 +44,12 @@ async function main() {
 
   const codeIds = new Set(Object.keys(DLC_PACKAGES));
 
-  const missingInDb = Array.from(codeIds).filter(id => !dbIds.has(id)).sort();
-  const extraInDb = Array.from(dbIds).filter(id => !codeIds.has(id)).sort();
+  const missingInDb = Array.from(codeIds)
+    .filter(id => !dbIds.has(id))
+    .sort();
+  const extraInDb = Array.from(dbIds)
+    .filter(id => !codeIds.has(id))
+    .sort();
 
   const mismatches: Array<{ id: string; fields: Record<string, { db: unknown; code: unknown }> }> =
     [];
@@ -58,7 +62,11 @@ async function main() {
     const fields: Record<string, { db: unknown; code: unknown }> = {};
 
     const codePriceUsd = typeof code.priceUsd === "number" ? code.priceUsd : null;
-    if (row.price_usd != null && codePriceUsd != null && Number(row.price_usd) !== Number(codePriceUsd)) {
+    if (
+      row.price_usd != null &&
+      codePriceUsd != null &&
+      Number(row.price_usd) !== Number(codePriceUsd)
+    ) {
       fields.price_usd = { db: row.price_usd, code: codePriceUsd };
     }
 
@@ -69,7 +77,11 @@ async function main() {
 
     const codeInterval =
       typeof code.subscriptionInterval === "string" ? code.subscriptionInterval : null;
-    if (row.subscription_interval && codeInterval && String(row.subscription_interval) !== String(codeInterval)) {
+    if (
+      row.subscription_interval &&
+      codeInterval &&
+      String(row.subscription_interval) !== String(codeInterval)
+    ) {
       fields.subscription_interval = { db: row.subscription_interval, code: codeInterval };
     }
 
@@ -77,7 +89,11 @@ async function main() {
   }
 
   if (missingInDb.length || mismatches.length) {
-    fail("DLC catalog drift detected (DB vs code fallback)", { missingInDb, mismatches, extraInDb });
+    fail("DLC catalog drift detected (DB vs code fallback)", {
+      missingInDb,
+      mismatches,
+      extraInDb,
+    });
   }
 
   ok({
@@ -89,4 +105,3 @@ async function main() {
 }
 
 main().catch(e => fail(e instanceof Error ? e.message : "Unknown error"));
-

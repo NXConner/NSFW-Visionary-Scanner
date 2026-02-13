@@ -33,4 +33,3 @@ export interface CurveFitResult {
   /** RMS error in rotated space. */
   rmse: number;
 }
-

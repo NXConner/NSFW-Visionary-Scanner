@@ -286,8 +286,10 @@ export async function joinNSFWSupportGroup(groupId: string): Promise<NSFWSupport
     const user = await requireUser();
     if (!user) return null;
 
-    const { error } = await fromExtended("nsfw_support_group_members")
-      .insert({ group_id: groupId, user_id: user.id });
+    const { error } = await fromExtended("nsfw_support_group_members").insert({
+      group_id: groupId,
+      user_id: user.id,
+    });
 
     if (error) {
       logger.error("NSFWCommunityForum: join support group failed", { error: error.message });

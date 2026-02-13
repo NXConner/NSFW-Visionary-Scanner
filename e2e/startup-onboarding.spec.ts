@@ -85,4 +85,3 @@ test.describe("Startup + onboarding (first run)", () => {
     await expect(page.getByRole("button", { name: /^Scan$/ })).toBeVisible({ timeout: 20_000 });
   });
 });
-

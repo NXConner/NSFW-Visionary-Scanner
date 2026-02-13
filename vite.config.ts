@@ -174,7 +174,7 @@ export default defineConfig(({ mode }) => ({
       output: {
         // Manual chunks split heavy dependencies to reduce main bundle size.
         // Isolated by dependency tree to avoid cyclic cross-chunk imports.
-        manualChunks: (id) => {
+        manualChunks: id => {
           if (id.includes("node_modules")) {
             // Heavy visualization libraries (dynamically imported via LazyCharts/LazyModel3DViewer)
             if (id.includes("recharts") || id.includes("d3-")) return "vendor-charts";

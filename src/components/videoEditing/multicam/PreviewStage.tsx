@@ -12,9 +12,9 @@ import type { FilterType } from "@/lib/imageFilters";
  */
 function getCssFilterForPreview(filterState: VideoFilterState): string {
   if (!filterState.enabled || !filterState.filterType) return "none";
-  
+
   const { filterType, options } = filterState;
-  
+
   switch (filterType) {
     case "celShading": {
       // Approximate with contrast and saturate

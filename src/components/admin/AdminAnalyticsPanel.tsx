@@ -49,7 +49,8 @@ function MetricCard({ title, value, change, icon }: MetricCardProps) {
                 <ArrowDown className="h-4 w-4 text-destructive" />
               )}
               <span className={`text-sm ${isPositive ? "text-success" : "text-destructive"}`}>
-                {isPositive ? "+" : ""}{change}%
+                {isPositive ? "+" : ""}
+                {change}%
               </span>
               <span className="text-xs text-muted-foreground">vs last period</span>
             </div>
@@ -135,7 +136,9 @@ export function AdminAnalyticsPanel() {
               <div className="text-center">
                 <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground">User growth chart</p>
-                <Badge variant="secondary" className="mt-2">+12.5% this period</Badge>
+                <Badge variant="secondary" className="mt-2">
+                  +12.5% this period
+                </Badge>
               </div>
             </div>
           </CardContent>
@@ -154,7 +157,9 @@ export function AdminAnalyticsPanel() {
               <div className="text-center">
                 <TrendingUp className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground">Revenue trend chart</p>
-                <Badge variant="secondary" className="mt-2">+23.1% this period</Badge>
+                <Badge variant="secondary" className="mt-2">
+                  +23.1% this period
+                </Badge>
               </div>
             </div>
           </CardContent>
@@ -176,7 +181,10 @@ export function AdminAnalyticsPanel() {
                 { name: "Positions Gallery", sales: 67, revenue: "$3,350" },
                 { name: "Video Library", sales: 45, revenue: "$2,250" },
               ].map((pkg, i) => (
-                <div key={i} className="flex items-center gap-4 p-3 rounded-lg border border-border">
+                <div
+                  key={i}
+                  className="flex items-center gap-4 p-3 rounded-lg border border-border"
+                >
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                     {i + 1}
                   </div>
@@ -204,7 +212,10 @@ export function AdminAnalyticsPanel() {
                 { name: "AI Chat", usage: "12,345 chats", growth: "+25%" },
                 { name: "Video Library", usage: "8,901 views", growth: "+15%" },
               ].map((feature, i) => (
-                <div key={i} className="flex items-center gap-4 p-3 rounded-lg border border-border">
+                <div
+                  key={i}
+                  className="flex items-center gap-4 p-3 rounded-lg border border-border"
+                >
                   <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
                     <Activity className="w-4 h-4" />
                   </div>

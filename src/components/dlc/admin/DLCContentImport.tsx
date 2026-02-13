@@ -426,14 +426,19 @@ export function DLCContentImport(): React.ReactElement {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" disabled={busy} onClick={() => void runAutoPositionsImport()}>
+                  <Button
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => void runAutoPositionsImport()}
+                  >
                     {busy ? "Working…" : dryRun ? "Dry-run auto import" : "Auto import now"}
                   </Button>
                 </div>
               </div>
               {autoPositionsMeta ? (
                 <div className="text-xs text-muted-foreground">
-                  Built {autoPositionsMeta.itemCount} item(s) • {new Date(autoPositionsMeta.computedAtIso).toLocaleString()}
+                  Built {autoPositionsMeta.itemCount} item(s) •{" "}
+                  {new Date(autoPositionsMeta.computedAtIso).toLocaleString()}
                   <div className="mt-1">
                     Sources:{" "}
                     {autoPositionsMeta.sources.slice(0, 4).map((s, i) => (

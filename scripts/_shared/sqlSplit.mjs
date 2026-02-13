@@ -117,4 +117,3 @@ export function statementPreview(statement, { maxLen = 120 } = {}) {
   if (first.length <= maxLen) return first;
   return `${first.slice(0, Math.max(0, maxLen - 3))}...`;
 }
-

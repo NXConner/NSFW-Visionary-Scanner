@@ -1,6 +1,6 @@
 # Visionary Scanner - Cross-Repository Sync Workflow
 # This workflow pushes core engine updates from the Safe repo to the NSFW repo
-# 
+#
 # SETUP REQUIRED:
 # 1. Generate a Personal Access Token (PAT) with 'repo' scope
 # 2. Add it as a repository secret named 'SYNC_TOKEN'

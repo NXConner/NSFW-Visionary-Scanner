@@ -10,7 +10,11 @@ type ThoughtPingsPanelProps = {
   consentReady: boolean;
 };
 
-export function ThoughtPingsPanel({ connectionId, partnerId, consentReady }: ThoughtPingsPanelProps) {
+export function ThoughtPingsPanel({
+  connectionId,
+  partnerId,
+  consentReady,
+}: ThoughtPingsPanelProps) {
   const { t } = useI18n();
   const {
     pings,
@@ -39,16 +43,12 @@ export function ThoughtPingsPanel({ connectionId, partnerId, consentReady }: Tho
 
   if (!partnerId) {
     return (
-      <div className="text-sm text-muted-foreground">
-        {t("partnerSync.pings.connectHint")}
-      </div>
+      <div className="text-sm text-muted-foreground">{t("partnerSync.pings.connectHint")}</div>
     );
   }
   if (!consentReady) {
     return (
-      <div className="text-sm text-muted-foreground">
-        {t("partnerSync.settings.consentNeeded")}
-      </div>
+      <div className="text-sm text-muted-foreground">{t("partnerSync.settings.consentNeeded")}</div>
     );
   }
 

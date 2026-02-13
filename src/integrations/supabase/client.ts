@@ -32,8 +32,9 @@ const isLocalStorageAvailable = (): boolean => {
   }
 };
 
-const safeStorage: Storage | undefined =
-  isLocalStorageAvailable() ? window.localStorage : undefined;
+const safeStorage: Storage | undefined = isLocalStorageAvailable()
+  ? window.localStorage
+  : undefined;
 
 export const supabase = createClient<Database>(
   isConfigured ? SUPABASE_URL : FALLBACK_SUPABASE_URL,

@@ -34,9 +34,8 @@ export function useObjectAutoTrack(options: UseObjectAutoTrackOptions) {
   const lastFocusUpdateRef = useRef<number>(0);
 
   // Find the currently tracked object
-  const trackedObject = selectedTrackId != null
-    ? tracks.find(t => t.trackId === selectedTrackId) ?? null
-    : null;
+  const trackedObject =
+    selectedTrackId != null ? (tracks.find(t => t.trackId === selectedTrackId) ?? null) : null;
 
   // Calculate focus point from tracked object center
   const focusPoint = trackedObject

@@ -719,7 +719,8 @@ export function useOptionalDLCFeature(featureId: string) {
   const isInitialized = Boolean(ctx?.isInitialized);
   const isLoading = Boolean(ctx?.isLoading);
   // ADMIN BYPASS: Admin and super admin always have access
-  const isAvailable = isAdmin || isSuperAdmin || Boolean(ctx?.isInitialized && ctx?.hasFeature(featureId));
+  const isAvailable =
+    isAdmin || isSuperAdmin || Boolean(ctx?.isInitialized && ctx?.hasFeature(featureId));
   return useMemo(
     () => ({
       isAvailable,
@@ -736,7 +737,7 @@ export function useOptionalDLCFeature(featureId: string) {
  */
 export function useNSFWAvailable() {
   const ctx = useOptionalDLC();
-  
+
   return useMemo(() => {
     // If no context, return safe defaults
     if (!ctx) {
@@ -747,9 +748,9 @@ export function useNSFWAvailable() {
         isLoading: false,
       };
     }
-    
+
     const { ownedPackages, installedPackages, isAgeVerified, isInitialized, isLoading } = ctx;
-    
+
     // Entitlement: owned OR installed adult-rated package.
     // (Some features are server-backed and do not require installation.)
     const hasNSFWPackage = [...ownedPackages, ...installedPackages].some(

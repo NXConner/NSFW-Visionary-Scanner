@@ -82,7 +82,14 @@ export function TextTitlesPanel({ state, onChange, currentTime }: Props) {
     const newOverlay: TextOverlay = {
       id: `text-${Date.now()}`,
       type,
-      text: type === "title" ? "Title Text" : type === "lowerThird" ? "Name" : type === "caption" ? "Caption text" : "Watermark",
+      text:
+        type === "title"
+          ? "Title Text"
+          : type === "lowerThird"
+            ? "Name"
+            : type === "caption"
+              ? "Caption text"
+              : "Watermark",
       subtitle: type === "lowerThird" ? "Subtitle" : undefined,
       position: { x: 50, y: type === "lowerThird" ? 85 : type === "caption" ? 90 : 50 },
       fontSize: type === "title" ? 48 : type === "lowerThird" ? 24 : 18,
@@ -159,7 +166,10 @@ export function TextTitlesPanel({ state, onChange, currentTime }: Props) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={e => { e.stopPropagation(); removeOverlay(overlay.id); }}
+                onClick={e => {
+                  e.stopPropagation();
+                  removeOverlay(overlay.id);
+                }}
                 className="h-6 w-6 p-0"
               >
                 <Trash2 className="w-3 h-3" />
@@ -243,7 +253,11 @@ export function TextTitlesPanel({ state, onChange, currentTime }: Props) {
                   key={a.key}
                   variant={activeOverlay.animation === a.key ? "default" : "outline"}
                   size="sm"
-                  onClick={() => updateOverlay(activeOverlay.id, { animation: a.key as TextOverlay["animation"] })}
+                  onClick={() =>
+                    updateOverlay(activeOverlay.id, {
+                      animation: a.key as TextOverlay["animation"],
+                    })
+                  }
                   className="h-6 text-[8px] px-1"
                 >
                   {a.label}
