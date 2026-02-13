@@ -1,64 +1,16 @@
-import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-
-const repoRoot = resolve(fileURLToPath(new URL(".", import.meta.url)), "..");
-const typesPath = resolve(repoRoot, "src", "integrations", "supabase", "types.ts");
-const configTomlPath = resolve(repoRoot, "supabase", "config.toml");
-
-function normalizeNewlines(s) {
-  return String(s).replace(/\r\n/g, "\n");
-}
-
-function parseProjectIdFromConfigToml(tomlRaw) {
-  const m = String(tomlRaw).match(/^\s*project_id\s*=\s*"([^"]+)"\s*$/m);
-  return m?.[1] || null;
-}
-
-function pickSupabaseBin() {
-  const binName = process.platform === "win32" ? "supabase.cmd" : "supabase";
-  const local = resolve(repoRoot, "node_modules", ".bin", binName);
-  if (existsSync(local)) return local;
-  return "supabase";
-}
-
-function run(cmd, args, env = {}) {
-  return spawnSync(cmd, args, {
-    encoding: "utf8",
-    env: { ...process.env, ...env },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-}
-
-function genArgsForLocal() {
-  return ["gen", "types", "typescript", "--local"];
-}
-
-function genArgsForDbUrl(dbUrl) {
-  return ["gen", "types", "typescript", "--db-url", dbUrl, "--schema", "public", "--schema", "auth"];
-}
-
-function genArgsForProjectId(projectId) {
-  return [
-    "gen",
-    "types",
-    "typescript",
-    "--project-id",
-    projectId,
-    "--schema",
-    "public",
-    "--schema",
-    "auth",
-  ];
-}
-
-function isNonEmptyTypesOutput(stdout) {
-  const s = String(stdout || "").trim();
-  if (!s) return false;
-  // Heuristic: generated types always declare Json at top.
-  return /export\s+type\s+Json\s*=/.test(s) || /export\s+interface\s+Database\s*\{/.test(s);
-}
+import { writeFileSync } from "node:fs";
+import {
+  genArgsForDbUrl,
+  genArgsForLocal,
+  genArgsForProjectId,
+  isNonEmptyTypesOutput,
+  normalizeNewlines,
+  pickSupabaseBin,
+  resolveDbUrlFromEnv,
+  resolveProjectIdFromEnvOrConfig,
+  run,
+  typesPath,
+} from "./supabase-types-utils.mjs";
 
 function fail(msg, stderr) {
   if (msg) process.stderr.write(`${msg}\n`);
@@ -68,14 +20,8 @@ function fail(msg, stderr) {
 
 const supabaseBin = pickSupabaseBin();
 const explicitMode = String(process.env.SUPABASE_TYPES_MODE || "").trim().toLowerCase();
-const dbUrl = process.env.SUPABASE_DB_URL ? String(process.env.SUPABASE_DB_URL) : null;
-
-let projectId = null;
-if (process.env.SUPABASE_PROJECT_ID) {
-  projectId = String(process.env.SUPABASE_PROJECT_ID).trim() || null;
-} else if (existsSync(configTomlPath)) {
-  projectId = parseProjectIdFromConfigToml(readFileSync(configTomlPath, "utf8"));
-}
+const dbUrl = resolveDbUrlFromEnv();
+const projectId = resolveProjectIdFromEnvOrConfig();
 
 // Generation order:
 // - If SUPABASE_TYPES_MODE explicitly set, honor it.
@@ -137,8 +83,8 @@ for (const mode of attempts) {
 fail(
   "[db:types] Failed to generate Supabase types.\n" +
     "Set one of:\n" +
-    "- SUPABASE_DB_URL (recommended for CI/remote)\n" +
-    "- SUPABASE_ACCESS_TOKEN (for --project-id generation)\n" +
+    "- SUPABASE_DB_URL (or DATABASE_URL) (recommended for CI/remote)\n" +
+    "- SUPABASE_ACCESS_TOKEN (for --project-id generation; set SUPABASE_PROJECT_REF/ID)\n" +
     "- Or run local Supabase with Docker and use --local\n",
   lastErr?.stderr,
 );
