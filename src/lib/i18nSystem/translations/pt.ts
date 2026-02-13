@@ -87,7 +87,8 @@ export const pt: TranslationDictionary = {
 
   "partnerSync.loading": "Carregando sincronização de parceiros...",
   "partnerSync.lockedTitle": "Sincronização de parceiros",
-  "partnerSync.lockedDescription": "Desbloqueie a sincronização de parceiros para conectar e coordenar.",
+  "partnerSync.lockedDescription":
+    "Desbloqueie a sincronização de parceiros para conectar e coordenar.",
   "partnerSync.tabs.thoughts": "Pings de pensamento",
   "partnerSync.tabs.dates": "Noites de encontro",
   "partnerSync.tabs.positions": "Posições",
@@ -167,11 +168,11 @@ export const pt: TranslationDictionary = {
   "partnerSync.pings.privateNote": "Nota privada",
   "partnerSync.pings.privateNotePlaceholder": "Visível apenas para você",
   "partnerSync.pings.imageUrls": "URLs de imagem",
-  "partnerSync.pings.imageUrlsPlaceholder": "/placeholder.svg",
+  "partnerSync.pings.imageUrlsPlaceholder": "Paste image URLs (comma-separated)",
   "partnerSync.pings.gifUrls": "URLs de GIF",
-  "partnerSync.pings.gifUrlsPlaceholder": "/placeholder.svg",
+  "partnerSync.pings.gifUrlsPlaceholder": "Paste GIF URLs (comma-separated)",
   "partnerSync.pings.voiceUrl": "URL de voz",
-  "partnerSync.pings.voiceUrlPlaceholder": "/captions/blank.vtt",
+  "partnerSync.pings.voiceUrlPlaceholder": "Paste voice message URL",
   "partnerSync.pings.pin": "Fixar",
   "partnerSync.pings.pinHint": "Mantenha este ping no topo",
   "partnerSync.pings.readReceipt": "Confirmação de leitura",
@@ -379,45 +380,30 @@ export const pt: TranslationDictionary = {
   "partnerSync.recommendations.safetyTitle": "Segurança e conforto",
   "partnerSync.recommendations.pings.1":
     "Mantenha os pings curtos e específicos para respostas rápidas.",
-  "partnerSync.recommendations.pings.2":
-    "Misture tons divertidos e românticos para evitar fadiga.",
+  "partnerSync.recommendations.pings.2": "Misture tons divertidos e românticos para evitar fadiga.",
   "partnerSync.recommendations.pings.3": "Use temas para alinhar expectativas.",
-  "partnerSync.recommendations.pings.4":
-    "Faça follow-up para confirmar interesse e limites.",
-  "partnerSync.recommendations.pings.5":
-    "Agende pings durante as horas silenciosas do parceiro.",
-  "partnerSync.recommendations.pings.6":
-    "Use reações para reconhecer mensagens rapidamente.",
-  "partnerSync.recommendations.dates.1":
-    "Planeje a noite em segmentos (saída, jantar, em casa).",
-  "partnerSync.recommendations.dates.2":
-    "Indique distrações com antecedência para manter o foco.",
-  "partnerSync.recommendations.dates.3":
-    "Inclua um check-in curto para ritmo e conforto.",
+  "partnerSync.recommendations.pings.4": "Faça follow-up para confirmar interesse e limites.",
+  "partnerSync.recommendations.pings.5": "Agende pings durante as horas silenciosas do parceiro.",
+  "partnerSync.recommendations.pings.6": "Use reações para reconhecer mensagens rapidamente.",
+  "partnerSync.recommendations.dates.1": "Planeje a noite em segmentos (saída, jantar, em casa).",
+  "partnerSync.recommendations.dates.2": "Indique distrações com antecedência para manter o foco.",
+  "partnerSync.recommendations.dates.3": "Inclua um check-in curto para ritmo e conforto.",
   "partnerSync.recommendations.dates.4":
     "Tenha um plano reserva para mudanças de horário ou energia.",
-  "partnerSync.recommendations.dates.5":
-    "Use lembretes para deslocamento e reservas.",
-  "partnerSync.recommendations.dates.6":
-    "Registre reflexões após o encontro para melhorar.",
+  "partnerSync.recommendations.dates.5": "Use lembretes para deslocamento e reservas.",
+  "partnerSync.recommendations.dates.6": "Registre reflexões após o encontro para melhorar.",
   "partnerSync.recommendations.positions.1":
     "Comece com uma escolha mútua e depois uma do parceiro.",
   "partnerSync.recommendations.positions.2":
     "Use notas para explicar o que você gosta em cada sugestão.",
-  "partnerSync.recommendations.positions.3":
-    "Equilibre intensidade com opções fáceis e avançadas.",
-  "partnerSync.recommendations.positions.4":
-    "Marque posições testadas para manter a lista atual.",
+  "partnerSync.recommendations.positions.3": "Equilibre intensidade com opções fáceis e avançadas.",
+  "partnerSync.recommendations.positions.4": "Marque posições testadas para manter a lista atual.",
   "partnerSync.recommendations.positions.5":
     "Use checklists de segurança e limites antes de testar algo novo.",
-  "partnerSync.recommendations.positions.6":
-    "Use trocas para negociar alternativas rapidamente.",
-  "partnerSync.recommendations.safety.1":
-    "Confirme consentimento e limites antes de começar.",
-  "partnerSync.recommendations.safety.2":
-    "Combine uma palavra de pausa/stop para check-ins.",
-  "partnerSync.recommendations.safety.3":
-    "Reserve tempo para aftercare ou um final tranquilo.",
+  "partnerSync.recommendations.positions.6": "Use trocas para negociar alternativas rapidamente.",
+  "partnerSync.recommendations.safety.1": "Confirme consentimento e limites antes de começar.",
+  "partnerSync.recommendations.safety.2": "Combine uma palavra de pausa/stop para check-ins.",
+  "partnerSync.recommendations.safety.3": "Reserve tempo para aftercare ou um final tranquilo.",
   "partnerSync.recommendations.safety.4":
     "Use ajustes de privacidade para detalhes de localização.",
   "partnerSync.preview.subtitle": "Pré-visualização com estados vazios e checagem de layout.",

@@ -87,7 +87,8 @@ export const fr: TranslationDictionary = {
 
   "partnerSync.loading": "Chargement de la synchronisation partenaire...",
   "partnerSync.lockedTitle": "Synchronisation partenaire",
-  "partnerSync.lockedDescription": "Déverrouillez la synchronisation partenaire pour vous connecter et coordonner.",
+  "partnerSync.lockedDescription":
+    "Déverrouillez la synchronisation partenaire pour vous connecter et coordonner.",
   "partnerSync.tabs.thoughts": "Pings de pensée",
   "partnerSync.tabs.dates": "Soirées rendez-vous",
   "partnerSync.tabs.positions": "Positions",
@@ -167,11 +168,11 @@ export const fr: TranslationDictionary = {
   "partnerSync.pings.privateNote": "Note privée",
   "partnerSync.pings.privateNotePlaceholder": "Visible uniquement par vous",
   "partnerSync.pings.imageUrls": "URLs d'image",
-  "partnerSync.pings.imageUrlsPlaceholder": "/placeholder.svg",
+  "partnerSync.pings.imageUrlsPlaceholder": "Paste image URLs (comma-separated)",
   "partnerSync.pings.gifUrls": "URLs de GIF",
-  "partnerSync.pings.gifUrlsPlaceholder": "/placeholder.svg",
+  "partnerSync.pings.gifUrlsPlaceholder": "Paste GIF URLs (comma-separated)",
   "partnerSync.pings.voiceUrl": "URL audio",
-  "partnerSync.pings.voiceUrlPlaceholder": "/captions/blank.vtt",
+  "partnerSync.pings.voiceUrlPlaceholder": "Paste voice message URL",
   "partnerSync.pings.pin": "Épingler",
   "partnerSync.pings.pinHint": "Gardez ce ping en haut",
   "partnerSync.pings.readReceipt": "Accusé de lecture",
@@ -279,8 +280,10 @@ export const fr: TranslationDictionary = {
   "partnerSync.dates.loadMore": "Charger plus",
 
   "partnerSync.positions.title": "Sélection de positions",
-  "partnerSync.positions.subtitle": "Suggérez des positions et répondez aux choix de votre partenaire.",
-  "partnerSync.positions.connectHint": "Connectez-vous avec un partenaire pour utiliser la sélection.",
+  "partnerSync.positions.subtitle":
+    "Suggérez des positions et répondez aux choix de votre partenaire.",
+  "partnerSync.positions.connectHint":
+    "Connectez-vous avec un partenaire pour utiliser la sélection.",
   "partnerSync.positions.themeTags": "Étiquettes de thème",
   "partnerSync.positions.intensity": "Intensité",
   "partnerSync.positions.priority": "Priorité",
@@ -331,7 +334,8 @@ export const fr: TranslationDictionary = {
   "partnerSync.positions.longestStreak": "Plus longue série",
 
   "partnerSync.settings.consentTitle": "Consentement et accord",
-  "partnerSync.settings.consentSubtitle": "Chaque partenaire doit accepter le dernier consentement.",
+  "partnerSync.settings.consentSubtitle":
+    "Chaque partenaire doit accepter le dernier consentement.",
   "partnerSync.settings.consentNeeded": "Vous devez accepter le consentement partenaire.",
   "partnerSync.settings.consentRecorded": "Votre consentement est enregistré.",
   "partnerSync.settings.partnerConsentNeeded": "Votre partenaire n'a pas encore accepté.",
@@ -350,7 +354,8 @@ export const fr: TranslationDictionary = {
   "partnerSync.settings.scheduledPings": "Pings programmés",
   "partnerSync.settings.mediaAttachments": "Pièces jointes",
   "partnerSync.settings.retentionTitle": "Politique de conservation",
-  "partnerSync.settings.retentionSubtitle": "Contrôlez la durée de conservation des données partagées.",
+  "partnerSync.settings.retentionSubtitle":
+    "Contrôlez la durée de conservation des données partagées.",
   "partnerSync.settings.retentionPings": "Conservation des pings (jours)",
   "partnerSync.settings.retentionSelections": "Conservation des sélections (jours)",
   "partnerSync.settings.retentionPlans": "Conservation des plans (jours)",
@@ -397,14 +402,12 @@ export const fr: TranslationDictionary = {
     "Incluez un court check-in pour confirmer le rythme et le confort.",
   "partnerSync.recommendations.dates.4":
     "Prévoyez un plan de secours en cas de changement d'énergie ou de lieu.",
-  "partnerSync.recommendations.dates.5":
-    "Utilisez des rappels pour le trajet et les réservations.",
+  "partnerSync.recommendations.dates.5": "Utilisez des rappels pour le trajet et les réservations.",
   "partnerSync.recommendations.dates.6":
     "Consignez des réflexions après la soirée pour progresser.",
   "partnerSync.recommendations.positions.1":
     "Commencez par un choix mutuel puis ajoutez un choix partenaire.",
-  "partnerSync.recommendations.positions.2":
-    "Utilisez des notes pour expliquer ce que vous aimez.",
+  "partnerSync.recommendations.positions.2": "Utilisez des notes pour expliquer ce que vous aimez.",
   "partnerSync.recommendations.positions.3":
     "Équilibrez l'intensité avec des options faciles et avancées.",
   "partnerSync.recommendations.positions.4":
@@ -417,8 +420,7 @@ export const fr: TranslationDictionary = {
     "Confirmez le consentement et les limites avant de commencer.",
   "partnerSync.recommendations.safety.2":
     "Définissez un mot pause/stop pour les check-ins en temps réel.",
-  "partnerSync.recommendations.safety.3":
-    "Gardez du temps pour l'aftercare ou une fin en douceur.",
+  "partnerSync.recommendations.safety.3": "Gardez du temps pour l'aftercare ou une fin en douceur.",
   "partnerSync.recommendations.safety.4":
     "Utilisez les réglages de confidentialité pour l'adresse.",
   "partnerSync.preview.subtitle":
