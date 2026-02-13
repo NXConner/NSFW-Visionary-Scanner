@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Mail, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
+import { getEmailRedirectUrl } from "@/lib/email/emailConfig";
 
 interface EmailVerificationBannerProps {
   email: string;
@@ -23,7 +23,7 @@ export const EmailVerificationBanner = ({ email, onVerified }: EmailVerification
         type: "signup",
         email: email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth?verified=true`,
+          emailRedirectTo: getEmailRedirectUrl("/auth?verified=true"),
         },
       });
 

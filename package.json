@@ -41,6 +41,7 @@
     "seed": "tsx scripts/seed.ts",
     "seed:partner-sync": "tsx scripts/seed-partner-sync.ts",
     "provision:core-users": "tsx scripts/provision-core-users.ts",
+    "auth:confirm-core-emails": "tsx scripts/confirm-core-emails.ts",
     "setup:storage": "tsx scripts/setup-storage-buckets.ts",
     "setup:complete": "powershell -ExecutionPolicy Bypass -File scripts/complete-setup.ps1",
     "deploy:functions": "powershell -ExecutionPolicy Bypass -File scripts/deploy-all.ps1",
