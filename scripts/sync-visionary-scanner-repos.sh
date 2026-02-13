@@ -65,8 +65,7 @@ sync_dir() {
   mkdir -p "$dest"
   mkdir -p "$backup_dir"
 
-  # shellcheck disable=SC2068
-  rsync -a --delete --backup --backup-dir="$backup_dir" $@ "$src" "$dest"
+  rsync -a --delete --backup --backup-dir="$backup_dir" "$@" "$src" "$dest"
 }
 
 sync_file() {
@@ -78,8 +77,7 @@ sync_file() {
   mkdir -p "$(dirname "$dest")"
   mkdir -p "$backup_dir"
 
-  # shellcheck disable=SC2068
-  rsync -a --backup --backup-dir="$backup_dir" $@ "$src" "$dest"
+  rsync -a --backup --backup-dir="$backup_dir" "$@" "$src" "$dest"
 }
 
 MODE="dry-run"
