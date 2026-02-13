@@ -78,9 +78,13 @@ export async function getRecommendedQuality(): Promise<"sd" | "hd" | "2k" | "4k"
  * Create video thumbnail from URL
  */
 export function createVideoThumbnailUrl(videoUrl: string, timestamp: number = 0): string {
-  // This would typically use a service or generate server-side
-  // For now, return a placeholder or use the video URL with timestamp
-  return `${videoUrl}#t=${timestamp}`;
+  // Media Fragments URI: widely-supported way to seek for preview.
+  // NOTE: This returns a *video URL* with a timestamp fragment, not an image URL.
+  const base = String(videoUrl || "").split("#", 1)[0] || "";
+  if (!base) return "";
+  const t = Math.max(0, Number.isFinite(timestamp) ? timestamp : Number(timestamp) || 0);
+  const rounded = Math.round(t * 1000) / 1000;
+  return `${base}#t=${rounded}`;
 }
 
 /**
