@@ -1,6 +1,6 @@
 # Phase 1 — Analysis & Strategic Roadmap (Repo Reality-Based)
 
-**Date**: 2025-12-24  
+**Date**: 2026-02-13  
 **Workspace**: `/workspace` (git repo)  
 **Canonical product identity found in repo**: **MorphoScan Pro**  
 **User-stated identity in rules**: **Pavement Performance Suite** (no supporting code found in `src/` for pavement/asphalt workflows)
@@ -72,7 +72,7 @@ If you want Pavement Performance Suite to be the canonical product, Phase 1 reco
   - Push: `FIREBASE_SERVICE_ACCOUNT`, `APNS_*`
 - **Manual production QA is not completed** (device matrix, performance, a11y).
 - **Store submission and signing are manual** (keystore/certs are local-only).
-- **Residual placeholder/legacy links exist** (e.g., `example.com` in several UI files).
+- **Residual placeholder/legacy links may exist** (e.g., `example.invalid` test domains and/or stale mobile web assets if Android/iOS web bundles weren’t re-synced after source changes).
 
 ---
 
@@ -101,7 +101,7 @@ If you want Pavement Performance Suite to be the canonical product, Phase 1 reco
   - iOS archive + upload; TestFlight verification.
 
 - **P0.5 Remove placeholder/unsafe links**
-  - Replace or remove `example.com` and other placeholders from UI and tests.
+  - Replace or remove `example.invalid`/legacy placeholder domains from UI, docs, and tests.
   - Centralize “support/privacy/terms” URLs in a single config module to prevent drift.
 
 ### P1 — Phase 8 polish (performance, bundle, accessibility)
@@ -152,20 +152,20 @@ These features exist; here’s their **max potential** state and what to do next
 
 ## Phased Implementation Roadmap (table)
 
-| Priority | Task Description                                                             | Task Type (Max-Feature/New-Feature/Refactor/Fix) | Files to Modify/Create                                                                                                                                    |
-| -------: | ---------------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|       P0 | Configure Stripe secrets + webhook endpoint + live price IDs                 | Fix                                              | `docs/guides/integrations/payments/STRIPE_SETUP_GUIDE.md`, Supabase secrets, `.env` (local only), `src/lib/pricing.ts`, `src/lib/stripe.ts`              |
-|       P0 | End-to-end Stripe QA (subscription + DLC if used)                            | Fix                                              | `supabase/functions/stripe-webhook/index.ts`, `supabase/functions/create-checkout-session/*`, `src/components/payments/*`                                 |
-|       P0 | Configure push notifications (FCM/APNs) + verify on devices                  | Fix                                              | `docs/guides/integrations/notifications/FCM_SETUP.md`, Supabase secrets, `android/app/google-services.json` (local only), `ios/*` (local only)            |
-|       P0 | Run production QA checklist + fix failures                                   | Fix                                              | `docs/guides/testing/PRODUCTION_TESTING_GUIDE.md`, targeted `src/**` as issues found                                                                      |
-|       P0 | Remove placeholder URLs (`example.com`) and centralize legal/support URLs    | Fix/Refactor                                     | `src/pages/Auth.tsx`, `src/components/payments/PaymentForm.tsx`, `src/components/APIWebhooks.tsx`, `src/__tests__/e2e/utils.ts`, new `src/config/urls.ts` |
-|       P1 | Accessibility audit + fixes on primary flows                                 | Fix                                              | `src/components/**`, `src/pages/**`, `eslint.config.js` (rules tuning only if needed)                                                                     |
-|       P1 | Performance + bundle optimization pass (verify lazy boundaries)              | Refactor                                         | `src/pages/indexLazyTabs.ts`, heavy feature modules, `vite.config.ts`                                                                                     |
-|       P2 | Social login (Google/Apple) via Supabase OAuth                               | New-Feature                                      | `src/pages/Auth.tsx`, `src/pages/AuthCallback.tsx`, `src/contexts/AuthContext.tsx`, docs update                                                           |
-|       P2 | Biometric/AppLock UX completion                                              | Max-Feature                                      | `src/components/AppLock.tsx`, `src/hooks/useBiometricAuth.ts`                                                                                             |
-|       P2 | Analytics Dashboard (privacy-compliant)                                      | New-Feature                                      | `src/lib/analytics.ts`, new `src/pages/AnalyticsDashboard.tsx`, admin routing if needed                                                                   |
-|       P2 | DLC production hardening (idempotency/refunds/signed URLs/restore purchases) | Fix/Max-Feature                                  | `docs/archive/nsfw/NSFW_DLC_REMAINING_WORK.md`, `supabase/functions/stripe-webhook/index.ts`, new migration for webhook events table                       |
-|       P3 | Mobile polish + store assets + compliance review                             | Max-Feature                                      | `docs/product/store/app-store-listing.md`, `docs/security/compliance/COMPLIANCE_DISTRIBUTION.md`, platform-specific assets                                |
+| Priority | Task Description                                                              | Task Type (Max-Feature/New-Feature/Refactor/Fix) | Files to Modify/Create                                                                                                                                    |
+| -------: | ----------------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|       P0 | Configure Stripe secrets + webhook endpoint + live price IDs                  | Fix                                              | `docs/guides/integrations/payments/STRIPE_SETUP_GUIDE.md`, Supabase secrets, `.env` (local only), `src/lib/pricing.ts`, `src/lib/stripe.ts`               |
+|       P0 | End-to-end Stripe QA (subscription + DLC if used)                             | Fix                                              | `supabase/functions/stripe-webhook/index.ts`, `supabase/functions/create-checkout-session/*`, `src/components/payments/*`                                 |
+|       P0 | Configure push notifications (FCM/APNs) + verify on devices                   | Fix                                              | `docs/guides/integrations/notifications/FCM_SETUP.md`, Supabase secrets, `android/app/google-services.json` (local only), `ios/*` (local only)            |
+|       P0 | Run production QA checklist + fix failures                                    | Fix                                              | `docs/guides/testing/PRODUCTION_TESTING_GUIDE.md`, targeted `src/**` as issues found                                                                      |
+|       P0 | Remove placeholder URLs (`example.invalid`) and centralize legal/support URLs | Fix/Refactor                                     | `src/pages/Auth.tsx`, `src/components/payments/PaymentForm.tsx`, `src/components/APIWebhooks.tsx`, `src/__tests__/e2e/utils.ts`, new `src/config/urls.ts` |
+|       P1 | Accessibility audit + fixes on primary flows                                  | Fix                                              | `src/components/**`, `src/pages/**`, `eslint.config.js` (rules tuning only if needed)                                                                     |
+|       P1 | Performance + bundle optimization pass (verify lazy boundaries)               | Refactor                                         | `src/pages/indexLazyTabs.ts`, heavy feature modules, `vite.config.ts`                                                                                     |
+|       P2 | Social login (Google/Apple) via Supabase OAuth                                | New-Feature                                      | `src/pages/Auth.tsx`, `src/pages/AuthCallback.tsx`, `src/contexts/AuthContext.tsx`, docs update                                                           |
+|       P2 | Biometric/AppLock UX completion                                               | Max-Feature                                      | `src/components/AppLock.tsx`, `src/hooks/useBiometricAuth.ts`                                                                                             |
+|       P2 | Analytics Dashboard (privacy-compliant)                                       | New-Feature                                      | `src/lib/analytics.ts`, new `src/pages/AnalyticsDashboard.tsx`, admin routing if needed                                                                   |
+|       P2 | DLC production hardening (idempotency/refunds/signed URLs/restore purchases)  | Fix/Max-Feature                                  | `docs/archive/nsfw/NSFW_DLC_REMAINING_WORK.md`, `supabase/functions/stripe-webhook/index.ts`, new migration for webhook events table                      |
+|       P3 | Mobile polish + store assets + compliance review                              | Max-Feature                                      | `docs/product/store/app-store-listing.md`, `docs/security/compliance/COMPLIANCE_DISTRIBUTION.md`, platform-specific assets                                |
 
 ---
 

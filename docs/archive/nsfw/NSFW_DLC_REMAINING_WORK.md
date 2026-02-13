@@ -168,7 +168,7 @@ Choose one and implement consistently:
 
 ## Priority 5 — Unified gating consistency (remove legacy patterns)
 
-### 5.1 Remove remaining “example.com”/legacy purchase links
+### 5.1 Remove remaining “example.invalid”/legacy purchase links
 
 - Ensure **all** store CTAs use the in-app checkout flow.
 
