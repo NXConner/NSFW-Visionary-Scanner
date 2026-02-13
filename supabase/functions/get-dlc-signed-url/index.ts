@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
+import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -89,17 +90,10 @@ serve(async req => {
       });
     }
 
-    // Super-admin bypass (for internal testing / full-access accounts)
+    // Privileged bypass (admin/super_admin)
     // - Allows signing URLs without DLC license ownership and without age verification rows.
     // - Still enforces asset namespace constraints and uses signed URLs (no public bucket access).
-    const email = String(user.email || "").toLowerCase();
-    const { data: roleRows } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id);
-    const roles = (roleRows || []).map((r: any) => String(r.role || ""));
-    const isSuperAdmin = roles.includes("super_admin") || email === "n8ter8@gmail.com";
-    const hasNsfwAccess = isSuperAdmin || roles.includes("nsfw_access") || roles.includes("admin");
+    const { isPrivileged, isSuperAdmin } = await getPrivilegedFlags(supabase, user.id);
 
     const body = (await req.json()) as ReqBody;
     const packageId = String(body.packageId || "");
@@ -141,16 +135,9 @@ serve(async req => {
       });
     }
 
-    if (isAdultRating(packageRow.content_rating) && !hasNsfwAccess) {
-      return new Response(JSON.stringify({ error: "NSFW entitlement required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // If super_admin, bypass license + age checks (still device binds if deviceId is provided).
-    // This enables full content visibility for the designated internal admin account.
-    if (isSuperAdmin) {
+    // If admin/super_admin, bypass license + age checks.
+    // This enables full content visibility for privileged internal accounts.
+    if (isPrivileged) {
       const bucket = Deno.env.get("NSFW_CONTENT_BUCKET") ?? "nsfw-content";
       const { data, error } = await supabase.storage
         .from(bucket)
@@ -172,7 +159,7 @@ serve(async req => {
         JSON.stringify({
           signedUrl: data.signedUrl,
           expiresInSeconds,
-          grantedBy: { role: "super_admin" },
+          grantedBy: { role: isSuperAdmin ? "super_admin" : "admin" },
         }),
         {
           status: 200,

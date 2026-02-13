@@ -9,6 +9,7 @@ import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -72,13 +73,7 @@ serve(async req => {
       });
     }
 
-    const { data: roleRows } = await supabaseClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id);
-    const roles = (roleRows || []).map((r: any) => String(r.role || ""));
-    const hasNsfwAccess =
-      roles.includes("nsfw_access") || roles.includes("admin") || roles.includes("super_admin");
+    const { isPrivileged } = await getPrivilegedFlags(supabaseClient, user.id);
 
     // Optional packageId request (if client wants a specific package)
     let requestedPackageId: string | null = null;
@@ -89,45 +84,53 @@ serve(async req => {
       // ignore
     }
 
-    // Load active licenses (users can own multiple)
-    let licensesQuery = supabaseClient
-      .from("dlc_licenses")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("is_active", true);
+    // Load active licenses (users can own multiple).
+    // Privileged users bypass license gating entirely.
+    let activeLicenses: any[] = [];
+    let packageIds: string[] = [];
 
-    if (requestedPackageId) {
-      licensesQuery = licensesQuery.eq("package_id", requestedPackageId);
-    }
+    if (!isPrivileged) {
+      let licensesQuery = supabaseClient
+        .from("dlc_licenses")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("is_active", true);
 
-    const { data: licenses, error: licensesError } = await licensesQuery;
+      if (requestedPackageId) {
+        licensesQuery = licensesQuery.eq("package_id", requestedPackageId);
+      }
 
-    if (licensesError || !licenses || licenses.length === 0) {
-      return new Response(JSON.stringify({ error: "No active DLC license found" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      const { data: licenses, error: licensesError } = await licensesQuery;
+
+      if (licensesError || !licenses || licenses.length === 0) {
+        return new Response(JSON.stringify({ error: "No active DLC license found" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Filter out expired licenses (support expiration_date and subscription_end)
+      const now = new Date();
+      activeLicenses = licenses.filter((l: any) => {
+        if (l.refunded_at || l.deactivated_at) return false;
+        const exp = l.expiration_date ?? l.subscription_end ?? null;
+        if (!exp) return true;
+        return new Date(exp) >= now;
       });
+
+      if (activeLicenses.length === 0) {
+        return new Response(JSON.stringify({ error: "DLC license has expired" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      packageIds = activeLicenses
+        .map((l: any) => String(l.package_id || "").trim())
+        .filter(Boolean);
+    } else if (requestedPackageId) {
+      packageIds = [String(requestedPackageId || "").trim()].filter(Boolean);
     }
-
-    // Filter out expired licenses (support expiration_date and subscription_end)
-    const now = new Date();
-    const activeLicenses = licenses.filter((l: any) => {
-      if (l.refunded_at || l.deactivated_at) return false;
-      const exp = l.expiration_date ?? l.subscription_end ?? null;
-      if (!exp) return true;
-      return new Date(exp) >= now;
-    });
-
-    if (activeLicenses.length === 0) {
-      return new Response(JSON.stringify({ error: "DLC license has expired" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const packageIds = activeLicenses
-      .map((l: any) => String(l.package_id || "").trim())
-      .filter(Boolean);
 
     let requiresAdultEntitlement = false;
     if (requestedPackageId) {
@@ -153,14 +156,7 @@ serve(async req => {
       requiresAdultEntitlement = (pkgRows || []).some(row => isAdultRating(row.content_rating));
     }
 
-    if (requiresAdultEntitlement && !hasNsfwAccess) {
-      return new Response(JSON.stringify({ error: "NSFW entitlement required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (requiresAdultEntitlement) {
+    if (requiresAdultEntitlement && !isPrivileged) {
       const { data: age, error: ageError } = await supabaseClient
         .from("dlc_age_verifications")
         .select("is_verified, adult_content_consent, terms_accepted")

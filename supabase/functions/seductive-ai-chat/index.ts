@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
+import { getPrivilegedFlags } from "../_shared/privileged.ts";
 import {
   AiProviderError,
   buildContextPayload,
@@ -101,21 +102,25 @@ serve(async req => {
       });
     }
 
-    const { data: age, error: ageError } = await supabase
-      .from("dlc_age_verifications")
-      .select("is_verified, adult_content_consent, terms_accepted")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (ageError) throw ageError;
-    const okAge = Boolean(age?.is_verified && age?.adult_content_consent && age?.terms_accepted);
-    if (!okAge) {
-      return new Response(JSON.stringify({ error: "Age verification required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const { isPrivileged } = await getPrivilegedFlags(supabase, user.id);
+
+    if (!isPrivileged) {
+      const { data: age, error: ageError } = await supabase
+        .from("dlc_age_verifications")
+        .select("is_verified, adult_content_consent, terms_accepted")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (ageError) throw ageError;
+      const okAge = Boolean(age?.is_verified && age?.adult_content_consent && age?.terms_accepted);
+      if (!okAge) {
+        return new Response(JSON.stringify({ error: "Age verification required" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
-    if (!ALLOW_UNLICENSED) {
+    if (!isPrivileged && !ALLOW_UNLICENSED) {
       const ok = await hasFeatureEntitlement(supabase, user.id, "ai_companion");
       if (!ok) {
         return new Response(JSON.stringify({ error: "AI Companion entitlement required" }), {

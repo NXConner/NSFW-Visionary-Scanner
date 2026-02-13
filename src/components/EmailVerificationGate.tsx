@@ -6,6 +6,7 @@ import { Mail, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 import { APP_NAME } from "@/config/brand";
+import { useUserRoles } from "@/hooks/useUserRoles";
 
 interface EmailVerificationGateProps {
   children: React.ReactNode;
@@ -18,11 +19,16 @@ export const EmailVerificationGate = ({
 }: EmailVerificationGateProps) => {
   const { user, loading, isSuperAdmin, hasFullAccess, allFeaturesUnlocked, rolesLoading } =
     useAuth();
+  const { isAdmin, isSuperAdmin: isSuperAdminRole, isLoading: rolesHookLoading } = useUserRoles();
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(true);
 
   // Fallback: avoid indefinite loading, but keep verification strict
   useEffect(() => {
+    if (!requireVerification) return;
+    if (!user) return;
+    // Privileged users must never be blocked by email verification checks.
+    if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole) return;
     const fallback = setTimeout(() => {
       if (checking) {
         logger.warn("[verify] Verification check timed out");
@@ -32,14 +38,36 @@ export const EmailVerificationGate = ({
     }, 4000);
 
     return () => clearTimeout(fallback);
-  }, [checking]);
+  }, [
+    checking,
+    requireVerification,
+    user,
+    isSuperAdmin,
+    hasFullAccess,
+    allFeaturesUnlocked,
+    isAdmin,
+    isSuperAdminRole,
+  ]);
 
   useEffect(() => {
+    if (!requireVerification) {
+      setChecking(false);
+      setIsVerified(true);
+      return;
+    }
+
     // Skip check if no user or still loading auth
     if (loading) return;
 
     if (!user) {
       setIsVerified(null);
+      setChecking(false);
+      return;
+    }
+
+    // Privileged bypass: do not block on verification checks.
+    if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole) {
+      setIsVerified(true);
       setChecking(false);
       return;
     }
@@ -72,7 +100,16 @@ export const EmailVerificationGate = ({
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [user, loading]);
+  }, [
+    user,
+    loading,
+    requireVerification,
+    isSuperAdmin,
+    hasFullAccess,
+    allFeaturesUnlocked,
+    isAdmin,
+    isSuperAdminRole,
+  ]);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -80,18 +117,25 @@ export const EmailVerificationGate = ({
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-        setIsVerified(!!session?.user?.email_confirmed_at);
+        // Privileged bypass: never block on email verification.
+        if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked) {
+          setIsVerified(true);
+        } else {
+          setIsVerified(!!session?.user?.email_confirmed_at);
+        }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [allFeaturesUnlocked, hasFullAccess, isSuperAdmin]);
 
-  // Combined loading state for access checks
-  const stillCheckingAccess = loading || rolesLoading || checking;
+  const isPrivileged =
+    isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole;
 
-  // Show loading while checking (auth, roles, or verification)
-  if (stillCheckingAccess) {
+  // Combined loading state for role checks (email verification itself is skipped for privileged users)
+  const stillCheckingRoles = loading || rolesLoading || rolesHookLoading;
+
+  if (stillCheckingRoles) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -104,14 +148,23 @@ export const EmailVerificationGate = ({
     return <>{children}</>;
   }
 
-  // Super admin bypass: never block on email verification (checked AFTER loading completes)
-  if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked) {
+  // Privileged bypass: never block on email verification (checked AFTER roles resolve)
+  if (isPrivileged) {
     return <>{children}</>;
   }
 
   // If no user, show children (auth will handle it)
   if (!user) {
     return <>{children}</>;
+  }
+
+  // Show loading while checking verification (only for non-privileged users)
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
   }
 
   // If verified, show children

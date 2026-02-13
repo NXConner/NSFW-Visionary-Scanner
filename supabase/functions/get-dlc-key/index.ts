@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
+import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -114,92 +115,97 @@ serve(async req => {
       });
     }
 
-    // Age gate
-    const { data: age } = await supabase
-      .from("dlc_age_verifications")
-      .select("is_verified, adult_content_consent, terms_accepted")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    const okAge = Boolean(age?.is_verified && age?.adult_content_consent && age?.terms_accepted);
-    if (!okAge) {
-      return new Response(JSON.stringify({ error: "Age verification required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Privileged users (admin/super_admin) bypass verification + license gates.
+    const { isPrivileged } = await getPrivilegedFlags(supabase, user.id);
 
-    // License gate (active + not refunded/deactivated). Support bundles via included_packages.
-    const { data: licenses } = await supabase
-      .from("dlc_licenses")
-      .select("id, package_id, is_active, refunded_at, deactivated_at, max_devices")
-      .eq("user_id", user.id)
-      .eq("is_active", true);
+    if (!isPrivileged) {
+      // Age gate
+      const { data: age } = await supabase
+        .from("dlc_age_verifications")
+        .select("is_verified, adult_content_consent, terms_accepted")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const okAge = Boolean(age?.is_verified && age?.adult_content_consent && age?.terms_accepted);
+      if (!okAge) {
+        return new Response(JSON.stringify({ error: "Age verification required" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-    const activeLicenses = (licenses || []).filter((l: any) => !l.refunded_at && !l.deactivated_at);
-    if (activeLicenses.length === 0) {
-      return new Response(JSON.stringify({ error: "No active license" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const ownedPackageIds = activeLicenses.map((l: any) => String(l.package_id));
-    const { data: pkgs } = await supabase
-      .from("dlc_packages")
-      .select("package_id, included_packages")
-      .in("package_id", ownedPackageIds);
-
-    const covers = (licensePackageId: string): boolean => {
-      if (licensePackageId === packageId) return true;
-      const pkgRow = (pkgs || []).find((p: any) => String(p.package_id) === licensePackageId);
-      const included = Array.isArray((pkgRow as any)?.included_packages)
-        ? (pkgRow as any).included_packages
-        : [];
-      return included.includes(packageId);
-    };
-
-    const grantingLicense =
-      activeLicenses.find((l: any) => String(l.package_id) === packageId) ??
-      activeLicenses.find((l: any) => covers(String(l.package_id))) ??
-      null;
-
-    if (!grantingLicense) {
-      return new Response(JSON.stringify({ error: "No active license" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Optional device binding enforcement (align with signed URL function)
-    if (deviceId) {
-      const maxDevices = Math.max(1, Number((grantingLicense as any).max_devices ?? 3));
-      const { data: activeDevices, error: devicesError } = await supabase
-        .from("dlc_license_devices")
-        .select("id, device_id, is_active")
-        .eq("license_id", grantingLicense.id)
+      // License gate (active + not refunded/deactivated). Support bundles via included_packages.
+      const { data: licenses } = await supabase
+        .from("dlc_licenses")
+        .select("id, package_id, is_active, refunded_at, deactivated_at, max_devices")
+        .eq("user_id", user.id)
         .eq("is_active", true);
 
-      if (!devicesError) {
-        const alreadyBound = (activeDevices || []).some((d: any) => d.device_id === deviceId);
-        if (!alreadyBound && (activeDevices || []).length >= maxDevices) {
-          return new Response(JSON.stringify({ error: "Maximum devices reached" }), {
-            status: 403,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
+      const activeLicenses = (licenses || []).filter((l: any) => !l.refunded_at && !l.deactivated_at);
+      if (activeLicenses.length === 0) {
+        return new Response(JSON.stringify({ error: "No active license" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-        await supabase.from("dlc_license_devices").upsert(
-          {
-            license_id: grantingLicense.id,
-            user_id: user.id,
-            device_id: deviceId,
-            device_platform: devicePlatform,
-            is_active: true,
-            last_used_at: new Date().toISOString(),
-            last_validation_at: new Date().toISOString(),
-          },
-          { onConflict: "license_id,device_id" },
-        );
+      const ownedPackageIds = activeLicenses.map((l: any) => String(l.package_id));
+      const { data: pkgs } = await supabase
+        .from("dlc_packages")
+        .select("package_id, included_packages")
+        .in("package_id", ownedPackageIds);
+
+      const covers = (licensePackageId: string): boolean => {
+        if (licensePackageId === packageId) return true;
+        const pkgRow = (pkgs || []).find((p: any) => String(p.package_id) === licensePackageId);
+        const included = Array.isArray((pkgRow as any)?.included_packages)
+          ? (pkgRow as any).included_packages
+          : [];
+        return included.includes(packageId);
+      };
+
+      const grantingLicense =
+        activeLicenses.find((l: any) => String(l.package_id) === packageId) ??
+        activeLicenses.find((l: any) => covers(String(l.package_id))) ??
+        null;
+
+      if (!grantingLicense) {
+        return new Response(JSON.stringify({ error: "No active license" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Optional device binding enforcement (align with signed URL function)
+      if (deviceId) {
+        const maxDevices = Math.max(1, Number((grantingLicense as any).max_devices ?? 3));
+        const { data: activeDevices, error: devicesError } = await supabase
+          .from("dlc_license_devices")
+          .select("id, device_id, is_active")
+          .eq("license_id", grantingLicense.id)
+          .eq("is_active", true);
+
+        if (!devicesError) {
+          const alreadyBound = (activeDevices || []).some((d: any) => d.device_id === deviceId);
+          if (!alreadyBound && (activeDevices || []).length >= maxDevices) {
+            return new Response(JSON.stringify({ error: "Maximum devices reached" }), {
+              status: 403,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          await supabase.from("dlc_license_devices").upsert(
+            {
+              license_id: grantingLicense.id,
+              user_id: user.id,
+              device_id: deviceId,
+              device_platform: devicePlatform,
+              is_active: true,
+              last_used_at: new Date().toISOString(),
+              last_validation_at: new Date().toISOString(),
+            },
+            { onConflict: "license_id,device_id" },
+          );
+        }
       }
     }
 
