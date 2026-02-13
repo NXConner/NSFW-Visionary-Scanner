@@ -2,17 +2,6 @@ import * as React from "react";
 import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/ui/skeleton-loader";
-import {
-  AIChatPlaceholder,
-  EducationPlaceholder,
-  EmergencyPlaceholder,
-  GuidePlaceholder,
-  PositionsPlaceholder,
-  ProgressPlaceholder,
-  PumpingPlaceholder,
-  RoutinesPlaceholder,
-  ViewerPlaceholder,
-} from "@/components/placeholders";
 import { HeroSection } from "@/components/HeroSection";
 import { DLCUnlock } from "@/components/DLCUnlock";
 import DLCStorePage from "@/pages/DLCStorePage";
@@ -312,21 +301,21 @@ export function TabContent({
       );
     case "pumping":
       return (
-        <Suspended fallback={<PumpingPlaceholder />}>
+        <Suspended>
           <LazyPumpingSection />
         </Suspended>
       );
     case "guide":
       return (
         <SectionWrap maxWidth="max-w-6xl">
-          <Suspended fallback={<GuidePlaceholder />}>
+          <Suspended>
             <LazyMensHealthGuide />
           </Suspended>
         </SectionWrap>
       );
     case "routines":
       return checkFeature("customRoutines") ? (
-        <Suspended fallback={<RoutinesPlaceholder />}>
+        <Suspended>
           <LazyPERoutineBuilder />
         </Suspended>
       ) : (
@@ -334,7 +323,7 @@ export function TabContent({
       );
     case "pe-progress":
       return checkFeature("peProgressPhotos") ? (
-        <Suspended fallback={<ProgressPlaceholder />}>
+        <Suspended>
           <LazyPEProgressPhotos />
         </Suspended>
       ) : (
@@ -342,7 +331,7 @@ export function TabContent({
       );
     case "positions":
       return checkFeature("positionsGallery") ? (
-        <Suspended fallback={<PositionsPlaceholder />}>
+        <Suspended>
           <LazyPositionsGallery />
         </Suspended>
       ) : (
@@ -403,7 +392,7 @@ export function TabContent({
           <p className="text-muted-foreground text-center mb-8">
             Get personalized guidance on PE methods, health conditions, and wellness tips.
           </p>
-          <Suspended fallback={<AIChatPlaceholder />}>
+          <Suspended>
             <LazyAIHealthChatbot />
           </Suspended>
         </SectionWrap>
@@ -467,7 +456,7 @@ export function TabContent({
     case "education":
       return (
         <SectionWrap maxWidth="max-w-6xl">
-          <Suspended fallback={<EducationPlaceholder />}>
+          <Suspended>
             <LazyEducationCenter />
           </Suspended>
         </SectionWrap>
@@ -666,14 +655,14 @@ export function TabContent({
     case "3dviewer":
       return (
         <SectionWrap maxWidth="max-w-4xl">
-          <Suspended fallback={<ViewerPlaceholder />}>
+          <Suspended>
             <LazyModel3DViewer />
           </Suspended>
         </SectionWrap>
       );
     case "emergency":
       return (
-        <Suspended fallback={<EmergencyPlaceholder />}>
+        <Suspended>
           <LazyEmergencyGuidance />
         </Suspended>
       );
@@ -703,7 +692,7 @@ export function TabContent({
       );
     case "compare":
       return (
-        <Suspended fallback={<ProgressPlaceholder />}>
+        <Suspended>
           <LazyProgressPhotos />
         </Suspended>
       );
