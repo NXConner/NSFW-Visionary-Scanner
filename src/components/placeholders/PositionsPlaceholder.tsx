@@ -5,9 +5,9 @@
 
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Lock, Sparkles, BookOpen, Star, ChevronRight } from "lucide-react";
+import { Heart, Lock, BookOpen, Star } from "lucide-react";
+import { UnlockPremiumCta } from "./UnlockPremiumCta";
 
 export const PositionsPlaceholder: React.FC = () => {
   return (
@@ -46,11 +46,7 @@ export const PositionsPlaceholder: React.FC = () => {
             ))}
           </div>
 
-          <Button size="lg" className="gap-2">
-            <Sparkles className="w-5 h-5" />
-            Unlock Premium
-            <ChevronRight className="w-4 h-4" />
-          </Button>
+          <UnlockPremiumCta />
         </CardContent>
       </Card>
     </div>

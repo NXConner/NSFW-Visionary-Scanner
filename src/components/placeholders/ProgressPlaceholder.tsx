@@ -5,9 +5,9 @@
 
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Lock, Sparkles, TrendingUp, BarChart3, ChevronRight } from "lucide-react";
+import { Camera, Lock, TrendingUp, BarChart3 } from "lucide-react";
+import { UnlockPremiumCta } from "./UnlockPremiumCta";
 
 export const ProgressPlaceholder: React.FC = () => {
   return (
@@ -46,11 +46,7 @@ export const ProgressPlaceholder: React.FC = () => {
             ))}
           </div>
 
-          <Button size="lg" className="gap-2">
-            <Sparkles className="w-5 h-5" />
-            Unlock Premium
-            <ChevronRight className="w-4 h-4" />
-          </Button>
+          <UnlockPremiumCta />
         </CardContent>
       </Card>
     </div>

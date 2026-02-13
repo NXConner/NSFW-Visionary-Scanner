@@ -13,3 +13,4 @@ export { EmergencyPlaceholder } from "./EmergencyPlaceholder";
 export { AIChatPlaceholder } from "./AIChatPlaceholder";
 export { PositionsPlaceholder } from "./PositionsPlaceholder";
 export { PumpingPlaceholder } from "./PumpingPlaceholder";
+export { UnlockPremiumCta } from "./UnlockPremiumCta";

@@ -5,9 +5,9 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Scan, Lock, Sparkles, Shield, Activity, ChevronRight } from "lucide-react";
+import { Scan, Lock, Sparkles, Shield, Activity } from "lucide-react";
+import { UnlockPremiumCta } from "./UnlockPremiumCta";
 
 export const ScannerPlaceholder: React.FC = () => {
   return (
@@ -48,11 +48,7 @@ export const ScannerPlaceholder: React.FC = () => {
               ))}
             </div>
 
-            <Button size="lg" className="gap-2">
-              <Sparkles className="w-5 h-5" />
-              Learn More About Premium
-              <ChevronRight className="w-4 h-4" />
-            </Button>
+            <UnlockPremiumCta label="Learn More About Premium" />
           </CardContent>
         </Card>
 
