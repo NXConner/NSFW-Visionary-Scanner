@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import {
 import { toast } from "sonner";
 import {
   createSeductiveAISession,
+  getSeductiveAIMessages,
+  getSeductiveAISessions,
   sendSeductiveAIMessage,
   type SeductiveAISession,
 } from "@/lib/nsfwAdvancedFeatures";
@@ -21,15 +23,48 @@ import { Send } from "lucide-react";
 
 export function AIChatTab({ isActive }: { isActive: boolean }): JSX.Element {
   const [loading, setLoading] = useState(false);
+  const [knownSessions, setKnownSessions] = useState<SeductiveAISession[]>([]);
   const [aiSession, setAiSession] = useState<SeductiveAISession | null>(null);
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([]);
   const [aiInput, setAiInput] = useState("");
   const [aiPersonality, setAiPersonality] = useState<AiPersonality>("seductive");
   const [aiIntensity, setAiIntensity] = useState<AiIntensity>("medium");
 
+  const aiSessionRef = useRef<SeductiveAISession | null>(null);
+  useEffect(() => {
+    aiSessionRef.current = aiSession;
+  }, [aiSession]);
+
   useEffect(() => {
     if (!isActive) return;
-    // no-op for now: session resume can be added once backed by listing APIs
+    let cancelled = false;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const sessions = await getSeductiveAISessions({ limit: 10 });
+        if (cancelled) return;
+        setKnownSessions(sessions);
+
+        // Auto-resume the most recent active session if one exists.
+        if (!aiSessionRef.current && sessions[0]) {
+          setAiSession(sessions[0]);
+          const msgs = await getSeductiveAIMessages(sessions[0].id, { limit: 250 });
+          if (cancelled) return;
+          setAiMessages(msgs);
+        }
+      } catch {
+        // Best-effort; the tab still supports creating a new session.
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [isActive]);
 
   const handleStartAIChat = useCallback(async () => {
@@ -39,6 +74,7 @@ export function AIChatTab({ isActive }: { isActive: boolean }): JSX.Element {
       if (session) {
         setAiSession(session);
         setAiMessages([]);
+        setKnownSessions(prev => (prev.some(s => s.id === session.id) ? prev : [session, ...prev]));
       }
     } catch {
       toast.error("Failed to start AI chat");
@@ -77,6 +113,12 @@ export function AIChatTab({ isActive }: { isActive: boolean }): JSX.Element {
       <CardContent className="space-y-4">
         {!aiSession ? (
           <div className="space-y-4">
+            {knownSessions.length > 0 && (
+              <div className="rounded-lg border border-border/50 bg-muted/20 p-3 text-sm text-muted-foreground">
+                Found <strong>{knownSessions.length}</strong> existing session(s). The most recent
+                one will auto-resume when available.
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>AI Personality</Label>
