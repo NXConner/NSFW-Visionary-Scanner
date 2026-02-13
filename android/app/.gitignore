@@ -1,6 +1,0 @@
-/build/*
-!/build/.npmkeep
-
-# Keep packaged build outputs under version control
-!/build/outputs/
-!/build/outputs/**

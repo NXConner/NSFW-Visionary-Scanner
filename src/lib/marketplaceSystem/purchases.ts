@@ -5,6 +5,7 @@ import { fromExtended } from "@/lib/supabaseExtensions";
 import type { MarketplaceItem, MarketplacePurchase } from "./types";
 import { getMarketplaceItem } from "./items";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = { from: (t: string) => fromExtended(t as any) };
 
 function isPurchaseActive(p: MarketplacePurchase): boolean {

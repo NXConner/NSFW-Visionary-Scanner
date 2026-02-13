@@ -1,7 +1,11 @@
 import { DateNightPlanner } from "@/components/partnerSync/DateNightPlanner";
 import { PartnerConnectionCard } from "@/components/partnerSync/PartnerConnectionCard";
 import { PartnerSyncConsentBanner } from "@/components/partnerSync/PartnerSyncConsentBanner";
-import { usePartnerConnection, usePartnerConsent, usePartnerPermissions } from "@/lib/partnerSync";
+import {
+  usePartnerConnection,
+  usePartnerConsent,
+  usePartnerPermissions,
+} from "@/lib/partnerSync";
 
 export function DatesTab({ isActive: _isActive }: { isActive: boolean }): JSX.Element {
   const {
@@ -27,12 +31,8 @@ export function DatesTab({ isActive: _isActive }: { isActive: boolean }): JSX.El
       : null;
 
   const { permissions, updatePermission } = usePartnerPermissions(connectionId);
-  const {
-    needsConsent,
-    partnerNeedsConsent,
-    acceptConsent,
-    loading: consentLoading,
-  } = usePartnerConsent(connectionId);
+  const { needsConsent, partnerNeedsConsent, acceptConsent, loading: consentLoading } =
+    usePartnerConsent(connectionId);
   const consentReady = !needsConsent && !partnerNeedsConsent;
 
   return (

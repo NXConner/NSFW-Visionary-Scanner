@@ -45,23 +45,14 @@ export function CurvatureMiniPlot({
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="text-xs font-mono text-muted-foreground">{a.toFixed(0)}°</div>
       </div>
-      <svg
-        viewBox={`0 0 ${w} ${h}`}
-        className="w-full h-[120px] rounded-xl border border-border/50 bg-black/20"
-      >
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-[120px] rounded-xl border border-border/50 bg-black/20">
         <defs>
           <linearGradient id="curvPlotGlow" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="rgba(56,189,248,0.92)" />
             <stop offset="1" stopColor="rgba(167,139,250,0.82)" />
           </linearGradient>
         </defs>
-        <path
-          d={path}
-          fill="none"
-          stroke="url(#curvPlotGlow)"
-          strokeWidth="5"
-          strokeLinecap="round"
-        />
+        <path d={path} fill="none" stroke="url(#curvPlotGlow)" strokeWidth="5" strokeLinecap="round" />
         <circle cx={x0} cy={y0} r="6" fill="rgba(255,255,255,0.92)" />
         <circle cx={x1} cy={y1} r="6" fill="rgba(255,255,255,0.92)" />
         {/* baseline */}
@@ -70,3 +61,4 @@ export function CurvatureMiniPlot({
     </div>
   );
 }
+

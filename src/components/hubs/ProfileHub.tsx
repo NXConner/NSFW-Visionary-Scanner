@@ -166,11 +166,6 @@ export function ProfileHub({ initialTab }: { initialTab?: string }): JSX.Element
   );
 
   return (
-    <HubTabs
-      title="Profile"
-      description="Account, settings, and billing."
-      tabs={tabs}
-      initialTab={initialTab}
-    />
+    <HubTabs title="Profile" description="Account, settings, and billing." tabs={tabs} initialTab={initialTab} />
   );
 }

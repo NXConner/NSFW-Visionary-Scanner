@@ -21,9 +21,6 @@ const LEGACY_TAB_MAP: Record<string, HubSection> = {
   "enhanced-diary": { hub: "progress", section: "diary" },
   "advanced-routines": { hub: "progress", section: "routines" },
   compare: { hub: "progress", section: "photos" },
-  // Health tab aliases
-  health: { hub: "progress", section: "health" },
-  "health-tab": { hub: "progress", section: "health" },
   "health-monitoring": { hub: "progress", section: "health" },
   "health-dashboard": { hub: "progress", section: "health" },
   "prostate-testicular": { hub: "progress", section: "health" },

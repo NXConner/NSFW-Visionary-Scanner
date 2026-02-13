@@ -21,3 +21,4 @@ export function formatTimecode(seconds: number): string {
 
   return `${base}.${String(ms).padStart(3, "0")}`;
 }
+

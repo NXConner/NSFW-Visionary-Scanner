@@ -148,7 +148,7 @@ export const PricingCard = ({ plan, isPopular, currentPlan }: PricingCardProps) 
 
       <CardContent>
         <ul className="space-y-2">
-          {plan.features.map(feature => (
+          {plan.features.map((feature) => (
             <li key={feature} className="flex items-center gap-2">
               <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
               <span className="text-sm">{feature}</span>

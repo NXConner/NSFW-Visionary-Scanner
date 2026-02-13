@@ -14,8 +14,7 @@ export function useNsfwScannerAddon() {
   useEffect(() => {
     const onChange = () => setPolicy(readNsfwScannerPolicy());
     window.addEventListener("nsfw-scanner-policy-changed", onChange as EventListener);
-    return () =>
-      window.removeEventListener("nsfw-scanner-policy-changed", onChange as EventListener);
+    return () => window.removeEventListener("nsfw-scanner-policy-changed", onChange as EventListener);
   }, []);
 
   const isUnlocked = Boolean(hasEntitlement && isAgeVerified);
@@ -43,3 +42,4 @@ export function useNsfwScannerAddon() {
     setPolicy: updatePolicy,
   };
 }
+

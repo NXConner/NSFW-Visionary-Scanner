@@ -23,13 +23,7 @@ export type EducationSectionId =
   | "equipment"
   | "communication";
 
-export type EducationTone =
-  | "education"
-  | "consent"
-  | "communication"
-  | "safety"
-  | "spiritual"
-  | "practical";
+export type EducationTone = "education" | "consent" | "communication" | "safety" | "spiritual" | "practical";
 
 export interface EducationBullet {
   id: string;

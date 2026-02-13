@@ -5,25 +5,6 @@ Write-Host ""
 Write-Host "=== Syncing Android and Building APK ===" -ForegroundColor Cyan
 Write-Host ""
 
-$env:CAPACITOR_BUILD = "1"
-
-# Step 0: Build web app (NSFW direct)
-Write-Host "Step 0: Building web app (NSFW direct)..." -ForegroundColor Yellow
-try {
-    npm run build:nsfw:direct
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "Build successful!" -ForegroundColor Green
-    } else {
-        Write-Host "Build failed with exit code $LASTEXITCODE" -ForegroundColor Red
-        exit 1
-    }
-} catch {
-    Write-Host "Build failed: $_" -ForegroundColor Red
-    exit 1
-}
-
-Write-Host ""
-
 # Step 1: Sync with Capacitor
 Write-Host "Step 1: Syncing with Capacitor Android..." -ForegroundColor Yellow
 try {

@@ -102,7 +102,7 @@ export function RouteTopNav(props: {
   ];
 
   const handleQuickNav = (tabId: string) => {
-    navigate("/");
+    navigate("/app");
     // Dispatch event to change tab
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent("navigate-tab", { detail: tabId }));

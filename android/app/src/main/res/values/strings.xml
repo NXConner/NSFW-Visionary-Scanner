@@ -1,7 +1,9 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MorphoScan Pro</string>
     <string name="title_activity_main">MorphoScan Pro</string>
-    <string name="package_name">com.morphoscan.pro</string>
-    <string name="custom_url_scheme">com.morphoscan.pro</string>
+
+    <!-- App Links verification placeholder (optional) -->
+    <string name="asset_statements"></string>
 </resources>
+

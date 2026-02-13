@@ -1,54 +1,49 @@
 import js from "@eslint/js";
 import globals from "globals";
-import jsxA11y from "eslint-plugin-jsx-a11y";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
+import jsxA11y from "eslint-plugin-jsx-a11y";
+
+const jsxA11yWarnRules = Object.entries(jsxA11y.configs.recommended.rules ?? {}).reduce(
+  (acc, [rule, config]) => {
+    if (Array.isArray(config)) {
+      acc[rule] = ["warn", ...config.slice(1)];
+      return acc;
+    }
+    if (typeof config === "string") {
+      acc[rule] = config === "off" ? "off" : "warn";
+      return acc;
+    }
+    acc[rule] = ["warn", config];
+    return acc;
+  },
+  {},
+);
 
 export default tseslint.config(
   {
     ignores: [
-      "**/node_modules/**",
-      "**/dist/**",
-      "**/build/**",
-      "**/coverage/**",
-      "**/playwright-report/**",
-      "**/test-results/**",
-      "**/.vite/**",
-      "**/.turbo/**",
-      "**/.cache/**",
-      "android/**",
-      "ios/**",
-      "supabase/**",
-      "exports/**",
-      "public/**",
+      "dist",
       "deleted files/**",
-      "**/*.min.*",
+      "external-repos/**",
+      "supabase/functions/**",
+      ".github/workflows/**",
+      "node_modules/**",
+      "*.config.js",
+      "*.config.ts",
+      "android/app/build/**",
+      "android/.gradle/**",
+      "android/build/**",
     ],
   },
-
-  // Baseline JS rules
-  js.configs.recommended,
-
-  // TypeScript rules (non-type-checked; avoids requiring a TS project for lint)
-  ...tseslint.configs.recommended,
-
-  // Shared language options for the project
   {
-    files: ["**/*.{js,jsx,ts,tsx,mjs,cjs}"],
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    files: ["**/*.{ts,tsx}"],
     languageOptions: {
-      ecmaVersion: "latest",
-      sourceType: "module",
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-      },
+      ecmaVersion: 2020,
+      globals: globals.browser,
     },
-  },
-
-  // React / JSX rules (no eslint-plugin-react dependency required)
-  {
-    files: ["**/*.{jsx,tsx}"],
     plugins: {
       "react-hooks": reactHooks,
       "react-refresh": reactRefresh,
@@ -56,35 +51,27 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-
-      // Keep fast-refresh safe in dev; only warns so pre-commit doesn't block.
+      ...jsxA11yWarnRules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
-
-      // A11y plugin is installed; start with a small, low-noise subset.
-      // (Full recommended set can be enabled later once the codebase is clean.)
-      "jsx-a11y/alt-text": "warn",
-      "jsx-a11y/anchor-is-valid": "warn",
-      "jsx-a11y/no-static-element-interactions": "off",
-      "jsx-a11y/click-events-have-key-events": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+      // This codebase is intentionally not in TS strict mode yet (see tsconfig.*),
+      // and many integrations (Supabase, Stripe, 3D/ML libs) surface values as `unknown`/untyped.
+      // We enforce correctness via typecheck + tests; treat `any` cleanup as a gradual hardening task.
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-empty-object-type": "off",
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
-
-  // Reduce false-positives / noise across a large codebase.
   {
+    files: [
+      "src/components/ui/**/*.{ts,tsx}",
+      "src/contexts/**/*.{ts,tsx}",
+      "src/dlc/**/*.{ts,tsx}",
+    ],
     rules: {
-      "no-undef": "off",
-      "no-unused-vars": "off",
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unused-expressions": "off",
-      "@typescript-eslint/no-require-imports": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
-        {
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-          caughtErrorsIgnorePattern: "^_",
-        },
-      ],
+      // These modules intentionally export helpers, context, and variants alongside components.
+      // Fast refresh still works fine in practice; keep lint signal focused on app code.
+      "react-refresh/only-export-components": "off",
     },
   },
 );

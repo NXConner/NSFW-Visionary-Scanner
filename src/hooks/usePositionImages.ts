@@ -6,9 +6,18 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { fromExtended } from "@/lib/supabaseExtensions";
 import { getDeviceId, getDevicePlatform } from "@/dlc/core/device";
-import { isHttpUrl, signAssetPaths } from "@/lib/nsfwAssets";
+
+function isHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
+function inferPackageIdFromAssetPath(assetPath: string): string {
+  const first = assetPath.split("/")[0];
+  return first || "dlc-positions";
+}
 
 interface PositionImage {
   id: string;
@@ -84,16 +93,32 @@ export function usePositionImages(
       // Best-effort sign any private storage paths.
       const toSign = positionImages.map(p => p.originalUrl).filter(u => u && !isHttpUrl(u));
       if (toSign.length > 0) {
-        const map = await signAssetPaths({
-          assetPaths: toSign,
-          deviceId,
-          devicePlatform,
-          expiresInSeconds: 5 * 60,
-        });
-        if (Object.keys(map).length > 0) {
+        const uniq = Array.from(new Set(toSign)).slice(0, 128);
+        const signed = await Promise.allSettled(
+          uniq.map(async assetPath => {
+            const packageId = inferPackageIdFromAssetPath(assetPath);
+            const { data: res, error: e } = await supabase.functions.invoke("get-dlc-signed-url", {
+              body: {
+                packageId,
+                assetPath,
+                expiresInSeconds: 5 * 60,
+                deviceId,
+                devicePlatform,
+              },
+            });
+            if (e || !res?.signedUrl) return null;
+            return { assetPath, signedUrl: String(res.signedUrl) };
+          }),
+        );
+        const map = new Map<string, string>();
+        for (const r of signed) {
+          if (r.status !== "fulfilled" || !r.value) continue;
+          map.set(r.value.assetPath, r.value.signedUrl);
+        }
+        if (map.size > 0) {
           for (const img of positionImages) {
-            if (!isHttpUrl(img.originalUrl) && map[img.originalUrl]) {
-              img.originalUrl = map[img.originalUrl]!;
+            if (!isHttpUrl(img.originalUrl) && map.has(img.originalUrl)) {
+              img.originalUrl = map.get(img.originalUrl)!;
             }
           }
         }

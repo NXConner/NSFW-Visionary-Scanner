@@ -120,7 +120,6 @@ export function ThreadDetail(props: {
                   onChange={e =>
                     props.setNewPost({ ...props.newPost, is_anonymous: e.target.checked })
                   }
-                  aria-label="Post anonymously"
                 />
                 Post anonymously
               </label>

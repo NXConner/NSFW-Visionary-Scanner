@@ -12,37 +12,83 @@ interface UseUserRolesReturn {
   isPro: boolean;
   isPremium: boolean;
   isLoading: boolean;
+  rolesFetched: boolean;
   error: string | null;
   refetch: () => Promise<void>;
 }
 
+// LocalStorage key for persisting roles across page loads
+const ROLES_STORAGE_KEY = "lovable_user_roles";
+
+// Persist roles to localStorage
+function persistRoles(userId: string, roles: AppRole[]): void {
+  try {
+    localStorage.setItem(ROLES_STORAGE_KEY, JSON.stringify({ userId, roles, timestamp: Date.now() }));
+  } catch {
+    // localStorage may not be available
+  }
+}
+
+// Get persisted roles from localStorage
+function getPersistedRoles(userId?: string): AppRole[] {
+  try {
+    const stored = localStorage.getItem(ROLES_STORAGE_KEY);
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    // Check if cached for same user and not expired (5 min TTL for localStorage cache)
+    if (userId && parsed?.userId === userId && parsed?.roles) {
+      const age = Date.now() - (parsed.timestamp || 0);
+      if (age < 300000) { // 5 minutes
+        return parsed.roles as AppRole[];
+      }
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+// Clear persisted roles (on logout)
+function clearPersistedRoles(): void {
+  try {
+    localStorage.removeItem(ROLES_STORAGE_KEY);
+  } catch {
+    // localStorage may not be available
+  }
+}
+
+// Get initial roles from localStorage synchronously
+function getInitialRoles(): { roles: AppRole[]; userId: string | null } {
+  try {
+    const stored = localStorage.getItem(ROLES_STORAGE_KEY);
+    if (!stored) return { roles: [], userId: null };
+    const parsed = JSON.parse(stored);
+    const age = Date.now() - (parsed.timestamp || 0);
+    if (parsed?.roles && age < 300000) { // 5 minutes
+      return { roles: parsed.roles as AppRole[], userId: parsed.userId };
+    }
+    return { roles: [], userId: null };
+  } catch {
+    return { roles: [], userId: null };
+  }
+}
+
+// Module-level initial roles - computed ONCE when module loads
+const INITIAL_CACHED_STATE = getInitialRoles();
+
 // Cache for roles to prevent excessive DB calls on re-renders
-let cachedRoles: { userId: string; roles: AppRole[]; timestamp: number } | null = null;
+let cachedRoles: { userId: string; roles: AppRole[]; timestamp: number } | null = 
+  INITIAL_CACHED_STATE.roles.length > 0 
+    ? { userId: INITIAL_CACHED_STATE.userId || "", roles: INITIAL_CACHED_STATE.roles, timestamp: Date.now() }
+    : null;
 const CACHE_TTL = 30000; // 30 seconds
-const USER_ROLES_STORAGE_KEY = "user_roles";
-
-const persistRoles = (nextRoles: AppRole[]) => {
-  try {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(USER_ROLES_STORAGE_KEY, JSON.stringify(nextRoles));
-  } catch {
-    // localStorage may be unavailable
-  }
-};
-
-const clearPersistedRoles = () => {
-  try {
-    if (typeof window === "undefined") return;
-    window.localStorage.removeItem(USER_ROLES_STORAGE_KEY);
-  } catch {
-    // localStorage may be unavailable
-  }
-};
 
 export const useUserRoles = (): UseUserRolesReturn => {
   const [user, setUser] = useState<any>(null);
-  const [roles, setRoles] = useState<AppRole[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // CRITICAL: Initialize with persisted roles to prevent "Free" flash
+  const [roles, setRoles] = useState<AppRole[]>(INITIAL_CACHED_STATE.roles);
+  const [isLoading, setIsLoading] = useState(INITIAL_CACHED_STATE.roles.length === 0);
+  const [rolesFetched, setRolesFetched] = useState(INITIAL_CACHED_STATE.roles.length > 0);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
 
@@ -54,15 +100,12 @@ export const useUserRoles = (): UseUserRolesReturn => {
       // Race against a 2-second timeout to prevent UI blocking
       const userResult = await Promise.race([
         supabase.auth.getUser(),
-        new Promise<{ data: { user: null }; error: null }>(resolve =>
-          setTimeout(() => resolve({ data: { user: null }, error: null }), 2000),
+        new Promise<{ data: { user: null }; error: null }>((resolve) =>
+          setTimeout(() => resolve({ data: { user: null }, error: null }), 2000)
         ),
       ]);
 
-      const {
-        data: { user },
-        error: userError,
-      } = userResult;
+      const { data: { user }, error: userError } = userResult;
 
       if (userError) {
         throw userError;
@@ -73,12 +116,23 @@ export const useUserRoles = (): UseUserRolesReturn => {
 
       if (!user) {
         setRoles([]);
+        setRolesFetched(true);
         clearSuperAdminCache();
         clearPersistedRoles();
+        cachedRoles = null;
         return;
       }
 
-      // Check cache first
+      // Check localStorage cache first for instant premium display
+      const persistedRoles = getPersistedRoles(user.id);
+      if (persistedRoles.length > 0) {
+        setRoles(persistedRoles);
+        setRolesFetched(true);
+        // Update memory cache too
+        cachedRoles = { userId: user.id, roles: persistedRoles, timestamp: Date.now() };
+      }
+
+      // Check memory cache
       const now = Date.now();
       if (
         cachedRoles &&
@@ -86,15 +140,15 @@ export const useUserRoles = (): UseUserRolesReturn => {
         now - cachedRoles.timestamp < CACHE_TTL
       ) {
         setRoles(cachedRoles.roles);
-        persistRoles(cachedRoles.roles);
+        setRolesFetched(true);
         return;
       }
 
-      // Database-driven role check with 2s timeout
+      // Database-driven role check with 3s timeout
       const roleResult = await Promise.race([
         supabase.from("user_roles").select("role").eq("user_id", user.id),
-        new Promise<{ data: null; error: { message: string } }>(resolve =>
-          setTimeout(() => resolve({ data: null, error: { message: "Role check timeout" } }), 2000),
+        new Promise<{ data: null; error: { message: string } }>((resolve) =>
+          setTimeout(() => resolve({ data: null, error: { message: "Role check timeout" } }), 3000)
         ),
       ]);
 
@@ -107,18 +161,25 @@ export const useUserRoles = (): UseUserRolesReturn => {
         // On timeout/error, use cached roles if available
         if (cachedRoles && cachedRoles.userId === user.id) {
           setRoles(cachedRoles.roles);
+          setRolesFetched(true);
+        } else if (persistedRoles.length > 0) {
+          setRoles(persistedRoles);
+          setRolesFetched(true);
         }
         setError(fetchError.message);
         return;
       }
 
-      const dbRoles = (data?.map(r => r.role as AppRole) || []).filter(Boolean);
-
-      // Update cache
+      const dbRoles = (data?.map((r) => r.role as AppRole) || []).filter(Boolean);
+      
+      // Update memory cache
       cachedRoles = { userId: user.id, roles: dbRoles, timestamp: now };
-
+      
+      // CRITICAL: Persist to localStorage for instant load on page refresh
+      persistRoles(user.id, dbRoles);
+      
       setRoles(dbRoles);
-      persistRoles(dbRoles);
+      setRolesFetched(true);
     } catch (err) {
       if (!mountedRef.current) return;
       setError(err instanceof Error ? err.message : "Failed to fetch roles");
@@ -132,12 +193,12 @@ export const useUserRoles = (): UseUserRolesReturn => {
   useEffect(() => {
     mountedRef.current = true;
 
-    // Aggressive 1.5s fallback to prevent infinite loading
+    // Fallback to prevent infinite loading
     const fallback = setTimeout(() => {
       if (mountedRef.current) {
         setIsLoading(false);
       }
-    }, 1500);
+    }, 2000);
 
     fetchRoles();
 
@@ -147,7 +208,9 @@ export const useUserRoles = (): UseUserRolesReturn => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         clearSuperAdminCache();
+        clearPersistedRoles();
         cachedRoles = null;
+        setRolesFetched(false);
       }
       fetchRoles();
     });
@@ -159,24 +222,21 @@ export const useUserRoles = (): UseUserRolesReturn => {
     };
   }, []);
 
-  // SUPER ADMIN EARLY CHECK: Use cached value for immediate access if available
-  // This prevents locked flash during initial load
-  const isSuperAdminCachedValue =
-    roles.includes("super_admin") ||
-    (cachedRoles?.userId === user?.id && cachedRoles?.roles.includes("super_admin"));
+  // Compute derived states from roles
+  const isSuperAdmin = roles.includes("super_admin");
+  const isAdmin = roles.includes("admin") || isSuperAdmin;
+  const isPro = roles.includes("pro");
+  const isPremium = isAdmin || isSuperAdmin || isPro;
 
   return {
     user,
     roles,
-    isAdmin: roles.includes("admin") || roles.includes("super_admin") || isSuperAdminCachedValue,
-    isSuperAdmin: roles.includes("super_admin") || isSuperAdminCachedValue,
-    isPro: roles.includes("pro"),
-    isPremium:
-      roles.includes("admin") ||
-      roles.includes("super_admin") ||
-      roles.includes("pro") ||
-      isSuperAdminCachedValue,
+    isAdmin,
+    isSuperAdmin,
+    isPro,
+    isPremium,
     isLoading,
+    rolesFetched,
     error,
     refetch: fetchRoles,
   };

@@ -34,3 +34,4 @@ export function KeyTopicsSection({ topics }: { topics: Topic[] }) {
     </section>
   );
 }
+

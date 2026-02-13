@@ -24,9 +24,6 @@ type Pt = {
   a: number;
 };
 
-const TARGET_FPS = 30;
-const FRAME_INTERVAL = 1000 / TARGET_FPS;
-
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -72,6 +69,8 @@ export function ParticleField({
   });
   // FPS cap to prevent excessive CPU usage on high-refresh-rate displays
   const lastFrameTimeRef = React.useRef<number>(0);
+  const TARGET_FPS = 30;
+  const FRAME_INTERVAL = 1000 / TARGET_FPS;
 
   React.useEffect(() => {
     if (paused) return;

@@ -1,14 +1,22 @@
 /**
  * Partner Sync Tab
  * Partner synchronization for shared progress, thought pings, date nights, and positions
+ * SUPER ADMIN BYPASS: Admin and super admin users always have access
  */
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LockedFeature } from "@/dlc/components/LockedFeature";
 import { useDLCFeature } from "@/dlc/context/DLCContext";
-import { usePartnerConnection, usePartnerConsent, usePartnerPermissions } from "@/lib/partnerSync";
+import {
+  usePartnerConnection,
+  usePartnerConsent,
+  usePartnerPermissions,
+} from "@/lib/partnerSync";
 import { useI18n } from "@/lib/i18n";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { useAuth } from "@/contexts/AuthContext";
+import { isAnySuperAdminPersisted } from "@/lib/superAdmin";
 import { PartnerConnectionCard } from "./PartnerConnectionCard";
 import { ThoughtPingsPanel } from "./ThoughtPingsPanel";
 import { DateNightPlanner } from "./DateNightPlanner";
@@ -19,6 +27,9 @@ import { PartnerSyncInsightsPanel } from "./PartnerSyncInsightsPanel";
 import { PartnerSyncConsentBanner } from "./PartnerSyncConsentBanner";
 import { PartnerSyncPreviewPanel } from "./PartnerSyncPreviewPanel";
 
+// CRITICAL: Module-level cached super admin check for instant access
+const INITIAL_SUPER_ADMIN_STATUS = isAnySuperAdminPersisted();
+
 type PartnerSyncTabProps = {
   onNavigateToTab?: (tabId: string) => void;
 };
@@ -26,7 +37,13 @@ type PartnerSyncTabProps = {
 export function PartnerSyncTab({ onNavigateToTab }: PartnerSyncTabProps = {}) {
   const { t } = useI18n();
   const { isAvailable, isLoading } = useDLCFeature("partner_sync");
+  const { isAdmin, isSuperAdmin: isSuperAdminRole } = useUserRoles();
+  const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked } = useAuth();
   const [activeTab, setActiveTab] = useState("thoughts");
+  
+  // SUPER ADMIN BYPASS: Check for privileged status immediately
+  const isPrivileged = INITIAL_SUPER_ADMIN_STATUS || isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole;
+  
   const {
     activeConnection,
     currentUserId,
@@ -50,15 +67,12 @@ export function PartnerSyncTab({ onNavigateToTab }: PartnerSyncTabProps = {}) {
       : null;
 
   const { permissions, updatePermission } = usePartnerPermissions(connectionId);
-  const {
-    needsConsent,
-    partnerNeedsConsent,
-    acceptConsent,
-    loading: consentLoading,
-  } = usePartnerConsent(connectionId);
+  const { needsConsent, partnerNeedsConsent, acceptConsent, loading: consentLoading } =
+    usePartnerConsent(connectionId);
   const consentReady = !needsConsent && !partnerNeedsConsent;
 
-  if (isLoading) {
+  // SUPER ADMIN BYPASS: Skip loading and locked state for privileged users
+  if (!isPrivileged && isLoading) {
     return (
       <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
         {t("partnerSync.loading")}
@@ -66,7 +80,8 @@ export function PartnerSyncTab({ onNavigateToTab }: PartnerSyncTabProps = {}) {
     );
   }
 
-  if (!isAvailable) {
+  // SUPER ADMIN BYPASS: Skip locked state for privileged users
+  if (!isPrivileged && !isAvailable) {
     return (
       <LockedFeature
         featureId="partner_sync"
@@ -123,9 +138,7 @@ export function PartnerSyncTab({ onNavigateToTab }: PartnerSyncTabProps = {}) {
             partnerId={partnerId}
             currentUserId={currentUserId}
             consentReady={consentReady}
-            onNavigateToHub={
-              onNavigateToTab ? () => onNavigateToTab("date-night-planner") : undefined
-            }
+            onNavigateToHub={onNavigateToTab ? () => onNavigateToTab("date-night-planner") : undefined}
           />
         </TabsContent>
         <TabsContent value="positions" className="space-y-4">

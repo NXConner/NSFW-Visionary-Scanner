@@ -1,4 +1,4 @@
-// DLC Package Definitions for Visionary Scanner Suite
+// DLC Package Definitions for MorphoScan Pro
 // Centralized package configuration for the DLC Store
 
 import { Library, Brain, Users, FileText, Microscope, Shield, Sparkles } from "lucide-react";

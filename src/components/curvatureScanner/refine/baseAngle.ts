@@ -27,7 +27,10 @@ function endTangents(points: Vec2[]): { base: Vec2; tip: Vec2 } {
  * - base end chosen by closest endpoint to the user-picked base point
  * - angle computed between tangent near base and tangent near tip
  */
-export function computeBaseAnchoredAngleDeg(centerline: Vec2[], basePointPx: Vec2): number | null {
+export function computeBaseAnchoredAngleDeg(
+  centerline: Vec2[],
+  basePointPx: Vec2,
+): number | null {
   if (centerline.length < 10) return null;
 
   const baseIdx = nearestIndex(centerline, basePointPx);
@@ -39,3 +42,4 @@ export function computeBaseAnchoredAngleDeg(centerline: Vec2[], basePointPx: Vec
   const ang = Math.acos(dotp);
   return clamp(deg(ang), 0, 90);
 }
+

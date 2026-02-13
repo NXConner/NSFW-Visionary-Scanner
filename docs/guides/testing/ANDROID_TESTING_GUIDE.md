@@ -279,10 +279,10 @@ When reporting issues, include:
 
 ## ✅ Sign-Off
 
-**Tester Name:** **\*\*\*\***\_**\*\*\*\***  
-**Date:** **\*\*\*\***\_**\*\*\*\***  
+**Tester Name:** ********\_********  
+**Date:** ********\_********  
 **Status:** ☐ Passed ☐ Failed ☐ Needs Retest  
-**Notes:** **\*\*\*\***\_**\*\*\*\***
+**Notes:** ********\_********
 
 ---
 

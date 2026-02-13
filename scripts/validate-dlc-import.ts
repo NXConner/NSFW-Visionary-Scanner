@@ -18,7 +18,7 @@ type Args = {
   file: string;
 };
 
-function parseArgs(argv: string[]): Args | null {
+function parseArgs(argv: string[]): Args {
   const map = new Map<string, string>();
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
@@ -32,12 +32,8 @@ function parseArgs(argv: string[]): Args | null {
 
   const typeRaw = map.get("type") ?? "";
   const file = map.get("file") ?? "";
-
-  // No args -> validate canonical templates shipped in the repo.
-  if (!typeRaw && !file) return null;
-  if (!typeRaw) throw new Error("Missing --type");
-  if (!file) throw new Error("Missing --file");
   const type = importTypeSchema.parse(typeRaw);
+  if (!file) throw new Error("Missing --file");
   return { type, file };
 }
 
@@ -218,80 +214,38 @@ function validateJson(type: ImportType, filePath: string) {
 
 function main() {
   try {
-    const parsed = parseArgs(process.argv.slice(2));
-    const targets: Args[] =
-      parsed != null
-        ? [parsed]
-        : [
-            { type: "positions", file: "docs/product/dlc/dlc-content/templates/positions.csv" },
-            { type: "videos", file: "docs/product/dlc/dlc-content/templates/videos.csv" },
-            { type: "topics", file: "docs/product/dlc/dlc-content/templates/topics.csv" },
-          ];
+    const args = parseArgs(process.argv.slice(2));
+    const hash = sha256File(args.file);
 
-    const out: any[] = [];
-    const failures: any[] = [];
+    if (!isJsonPath(args.file) && !isCsvPath(args.file)) {
+      fail("File must end with .csv or .json");
+    }
 
-    for (const args of targets) {
-      const hash = sha256File(args.file);
-
-      if (!isJsonPath(args.file) && !isCsvPath(args.file)) {
-        failures.push({
-          type: args.type,
-          file: args.file,
-          error: "File must end with .csv or .json",
-        });
-        continue;
-      }
-
-      if (isJsonPath(args.file)) {
-        const res = validateJson(args.type, args.file);
-        const failed = res.results.filter(r => !r.ok).length;
-        if (failed > 0) {
-          failures.push({ type: args.type, file: args.file, sha256: hash, ...res });
-          continue;
-        }
-        out.push({
-          ok: true,
-          sha256: hash,
-          type: args.type,
-          file: args.file,
-          format: "json",
-          count: res.count,
-        });
-        continue;
-      }
-
-      const rows = parseCsvFile(args.file);
-      const normalized = normalizeCsvRows(args.type, rows);
-      const failed = normalized.filter((r: any) => !r.ok).length;
+    if (isJsonPath(args.file)) {
+      const res = validateJson(args.type, args.file);
+      const failed = res.results.filter(r => !r.ok).length;
       if (failed > 0) {
-        failures.push({
-          type: args.type,
-          file: args.file,
-          sha256: hash,
-          format: "csv",
-          count: rows.length,
-          failed,
-          failures: normalized.filter((r: any) => !r.ok).slice(0, 50),
-        });
-        continue;
+        fail("Validation failed", { sha256: hash, ...res });
       }
+      ok({ ok: true, sha256: hash, type: args.type, format: "json", count: res.count });
+      return;
+    }
 
-      out.push({
-        ok: true,
+    const rows = parseCsvFile(args.file);
+    const normalized = normalizeCsvRows(args.type, rows);
+    const failed = normalized.filter((r: any) => !r.ok).length;
+    if (failed > 0) {
+      fail("Validation failed", {
         sha256: hash,
         type: args.type,
-        file: args.file,
         format: "csv",
         count: rows.length,
+        failed,
+        failures: normalized.filter((r: any) => !r.ok).slice(0, 50),
       });
     }
 
-    if (failures.length > 0) {
-      fail("Validation failed", { failures });
-    }
-
-    ok({ ok: true, validated: out });
+    ok({ ok: true, sha256: hash, type: args.type, format: "csv", count: rows.length });
   } catch (e) {
     fail(e instanceof Error ? e.message : "Unknown error");
   }

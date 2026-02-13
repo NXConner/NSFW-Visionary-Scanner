@@ -47,15 +47,12 @@ All Android build configurations have been set up and are ready for building APK
 ## Building APKs and AABs
 
 ### Quick Build (All)
-
 ```powershell
 .\build-all-apks.ps1
 ```
-
 Builds both APKs (Debug & Release) and AAB (Android App Bundle)
 
 ### Build Options
-
 ```powershell
 # Build only APKs (no AAB)
 .\build-all-apks.ps1 -APKOnly
@@ -76,13 +73,11 @@ Builds both APKs (Debug & Release) and AAB (Android App Bundle)
 ### Manual Build Steps
 
 1. **Build web app** (if needed):
-
    ```powershell
    npm run build
    ```
 
 2. **Sync Capacitor**:
-
    ```powershell
    npx cap sync android
    ```
@@ -98,12 +93,10 @@ Builds both APKs (Debug & Release) and AAB (Android App Bundle)
 ## Build Output Locations
 
 ### APK Files
-
 - **Debug APK**: `android/app/build/outputs/apk/debug/app-debug.apk`
 - **Release APK**: `android/app/build/outputs/apk/release/app-release.apk`
 
 ### AAB Files (Android App Bundle)
-
 - **Release AAB**: `android/app/build/outputs/bundle/release/app-release.aab`
   - Required for Google Play Store uploads
   - Smaller file size than APK
@@ -119,27 +112,23 @@ Builds both APKs (Debug & Release) and AAB (Android App Bundle)
 ## Troubleshooting
 
 ### JVM Crashes / Out of Memory
-
 - **Cause**: Low disk space or insufficient memory
-- **Solution**:
+- **Solution**: 
   - Free up at least 5GB disk space
   - Clean Gradle cache: `.\gradlew.bat clean --no-daemon`
   - Remove `.gradle` folder if corrupted
 
 ### Build Fails with "SDK location not found"
-
 - **Solution**: The build script auto-configures this, but you can manually create `android/local.properties`:
   ```
   sdk.dir=C\:\\Users\\YourUsername\\AppData\\Local\\Android\\Sdk
   ```
 
 ### ProGuard Errors
-
 - **Solution**: ProGuard rules are configured in `android/app/proguard-rules.pro`
 - If you add new libraries, update the ProGuard rules accordingly
 
 ### Gradle Daemon Issues
-
 - Use `--no-daemon` flag to avoid daemon-related issues
 - Stop all Gradle daemons: `.\gradlew.bat --stop`
 
@@ -160,13 +149,11 @@ Builds both APKs (Debug & Release) and AAB (Android App Bundle)
 ## Build Variants
 
 Currently configured build types:
-
 - **Debug APK**: Unsigned, debuggable, includes debug symbols
 - **Release APK**: Signed (if keystore configured), minified, optimized
 - **Release AAB**: Android App Bundle for Google Play Store (signed if keystore configured)
 
 ### When to Use Each:
-
 - **Debug APK**: Testing, development, internal distribution
 - **Release APK**: Direct installation, sideloading, non-Play Store distribution
 - **Release AAB**: Google Play Store uploads (required format)
@@ -174,7 +161,6 @@ Currently configured build types:
 ## Signing Configuration
 
 Release APKs require signing. The build.gradle is configured to use:
-
 - `RELEASE_STORE_FILE` properties (if set)
 - `MORPHOSCAN_STORE_FILE` properties (if set)
 - Or create a keystore using `android-release-keystore.sh`

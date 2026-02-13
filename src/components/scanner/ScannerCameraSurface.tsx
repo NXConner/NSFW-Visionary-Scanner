@@ -143,7 +143,7 @@ export function ScannerCameraSurface({
     enabled: scannerSettings.enableAutoTracking && scannerSettings.enableTracking && isActive,
     tracks,
     onFocusPointChange: scannerSettings.autoTrackingFocusEnabled
-      ? point => {
+      ? (point) => {
           if (point && scannerSettings.tapToFocusEnabled) {
             onTapToFocus(point.x, point.y, { xPct: point.x * 100, yPct: point.y * 100 });
           }
@@ -206,20 +206,13 @@ export function ScannerCameraSurface({
       const yPct = y * 100;
 
       // Try to select a tracked object first (auto-tracking)
-      if (
-        scannerSettings.enableAutoTracking &&
-        scannerSettings.enableTracking &&
-        tracks.length > 0
-      ) {
+      if (scannerSettings.enableAutoTracking && scannerSettings.enableTracking && tracks.length > 0) {
         const selectedObj = autoTrack.handleTapToSelect(xPct, yPct);
         if (selectedObj) {
           // Play feedback for object selection
           triggerHaptic("object_detected", { enabled: scannerSettings.hapticFeedback });
           if (scannerSettings.enableSoundFeedback) {
-            void playFeedbackSound("focus_lock", {
-              volume: scannerSettings.soundVolume,
-              force: false,
-            });
+            void playFeedbackSound("focus_lock", { volume: scannerSettings.soundVolume, force: false });
           }
           return; // Object selected, auto-tracking will handle focus
         }
@@ -233,18 +226,7 @@ export function ScannerCameraSurface({
         });
       }
     },
-    [
-      onTapToFocus,
-      scanMode,
-      scannerSettings.tapToFocusEnabled,
-      scannerSettings.enableAutoTracking,
-      scannerSettings.enableTracking,
-      scannerSettings.hapticFeedback,
-      scannerSettings.enableSoundFeedback,
-      scannerSettings.soundVolume,
-      tracks.length,
-      autoTrack,
-    ],
+    [onTapToFocus, scanMode, scannerSettings.tapToFocusEnabled, scannerSettings.enableAutoTracking, scannerSettings.enableTracking, scannerSettings.hapticFeedback, scannerSettings.enableSoundFeedback, scannerSettings.soundVolume, tracks.length, autoTrack],
   );
 
   const autoCaptureStatus = useMemo(() => {

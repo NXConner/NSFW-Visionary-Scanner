@@ -28,7 +28,7 @@ export const AIRoutineRecommendations: React.FC<AIRoutineRecommendationsProps> =
       </CardHeader>
       <CardContent>
         <ul className="space-y-2">
-          {recommendations.map(rec => (
+          {recommendations.map((rec) => (
             <li key={rec} className="flex items-start gap-2 text-sm text-muted-foreground">
               <Lightbulb className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
               {rec}

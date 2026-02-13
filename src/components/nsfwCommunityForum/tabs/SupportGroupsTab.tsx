@@ -14,13 +14,6 @@ import {
 } from "@/lib/nsfwCommunityForum";
 
 type NewGroupState = { group_name: string; description: string; category: string };
-const SUPPORT_GROUP_CATEGORIES = [
-  "health_condition",
-  "treatment",
-  "recovery",
-  "general_support",
-  "anonymous",
-] as const;
 
 export function SupportGroupsTab({ isActive }: { isActive: boolean }): JSX.Element {
   const [loading, setLoading] = useState(false);
@@ -61,16 +54,10 @@ export function SupportGroupsTab({ isActive }: { isActive: boolean }): JSX.Eleme
     }
     setLoading(true);
     try {
-      const normalizedCategory: NSFWSupportGroup["category"] = SUPPORT_GROUP_CATEGORIES.includes(
-        newGroup.category as (typeof SUPPORT_GROUP_CATEGORIES)[number],
-      )
-        ? (newGroup.category as (typeof SUPPORT_GROUP_CATEGORIES)[number])
-        : null;
-
       const created = await createNSFWSupportGroup(
         newGroup.group_name.trim(),
         newGroup.description.trim(),
-        normalizedCategory,
+        newGroup.category || undefined,
       );
       if (created) {
         setShowCreate(false);

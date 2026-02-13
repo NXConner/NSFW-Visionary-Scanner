@@ -302,7 +302,7 @@ export const EnhancedPrivacyControls = () => {
                       <p className="text-sm text-muted-foreground">No data collection tracked</p>
                     ) : (
                       <div className="space-y-2">
-                        {dashboardData.data_collected.map(item => (
+                        {dashboardData.data_collected.map((item) => (
                           <div key={item.type} className="flex justify-between text-sm">
                             <span>{item.type}</span>
                             <span className="text-muted-foreground">{item.amount} items</span>

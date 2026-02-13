@@ -7,7 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sun, Moon, Contrast, Palette, RefreshCw, Sparkles, Eye } from "lucide-react";
+import {
+  Sun,
+  Moon,
+  Contrast,
+  Palette,
+  RefreshCw,
+  Sparkles,
+  Eye,
+} from "lucide-react";
 
 export interface VideoAdjustmentsState {
   brightness: number;
@@ -45,10 +53,7 @@ interface Props {
 }
 
 export function VideoAdjustmentsPanel({ state, onChange }: Props) {
-  const update = <K extends keyof VideoAdjustmentsState>(
-    key: K,
-    value: VideoAdjustmentsState[K],
-  ) => {
+  const update = <K extends keyof VideoAdjustmentsState>(key: K, value: VideoAdjustmentsState[K]) => {
     onChange({ ...state, [key]: value });
   };
 
@@ -68,15 +73,9 @@ export function VideoAdjustmentsPanel({ state, onChange }: Props) {
 
       <Tabs defaultValue="light" className="w-full">
         <TabsList className="grid w-full grid-cols-3 h-8">
-          <TabsTrigger value="light" className="text-xs">
-            Light
-          </TabsTrigger>
-          <TabsTrigger value="color" className="text-xs">
-            Color
-          </TabsTrigger>
-          <TabsTrigger value="effects" className="text-xs">
-            Effects
-          </TabsTrigger>
+          <TabsTrigger value="light" className="text-xs">Light</TabsTrigger>
+          <TabsTrigger value="color" className="text-xs">Color</TabsTrigger>
+          <TabsTrigger value="effects" className="text-xs">Effects</TabsTrigger>
         </TabsList>
 
         <TabsContent value="light" className="space-y-2 mt-2">

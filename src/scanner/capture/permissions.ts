@@ -23,3 +23,4 @@ export async function getCameraPermissionState(): Promise<CameraPermissionState>
   // Capacitor: permission is handled by the native layer / WebView prompt.
   return { status: "unknown", platform: "capacitor" };
 }
+

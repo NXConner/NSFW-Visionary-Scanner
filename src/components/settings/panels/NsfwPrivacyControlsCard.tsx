@@ -14,7 +14,7 @@ import {
 import { toast } from "sonner";
 import { Shield, EyeOff, Lock, Image as ImageIcon, Fingerprint, AlertTriangle } from "lucide-react";
 import { useNsfwPrivacySettings } from "@/lib/nsfwPrivacySettings";
-import { clearNsfwSessionUnlocked, triggerNsfwPanicExit } from "@/lib/nsfwSessionLock";
+import { clearNsfwSessionUnlocked, setNsfwPanicLock } from "@/lib/nsfwSessionLock";
 
 export function NsfwPrivacyControlsCard(): JSX.Element {
   const { settings, setSettings } = useNsfwPrivacySettings();
@@ -151,8 +151,8 @@ export function NsfwPrivacyControlsCard(): JSX.Element {
               variant="outline"
               className="w-full"
               onClick={() => {
-                triggerNsfwPanicExit({ reason: "Panic lock engaged from privacy controls" });
-                toast.success("Session locked");
+                setNsfwPanicLock();
+                toast.success("Panic lock engaged");
               }}
             >
               Lock NSFW Now

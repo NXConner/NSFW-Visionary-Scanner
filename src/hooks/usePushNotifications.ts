@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Capacitor } from "@capacitor/core";
 import {
   PushNotifications,
@@ -8,15 +8,14 @@ import {
 } from "@capacitor/push-notifications";
 import { LocalNotifications, ScheduleOptions } from "@capacitor/local-notifications";
 import { useGenericStorage } from "./useGenericStorage";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { logger } from "@/lib/logger";
-import {
-  DEFAULT_NOTIFICATION_PREFERENCES,
-  NotificationPreferences,
-  getLocalTimezone,
-  normalizeNotificationPreferences,
-} from "@/lib/notificationPreferences";
+
+interface NotificationSettings {
+  enabled: boolean;
+  medicationReminders: boolean;
+  healthAlerts: boolean;
+  scanReminders: boolean;
+  weeklyReports: boolean;
+}
 
 interface ScheduledReminder {
   id: number;
@@ -31,11 +30,18 @@ interface ScheduledReminder {
   type: "medication" | "scan" | "health" | "report";
 }
 
+const defaultSettings: NotificationSettings = {
+  enabled: false,
+  medicationReminders: true,
+  healthAlerts: true,
+  scanReminders: true,
+  weeklyReports: false,
+};
+
 export const usePushNotifications = () => {
-  const { user } = useAuth();
-  const [settings, setSettings] = useGenericStorage<NotificationPreferences>(
+  const [settings, setSettings] = useGenericStorage<NotificationSettings>(
     "notification_settings",
-    DEFAULT_NOTIFICATION_PREFERENCES,
+    defaultSettings,
   );
   const [scheduledReminders, setScheduledReminders] = useGenericStorage<ScheduledReminder[]>(
     "scheduled_reminders",
@@ -46,91 +52,11 @@ export const usePushNotifications = () => {
   const [permissionStatus, setPermissionStatus] = useState<"granted" | "denied" | "prompt">(
     "prompt",
   );
-  const cloudLoadedRef = useRef<string | null>(null);
-  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const platform = Capacitor.getPlatform();
     setIsSupported(platform === "ios" || platform === "android");
   }, []);
-
-  useEffect(() => {
-    if (!settings.timezone) {
-      setSettings({ ...settings, timezone: getLocalTimezone() });
-    }
-  }, [settings, setSettings]);
-
-  useEffect(() => {
-    if (!user?.id) {
-      cloudLoadedRef.current = null;
-      return;
-    }
-
-    if (cloudLoadedRef.current === user.id) return;
-    cloudLoadedRef.current = user.id;
-
-    const load = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("user_preferences" as any)
-          .select("notification_preferences")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        if (error) throw error;
-        if ((data as any)?.notification_preferences) {
-          setSettings(
-            normalizeNotificationPreferences(
-              (data as any).notification_preferences as Partial<NotificationPreferences>,
-            ),
-          );
-        }
-      } catch (error) {
-        logger.warn("Failed to load notification preferences", {
-          error: error instanceof Error ? error.message : "Unknown error",
-        });
-        cloudLoadedRef.current = null;
-      }
-    };
-
-    void load();
-  }, [setSettings, user?.id]);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
-
-    const syncPreferences = () => {
-      const promise = Promise.resolve(
-        supabase.from("user_preferences" as any).upsert(
-          {
-            user_id: user.id,
-            notification_preferences: settings,
-          },
-          { onConflict: "user_id" },
-        ),
-      );
-      promise.then(
-        ({ error }) => {
-          if (error) {
-            logger.warn("Failed to sync notification preferences", { error: error.message });
-          }
-        },
-        error => {
-          logger.warn("Failed to sync notification preferences", {
-            error: error instanceof Error ? error.message : "Unknown error",
-          });
-        },
-      );
-    };
-
-    syncTimeoutRef.current = setTimeout(() => {
-      syncPreferences();
-    }, 800);
-
-    return () => {
-      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
-    };
-  }, [settings, user?.id]);
 
   const requestPermissions = useCallback(async () => {
     if (!isSupported) {
@@ -153,9 +79,6 @@ export const usePushNotifications = () => {
         return false;
       }
     } catch (error) {
-      logger.warn("Push notification permissions failed", {
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
       return false;
     }
   }, [isSupported]);
@@ -179,36 +102,22 @@ export const usePushNotifications = () => {
     });
 
     // On registration error
-    PushNotifications.addListener("registrationError", error => {
-      logger.warn("Push registration error", { error });
-    });
+    PushNotifications.addListener("registrationError", error => {});
 
     // On push notification received (app in foreground)
     PushNotifications.addListener(
       "pushNotificationReceived",
-      (notification: PushNotificationSchema) => {
-        logger.info("Push notification received", {
-          title: notification.title,
-          data: notification.data,
-        });
-      },
+      (notification: PushNotificationSchema) => {},
     );
 
     // On push notification action performed (user tapped)
-    PushNotifications.addListener("pushNotificationActionPerformed", (action: ActionPerformed) => {
-      logger.info("Push notification action performed", {
-        actionId: action.actionId,
-        data: action.notification?.data,
-      });
-    });
+    PushNotifications.addListener(
+      "pushNotificationActionPerformed",
+      (action: ActionPerformed) => {},
+    );
 
     // Local notification action
-    LocalNotifications.addListener("localNotificationActionPerformed", action => {
-      logger.info("Local notification action performed", {
-        actionId: action.actionId,
-        data: action.notification?.extra,
-      });
-    });
+    LocalNotifications.addListener("localNotificationActionPerformed", action => {});
   }, [isSupported]);
 
   useEffect(() => {
@@ -227,11 +136,7 @@ export const usePushNotifications = () => {
   const enableNotifications = useCallback(async () => {
     const granted = await requestPermissions();
     if (granted) {
-      setSettings({
-        ...settings,
-        enabled: true,
-        timezone: settings.timezone || getLocalTimezone(),
-      });
+      setSettings({ ...settings, enabled: true });
       setupPushListeners();
     }
     return granted;
@@ -244,11 +149,7 @@ export const usePushNotifications = () => {
     if (pending.notifications.length > 0) {
       await LocalNotifications.cancel({ notifications: pending.notifications });
     }
-    if (pushToken) {
-      const { removeDeviceToken } = await import("@/lib/pushNotifications");
-      await removeDeviceToken(pushToken);
-    }
-  }, [pushToken, settings, setSettings]);
+  }, [settings, setSettings]);
 
   const scheduleMedicationReminder = useCallback(
     async (medicationName: string, hour: number, minute: number, daysOfWeek?: number[]) => {
@@ -311,22 +212,13 @@ export const usePushNotifications = () => {
         };
 
         await LocalNotifications.schedule(scheduleOptions);
-        setSettings({
-          ...settings,
-          medicationSchedule: {
-            name: medicationName,
-            hour,
-            minute,
-            daysOfWeek: (daysOfWeek && daysOfWeek.length > 0 ? daysOfWeek : [1, 3, 5]).slice(),
-          },
-        });
         setScheduledReminders([...scheduledReminders, ...reminders]);
         return reminders;
       } catch (error) {
         return null;
       }
     },
-    [settings, scheduledReminders, setScheduledReminders, setSettings],
+    [settings, scheduledReminders, setScheduledReminders],
   );
 
   const scheduleHealthTrackingReminder = useCallback(
@@ -363,17 +255,13 @@ export const usePushNotifications = () => {
           ],
         });
 
-        setSettings({
-          ...settings,
-          healthSchedule: { hour, minute },
-        });
         setScheduledReminders([...scheduledReminders, reminder]);
         return reminder;
       } catch (error) {
         return null;
       }
     },
-    [settings, scheduledReminders, setScheduledReminders, setSettings],
+    [settings, scheduledReminders, setScheduledReminders],
   );
 
   const scheduleWeeklyReport = useCallback(
@@ -415,17 +303,13 @@ export const usePushNotifications = () => {
           ],
         });
 
-        setSettings({
-          ...settings,
-          weeklyReportSchedule: { weekday: dayOfWeek, hour, minute },
-        });
         setScheduledReminders([...scheduledReminders, reminder]);
         return reminder;
       } catch (error) {
         return null;
       }
     },
-    [settings, scheduledReminders, setScheduledReminders, setSettings],
+    [settings, scheduledReminders, setScheduledReminders],
   );
 
   const sendImmediateNotification = useCallback(
@@ -491,8 +375,8 @@ export const usePushNotifications = () => {
   }, [setScheduledReminders]);
 
   const updateSettings = useCallback(
-    (newSettings: Partial<NotificationPreferences>) => {
-      setSettings(normalizeNotificationPreferences({ ...settings, ...newSettings }));
+    (newSettings: Partial<NotificationSettings>) => {
+      setSettings({ ...settings, ...newSettings });
     },
     [settings, setSettings],
   );

@@ -13,16 +13,6 @@ vi.mock("@/contexts/AuthContext", () => ({
     isSuperAdmin: false,
     hasFullAccess: false,
     allFeaturesUnlocked: false,
-    loading: false,
-    rolesLoading: false,
-  }),
-}));
-
-vi.mock("@/hooks/useUserRoles", () => ({
-  useUserRoles: () => ({
-    isAdmin: false,
-    isSuperAdmin: false,
-    isLoading: false,
   }),
 }));
 

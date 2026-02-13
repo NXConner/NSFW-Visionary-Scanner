@@ -33,9 +33,7 @@ export function PositionSelectionMutual({
       </CardHeader>
       <CardContent className="space-y-3">
         {mutualSelections.length === 0 ? (
-          <div className="text-sm text-muted-foreground">
-            {t("partnerSync.positions.mutualEmpty")}
-          </div>
+          <div className="text-sm text-muted-foreground">{t("partnerSync.positions.mutualEmpty")}</div>
         ) : (
           mutualSelections.map(item => (
             <Card key={item.id} className="border border-border/60">
@@ -43,9 +41,7 @@ export function PositionSelectionMutual({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">
-                      {item.position_name ||
-                        item.custom_position_name ||
-                        t("partnerSync.positions.customFallback")}
+                      {item.position_name || item.custom_position_name || t("partnerSync.positions.customFallback")}
                     </p>
                     {item.partner_note && (
                       <p className="text-xs text-muted-foreground">{item.partner_note}</p>

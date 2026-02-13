@@ -32,9 +32,7 @@ const LazyPERoutineBuilder = lazy(() =>
   import("@/components/PERoutineBuilder").then(m => ({ default: m.PERoutineBuilder })),
 );
 const LazyAdvancedRoutineFeatures = lazy(() =>
-  import("@/components/AdvancedRoutineFeatures").then(m => ({
-    default: m.AdvancedRoutineFeatures,
-  })),
+  import("@/components/AdvancedRoutineFeatures").then(m => ({ default: m.AdvancedRoutineFeatures })),
 );
 const LazyPEProgressPhotos = lazy(() =>
   import("@/components/PEProgressPhotos").then(m => ({ default: m.PEProgressPhotos })),
@@ -55,14 +53,10 @@ const LazyPositionsGallery = lazy(() =>
   import("@/components/PositionsGallery").then(m => ({ default: m.PositionsGallery })),
 );
 const LazyAdvancedReportingSystem = lazy(() =>
-  import("@/components/AdvancedReportingSystem").then(m => ({
-    default: m.AdvancedReportingSystem,
-  })),
+  import("@/components/AdvancedReportingSystem").then(m => ({ default: m.AdvancedReportingSystem })),
 );
 const LazyAdvancedHealthDashboard = lazy(() =>
-  import("@/components/AdvancedHealthDashboard").then(m => ({
-    default: m.AdvancedHealthDashboard,
-  })),
+  import("@/components/AdvancedHealthDashboard").then(m => ({ default: m.AdvancedHealthDashboard })),
 );
 const LazyComprehensiveHealthMonitoring = lazy(() =>
   import("@/components/ComprehensiveHealthMonitoring").then(m => ({
@@ -92,21 +86,15 @@ const LazyAIHealthInsights = lazy(() =>
   import("@/components/AIHealthInsights").then(m => ({ default: m.AIHealthInsights })),
 );
 const LazyNsfwSessionGate = BUILD_ALLOW_ADULT_BUNDLE
-  ? lazy(() =>
-      import("@/components/nsfw/NsfwSessionGate").then(m => ({ default: m.NsfwSessionGate })),
-    )
+  ? lazy(() => import("@/components/nsfw/NsfwSessionGate").then(m => ({ default: m.NsfwSessionGate })))
   : null;
 const LazyNSFWAdvancedFeatures = BUILD_ALLOW_ADULT_BUNDLE
-  ? lazy(() =>
-      import("@/components/NSFWAdvancedFeatures").then(m => ({ default: m.NSFWAdvancedFeatures })),
-    )
+  ? lazy(() => import("@/components/NSFWAdvancedFeatures").then(m => ({ default: m.NSFWAdvancedFeatures })))
   : null;
 const LazyNSFWSexualWellnessAnalytics = BUILD_ALLOW_ADULT_BUNDLE
-  ? lazy(() =>
-      import("@/components/NSFWSexualWellnessAnalytics").then(m => ({
-        default: m.NSFWSexualWellnessAnalytics,
-      })),
-    )
+  ? lazy(() => import("@/components/NSFWSexualWellnessAnalytics").then(m => ({
+      default: m.NSFWSexualWellnessAnalytics,
+    })))
   : null;
 
 const LazyWrap = ({ children }: { children: React.ReactNode }) => (
@@ -270,12 +258,7 @@ export function ProgressHub({ initialTab }: { initialTab?: string }): JSX.Elemen
       },
     ];
 
-    if (
-      !BUILD_ALLOW_ADULT_BUNDLE ||
-      !LazyNsfwSessionGate ||
-      !LazyNSFWAdvancedFeatures ||
-      !LazyNSFWSexualWellnessAnalytics
-    ) {
+    if (!BUILD_ALLOW_ADULT_BUNDLE || !LazyNsfwSessionGate || !LazyNSFWAdvancedFeatures || !LazyNSFWSexualWellnessAnalytics) {
       return base;
     }
 

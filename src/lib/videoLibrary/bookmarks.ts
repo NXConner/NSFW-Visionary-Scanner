@@ -22,10 +22,11 @@ export async function bookmarkVideo(videoId: string, notes?: string): Promise<vo
       return;
     }
 
-    const { error } = await fromExtended("video_bookmarks").upsert(
-      { user_id: user.id, video_id: videoId, notes: notes ?? null },
-      { onConflict: "user_id,video_id" },
-    );
+    const { error } = await fromExtended("video_bookmarks")
+      .upsert(
+        { user_id: user.id, video_id: videoId, notes: notes ?? null },
+        { onConflict: "user_id,video_id" },
+      );
 
     if (error) {
       logger.error("Error bookmarking video", { error: error.message });

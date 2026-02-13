@@ -24,52 +24,6 @@ This guide provides comprehensive testing procedures for Android and iOS product
 - [ ] App icons and splash screens correct
 - [ ] Bundle identifiers correct
 
-## Automated Preflight (Local/CI)
-
-Run the automated gates before device testing to catch regressions early.
-
-### Required Preflight Commands
-
-- `npm run check:production`
-- `npm run check:pre-submission`
-- `npm run test:run`
-- `npm run test:e2e`
-
-### Build Variant Selection
-
-Use the build scripts to validate the correct distribution channel:
-
-- Direct (web): `npm run build:sfw:direct` / `npm run build:nsfw:direct`
-- Store (app stores): `npm run build:sfw:store`
-- Default: `npm run build`
-
-> Note: Playwright currently builds with `VITE_DISTRIBUTION_CHANNEL=direct` for E2E.  
-> If you need store-channel E2E coverage, adjust `playwright.config.ts` webServer env.
-
-## Web Production Build Validation
-
-Use the production build for web smoke checks and performance audits:
-
-- Build: `npm run build`
-- Preview: `npm run preview` (or `npx sirv-cli dist --single --port 4173 --host 127.0.0.1`)
-
-Validate:
-
-- [ ] Pricing page renders
-- [ ] Auth flow loads
-- [ ] Critical routes render (Index, Store, Admin)
-- [ ] Error boundaries catch failures
-
-## Performance & Bundle Audits
-
-Run audits on production build artifacts:
-
-- `npm run perf:audit` (bundle + asset budgets)
-- `npm run analyze:bundle` (bundle visualizer)
-- `npm run a11y:audit` (accessibility checks)
-- `npm run perf:load` (k6 load test)
-- `npm run perf:nsfw-media` (k6 NSFW media test)
-
 ## Android Testing
 
 ### Device Requirements
@@ -81,14 +35,6 @@ Test on minimum 3 devices:
 - [ ] Android 14+ (API 34+)
 - [ ] Different screen sizes (phone, tablet)
 - [ ] Different manufacturers (Samsung, Google, OnePlus, etc.)
-
-### Physical Device Test Log (Android)
-
-Record results for each device tested:
-
-| Device | OS    | Build | Offline | Push | Perf | Battery | Memory | Notes |
-| ------ | ----- | ----- | ------- | ---- | ---- | ------- | ------ | ----- |
-| _TBD_  | _TBD_ | _TBD_ | ⬜      | ⬜   | ⬜   | ⬜      | ⬜     |       |
 
 ### Installation Testing
 
@@ -230,14 +176,6 @@ Test on minimum 3 devices:
 - [ ] iPhone 15+ (iOS 17+)
 - [ ] iPad (if supported)
 - [ ] Different screen sizes
-
-### Physical Device Test Log (iOS)
-
-Record results for each device tested:
-
-| Device | iOS   | Build | Offline | Push | Perf | Battery | Memory | Notes |
-| ------ | ----- | ----- | ------- | ---- | ---- | ------- | ------ | ----- |
-| _TBD_  | _TBD_ | _TBD_ | ⬜      | ⬜   | ⬜   | ⬜      | ⬜     |       |
 
 ### Installation Testing
 

@@ -3,21 +3,19 @@
 This document explains two supported ways to ship a Safe-For-Work (SFW) app store build
 and a separate NSFW build. Both options use the existing build flavors:
 
-**Policy:** The NSFW build is direct distribution only and must not be submitted to app stores.
-
 - SFW (store build): VITE_APP_VERSION=sfw, VITE_DISTRIBUTION_CHANNEL=store
 - NSFW (direct build): VITE_APP_VERSION=nsfw, VITE_DISTRIBUTION_CHANNEL=direct
 
-Canonical naming: MorphoScan Pro (SFW/store build) and NSFW Visionary Scanner (direct/NSFW build).
+This is a personal project and is not related to any pavement or pavement performance suite.
 
 ---
 
 ## Decision Matrix
 
-| Option | Description                                          | App Store Safety | Operational Complexity | Risk of NSFW Leakage |
-| ------ | ---------------------------------------------------- | ---------------- | ---------------------- | -------------------- |
-| A      | Single Supabase, hard build-time gating + strict RLS | Medium           | Low                    | Medium               |
-| B      | Dual Supabase (SFW + NSFW projects)                  | High             | Medium                 | Low                  |
+| Option | Description | App Store Safety | Operational Complexity | Risk of NSFW Leakage |
+| ------ | ----------- | ---------------- | ---------------------- | -------------------- |
+| A | Single Supabase, hard build-time gating + strict RLS | Medium | Low | Medium |
+| B | Dual Supabase (SFW + NSFW projects) | High | Medium | Low |
 
 Recommendation: Option B is safest for app store compliance. Option A is acceptable if you
 implement every control below and keep SFW builds free of NSFW code/assets/strings.
@@ -27,11 +25,10 @@ implement every control below and keep SFW builds free of NSFW code/assets/strin
 ## Option A: Single Supabase with Strict Separation
 
 ### Requirements (must do all)
-
-1. Build-time gating removes NSFW routes/components from SFW bundles.
-2. RLS blocks all NSFW tables for users without nsfw_access entitlement.
-3. NSFW storage bucket is private with signed URLs only.
-4. Edge functions verify entitlement before returning NSFW data.
+1) Build-time gating removes NSFW routes/components from SFW bundles.
+2) RLS blocks all NSFW tables for users without nsfw_access entitlement.
+3) NSFW storage bucket is private with signed URLs only.
+4) Edge functions verify entitlement before returning NSFW data.
 
 ### Step 1: Build-Time Separation (Hard)
 
@@ -46,7 +43,6 @@ npm run build:nsfw:direct
 ```
 
 Rules for SFW build:
-
 - Do not import NSFW routes/components.
 - Do not ship NSFW assets or strings in the SFW bundle.
 - Do not expose NSFW menus, tabs, or deep links.
@@ -119,14 +115,12 @@ using (
 ### Step 5: Edge Functions (NSFW APIs)
 
 For any NSFW function:
-
 - `verify_jwt = true`
 - Check entitlement before returning NSFW data or signed URLs.
 
 ### Step 6: Verification Checklist
 
 - SFW bundle contains no NSFW routes/assets/strings.
-- Run: `npm run verify:sfw:bundle` after SFW build.
 - NSFW tables blocked for non-entitled users by RLS.
 - NSFW storage bucket is private and signed URLs are required.
 - NSFW edge functions reject missing entitlements.

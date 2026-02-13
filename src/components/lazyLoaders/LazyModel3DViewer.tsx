@@ -1,6 +1,6 @@
 /**
  * Lazy-loaded 3D Model Viewer
- *
+ * 
  * This wrapper provides code-splitting for the heavy three.js and @react-three/* libraries.
  * The actual 3D viewer component is only loaded when this component mounts.
  */
@@ -9,10 +9,10 @@ import { lazy, Suspense, type ComponentProps } from "react";
 import { Loader2 } from "lucide-react";
 
 // Lazy load the heavy 3D viewer component
-const Model3DViewer = lazy(() =>
-  import("@/components/model3dViewer/Model3DViewer").then(m => ({
-    default: m.Model3DViewer,
-  })),
+const Model3DViewer = lazy(() => 
+  import("@/components/model3dViewer/Model3DViewer").then(m => ({ 
+    default: m.Model3DViewer 
+  }))
 );
 
 type Model3DViewerProps = ComponentProps<typeof Model3DViewer>;

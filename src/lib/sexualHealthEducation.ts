@@ -284,10 +284,11 @@ export async function markQAHelpful(qaId: string, helpful: boolean): Promise<voi
   try {
     const userId = await requireUserId();
     if (!userId) return;
-    const { error } = await fromExtended("education_qa_interactions").upsert(
-      { user_id: userId, qa_id: qaId, was_helpful: helpful },
-      { onConflict: "user_id,qa_id" },
-    );
+    const { error } = await fromExtended("education_qa_interactions")
+      .upsert(
+        { user_id: userId, qa_id: qaId, was_helpful: helpful },
+        { onConflict: "user_id,qa_id" },
+      );
     if (error) throw error;
     toast.success(helpful ? "Marked as helpful" : "Marked as not helpful");
   } catch (error) {
@@ -356,10 +357,11 @@ export async function bookmarkContent(
 ): Promise<void> {
   const userId = await requireUserId();
   if (!userId) return;
-  const { error } = await fromExtended("education_bookmarks").upsert(
-    { user_id: userId, content_type: contentType, content_id: contentId, notes: notes ?? null },
-    { onConflict: "user_id,content_type,content_id" },
-  );
+  const { error } = await fromExtended("education_bookmarks")
+    .upsert(
+      { user_id: userId, content_type: contentType, content_id: contentId, notes: notes ?? null },
+      { onConflict: "user_id,content_type,content_id" },
+    );
   if (error) throw error;
 }
 

@@ -17,6 +17,8 @@ type Tier = keyof typeof STORAGE_LIMITS;
 
 function resolveTier(role: unknown): Tier {
   const r = String(role || "").toLowerCase();
+  // ADMIN BYPASS: Admin and super_admin get premium tier
+  if (r.includes("super_admin") || r.includes("admin")) return "premium";
   if (r.includes("premium")) return "premium";
   if (r.includes("pro")) return "pro";
   return "free";

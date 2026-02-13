@@ -102,11 +102,7 @@ export const COCK_WORSHIPING_CONTENT: CockWorshipingContent = {
           tone: "communication",
           text: "Feedback loops: check-ins, yes/no/maybe lists, and nonverbal signals.",
         },
-        {
-          id: "kc-4",
-          tone: "safety",
-          text: "Hygiene and comfort planning (privacy, time, water, towels).",
-        },
+        { id: "kc-4", tone: "safety", text: "Hygiene and comfort planning (privacy, time, water, towels)." },
         {
           id: "kc-5",
           tone: "education",
@@ -241,21 +237,9 @@ export const COCK_WORSHIPING_CONTENT: CockWorshipingContent = {
       id: "pros-cons",
       title: "Pros & cons",
       bullets: [
-        {
-          id: "pc-pro-1",
-          tone: "education",
-          text: "Pro: Builds intimacy, trust, and playful connection.",
-        },
-        {
-          id: "pc-pro-2",
-          tone: "education",
-          text: "Pro: Helps the receiver feel valued and confident.",
-        },
-        {
-          id: "pc-pro-3",
-          tone: "education",
-          text: "Pro: Makes it easier to discuss preferences without awkwardness.",
-        },
+        { id: "pc-pro-1", tone: "education", text: "Pro: Builds intimacy, trust, and playful connection." },
+        { id: "pc-pro-2", tone: "education", text: "Pro: Helps the receiver feel valued and confident." },
+        { id: "pc-pro-3", tone: "education", text: "Pro: Makes it easier to discuss preferences without awkwardness." },
         {
           id: "pc-con-1",
           tone: "education",
@@ -355,21 +339,9 @@ export const COCK_WORSHIPING_CONTENT: CockWorshipingContent = {
       id: "aftercare",
       title: "Aftercare (how to end well)",
       bullets: [
-        {
-          id: "ac-1",
-          tone: "communication",
-          text: "Thank each other and name one thing you liked.",
-        },
-        {
-          id: "ac-2",
-          tone: "communication",
-          text: "Do a quick debrief: “more/less/same next time?”",
-        },
-        {
-          id: "ac-3",
-          tone: "education",
-          text: "Reset emotionally: cuddling, water, shower, or a simple comfort routine.",
-        },
+        { id: "ac-1", tone: "communication", text: "Thank each other and name one thing you liked." },
+        { id: "ac-2", tone: "communication", text: "Do a quick debrief: “more/less/same next time?”" },
+        { id: "ac-3", tone: "education", text: "Reset emotionally: cuddling, water, shower, or a simple comfort routine." },
         {
           id: "ac-4",
           tone: "consent",
@@ -428,3 +400,4 @@ export const COCK_WORSHIPING_CONTENT: CockWorshipingContent = {
     },
   ],
 };
+

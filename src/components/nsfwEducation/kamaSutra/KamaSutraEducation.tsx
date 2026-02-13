@@ -19,18 +19,13 @@ function SectionCard({ section }: { section: EducationSection }): JSX.Element {
     <Card className="glass-card border-border/50">
       <CardHeader className="space-y-1">
         <CardTitle className="text-xl">{section.title}</CardTitle>
-        {section.summary ? (
-          <CardDescription className="text-sm">{section.summary}</CardDescription>
-        ) : null}
+        {section.summary ? <CardDescription className="text-sm">{section.summary}</CardDescription> : null}
       </CardHeader>
       <CardContent className="space-y-4">
         {section.bullets && section.bullets.length > 0 ? (
           <div className="space-y-2">
             {section.bullets.map(b => (
-              <div
-                key={b.id}
-                className="flex items-start gap-3 rounded-xl border border-border/50 bg-background/40 p-3"
-              >
+              <div key={b.id} className="flex items-start gap-3 rounded-xl border border-border/50 bg-background/40 p-3">
                 <div className="pt-0.5">
                   <Info className="h-4 w-4 text-muted-foreground" />
                 </div>
@@ -38,10 +33,7 @@ function SectionCard({ section }: { section: EducationSection }): JSX.Element {
                   <div className="text-sm text-foreground leading-relaxed">{b.text}</div>
                   {b.tone ? (
                     <div>
-                      <Badge
-                        variant={toneBadgeVariant(b.tone)}
-                        className="text-[10px] uppercase tracking-wide"
-                      >
+                      <Badge variant={toneBadgeVariant(b.tone)} className="text-[10px] uppercase tracking-wide">
                         {b.tone}
                       </Badge>
                     </div>
@@ -91,16 +83,7 @@ export function KamaSutraEducation(): JSX.Element {
     return map;
   }, [content.sections]);
 
-  const primaryOrder = [
-    "overview",
-    "history",
-    "philosophy",
-    "how-to",
-    "positions",
-    "preparation",
-    "boundaries-safety",
-    "faq",
-  ];
+  const primaryOrder = ["overview", "history", "philosophy", "how-to", "positions", "preparation", "boundaries-safety", "faq"];
 
   return (
     <div className="space-y-6">
@@ -150,19 +133,12 @@ export function KamaSutraEducation(): JSX.Element {
             </CardHeader>
             <CardContent className="space-y-3">
               {content.resources.map(r => (
-                <div
-                  key={r.id}
-                  className="rounded-xl border border-border/50 bg-background/40 p-4 space-y-2"
-                >
+                <div key={r.id} className="rounded-xl border border-border/50 bg-background/40 p-4 space-y-2">
                   <div className="font-semibold">{r.title}</div>
                   <div className="text-sm text-muted-foreground">{r.description}</div>
                   <div className="flex flex-wrap gap-2">
                     {r.tags.map(t => (
-                      <Badge
-                        key={`${r.id}-${t}`}
-                        variant="outline"
-                        className="text-[10px] uppercase tracking-wide"
-                      >
+                      <Badge key={`${r.id}-${t}`} variant="outline" className="text-[10px] uppercase tracking-wide">
                         {t}
                       </Badge>
                     ))}

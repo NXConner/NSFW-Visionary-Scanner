@@ -19,10 +19,7 @@ export function BaseAnchorPicker({
 }) {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const [naturalSize, setNaturalSize] = React.useState<{ w: number; h: number } | null>(null);
-  const [kbdPct, setKbdPct] = React.useState<{ xPct: number; yPct: number }>({
-    xPct: 50,
-    yPct: 82,
-  });
+  const [kbdPct, setKbdPct] = React.useState<{ xPct: number; yPct: number }>({ xPct: 50, yPct: 82 });
 
   return (
     <div ref={containerRef} className="absolute inset-0 z-30">
@@ -89,8 +86,7 @@ export function BaseAnchorPicker({
             </Badge>
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            Tap where the object meets the baseline. Keyboard: arrow keys move selection, Enter
-            confirms.
+            Tap where the object meets the baseline. Keyboard: arrow keys move selection, Enter confirms.
           </div>
         </div>
       </div>
@@ -105,3 +101,4 @@ export function BaseAnchorPicker({
     </div>
   );
 }
+

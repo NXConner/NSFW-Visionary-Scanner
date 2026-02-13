@@ -52,12 +52,10 @@ export function usePartnerRetention(connectionId: string | null) {
             {
               connection_id: connectionId,
               set_by: user.id,
-              retention_days_pings:
-                patch.retention_days_pings ?? policy?.retention_days_pings ?? 180,
+              retention_days_pings: patch.retention_days_pings ?? policy?.retention_days_pings ?? 180,
               retention_days_selections:
                 patch.retention_days_selections ?? policy?.retention_days_selections ?? 365,
-              retention_days_plans:
-                patch.retention_days_plans ?? policy?.retention_days_plans ?? 365,
+              retention_days_plans: patch.retention_days_plans ?? policy?.retention_days_plans ?? 365,
               retention_days_events:
                 patch.retention_days_events ?? policy?.retention_days_events ?? 365,
               updated_at: new Date().toISOString(),
@@ -86,23 +84,19 @@ export function usePartnerRetention(connectionId: string | null) {
     try {
       // Apply retention by deleting old records directly
       const now = new Date();
-      const pingCutoff = new Date(
-        now.getTime() - policy.retention_days_pings * 24 * 60 * 60 * 1000,
-      );
-      const selectionCutoff = new Date(
-        now.getTime() - policy.retention_days_selections * 24 * 60 * 60 * 1000,
-      );
-
+      const pingCutoff = new Date(now.getTime() - policy.retention_days_pings * 24 * 60 * 60 * 1000);
+      const selectionCutoff = new Date(now.getTime() - policy.retention_days_selections * 24 * 60 * 60 * 1000);
+      
       await fromExtended("partner_thought_pings")
         .delete()
         .eq("connection_id", connectionId)
         .lt("created_at", pingCutoff.toISOString());
-
+      
       await fromExtended("partner_position_selections")
         .delete()
         .eq("connection_id", connectionId)
         .lt("created_at", selectionCutoff.toISOString());
-
+      
       toast.success("Retention policy applied");
       return true;
     } catch (error) {

@@ -12,7 +12,9 @@ export function PartnerSyncPreviewPanel() {
   const { t } = useI18n();
   return (
     <div className="space-y-4">
-      <div className="text-sm text-muted-foreground">{t("partnerSync.preview.subtitle")}</div>
+      <div className="text-sm text-muted-foreground">
+        {t("partnerSync.preview.subtitle")}
+      </div>
       <ThoughtPingList
         pings={[]}
         reactions={{}}

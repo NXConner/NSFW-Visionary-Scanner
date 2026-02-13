@@ -1,11 +1,10 @@
 import { useEffect } from "react";
 import RouteTopNav from "@/components/navigation/RouteTopNav";
 import PelvicFloorHub from "@/components/PelvicFloorHub";
-import { APP_SHORT_NAME } from "@/config/brand";
 
 export default function PelvicFloorPage(): JSX.Element {
   useEffect(() => {
-    document.title = `Kegels & Pelvic Floor - ${APP_SHORT_NAME}`;
+    document.title = "Kegels & Pelvic Floor - MorphoScan";
   }, []);
 
   return (

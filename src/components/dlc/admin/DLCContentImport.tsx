@@ -21,24 +21,8 @@ type ImportType = "positions" | "videos" | "topics";
 type ImportResult = {
   jobId: string;
   dryRun: boolean;
-  summary: {
-    completed: number;
-    failed: number;
-    skipped: number;
-    created?: number;
-    updated?: number;
-    itemCount: number;
-  };
-  results: Array<{ key: string; status: string; action?: string; error?: string }>;
-};
-
-type RollbackResult = {
-  jobId: string;
-  importType: string;
-  dryRun: boolean;
-  deleted: number;
-  createdCount: number;
-  updatedCount: number;
+  summary: { completed: number; failed: number; skipped: number; itemCount: number };
+  results: Array<{ key: string; status: string; error?: string }>;
 };
 
 function parseCsv(text: string): Array<Record<string, string>> {
@@ -115,7 +99,6 @@ export function DLCContentImport(): React.ReactElement {
   const [dryRun, setDryRun] = useState(false);
   const [busy, setBusy] = useState(false);
   const [lastResult, setLastResult] = useState<ImportResult | null>(null);
-  const [rollbackResult, setRollbackResult] = useState<RollbackResult | null>(null);
   const [autoPositionsMeta, setAutoPositionsMeta] = useState<{
     sources: string[];
     itemCount: number;
@@ -184,7 +167,6 @@ export function DLCContentImport(): React.ReactElement {
 
     setBusy(true);
     setLastResult(null);
-    setRollbackResult(null);
 
     try {
       const text = await file.text();
@@ -387,7 +369,6 @@ export function DLCContentImport(): React.ReactElement {
   const runAutoPositionsImport = async () => {
     setBusy(true);
     setLastResult(null);
-    setRollbackResult(null);
     setAutoPositionsMeta(null);
     try {
       const built = await buildPositionsImportCatalog({
@@ -422,23 +403,6 @@ export function DLCContentImport(): React.ReactElement {
     }
   };
 
-  const runRollback = async (preview: boolean) => {
-    if (!lastResult) return;
-    setBusy(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("admin-rollback-dlc-import", {
-        body: { jobId: lastResult.jobId, dryRun: preview },
-      });
-      if (error) throw new Error(error.message);
-      setRollbackResult(data as RollbackResult);
-      toast.success(preview ? "Rollback dry-run complete" : "Rollback complete");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Rollback failed");
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
     <Card className="glass-card border-border/50">
       <CardHeader>
@@ -462,19 +426,14 @@ export function DLCContentImport(): React.ReactElement {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    disabled={busy}
-                    onClick={() => void runAutoPositionsImport()}
-                  >
+                  <Button variant="outline" disabled={busy} onClick={() => void runAutoPositionsImport()}>
                     {busy ? "Working…" : dryRun ? "Dry-run auto import" : "Auto import now"}
                   </Button>
                 </div>
               </div>
               {autoPositionsMeta ? (
                 <div className="text-xs text-muted-foreground">
-                  Built {autoPositionsMeta.itemCount} item(s) •{" "}
-                  {new Date(autoPositionsMeta.computedAtIso).toLocaleString()}
+                  Built {autoPositionsMeta.itemCount} item(s) • {new Date(autoPositionsMeta.computedAtIso).toLocaleString()}
                   <div className="mt-1">
                     Sources:{" "}
                     {autoPositionsMeta.sources.slice(0, 4).map((s, i) => (
@@ -637,34 +596,8 @@ export function DLCContentImport(): React.ReactElement {
               </Badge>
               <Badge variant="outline">completed: {lastResult.summary.completed}</Badge>
               <Badge variant="outline">failed: {lastResult.summary.failed}</Badge>
-              {typeof lastResult.summary.created === "number" && (
-                <Badge variant="outline">created: {lastResult.summary.created}</Badge>
-              )}
-              {typeof lastResult.summary.updated === "number" && (
-                <Badge variant="outline">updated: {lastResult.summary.updated}</Badge>
-              )}
               <Badge variant="outline">items: {lastResult.summary.itemCount}</Badge>
             </div>
-            {!lastResult.dryRun && (
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={busy}
-                  onClick={() => void runRollback(true)}
-                >
-                  Dry-run rollback
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  disabled={busy}
-                  onClick={() => void runRollback(false)}
-                >
-                  Rollback import
-                </Button>
-              </div>
-            )}
             {lastResult.summary.failed > 0 && (
               <div className="text-sm text-muted-foreground">
                 First failures:
@@ -680,31 +613,6 @@ export function DLCContentImport(): React.ReactElement {
                 </ul>
               </div>
             )}
-            {lastResult.summary.failed === 0 && lastResult.results?.length > 0 && (
-              <div className="text-xs text-muted-foreground">
-                Showing first 5 items:
-                <ul className="list-disc ml-5">
-                  {lastResult.results.slice(0, 5).map(r => (
-                    <li key={`${r.key}-${r.status}`}>
-                      <code>{r.key}</code>: {r.status}
-                      {r.action ? ` (${r.action})` : ""}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-
-        {rollbackResult && (
-          <div className="rounded-xl border border-border/50 p-4 bg-background/40 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">rollback: {rollbackResult.jobId}</Badge>
-              <Badge variant="outline">deleted: {rollbackResult.deleted}</Badge>
-              <Badge variant="outline">created: {rollbackResult.createdCount}</Badge>
-              <Badge variant="outline">updated: {rollbackResult.updatedCount}</Badge>
-              {rollbackResult.dryRun ? <Badge variant="secondary">dry-run</Badge> : null}
-            </div>
           </div>
         )}
       </CardContent>

@@ -101,7 +101,6 @@ export function useVideoRecording() {
     }): Promise<
       Array<{
         cameraIndex: number;
-        bucket: string;
         path: string;
         publicUrl: string;
         sizeBytes: number;
@@ -116,7 +115,7 @@ export function useVideoRecording() {
       }
 
       const bucket =
-        params.bucket ?? (import.meta as any).env?.VITE_RECORDINGS_BUCKET ?? "recordings";
+        params.bucket ?? (import.meta as any).env?.VITE_USER_MEDIA_BUCKET ?? "user-media";
       const folder = params.folder ?? `recordings/${params.sessionId}`;
 
       setIsUploading(true);
@@ -124,7 +123,6 @@ export function useVideoRecording() {
       try {
         const results: Array<{
           cameraIndex: number;
-          bucket: string;
           path: string;
           publicUrl: string;
           sizeBytes: number;
@@ -152,7 +150,6 @@ export function useVideoRecording() {
           }
           results.push({
             cameraIndex: item.cameraIndex,
-            bucket,
             path: up.path,
             publicUrl: up.publicUrl,
             sizeBytes: item.blob.size,

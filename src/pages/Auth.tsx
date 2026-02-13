@@ -22,9 +22,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { BiometricLoginButton } from "@/components/BiometricLoginButton";
 import { useBiometricAuth } from "@/hooks/useBiometricAuth";
-import { APP_SHORT_NAME, SUPPORT_CONTACT_EMAIL } from "@/config/brand";
-import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
-import { emitSupabaseInvalidApiKeyEvent, isInvalidSupabaseApiKeyError } from "@/integrations/supabase/events";
+import { SUPPORT_CONTACT_EMAIL } from "@/config/brand";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -44,7 +42,6 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [needsVerification, setNeedsVerification] = useState(false);
   const { user, signIn, signUp, signInWithGoogle, signInWithApple } = useAuth();
   const navigate = useNavigate();
   const {
@@ -70,7 +67,6 @@ const Auth = () => {
 
     if (verified === "true") {
       toast.success("Email verified successfully! You can now sign in.");
-      setNeedsVerification(false);
       setMode("login");
     }
   }, []);
@@ -149,7 +145,6 @@ const Auth = () => {
             throw new Error(message);
           }
           toast.success("Account created! Please check your email to verify your account.");
-          setNeedsVerification(true);
           // Show verification message instead of navigating
           setMode("login");
           return;
@@ -158,14 +153,9 @@ const Auth = () => {
           if (error) {
             const message = error.message.includes("Invalid login")
               ? "Invalid email or password."
-              : error.message.includes("Invalid API key")
-                ? "Backend misconfigured (invalid Supabase API key). Tap the Supabase fix prompt to update keys."
               : error.message.includes("Email not confirmed")
                 ? "Please verify your email address before signing in. Check your inbox for the verification link."
                 : error.message;
-            if (error.message.includes("Email not confirmed")) {
-              setNeedsVerification(true);
-            }
             throw new Error(message);
           }
 
@@ -175,16 +165,11 @@ const Auth = () => {
           }
 
           toast.success("Welcome back!");
-          setNeedsVerification(false);
           navigate("/");
         }
       }
     } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error("An error occurred");
-      if (isInvalidSupabaseApiKeyError(err)) {
-        emitSupabaseInvalidApiKeyEvent();
-      }
-      toast.error(err.message);
+      toast.error(error instanceof Error ? error.message : "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -222,7 +207,7 @@ const Auth = () => {
         <div className="text-center mb-6 sm:mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4 sm:mb-6">
             <Scan className="w-5 h-5 text-primary" />
-            <span className="text-primary font-semibold">{APP_SHORT_NAME}</span>
+            <span className="text-primary font-semibold">MorphoScan</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold mb-2">{getTitle()}</h1>
           <p className="text-sm sm:text-base text-muted-foreground">{getSubtitle()}</p>
@@ -246,14 +231,6 @@ const Auth = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {needsVerification && email && (mode === "login" || mode === "signup") && (
-              <div className="mb-4">
-                <EmailVerificationBanner
-                  email={email}
-                  onVerified={() => setNeedsVerification(false)}
-                />
-              </div>
-            )}
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               {mode !== "reset" && (
                 <div className="space-y-2">

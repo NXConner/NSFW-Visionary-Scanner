@@ -1,13 +1,12 @@
 # MorphoScan Pro — Remaining Work (Project-Wide)
 
-**Last updated**: 2026-02-11
+**Last updated**: 2026-01-31
 
 This document is the **single actionable checklist** of what still needs to be done across the entire repository to reach a true **public release** (web + mobile + monetization + ops).
 
 For deeper supporting docs, see:
 
 - `docs/tracking/CONSOLIDATED_DOCS_MASTER.md` (canonical finish plan)
-- `docs/operations/EXTERNAL_RELEASE_TASKS_RUNBOOK.md` (staging/prod runbook for remaining external tasks)
 - `docs/guides/testing/PRODUCTION_TESTING_GUIDE.md` (device QA matrix)
 - `docs/guides/integrations/payments/STRIPE_SETUP_GUIDE.md` (payments)
 - `docs/guides/integrations/notifications/FCM_SETUP.md` (push)
@@ -19,40 +18,14 @@ For deeper supporting docs, see:
 
 ## Current status snapshot (repo gates)
 
-- **Lint**: ✅ Verified (warnings present)
-- **Format**: ✅ Verified
-- **Typecheck**: ✅ Verified
-- **Unit tests**: ✅ Verified
-- **E2E tests**: ✅ Verified
-- **Prod build**: ✅ Verified
+- **Lint**: ⏳ Not verified in this update
+- **Format**: ⏳ Not verified in this update
+- **Typecheck**: ⏳ Not verified in this update
+- **Unit tests**: ⏳ Not verified in this update
+- **E2E tests**: ⏳ Not verified in this update
+- **Prod build**: ⏳ Not verified in this update
 
 > Run automation: `pwsh -File scripts/complete-remaining.ps1`
->
-> Run release gate: `npm run check:release-readiness -- --report-file artifacts/release-readiness-report.json`
->
-> Validate private release env file: `npm run release:env:validate -- --environment <staging|production> --env-file <private-env-file> [--monetized --require-push --require-nsfw]`
->
-> One-command release executor: `pwsh -File scripts/execute-release-remaining.ps1 -Environment <staging|production> -EnvFile <private-env-file> -Repo <owner/repo> [-DryRun] [-ApplyMigrations] [-TriggerManualDeploy]`
->
-> Evidence signoff tracker: `pwsh -File scripts/release-signoff.ps1 -Action init -Environment <staging|production> -Session <id> -Operator <name>` then `-Action record|status|validate`
-
-### Automated verification coverage (repo-side)
-
-The following can now be validated directly from this repository:
-
-- Secrets hygiene + tracked-file checks (`.env`, Firebase, gradle local files)
-- Production-only switches (PWA registration guards + Capacitor config checks)
-- Supabase readiness artifacts (migrations, RLS audit docs, key edge functions)
-- NSFW/Stripe/Push wiring artifacts (migrations/functions/docs/env inventory)
-- CI/CD deploy gate wiring + manual deploy rollback-by-ref coverage
-- Observability baseline (Sentry scrubbing hooks + logger redaction)
-- A11y/perf/mobile artifact readiness (scripts, tests, guides, build assets)
-
-Use:
-
-```powershell
-npm run check:release-readiness -- --report-file artifacts/release-readiness-report.json
-```
 
 ---
 
@@ -66,7 +39,6 @@ npm run check:release-readiness -- --report-file artifacts/release-readiness-rep
   - [ ] `ios/App/App/GoogleService-Info.plist` is local-only
   - [ ] `android/gradle.properties` is local-only
 - [ ] **Provision secrets via your hosting/secrets manager** (see `docs/security/secrets/secrets-manager.md`)
-  - [ ] Optional automation: `npm run release:secrets:provision -- --environment <staging|production> --env-file <file> --repo <owner/repo>`
   - [ ] `VITE_SUPABASE_URL`
   - [ ] `VITE_SUPABASE_PUBLISHABLE_KEY`
   - [ ] `VITE_APP_ENV` (`staging`/`production`)
@@ -76,7 +48,7 @@ npm run check:release-readiness -- --report-file artifacts/release-readiness-rep
   - [ ] `DATABASE_URL` (**server-only**)
 - [ ] **Confirm production-only switches are correct**
   - [ ] PWA service worker behavior is correct on real domains (see `src/pwa/register.ts`)
-  - [ ] No dev server URL is set for production Capacitor builds (see `capacitor.config.json`)
+  - [ ] No dev server URL is set for production Capacitor builds (see `capacitor.config.ts`)
 
 ### 2) Supabase production readiness (security + data protection)
 
@@ -87,14 +59,9 @@ npm run check:release-readiness -- --report-file artifacts/release-readiness-rep
 - [ ] **RLS + policies audit**
 - [ ] Run through `docs/security/rls/RLS_AUDIT_CHECKLIST.md` for all PII/health/payment/device tables
   - [ ] Confirm storage buckets are private where appropriate and require signed URLs
-  - [ ] Run `docs/security/rls/RLS_STORAGE_AUDIT_QUERIES.sql` in Supabase SQL editor
 - [ ] **Migrations**
   - [ ] Apply `supabase/migrations/*.sql` to the production project
-    - [ ] Prefer: `npm run db:migrate:remote -- --dry-run` then `npm run db:migrate:remote`
-    - [ ] Optional one-command helper: `npm run release:remote:ops -- --env-file <file> --apply --types-check`
-  - [ ] Verify types match schema:
-    - [ ] Local mirror: `npm run db:types:check` (requires local Supabase)
-    - [ ] Remote project: `npm run db:types:remote:check` (requires Supabase CLI auth)
+  - [ ] Verify `npm run db:types:check` passes against production schema (or staging mirror)
 - [ ] **Backups + retention**
   - [ ] Confirm backup/restore procedure
   - [ ] Validate account deletion + retention cleanup jobs (edge functions) behave correctly
@@ -170,7 +137,6 @@ Canonical doc: `docs/guides/integrations/notifications/FCM_SETUP.md`
 - [ ] **Define rollback**
   - [ ] Versioned artifacts (docker tags or static build versions)
   - [ ] One-command rollback documented
-  - [ ] Optional: use `.github/workflows/manual-deploy.yml` to redeploy an older ref/SHA
 
 ### 6) Observability + incident readiness
 
@@ -202,6 +168,7 @@ Canonical doc: `docs/guides/integrations/notifications/FCM_SETUP.md`
 ### 8) Performance + reliability
 
 - [ ] Run load test (k6): `npm run perf:load` (see `docs/guides/testing/LOAD_TESTING.md`)
+- [ ] Run load test (k6): `npm run perf:load` (see `docs/guides/testing/LOAD_TESTING.md`)
 - [ ] Confirm target budgets:
   - [ ] Cold start time (web + mobile)
   - [ ] Scanner performance (FPS, memory)
@@ -232,6 +199,7 @@ Canonical doc: `docs/guides/build/MOBILE_BUILD_GUIDE.md`
 
 ### 11) Store listing + compliance
 
+- [ ] Confirm store-safe content for SFW/store builds (see `docs/product/store/app-store-listing.md`)
 - [ ] Confirm store-safe content for SFW/store builds (see `docs/product/store/app-store-listing.md`)
 - [ ] Verify privacy policy + terms URLs are correct and live
 - [ ] Verify age rating / questionnaires match actual shipped build behavior

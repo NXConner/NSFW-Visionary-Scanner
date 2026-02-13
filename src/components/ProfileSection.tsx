@@ -43,7 +43,7 @@ import {
 
 export const ProfileSection = () => {
   const { user } = useAuth();
-  const { roles, isAdmin, isPro, isLoading } = useUserRoles();
+  const { roles, isAdmin, isSuperAdmin, isPro, isPremium, isLoading, rolesFetched } = useUserRoles();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
@@ -58,21 +58,21 @@ export const ProfileSection = () => {
   useEffect(() => {
     const loadProfile = async () => {
       if (!user) return;
-
+      
       // Set defaults from user object first
       setProfile(prev => ({
         ...prev,
         email: user.email || "",
         name: user.user_metadata?.display_name || user.email?.split("@")[0] || "User",
       }));
-
+      
       // Then fetch from profiles table
       const { data, error } = await supabase
         .from("profiles")
         .select("display_name")
         .eq("user_id", user.id)
         .single();
-
+      
       if (!error && data) {
         setProfile(prev => ({
           ...prev,
@@ -81,41 +81,41 @@ export const ProfileSection = () => {
         }));
       }
     };
-
+    
     loadProfile();
   }, [user]);
 
   // Save profile to database
   const handleSaveProfile = async () => {
     if (!user) return;
-
+    
     setIsSaving(true);
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({
+        .update({ 
           display_name: profile.screenName || profile.name,
-          updated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .eq("user_id", user.id);
-
+      
       if (error) throw error;
-
+      
       // Also update user metadata
       await supabase.auth.updateUser({
-        data: { display_name: profile.screenName || profile.name },
+        data: { display_name: profile.screenName || profile.name }
       });
-
+      
       toast({
         title: "Profile updated",
         description: "Your screen name has been saved successfully.",
       });
-
+      
       setProfile(prev => ({
         ...prev,
         name: profile.screenName || prev.name,
       }));
-
+      
       setIsEditing(false);
     } catch (error) {
       console.error("Failed to save profile:", error);
@@ -130,14 +130,20 @@ export const ProfileSection = () => {
   };
 
   const getUserPlanDisplay = () => {
-    if (isAdmin && isPro)
+    // Super Admin = Tier 3 Premium (Lifetime)
+    if (isSuperAdmin)
       return {
-        label: "Admin + Premium",
+        label: "Tier 3 Premium (Lifetime)",
         icon: Sparkles,
-        color: "bg-gradient-to-r from-amber-500 to-orange-500",
+        color: "bg-gradient-to-r from-purple-500 to-pink-500",
       };
+    // Admin = Tier 3 Premium (Admin)
     if (isAdmin)
-      return { label: "Admin", icon: Shield, color: "bg-gradient-to-r from-red-500 to-orange-500" };
+      return {
+        label: "Tier 3 Premium (Admin)",
+        icon: Shield,
+        color: "bg-gradient-to-r from-purple-500 to-pink-500",
+      };
     if (isPro)
       return {
         label: "Premium",
@@ -150,13 +156,27 @@ export const ProfileSection = () => {
   const planInfo = getUserPlanDisplay();
   const PlanIcon = planInfo.icon;
 
+  // Admin/Super Admin = automatic Premium access (Tier 3)
+  const hasAdminPremium = isAdmin || isSuperAdmin;
+  
+  // Determine current plan - admin/super_admin always = Premium
+  // Don't determine plan until roles have been fetched
+  const getCurrentPlan = (): "free" | "pro" | "premium" | null => {
+    if (isLoading || !rolesFetched) return null; // Don't mark any plan while loading/unfetched
+    if (hasAdminPremium) return "premium";
+    if (isPremium) return "premium";
+    if (isPro) return "pro";
+    return "free";
+  };
+  const currentPlan = getCurrentPlan();
+  
   // Tier order: Free → Pro ($9.99) → Premium ($19.99 - highest)
   const plans = [
     {
       name: "Free",
       price: "$0",
       features: ["Basic Scanner", "Health Diary", "Education Center", "Local Storage"],
-      current: !isPro && !isAdmin && roles.length === 0,
+      current: currentPlan === "free",
     },
     {
       name: "Pro",
@@ -168,19 +188,20 @@ export const ProfileSection = () => {
         "PE Routine Builder",
         "Cloud Backup",
       ],
-      current: false, // Will implement with payment
+      current: currentPlan === "pro",
     },
     {
-      name: "Premium",
-      price: "$19.99",
+      name: isSuperAdmin ? "Premium (Lifetime)" : isAdmin ? "Premium (Admin)" : "Premium",
+      price: hasAdminPremium ? "$0" : "$19.99",
       features: [
         "Everything in Pro",
         "AI Health Chatbot",
         "AI Scan Analysis",
         "Unlimited Scans",
         "Medical Export",
+        ...(hasAdminPremium ? ["All DLC Packages", "NSFW Features"] : []),
       ],
-      current: isPro || isAdmin,
+      current: currentPlan === "premium",
     },
   ];
 
@@ -257,25 +278,28 @@ export const ProfileSection = () => {
 
                         {/* Role Badges */}
                         <div className="flex flex-wrap justify-center gap-2 mt-3">
-                          {isLoading ? (
+                          {(isLoading || !rolesFetched) ? (
                             <Badge variant="outline" className="animate-pulse">
                               Loading...
                             </Badge>
                           ) : (
                             <>
-                              {isAdmin && (
-                                <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0">
-                                  <Shield className="w-3 h-3 mr-1" />
-                                  Admin
+                              {isSuperAdmin ? (
+                                <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0">
+                                  <Sparkles className="w-3 h-3 mr-1" />
+                                  Tier 3 Premium (Lifetime)
                                 </Badge>
-                              )}
-                              {isPro && (
+                              ) : isAdmin ? (
+                                <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0">
+                                  <Shield className="w-3 h-3 mr-1" />
+                                  Tier 3 Premium (Admin)
+                                </Badge>
+                              ) : isPro || isPremium ? (
                                 <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">
                                   <Crown className="w-3 h-3 mr-1" />
                                   Premium
                                 </Badge>
-                              )}
-                              {!isAdmin && !isPro && (
+                              ) : (
                                 <Badge variant="secondary">
                                   <User className="w-3 h-3 mr-1" />
                                   Free
@@ -289,10 +313,7 @@ export const ProfileSection = () => {
                       {isEditing ? (
                         <div className="space-y-4">
                           <div>
-                            <Label
-                              htmlFor="profile-screen-name"
-                              className="text-sm text-muted-foreground"
-                            >
+                            <Label htmlFor="profile-screen-name" className="text-sm text-muted-foreground">
                               Screen Name / Username
                             </Label>
                             <Input
@@ -304,15 +325,11 @@ export const ProfileSection = () => {
                               maxLength={30}
                             />
                             <p className="text-xs text-muted-foreground mt-1">
-                              This is how you'll appear to others (
-                              {30 - (profile.screenName?.length || 0)} characters left)
+                              This is how you'll appear to others ({30 - (profile.screenName?.length || 0)} characters left)
                             </p>
                           </div>
                           <div>
-                            <Label
-                              htmlFor="profile-email"
-                              className="text-sm text-muted-foreground"
-                            >
+                            <Label htmlFor="profile-email" className="text-sm text-muted-foreground">
                               Email
                             </Label>
                             <Input
@@ -323,10 +340,7 @@ export const ProfileSection = () => {
                             />
                           </div>
                           <div>
-                            <Label
-                              htmlFor="profile-phone"
-                              className="text-sm text-muted-foreground"
-                            >
+                            <Label htmlFor="profile-phone" className="text-sm text-muted-foreground">
                               Phone (optional)
                             </Label>
                             <Input
@@ -353,8 +367,8 @@ export const ProfileSection = () => {
                                 "Save Changes"
                               )}
                             </Button>
-                            <Button
-                              variant="outline"
+                            <Button 
+                              variant="outline" 
                               onClick={() => setIsEditing(false)}
                               disabled={isSaving}
                             >

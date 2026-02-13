@@ -7,24 +7,12 @@ import { Plus, Trash2, Palette, Gauge, ArrowRightLeft, Volume2, Type, Wand2 } fr
 import type { CameraSource, MaskTrack } from "@/lib/videoEditing";
 import { clamp, uuidLike } from "@/lib/videoEditing";
 import { VideoFiltersPanel, type VideoFilterState } from "./VideoFiltersPanel";
-import {
-  VideoAdjustmentsPanel,
-  type VideoAdjustmentsState,
-  defaultVideoAdjustments,
-} from "./VideoAdjustmentsPanel";
-import {
-  SpeedControlsPanel,
-  type SpeedControlState,
-  defaultSpeedControl,
-} from "./SpeedControlsPanel";
+import { VideoAdjustmentsPanel, type VideoAdjustmentsState, defaultVideoAdjustments } from "./VideoAdjustmentsPanel";
+import { SpeedControlsPanel, type SpeedControlState, defaultSpeedControl } from "./SpeedControlsPanel";
 import { TransitionsPanel, type TransitionConfig, defaultTransition } from "./TransitionsPanel";
 import { AudioToolsPanel, type AudioState, defaultAudioState } from "./AudioToolsPanel";
 import { TextTitlesPanel, type TextOverlaysState, defaultTextState } from "./TextTitlesPanel";
-import {
-  AIEnhancementPanel,
-  type AIEnhancementState,
-  defaultAIEnhancement,
-} from "@/components/photoEditor/AIEnhancementPanel";
+import { AIEnhancementPanel, type AIEnhancementState, defaultAIEnhancement } from "@/components/photoEditor/AIEnhancementPanel";
 import { useState } from "react";
 
 export function InspectorPanel(props: {
@@ -39,13 +27,13 @@ export function InspectorPanel(props: {
   onFilterChange?: (state: VideoFilterState) => void;
   currentTime?: number;
 }): JSX.Element {
-  const {
-    sources,
-    syncOffsets,
-    setSyncOffsets,
-    masks,
-    activeMaskId,
-    setActiveMaskId,
+  const { 
+    sources, 
+    syncOffsets, 
+    setSyncOffsets, 
+    masks, 
+    activeMaskId, 
+    setActiveMaskId, 
     setMasks,
     filterState,
     onFilterChange,
@@ -116,7 +104,10 @@ export function InspectorPanel(props: {
           </TabsContent>
 
           <TabsContent value="ai" className="mt-0">
-            <AIEnhancementPanel state={aiEnhancement} onChange={setAIEnhancement} />
+            <AIEnhancementPanel
+              state={aiEnhancement}
+              onChange={setAIEnhancement}
+            />
           </TabsContent>
 
           <TabsContent value="masks" className="mt-0 space-y-3">
@@ -154,14 +145,7 @@ export function InspectorPanel(props: {
                   onClick={() => {
                     const id = uuidLike();
                     setMasks([
-                      {
-                        id,
-                        name: `Mask ${masks.length + 1}`,
-                        mode: "exclude",
-                        feather: 0.15,
-                        blur: 0,
-                        keyframes: [],
-                      },
+                      { id, name: `Mask ${masks.length + 1}`, mode: "exclude", feather: 0.15, blur: 0, keyframes: [] },
                       ...masks,
                     ]);
                     setActiveMaskId(id);
@@ -181,15 +165,10 @@ export function InspectorPanel(props: {
                       key={m.id}
                       className={[
                         "flex items-center justify-between gap-2 rounded border p-2",
-                        m.id === activeMaskId
-                          ? "border-primary/50 bg-primary/5"
-                          : "border-border/50",
+                        m.id === activeMaskId ? "border-primary/50 bg-primary/5" : "border-border/50",
                       ].join(" ")}
                     >
-                      <button
-                        className="text-left min-w-0 flex-1"
-                        onClick={() => setActiveMaskId(m.id)}
-                      >
+                      <button className="text-left min-w-0 flex-1" onClick={() => setActiveMaskId(m.id)}>
                         <div className="text-sm font-medium truncate">{m.name}</div>
                         <div className="text-[10px] text-muted-foreground truncate">
                           {m.mode} · {m.keyframes.length} keyframes
@@ -218,3 +197,4 @@ export function InspectorPanel(props: {
     </div>
   );
 }
+

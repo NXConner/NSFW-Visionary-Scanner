@@ -151,10 +151,7 @@ export const StepByStepVisualGuide: React.FC<StepByStepVisualGuideProps> = ({
               <h4 className="font-semibold text-sm">Instructions:</h4>
               <ol className="space-y-2">
                 {currentStepData.instructions.map((instruction, idx) => (
-                  <li
-                    key={`instruction-${idx}-${instruction.slice(0, 20)}`}
-                    className="flex gap-3 text-sm"
-                  >
+                  <li key={`instruction-${idx}-${instruction.slice(0, 20)}`} className="flex gap-3 text-sm">
                     <span className="bg-primary/20 text-primary rounded-full w-6 h-6 flex items-center justify-center text-xs shrink-0 font-semibold">
                       {idx + 1}
                     </span>
@@ -180,7 +177,7 @@ export const StepByStepVisualGuide: React.FC<StepByStepVisualGuideProps> = ({
             <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
               <h4 className="font-semibold text-sm mb-2 text-blue-400">💡 Tips:</h4>
               <ul className="space-y-1">
-                {currentStepData.tips.map(tip => (
+                {currentStepData.tips.map((tip) => (
                   <li key={tip} className="text-sm text-muted-foreground flex items-start gap-2">
                     <span className="text-blue-400 mt-1">•</span>
                     {tip}

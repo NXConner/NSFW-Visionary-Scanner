@@ -1,11 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { sendPushToTargets, type PushTarget } from "../_shared/push.ts";
-import { buildRateLimitHeaders, enforceRateLimit } from "../_shared/rateLimit.ts";
-import {
-  isDailyDue,
-  normalizeNotificationPreferences,
-} from "../_shared/notificationPreferences.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,28 +17,11 @@ serve(async req => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const rate = await enforceRateLimit({
-      identifier: "system",
-      endpoint: "send-health-reminder",
-      windowSeconds: 60,
-      maxRequests: 5,
-    });
-    if (!rate.allowed) {
-      return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
-        headers: {
-          ...corsHeaders,
-          ...buildRateLimitHeaders(rate),
-          "Content-Type": "application/json",
-        },
-        status: 429,
-      });
-    }
-
-    const now = new Date();
-
+    // Get all users with enabled health reminders
     const { data: users, error: usersError } = await supabaseClient
       .from("user_preferences")
-      .select("user_id, notification_preferences");
+      .select("user_id")
+      .eq("health_reminders_enabled", true);
 
     if (usersError) {
       throw usersError;
@@ -54,49 +31,19 @@ serve(async req => {
       return new Response(
         JSON.stringify({ message: "No users with health reminders enabled", sent: 0 }),
         {
-          headers: {
-            ...corsHeaders,
-            ...buildRateLimitHeaders(rate),
-            "Content-Type": "application/json",
-          },
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
         },
       );
     }
 
-    const dueUserIds: string[] = [];
-
-    for (const entry of users) {
-      const prefs = normalizeNotificationPreferences(
-        (entry.notification_preferences ?? {}) as Record<string, unknown>,
-      );
-
-      if (!prefs.enabled || (!prefs.scanReminders && !prefs.healthAlerts)) continue;
-
-      if (isDailyDue(prefs.healthSchedule, prefs.timezone, now)) {
-        dueUserIds.push(entry.user_id);
-      }
-    }
-
-    if (dueUserIds.length === 0) {
-      return new Response(
-        JSON.stringify({ message: "No reminders due for current time window", sent: 0 }),
-        {
-          headers: {
-            ...corsHeaders,
-            ...buildRateLimitHeaders(rate),
-            "Content-Type": "application/json",
-          },
-          status: 200,
-        },
-      );
-    }
+    const userIds = users.map(u => u.user_id);
 
     // Get device tokens for these users
     const { data: tokens, error: tokensError } = await supabaseClient
       .from("device_tokens")
-      .select("token, user_id, platform")
-      .in("user_id", dueUserIds);
+      .select("token, user_id")
+      .in("user_id", userIds);
 
     if (tokensError) {
       throw tokensError;
@@ -110,38 +57,28 @@ serve(async req => {
     }
 
     // Send notifications via send-push-notification function
-    const targets: PushTarget[] = tokens
-      .filter(t => t.token)
-      .map(t => ({
-        token: t.token,
-        platform:
-          t.platform === "ios" || t.platform === "android" || t.platform === "web"
-            ? t.platform
-            : "android",
-      }));
-
-    const notificationResponse = await sendPushToTargets(targets, {
-      title: "📊 Health Check Reminder",
-      body: "Time for your daily health tracking!",
-      data: {
-        type: "health_reminder",
-        action: "open_scanner",
+    const tokenList = tokens.map(t => t.token);
+    const notificationResponse = await supabaseClient.functions.invoke("send-push-notification", {
+      body: {
+        tokens: tokenList,
+        title: "📊 Health Check Reminder",
+        body: "Time for your daily health tracking!",
+        data: {
+          type: "health_reminder",
+          action: "open_scanner",
+        },
       },
     });
 
     return new Response(
       JSON.stringify({
         success: true,
-        users_notified: dueUserIds.length,
-        tokens_sent: targets.length,
+        users_notified: userIds.length,
+        tokens_sent: tokenList.length,
         notification_response: notificationResponse,
       }),
       {
-        headers: {
-          ...corsHeaders,
-          ...buildRateLimitHeaders(rate),
-          "Content-Type": "application/json",
-        },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       },
     );

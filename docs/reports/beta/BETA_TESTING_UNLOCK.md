@@ -26,7 +26,7 @@ Request body:
 ```json
 {
   "action": "grant",
-  "email": "tester@example.invalid",
+  "email": "tester@example.com",
   "expiresInDays": 90,
   "maxDevices": 10,
   "notes": "Beta cohort A"
@@ -44,7 +44,7 @@ Expected result:
 ```json
 {
   "action": "revoke",
-  "email": "tester@example.invalid",
+  "email": "tester@example.com",
   "notes": "Beta ended"
 }
 ```

@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DLCContentImport } from "@/components/dlc/admin/DLCContentImport";
 import { listAddonStates } from "@/addons";
-import { evaluateAddonCompatibility, getAppRuntimeInfo } from "@/addons/compatibility";
 import { RouteTopNav } from "@/components/navigation/RouteTopNav";
 import { BUILD_ALLOW_ADULT_BUNDLE } from "@/lib/buildFlags";
 
@@ -34,7 +33,6 @@ export default function AdminDLC(): React.ReactElement {
     () => rows.filter(r => r.isActive && !r.stripePriceId).length,
     [rows],
   );
-  const runtimeInfo = useMemo(() => getAppRuntimeInfo(), []);
 
   const AdminAdultToggles = useMemo(() => {
     if (!BUILD_ALLOW_ADULT_BUNDLE) return null;
@@ -241,76 +239,45 @@ export default function AdminDLC(): React.ReactElement {
               <div className="text-sm text-muted-foreground">No add-ons registered.</div>
             ) : (
               <div className="space-y-2">
-                {listAddonStates().map(a => {
-                  const compatibility = evaluateAddonCompatibility(a.manifest, runtimeInfo);
-                  const compatibilityVariant =
-                    compatibility.status === "compatible"
-                      ? "secondary"
-                      : compatibility.status === "warning"
-                        ? "outline"
-                        : "destructive";
-                  return (
-                    <div
-                      key={a.manifest.id}
-                      className="rounded-xl border border-border/50 p-4 bg-background/40"
-                    >
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="font-semibold truncate">
-                            {a.manifest.name}{" "}
-                            <span className="text-muted-foreground">({a.manifest.id})</span>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            v{a.manifest.version}
-                            {a.manifest.minAppVersion
-                              ? ` • minApp ${a.manifest.minAppVersion}`
-                              : ""}
-                            {a.manifest.manifestVersion
-                              ? ` • manifest ${a.manifest.manifestVersion}`
-                              : ""}
-                            {a.hasContributions ? " • contributes UI" : ""}
-                          </div>
+                {listAddonStates().map(a => (
+                  <div
+                    key={a.manifest.id}
+                    className="rounded-xl border border-border/50 p-4 bg-background/40"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-semibold truncate">
+                          {a.manifest.name}{" "}
+                          <span className="text-muted-foreground">({a.manifest.id})</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={
-                              a.runtime.status === "ready"
-                                ? "secondary"
-                                : a.runtime.status === "failed" || a.runtime.status === "blocked"
-                                  ? "destructive"
-                                  : "outline"
-                            }
-                          >
-                            {a.runtime.status}
-                          </Badge>
-                          <Badge variant={compatibilityVariant}>compat {compatibility.label}</Badge>
-                          <Badge variant="outline" className="text-[10px]">
-                            {new Date(a.runtime.updatedAt).toLocaleString()}
-                          </Badge>
+                        <div className="text-sm text-muted-foreground">
+                          v{a.manifest.version}
+                          {a.manifest.minAppVersion ? ` • minApp ${a.manifest.minAppVersion}` : ""}
+                          {a.hasContributions ? " • contributes UI" : ""}
                         </div>
                       </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <span>app {runtimeInfo.appVersion}</span>
-                        <span>
-                          build {runtimeInfo.build.appVersion}/{runtimeInfo.build.distribution}
-                        </span>
-                        <span>
-                          adult bundle {runtimeInfo.build.allowAdultBundle ? "enabled" : "off"}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={
+                            a.runtime.status === "ready"
+                              ? "secondary"
+                              : a.runtime.status === "failed"
+                                ? "destructive"
+                                : "outline"
+                          }
+                        >
+                          {a.runtime.status}
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px]">
+                          {new Date(a.runtime.updatedAt).toLocaleString()}
+                        </Badge>
                       </div>
-                      {a.runtime.lastError ? (
-                        <div className="mt-2 text-xs text-destructive">{a.runtime.lastError}</div>
-                      ) : null}
-                      {compatibility.reasons.length > 0 ? (
-                        <div className="mt-2 text-xs text-muted-foreground space-y-1">
-                          {compatibility.reasons.slice(0, 3).map((reason, idx) => (
-                            <div key={`${a.manifest.id}-reason-${idx}`}>- {reason}</div>
-                          ))}
-                        </div>
-                      ) : null}
                     </div>
-                  );
-                })}
+                    {a.runtime.lastError ? (
+                      <div className="mt-2 text-xs text-destructive">{a.runtime.lastError}</div>
+                    ) : null}
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>

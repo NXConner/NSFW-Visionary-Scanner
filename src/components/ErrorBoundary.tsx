@@ -1,9 +1,5 @@
 import React, { Component, ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
-import {
-  markAppInteractiveAndHideStaticLoader,
-  showBootDiagnosticsPanel,
-} from "@/lib/boot/staticLoader";
 
 interface Props {
   children: ReactNode;
@@ -37,13 +33,6 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
-    // Ensure the static HTML loader can't obscure the error UI.
-    try {
-      markAppInteractiveAndHideStaticLoader();
-      showBootDiagnosticsPanel();
-    } catch {
-      // ignore
-    }
     this.setState({
       error,
       errorInfo,
@@ -86,7 +75,9 @@ class ErrorBoundary extends Component<Props, State> {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-foreground">
-                  {this.props.section ? `Error in ${this.props.section}` : "Something went wrong"}
+                  {this.props.section
+                    ? `Error in ${this.props.section}`
+                    : "Something went wrong"}
                 </h1>
               </div>
             </div>
@@ -144,7 +135,7 @@ class ErrorBoundary extends Component<Props, State> {
  */
 export function withErrorBoundary<P extends object>(
   WrappedComponent: React.ComponentType<P>,
-  section?: string,
+  section?: string
 ) {
   return function WithErrorBoundaryWrapper(props: P) {
     return (

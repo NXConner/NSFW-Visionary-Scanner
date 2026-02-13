@@ -20,14 +20,10 @@ const LazyLiveSupportChat = lazy(() =>
   import("@/components/LiveSupportChat").then(m => ({ default: m.LiveSupportChat })),
 );
 const LazyNsfwSessionGate = BUILD_ALLOW_ADULT_BUNDLE
-  ? lazy(() =>
-      import("@/components/nsfw/NsfwSessionGate").then(m => ({ default: m.NsfwSessionGate })),
-    )
+  ? lazy(() => import("@/components/nsfw/NsfwSessionGate").then(m => ({ default: m.NsfwSessionGate })))
   : null;
 const LazyNSFWCommunityForum = BUILD_ALLOW_ADULT_BUNDLE
-  ? lazy(() =>
-      import("@/components/NSFWCommunityForum").then(m => ({ default: m.NSFWCommunityForum })),
-    )
+  ? lazy(() => import("@/components/NSFWCommunityForum").then(m => ({ default: m.NSFWCommunityForum })))
   : null;
 
 const LazyWrap = ({ children }: { children: React.ReactNode }) => (

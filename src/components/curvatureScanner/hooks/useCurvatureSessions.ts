@@ -21,14 +21,11 @@ export function useCurvatureSessions() {
     void refresh();
   }, [refresh]);
 
-  const addSession = React.useCallback(
-    async (session: CurvatureScanSession) => {
-      const next = [session, ...sessions];
-      setSessions(next);
-      await saveCurvatureSessions(next);
-    },
-    [sessions],
-  );
+  const addSession = React.useCallback(async (session: CurvatureScanSession) => {
+    const next = [session, ...sessions];
+    setSessions(next);
+    await saveCurvatureSessions(next);
+  }, [sessions]);
 
   const deleteSession = React.useCallback(
     async (id: string) => {
@@ -41,3 +38,4 @@ export function useCurvatureSessions() {
 
   return { sessions, loading, refresh, addSession, deleteSession };
 }
+

@@ -48,9 +48,8 @@ export async function saveProstateHealthEntry(
     blood_in_urine: entry.blood_in_urine ?? false,
     notes: entry.notes ?? null,
   };
-  const { error } = await fromExtended("prostate_health").upsert(payload, {
-    onConflict: "user_id,entry_date",
-  });
+  const { error } = await fromExtended("prostate_health")
+    .upsert(payload, { onConflict: "user_id,entry_date" });
   if (error) throw error;
   return true;
 }
@@ -82,9 +81,8 @@ export async function saveTesticularHealthEntry(
     size_changes: entry.size_changes ?? null,
     notes: entry.notes ?? null,
   };
-  const { error } = await fromExtended("testicular_health").upsert(payload, {
-    onConflict: "user_id,entry_date",
-  });
+  const { error } = await fromExtended("testicular_health")
+    .upsert(payload, { onConflict: "user_id,entry_date" });
   if (error) throw error;
   return true;
 }
@@ -116,9 +114,8 @@ export async function saveSexualHealthEntry(entry: Partial<SexualHealthEntry>): 
     delayed_ejaculation: entry.delayed_ejaculation ?? false,
     notes: entry.notes ?? null,
   };
-  const { error } = await fromExtended("sexual_health_metrics").upsert(payload, {
-    onConflict: "user_id,entry_date",
-  });
+  const { error } = await fromExtended("sexual_health_metrics")
+    .upsert(payload, { onConflict: "user_id,entry_date" });
   if (error) throw error;
   return true;
 }
@@ -191,9 +188,8 @@ export async function saveUrinaryHealthEntry(entry: Partial<UrinaryHealthEntry>)
     blood_in_urine: entry.blood_in_urine ?? false,
     notes: entry.notes ?? null,
   };
-  const { error } = await fromExtended("urinary_health").upsert(payload, {
-    onConflict: "user_id,entry_date",
-  });
+  const { error } = await fromExtended("urinary_health")
+    .upsert(payload, { onConflict: "user_id,entry_date" });
   if (error) throw error;
   return true;
 }

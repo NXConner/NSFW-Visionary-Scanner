@@ -40,11 +40,9 @@ export async function bookExpertConsultation(
         scheduled_at: scheduledAt,
         duration_minutes: durationMinutes,
         status: "pending",
-        topic: `marketplace:${consultationType}`,
-        description: userConcerns || null,
-        notes: userConcerns || null,
-        price,
+        payment_amount: price,
         payment_status: paymentStatus,
+        notes: userConcerns || null,
       })
       .select()
       .single();
@@ -103,7 +101,7 @@ export async function rateConsultation(
       .from("expert_consultations")
       .update({
         rating: rating,
-        review_text: feedback || null,
+        review: feedback || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", consultationId)

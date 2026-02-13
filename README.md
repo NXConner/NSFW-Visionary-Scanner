@@ -1,275 +1,193 @@
-# Visionary Scanner Suite
-**MorphoScan Pro (SFW/store)** • **NSFW Visionary Scanner (direct)** • **Hybrid (direct)**
+# MorphoScan Pro
 
-Privacy-first, cross-platform health self-assessment and tracking suite built with **Vite + React + TypeScript** and shipped as:
-
-- **Web SPA / PWA** (offline-capable; Workbox via `vite-plugin-pwa`)
-- **Native mobile apps** via **Capacitor** (`android/`, `ios/`)
-- **Supabase backend** (Postgres + RLS, Storage, Edge Functions) for auth, content delivery, payments, notifications, and optional server-side analysis
-
-> **Medical disclaimer:** This project provides educational/self-tracking tools. It is **not** a medical device and does **not** provide medical diagnoses. For medical concerns, consult a qualified healthcare professional.
+AI-assisted morphology scanning, analytics, and exporting for highly sensitive health data. This repository hosts the Vite + React + TypeScript single-page application plus the supporting tooling required for a production-ready, security-first deployment.
 
 ---
 
-## What this repository contains
+## Project Scope & Ownership
 
-### Frontend (client app)
-- **React 18 + React Router** single-page application (`src/`)
-- **shadcn/ui + Radix UI + Tailwind CSS** component system (`src/components/ui/`, `tailwind.config.ts`)
-- **State/data**:
-  - Local encrypted storage for sensitive user data (`useEncryptedStorage` via `src/contexts/DataContext.tsx`)
-  - React Query for async data (`@tanstack/react-query`)
-  - App-wide providers: Auth, Settings, Data, DLC, i18n (`src/App.tsx`)
-- **Accessibility**: skip links + color-blind filters + automated audit tooling (`eslint-plugin-jsx-a11y`, `npm run a11y:audit`)
-- **Internationalization**: i18n provider + multiple languages (`src/lib/i18nSystem/translations/*`)
-- **Observability**: Sentry + structured logging with secret redaction (`src/lib/sentry.ts`, `src/lib/logger.ts`)
-
-### Mobile (Capacitor)
-- Capacitor config: `capacitor.config.json` (App ID `com.morphoscan.pro`, `webDir=dist`)
-- Native projects:
-  - Android: `android/`
-  - iOS: `ios/`
-- Native capabilities (via Capacitor plugins): camera, filesystem, push notifications, local notifications, splash screen, status bar
-
-### Backend (Supabase)
-- Database migrations: `supabase/migrations/*.sql` (large schema with mandatory RLS patterns)
-- Edge Functions (Deno): `supabase/functions/*` (auth-protected APIs, scheduled jobs, webhooks)
-- Generated DB types: `src/integrations/supabase/types.ts` (from `supabase gen types`)
-
-### Automation & Ops
-- Scripts: `scripts/` (setup, migrations, seeding, verification, release ops, audits)
-- CI/CD workflows: `.github/workflows/*` (lint/test/build, Supabase type checks, security scanning, release gates, optional deploy)
-- Load tests: `performance-tests/` (k6)
-- E2E tests: `e2e/` (Playwright)
+- This is a personal project owned and maintained by the repository author.
+- It is **not** related to any pavement or pavement performance suite.
+- The domain focus is health/NSFW scanning, analytics, and content delivery.
 
 ---
 
-## Editions, build flavors, and content policy
+## Quickstart
 
-This repo supports **build-time** and **runtime** gating to keep store builds compliant while enabling direct/off-platform variants.
-
-### Build flavors
-| Flavor | Intended distribution | Env | What it means |
-|---|---|---|---|
-| **SFW** | App Store / Play Store | `VITE_APP_VERSION=sfw` | Safe-for-work bundle; adult-only code paths are not intended to ship |
-| **NSFW** | Direct distribution only | `VITE_APP_VERSION=nsfw` | Adult-only surfaces can be enabled (still gated/entitled) |
-| **Hybrid** | Direct distribution | `VITE_APP_VERSION=hybrid` | Suite mode: SFW base + DLC/unlocks |
-
-### Distribution channels
-| Channel | Env | Notes |
-|---|---|---|
-| Store | `VITE_DISTRIBUTION_CHANNEL=store` | Store builds must not include adult-only bundle surfaces |
-| Direct | `VITE_DISTRIBUTION_CHANNEL=direct` | Deep links and optional modules can be shipped |
-
-### Hard bundle gating for adult-only code
-- Build-time constant: `BUILD_ALLOW_ADULT_BUNDLE` (`src/lib/buildFlags.ts`)
-- Policy switch: `VITE_CONTENT_POLICY` + host detection (`src/lib/featureFlags.ts`)
-
-**Reference:** `docs/guides/deployment/SFW_NSFW_RELEASE_OPTIONS.md`
-
----
-
-## Feature inventory (what the app can do)
-
-This section is driven by the actual route registry (`src/App.tsx`), tab catalog (`src/lib/navigation/navCatalog.ts`), and feature/tab routing (`src/lib/navigation/tabRouting.ts`).
-
-### 1) Core app shell & UX foundations
-- First-run onboarding tutorial (`src/components/OnboardingTutorial`)
-- Email verification gate for protected app routes (`src/components/EmailVerificationGate`)
-- App lock / session lock (including mobile hardening) (`src/components/AppLock`, `src/lib/__tests__/nsfwSessionLock.test.ts`)
-- Offline indicator + PWA-aware startup hardening (`src/components/OfflineIndicator`, `src/pwa/*`, `src/main.tsx`)
-- Command palette + global keyboard shortcuts (`src/components/commandPalette`, `src/hooks/useKeyboardShortcuts`)
-- Theme system, visual effects, and user personalization (e.g., wallpapers) (`src/components/settings/WallpaperPicker.tsx`, `src/lib/visualEffectsSettings.ts`)
-
-### 2) Scanner & measurement system (primary capability)
-- Unified scanner UX (consolidated scanner experiences) (`src/components/scanner/UnifiedScannerPage.tsx`)
-- Camera capture:
-  - Browser `getUserMedia` + device selection (`src/scanner/capture/*`)
-  - Capacitor camera integration for mobile (`src/scanner/capture/capacitorCamera.ts`)
-  - Multi-angle capture support (`src/scanner/capture/multiAngleCapture.ts`)
-  - Permissions hardening (including Android-specific handling) (`src/scanner/capture/androidPermissions.ts`)
-- Real-time overlays and guidance:
-  - AR-style measurement guides, prompts, detection points (`src/scanner/overlays/ar/*`)
-  - Overlay rendering layers + presets (`src/scanner/overlays/rendering/*`, `src/scanner/overlays/guides/*`)
-  - Live quality scoring (`src/scanner/quality/*`, `src/components/scanner/telemetry/useLiveQualityMetrics.ts`)
-- Deterministic/local processing pipeline (web worker):
-  - Preprocess → edge detection → contour extraction → curve fit → curvature → length/girth estimation → confidence scoring
-  - Pipeline: `src/scanner/processing/pipeline.ts`
-  - Steps: `src/scanner/processing/steps/*`
-  - Worker: `src/scanner/processing/worker/*`
-- Calibration profiles + device capability modeling (`src/scanner/calibration/*`, `src/scanner/utils/platform/*`)
-- Scan history and results routes:
-  - `/scanner/capture`, `/scanner/history`, `/scanner/results`, `/scanner/settings` (`src/App.tsx`, `src/scanner/ui/routes/*`)
-
-### 3) Progress, tracking, and analytics
-- Progress hub (charts, trends, comparisons) (`src/components/hubs/ProgressHub.tsx`, `recharts`)
-- Encrypted local diary + calendar view (`src/components/HealthDiarySection.tsx`, `src/contexts/DataContext.tsx`)
-- Progress photos and comparison tooling (`src/components/ProgressPhotos.tsx`, `src/components/PEProgressPhotos.tsx`)
-- Habit tracking and reminders (`src/components/HabitTracker.tsx`, `src/lib/healthTracking/*`)
-- Advanced reporting + export workflows (PDF + structured exports) (`src/components/AdvancedReportingSystem.tsx`, `jspdf`)
-- Medical-grade export formats:
-  - HL7 FHIR bundle export (`src/lib/medicalExport.ts`)
-  - CDA document export (`src/lib/medicalExport.ts`)
-
-### 4) Learning, guidance, and support surfaces
-- Educational centers, guides, interactive learning (`src/components/EducationCenter.tsx`, `src/components/InteractiveLearning.tsx`)
-- Emergency guidance system (`src/components/EmergencyGuidance.tsx`)
-- Provider locator (`src/components/PhysicianLocator.tsx`)
-- AI-assisted educational/help content surfaces (UI-level) (`src/components/AIHealthChatbot.tsx`, `src/components/AIHealthInsights.tsx`)
-
-### 5) Partner Sync & relationship tooling (opt-in)
-- Partner connection + permissions + consent (`src/components/partnerSync/*`, `src/lib/partnerSync/*`)
-- Date night planning system (planner, templates, history) (`src/components/partnerSync/DateNightHub.tsx`)
-- Thought pings and shared planning flows (`src/components/partnerSync/thoughtPings/*`)
-- Realtime sync layer (`src/lib/partnerSync/realtime.ts`)
-
-### 6) Accounts, privacy, and security controls
-- Auth flows (email + social login surfaces) (`src/pages/Auth.tsx`, `src/components/SocialLoginButtons.tsx`)
-- Privacy dashboard and enhanced privacy controls (`src/components/PrivacyDashboard.tsx`, `src/components/EnhancedPrivacyControls.tsx`)
-- Data retention settings + cleanup automation (`src/components/DataRetentionSettings.tsx`, `supabase/functions/data-retention-cleanup`)
-- Audit trail / activity history (`src/components/AuditTrail.tsx`, `src/lib/auditLogStorage.ts`)
-- Content Security Policy generation + security headers (client-side) (`src/lib/security.ts`)
-
-### 7) Monetization: subscriptions, DLC, add-ons, marketplace
-- Stripe integration for subscriptions, checkout sessions, billing portal (`src/lib/stripe.ts`, `supabase/functions/*checkout*`, `supabase/functions/*subscription*`)
-- DLC store + secure delivery:
-  - DLC manager/registry/download manager (`src/dlc/core/*`)
-  - License validation + activation UI (`src/dlc/core/LicenseValidator.ts`, `src/dlc/components/LicenseActivation.tsx`)
-  - Secure downloader, integrity checks, content encryption (`src/dlc/security/*`)
-  - Feature gating component (`src/dlc/components/FeatureGate.tsx`)
-- Add-on/plugin architecture (contributions loaded at boot) (`src/addons/*`, `bootstrapAddons()` in `src/App.tsx`)
-- DLC packages catalog (examples) (`src/lib/dlc-packages.ts`)
-
-### 8) Admin tooling
-- Admin dashboard and deep links:
-  - `/admin`, `/admin/users`, `/admin/content`, `/admin/analytics`, `/admin/settings`, `/admin/database`
-  - `/admin/dlc` for DLC management
-  - `/admin/nsfw` for adult content operations (when bundled)
-- DLC content import pipeline:
-  - Admin UI importer: `src/components/dlc/admin/DLCContentImport.tsx`
-  - Edge importer: `supabase/functions/admin-import-dlc-content/index.ts`
-  - Signed upload/delivery: `supabase/functions/get-dlc-signed-upload-url`, `get-dlc-signed-url`
-
-### 9) Optional adult-only surfaces (direct builds only)
-This repo includes optional adult-only modules and admin tooling **behind build-time gates** and **runtime entitlements**.
-
-- Adult content UI is only bundled when `BUILD_ALLOW_ADULT_BUNDLE` is true (`src/lib/buildFlags.ts`).
-- Actual adult media payload is not committed; it is uploaded/imported into Supabase.
-
-**Reference:** `docs/product/dlc/dlc-content/README.md` and `docs/product/dlc/NSFW_CONTENT_LICENSING.md`
+1. **Install dependencies**
+   ```bash
+   ./scripts/install_dependencies.sh
+   ```
+   PowerShell alternative (Windows):
+   ```powershell
+   ./scripts/install_dependencies.ps1
+   ```
+2. **Create your environment file**
+   ```bash
+   cp .env.example .env
+   # Update with live Supabase + security values
+   ```
+3. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+4. **Verify linting & formatting**
+   ```bash
+   npm run lint
+   npm run format
+   ```
 
 ---
 
-## Backend API surface (Supabase Edge Functions)
+## Containerization
 
-Edge Functions are configured in `supabase/config.toml` and implemented under `supabase/functions/`.
-
-### Function groups (high level)
-- **Scanner APIs:** `scan-upload`, `scan-analyze`, `scan-history`
-- **AI (opt-in):** `ai-health-chat`, `ai-scan-analysis`, `ai-progress-analysis`, `generate-health-insights`, `analyze-health-patterns`, `predict-health-trends`, `ai-routine-recommendations`
-- **Payments (Stripe):** `stripe-webhook`, `create-*checkout-session`, `create-subscription`, `update-subscription`, `cancel-subscription`, `reactivate-subscription`, `create-billing-portal-session`
-- **DLC/content delivery:** `get-dlc-content`, `get-dlc-key`, `verify-dlc-license`, `check-dlc-updates`, `get-dlc-signed-url`, `get-dlc-signed-upload-url`, `admin-dlc-catalog`, `admin-dlc-toggles`, `admin-import-dlc-content`, `admin-rotate-dlc-key`, `admin-rollback-dlc-import`
-- **Notifications & comms:** `register-device-token`, `send-push-notification`, `send-email`, `send-weekly-report`, `send-health-reminder`, `send-medication-reminder`
-- **Data lifecycle:** `data-retention-cleanup`, `delete-user-account`
-- **Referrals:** `generate-referral-code`, `apply-referral-code`
-- **Video tooling:** `merge-video-chunks`, `video-editing`
-- **Infrastructure:** `rate-limit-middleware`, `verify-webhook`
-
-### OpenAPI / Swagger
-- Docs: `docs/api/API.md`
-- Generated spec: `docs/api/swagger.json`
-- Generator: `npm run api:openapi`
+- **Build**: `docker build -t morphoscan-pro:latest .`
+- **Run (single container)**: `docker run -p 4173:4173 --env-file .env morphoscan-pro:latest`
+- **Run full stack**: `docker compose up --build`
+  - `app` service serves the built SPA through `npm run preview`.
+  - `db` spins up a local PostgreSQL instance that mirrors Supabase schemas for migration testing.
+- Secrets are injected via `.env` (never bake real values into images). Use Docker/host secrets in production.
 
 ---
 
-## Repository map
+## Security Hardening
 
-```text
-.
-├── src/                      # React app (routes, components, scanner engine, DLC/add-ons)
-├── supabase/
-│   ├── migrations/           # Postgres schema + RLS policies
-│   ├── functions/            # Edge Functions (Deno)
-│   └── config.toml           # Function toggles + JWT verification flags
-├── scripts/                  # Setup, seeding, audits, release automation
-├── docs/                     # Canonical documentation (setup, security, product, ops)
-├── e2e/                      # Playwright end-to-end tests
-├── performance-tests/        # k6 load tests
-├── android/                  # Capacitor Android project
-├── ios/                      # Capacitor iOS project
-├── dist/                     # Built output (tracked here)
-└── .github/workflows/        # CI, release readiness, manual deploy
-```
+- **Secrets Management**: Follow `docs/security/secrets/secrets-manager.md` for Doppler, Vault, or AWS Secrets Manager integration. These tools should inject `VITE_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, and other sensitive values at runtime—never store them in `.env` on shared machines.
+- **Dependency Vulnerability Scans**: Run `npm run scan:vuln` locally and in CI to surface `npm audit --audit-level=high` findings. Address critical items before release; document intentional suppressions.
+- **Least Privilege**: Use the provided `roles` + `user_roles` tables and RLS policies. Only service-role tokens may mutate roles or audit logs.
+- **Audit Trails**: Write significant security events (exports, role changes, GDPR deletes) into `public.audit_logs` for tamper-evident history.
 
 ---
 
-## Key commands (PowerShell-first)
+## Database & Migrations
 
-> Many docs use PowerShell; on macOS/Linux, run equivalent shell commands.
+This repo uses **Supabase CLI migrations** in `supabase/migrations/*.sql` as the single source of truth.
 
-```powershell
-# Install
-npm install
+| Command                  | Purpose                                         |
+| ------------------------ | ----------------------------------------------- |
+| `npm run db:start`       | Start local Supabase stack (Docker)             |
+| `npm run db:push`        | Apply migrations to local DB                    |
+| `npm run db:reset`       | Reset local DB and apply migrations (no seed)   |
+| `npm run db:types`       | Regenerate `src/integrations/supabase/types.ts` |
+| `npm run db:types:check` | Verify types match local schema (CI gate)       |
 
-# Dev server (http://localhost:8080)
-npm run dev
+Legacy node-pg-migrate scripts remain available as `db:*:legacy` for backward compatibility, but should not be used for new work.
 
-# Unit tests (Vitest) + E2E (Playwright)
-npm run test:run
-npm run test:e2e
+1. Ensure `DATABASE_URL` points to your Supabase or local Postgres instance.
+2. For local testing, `docker compose up db` exposes `postgresql://morphoscan_admin:change-me@localhost:5432/morphoscan`.
+3. Supabase projects require a service-role key when running migrations remotely.
 
-# Lint/format
-npm run lint
-npm run format
+### Seeding & Super Admin Setup
 
-# Production build / preview
-npm run build
-npm run preview
-```
-
-### Supabase (local)
-```powershell
-npm run db:start
-npm run db:reset
-npm run db:types
-```
+1. In the Supabase dashboard, navigate to **Authentication → Users → Add user** and create `n8ter8@gmail.com`. Require email confirmation as desired, but ensure the account exists before proceeding.
+2. Update `.env` with `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_URL`, and (optionally) `ADMIN_SUPER_EMAIL` if you want to seed a different account.
+3. Run `npm run seed`. The script will:
+   - Upsert the `super_admin`, `clinician`, and `patient` roles.
+   - Assign `super_admin` to `n8ter8@gmail.com` (or `ADMIN_SUPER_EMAIL`).
+   - Insert sample diary data for quick smoke testing.
+4. Rerun the seed anytime—operations are idempotent.
 
 ---
 
-## Documentation index (start here)
+## Environment Variables
 
-### Setup / environment
-- `.env` template: `.env.example` (do not commit real secrets)
-- Setup guide: `docs/guides/setup/SETUP_GUIDE.md`
-- Quick commands: `docs/QUICK_REFERENCE.md`
-- Production env: `docs/guides/setup/PRODUCTION_ENV_SETUP.md`
+All required variables live in `.env.example`. Duplicate it to `.env` and populate with real credentials before running locally or deploying.
 
-### Mobile builds
-- Mobile build guide: `docs/MOBILE_BUILD_GUIDE.md` and `docs/guides/build/MOBILE_BUILD_GUIDE.md`
+| Variable                        | Description                                                     |
+| ------------------------------- | --------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | Supabase project URL                                            |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon/public key for browser clients                    |
+| `VITE_APP_ENV`                  | `development`, `staging`, or `production`                       |
+| `VITE_APP_VERSION`              | Build flavor: `sfw`, `nsfw`, or `hybrid`                        |
+| `VITE_DISTRIBUTION_CHANNEL`     | Pricing channel: `store` or `direct`                            |
+| `VITE_FEATURE_FLAGS`            | Comma-separated feature toggles                                 |
+| `VITE_PRIVACY_CONTACT_EMAIL`    | Contact surfaced on the privacy dashboard                       |
+| `VITE_CLIENT_ENCRYPTION_SALT`   | Additional entropy for local encryption helpers                 |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Server-side helper for migrations/seeding                       |
+| `ADMIN_SUPER_EMAIL`             | Email that should receive the `super_admin` role during seeding |
 
-### Payments (Stripe)
-- `docs/STRIPE_SETUP_GUIDE.md` and `docs/guides/integrations/payments/STRIPE_SETUP_GUIDE.md`
-
-### Security / compliance
-- Baseline: `docs/security/baseline/SECURITY_BASELINE.md`
-- RLS checklist: `docs/security/rls/RLS_AUDIT_CHECKLIST.md`
-- Secrets manager guidance: `docs/security/secrets/secrets-manager.md`
-- Data retention policy: `docs/security/retention/DATA_RETENTION_POLICY.md`
-
-### DLC + content import (adult-only payload is not shipped)
-- Import kit: `docs/product/dlc/dlc-content/README.md`
-- Licensing: `docs/product/dlc/NSFW_CONTENT_LICENSING.md`
-
-### Status / tracking
-- Current status: `docs/reports/CURRENT_STATUS.md`
-- Canonical tracker: `docs/tracking/PROJECT_TRACKER.md`
+> Never commit `.env` or plaintext secrets. Store them in your preferred secrets manager for CI/CD and deployments.
 
 ---
 
-## Notes & design intent (important)
+## Branching Strategy
 
-- **Local-first privacy:** sensitive tracking data is stored locally using encrypted storage helpers (see `src/contexts/DataContext.tsx` and `src/lib/security.ts`).
-- **Backend-required features:** auth, DLC/content delivery, payments, notifications, admin tools, and optional server-side scan analysis depend on Supabase configuration (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`).
-- **AI features are opt-in:** server-side AI endpoints are disabled unless explicitly enabled via Edge Function secrets/env (see `supabase/functions/*ai*`).
-- **Adult-only payload is not committed:** tooling exists to import real media into Supabase; the repo ships the system, not the media.
+- `main`: protected, release-ready branch (CI must pass before merge).
+- `develop`: optional integration branch for large multi-phase efforts.
+- `feature/<phase>-<summary>`: short-lived branches per roadmap item (e.g., `feature/phase1-visual-excellence`).
+- Rebase frequently, keep commits atomic, and open PRs early for review.
 
+---
+
+## Tooling & Scripts
+
+| Command                | Purpose                              |
+| ---------------------- | ------------------------------------ |
+| `npm run dev`          | Launch Vite dev server on port 8080  |
+| `npm run build`        | Production build output              |
+| `npm run lint`         | ESLint (JSX a11y + TypeScript rules) |
+| `npm run lint:fix`     | ESLint auto-fix                      |
+| `npm run format`       | Prettier check                       |
+| `npm run format:write` | Prettier write                       |
+
+Supporting scripts:
+
+- `./scripts/install_dependencies.sh` – Idempotent dependency bootstrapper.
+- Husky pre-commit hook – Runs ESLint + Prettier through lint-staged.
+
+---
+
+## Tech Stack
+
+- **Framework**: React 18, TypeScript 5, Vite 7
+- **UI**: Tailwind CSS, shadcn/ui, custom glassmorphism design system
+- **State & Data**: React Context, TanStack Query, Supabase client, AES-GCM encrypted local storage
+- **Tooling**: ESLint (flat config) + jsx-a11y, Prettier, Husky, lint-staged
+- **Testing**: Vitest, Playwright, k6 (see `docs/guides/testing/LOAD_TESTING.md`)
+
+## Additional docs
+
+### Quick Reference
+
+- **Quick Reference**: `docs/QUICK_REFERENCE.md` - Command cheat sheet and common workflows
+- **Production Status**: `docs/PRODUCTION_READY_SUMMARY.md` - Current production readiness status
+- **Next Steps**: `docs/NEXT_STEPS_ACTION_PLAN.md` - Step-by-step deployment guide
+
+### Setup & Configuration
+
+- **Quick Start**: `docs/guides/setup/QUICK_START_GUIDE.md` - Get started in 5 minutes
+- **Setup Guide**: `docs/guides/setup/SETUP_GUIDE.md` - Complete setup instructions
+- **Production Setup**: `docs/guides/setup/PRODUCTION_ENV_SETUP.md` - Production environment configuration
+
+### Deployment
+
+- **Deployment Guide**: `docs/guides/deployment/DEPLOYMENT_GUIDE.md` - Production deployment
+- **Deployment Checklist**: `docs/guides/deployment/DEPLOYMENT_CHECKLIST.md` - Pre-deployment checklist
+- **Android Build**: `docs/ANDROID_SYNC_BUILD_INSTRUCTIONS.md` - Android build workflow
+
+### Security
+
+- **Security Baseline**: `docs/security/baseline/SECURITY_BASELINE.md`
+- **RLS Audit**: `docs/security/rls/RLS_AUDIT_CHECKLIST.md`
+
+### API & Testing
+
+- **API**: `docs/api/API.md` (includes `docs/api/swagger.json` generation)
+- **Testing Guide**: `docs/guides/testing/PRODUCTION_TESTING_GUIDE.md` - Production testing checklist
+
+### Reports & Status
+
+- **Optimization Summary**: `docs/reports/FINAL_OPTIMIZATION_SUMMARY.md` - Performance optimizations
+- **Implementation Tracker**: `docs/tracking/IMPLEMENTATION_TRACKER.md` - Project progress
+
+---
+
+## Contributing
+
+1. Fork & clone the repository.
+2. Create a feature branch following the strategy above.
+3. Keep commits focused; include tests and documentation for each change.
+4. Run `npm run lint` and `npm run format` before pushing.
+5. Open a PR using the provided template; describe risks, tests, rollout steps, and any security considerations.
+
+Respect the security-by-design posture: no plaintext secrets, enforce encryption end-to-end, document every change, and ensure accessibility + performance budgets remain within guardrails.

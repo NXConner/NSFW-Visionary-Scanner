@@ -7,8 +7,7 @@ test.describe("DLC restore purchases + device management (hybrid)", () => {
   });
 
   test("Profile -> Settings shows DLC card; restore + device manager open", async ({ page }) => {
-    // Main app experience lives at /app (root "/" is the marketing/landing page).
-    await page.goto("/app");
+    await page.goto("/");
     await waitForAppReady(page);
 
     // Navigate to Profile tab
@@ -25,24 +24,24 @@ test.describe("DLC restore purchases + device management (hybrid)", () => {
     await settingsTab.scrollIntoViewIfNeeded();
     await settingsTab.click({ force: true });
 
-    // DLC status UI is only present in certain build profiles (e.g. hybrid).
-    // If it's not present, keep the test as a smoke check for Settings content.
-    const restore = page.getByRole("button", { name: "Restore Purchases" });
-    const manage = page.getByRole("button", { name: "Manage Devices" });
-    if (!(await restore.count()) || !(await manage.count())) {
+    // DLC status card should exist in hybrid builds
+    const dlcCard = page.getByText("NSFW Content");
+    if (!(await dlcCard.count())) {
       await expect(page.getByText("Appearance")).toBeVisible();
       return;
     }
 
-    await expect(page.getByText("NSFW Content")).toBeVisible();
+    await expect(dlcCard).toBeVisible();
 
     // Restore purchases should be available even if not unlocked
-    await expect(restore.first()).toBeVisible();
-    await restore.first().click();
+    const restore = page.getByRole("button", { name: "Restore Purchases" });
+    await expect(restore).toBeVisible();
+    await restore.click();
 
     // Device manager should open and show sign-in gating in anonymous E2E
-    await expect(manage.first()).toBeVisible();
-    await manage.first().click();
+    const manage = page.getByRole("button", { name: "Manage Devices" });
+    await expect(manage).toBeVisible();
+    await manage.click();
 
     await expect(page.getByText("DLC Device Management")).toBeVisible();
     await expect(page.getByText(/Sign in to view and manage your DLC devices/i)).toBeVisible();
