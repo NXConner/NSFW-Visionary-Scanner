@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendPushToTargets, type PushTarget } from "../_shared/push.ts";
 import { buildRateLimitHeaders, enforceRateLimit } from "../_shared/rateLimit.ts";
+import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,21 +46,9 @@ serve(async req => {
       );
     }
 
-    // Check if user has admin role (required for sending push notifications)
-    const { data: roles, error: rolesError } = await supabaseClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id);
-
-    if (rolesError) {
-      console.error("Error fetching user roles:", rolesError.message);
-    }
-
-    const isAdmin = (roles || []).some(
-      (r: { role: string }) => r.role === "admin" || r.role === "super_admin",
-    );
-
-    if (!isAdmin) {
+    // Privileged check (admin/super_admin), supports DB roles + core-email allowlist.
+    const { isPrivileged } = await getPrivilegedFlags(supabaseClient, user.id, user.email);
+    if (!isPrivileged) {
       console.error(`User ${user.id} attempted to send push notification without admin role`);
       return new Response(
         JSON.stringify({ success: false, error: "Forbidden: Admin access required" }),

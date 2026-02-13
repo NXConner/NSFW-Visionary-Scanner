@@ -6,6 +6,7 @@ import {
   sendResendEmail,
 } from "../_shared/email.ts";
 import { buildRateLimitHeaders, enforceRateLimit } from "../_shared/rateLimit.ts";
+import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,15 +51,10 @@ serve(async req => {
     }
     userId = user.id;
 
-    // Require admin to send emails
-    const { data: roles } = await supabaseClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .limit(10);
-
-    const isAdmin = (roles || []).some((r: any) => r.role === "admin" || r.role === "super_admin");
-    if (!isAdmin) {
+    // Require privileged user (admin/super_admin) to send emails.
+    // Uses DB roles + core-email allowlist via shared helper.
+    const { isPrivileged } = await getPrivilegedFlags(supabaseClient, user.id, user.email);
+    if (!isPrivileged) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

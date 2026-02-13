@@ -1,9 +1,9 @@
 /**
  * Admin Health Panel
- * System health monitoring and performance metrics
+ * System health monitoring and performance metrics (real checks only)
  */
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,8 +13,6 @@ import {
   Activity,
   Server,
   Cpu,
-  HardDrive,
-  Wifi,
   Clock,
   CheckCircle,
   AlertTriangle,
@@ -23,90 +21,150 @@ import {
   TrendingUp,
   Zap,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
-interface ServiceStatus {
+type CheckStatus = "healthy" | "degraded" | "down";
+
+type HealthCheck = {
   name: string;
-  status: "healthy" | "degraded" | "down";
-  latency: number;
-  uptime: string;
-  lastCheck: string;
-}
+  status: CheckStatus;
+  latencyMs: number | null;
+  checkedAtIso: string;
+  detail?: string | null;
+};
 
-const services: ServiceStatus[] = [
-  { name: "API Server", status: "healthy", latency: 45, uptime: "99.99%", lastCheck: "1 min ago" },
-  { name: "Database", status: "healthy", latency: 12, uptime: "99.98%", lastCheck: "1 min ago" },
-  {
-    name: "Auth Service",
-    status: "healthy",
-    latency: 23,
-    uptime: "99.97%",
-    lastCheck: "1 min ago",
-  },
-  {
-    name: "File Storage",
-    status: "healthy",
-    latency: 156,
-    uptime: "99.95%",
-    lastCheck: "2 min ago",
-  },
-  { name: "Cache Server", status: "healthy", latency: 3, uptime: "99.99%", lastCheck: "1 min ago" },
-  {
-    name: "Email Service",
-    status: "degraded",
-    latency: 450,
-    uptime: "98.5%",
-    lastCheck: "3 min ago",
-  },
-  {
-    name: "Push Notifications",
-    status: "healthy",
-    latency: 89,
-    uptime: "99.9%",
-    lastCheck: "1 min ago",
-  },
-  { name: "Analytics", status: "healthy", latency: 34, uptime: "99.8%", lastCheck: "2 min ago" },
-];
+type RecentEvent = {
+  timeIso: string;
+  event: string;
+  type: "info" | "warning" | "success" | "error";
+};
+
+type HealthPayload = {
+  ok: true;
+  checkedAtIso: string;
+  env: {
+    resendConfigured: boolean;
+    stripeConfigured: boolean;
+    firebaseConfigured: boolean;
+    vapidConfigured: boolean;
+  };
+  checks: HealthCheck[];
+  recentEvents: RecentEvent[];
+};
 
 interface PerformanceMetric {
   name: string;
-  value: number;
-  max: number;
+  value: number | null;
+  max: number | null;
   unit: string;
   status: "good" | "warning" | "critical";
 }
 
 export function AdminHealthPanel() {
-  const [metrics, setMetrics] = useState<PerformanceMetric[]>([
-    { name: "CPU Usage", value: 42, max: 100, unit: "%", status: "good" },
-    { name: "Memory Usage", value: 68, max: 100, unit: "%", status: "good" },
-    { name: "Disk Usage", value: 54, max: 100, unit: "%", status: "good" },
-    { name: "Network I/O", value: 234, max: 1000, unit: "MB/s", status: "good" },
-  ]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [payload, setPayload] = useState<HealthPayload | null>(null);
+  const [roundTripMs, setRoundTripMs] = useState<number | null>(null);
 
-  const [recentEvents, setRecentEvents] = useState([
-    { time: "2 min ago", event: "Cache server restarted", type: "info" },
-    { time: "15 min ago", event: "Email service degraded - investigating", type: "warning" },
-    { time: "1 hour ago", event: "Scheduled backup completed", type: "success" },
-    { time: "2 hours ago", event: "API rate limit triggered for user", type: "info" },
-    { time: "5 hours ago", event: "Database failover successful", type: "success" },
-  ]);
+  const fetchHealth = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const started = performance.now();
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-system-health", { body: {} });
+      const elapsed = Math.max(0, Math.round(performance.now() - started));
+      setRoundTripMs(elapsed);
 
-  // Simulate real-time updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMetrics(prev =>
-        prev.map(m => ({
-          ...m,
-          value: Math.min(m.max, Math.max(0, m.value + (Math.random() - 0.5) * 10)),
-          status: m.value > 80 ? "critical" : m.value > 60 ? "warning" : "good",
-        })),
-      );
-    }, 5000);
-    return () => clearInterval(interval);
+      if (error) throw error;
+      if (!data || data.ok !== true) {
+        throw new Error(String((data as any)?.error ?? "Health check failed"));
+      }
+      setPayload(data as HealthPayload);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      logger.warn("AdminHealthPanel: health check failed", { error: msg });
+      setError(msg);
+      setPayload(null);
+      setRoundTripMs(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const healthyServices = services.filter(s => s.status === "healthy").length;
-  const degradedServices = services.filter(s => s.status === "degraded").length;
+  useEffect(() => {
+    void fetchHealth();
+  }, [fetchHealth]);
+
+  const checks = payload?.checks ?? [];
+  const recentEvents = payload?.recentEvents ?? [];
+
+  const totals = useMemo(() => {
+    const total = checks.length;
+    const healthy = checks.filter(c => c.status === "healthy").length;
+    const degraded = checks.filter(c => c.status === "degraded").length;
+    const down = checks.filter(c => c.status === "down").length;
+    return { total, healthy, degraded, down };
+  }, [checks]);
+
+  const avgLatencyMs = useMemo(() => {
+    const values = checks
+      .map(c => c.latencyMs)
+      .filter((v): v is number => typeof v === "number" && Number.isFinite(v) && v > 0);
+    if (!values.length) return null;
+    return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+  }, [checks]);
+
+  const systemStatus: { label: string; status: CheckStatus } = useMemo(() => {
+    if (totals.down > 0) return { label: "Down", status: "down" };
+    if (totals.degraded > 0) return { label: "Degraded", status: "degraded" };
+    return { label: "Operational", status: "healthy" };
+  }, [totals.degraded, totals.down]);
+
+  const byName = useMemo(() => {
+    const map = new Map<string, HealthCheck>();
+    for (const c of checks) map.set(c.name, c);
+    return map;
+  }, [checks]);
+
+  const metrics: PerformanceMetric[] = useMemo(() => {
+    const score = (ms: number | null): PerformanceMetric["status"] => {
+      if (ms == null) return "warning";
+      if (ms <= 400) return "good";
+      if (ms <= 1500) return "warning";
+      return "critical";
+    };
+
+    const db = byName.get("database")?.latencyMs ?? null;
+    const storage = byName.get("storage")?.latencyMs ?? null;
+    const analytics = byName.get("analytics")?.latencyMs ?? null;
+
+    return [
+      {
+        name: "Edge Round-trip",
+        value: roundTripMs,
+        max: 4000,
+        unit: "ms",
+        status: score(roundTripMs),
+      },
+      { name: "Database", value: db, max: 2000, unit: "ms", status: score(db) },
+      { name: "Storage", value: storage, max: 3000, unit: "ms", status: score(storage) },
+      { name: "Analytics", value: analytics, max: 2000, unit: "ms", status: score(analytics) },
+    ];
+  }, [byName, roundTripMs]);
+
+  const formatTimeAgo = useCallback((timeIso: string): string => {
+    const t = new Date(timeIso).getTime();
+    if (!Number.isFinite(t)) return "";
+    const deltaMs = Date.now() - t;
+    const mins = Math.floor(deltaMs / 60000);
+    if (mins <= 0) return "just now";
+    if (mins < 60) return `${mins} min ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} hr ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days === 1 ? "" : "s"} ago`;
+  }, []);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -143,9 +201,34 @@ export function AdminHealthPanel() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">System Status</p>
-                <p className="text-2xl font-bold text-success">Operational</p>
+                <p
+                  className={`text-2xl font-bold ${
+                    systemStatus.status === "healthy"
+                      ? "text-success"
+                      : systemStatus.status === "degraded"
+                        ? "text-warning"
+                        : "text-destructive"
+                  }`}
+                >
+                  {systemStatus.label}
+                </p>
+                {error ? (
+                  <p className="text-xs text-destructive mt-1 line-clamp-2">{error}</p>
+                ) : payload?.checkedAtIso ? (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Checked {formatTimeAgo(payload.checkedAtIso)}
+                  </p>
+                ) : null}
               </div>
-              <Activity className="h-8 w-8 text-success" />
+              <Activity
+                className={`h-8 w-8 ${
+                  systemStatus.status === "healthy"
+                    ? "text-success"
+                    : systemStatus.status === "degraded"
+                      ? "text-warning"
+                      : "text-destructive"
+                }`}
+              />
             </div>
           </CardContent>
         </Card>
@@ -155,7 +238,7 @@ export function AdminHealthPanel() {
               <div>
                 <p className="text-sm text-muted-foreground">Services Healthy</p>
                 <p className="text-2xl font-bold">
-                  {healthyServices}/{services.length}
+                  {totals.healthy}/{totals.total || 0}
                 </p>
               </div>
               <Server className="h-8 w-8 text-primary" />
@@ -166,9 +249,9 @@ export function AdminHealthPanel() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Avg Response Time</p>
+                <p className="text-sm text-muted-foreground">Avg Check Latency</p>
                 <p className="text-2xl font-bold">
-                  {Math.round(services.reduce((sum, s) => sum + s.latency, 0) / services.length)}ms
+                  {avgLatencyMs != null ? `${avgLatencyMs}ms` : "—"}
                 </p>
               </div>
               <Zap className="h-8 w-8 text-warning" />
@@ -179,8 +262,17 @@ export function AdminHealthPanel() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Uptime (30d)</p>
-                <p className="text-2xl font-bold text-success">99.95%</p>
+                <p className="text-sm text-muted-foreground">Providers Configured</p>
+                <p className="text-2xl font-bold">
+                  {payload
+                    ? [
+                        payload.env.resendConfigured,
+                        payload.env.stripeConfigured,
+                        payload.env.firebaseConfigured || payload.env.vapidConfigured,
+                      ].filter(Boolean).length
+                    : 0}
+                  /3
+                </p>
               </div>
               <TrendingUp className="h-8 w-8 text-success" />
             </div>
@@ -197,7 +289,12 @@ export function AdminHealthPanel() {
                 <Cpu className="h-5 w-5" />
                 Performance
               </CardTitle>
-              <Button variant="ghost" size="icon">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => void fetchHealth()}
+                disabled={loading}
+              >
                 <RefreshCw className="h-4 w-4" />
               </Button>
             </div>
@@ -208,22 +305,31 @@ export function AdminHealthPanel() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{metric.name}</span>
                   <span className={`text-sm font-bold ${getStatusColor(metric.status)}`}>
-                    {Math.round(metric.value)}
-                    {metric.unit}
+                    {metric.value == null ? "—" : `${Math.round(metric.value)}${metric.unit}`}
                   </span>
                 </div>
-                <Progress
-                  value={(metric.value / metric.max) * 100}
-                  className={`h-2 ${
-                    metric.status === "critical"
-                      ? "[&>div]:bg-destructive"
-                      : metric.status === "warning"
-                        ? "[&>div]:bg-warning"
-                        : ""
-                  }`}
-                />
+                {metric.value != null && metric.max != null ? (
+                  <Progress
+                    value={Math.max(0, Math.min(100, (metric.value / metric.max) * 100))}
+                    className={`h-2 ${
+                      metric.status === "critical"
+                        ? "[&>div]:bg-destructive"
+                        : metric.status === "warning"
+                          ? "[&>div]:bg-warning"
+                          : ""
+                    }`}
+                  />
+                ) : (
+                  <Progress value={0} className="h-2 opacity-30" />
+                )}
               </div>
             ))}
+            {loading && (
+              <div className="text-xs text-muted-foreground flex items-center gap-2">
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                Checking…
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -234,12 +340,14 @@ export function AdminHealthPanel() {
               <Server className="h-5 w-5" />
               Services Status
             </CardTitle>
-            <CardDescription>Real-time health monitoring of all services</CardDescription>
+            <CardDescription>
+              Live health checks via admin-only Edge Function (no mock/simulated data)
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[300px]">
               <div className="space-y-3">
-                {services.map(service => (
+                {(checks.length ? checks : []).map(service => (
                   <div
                     key={service.name}
                     className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
@@ -249,18 +357,18 @@ export function AdminHealthPanel() {
                       <div>
                         <p className="font-medium">{service.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          Last check: {service.lastCheck}
+                          {service.detail
+                            ? service.detail
+                            : `Checked ${formatTimeAgo(service.checkedAtIso)}`}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4 text-sm">
                       <div className="text-right">
-                        <p className="font-medium">{service.latency}ms</p>
+                        <p className="font-medium">
+                          {service.latencyMs != null ? `${service.latencyMs}ms` : "—"}
+                        </p>
                         <p className="text-xs text-muted-foreground">latency</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">{service.uptime}</p>
-                        <p className="text-xs text-muted-foreground">uptime</p>
                       </div>
                       <Badge
                         variant={
@@ -276,6 +384,11 @@ export function AdminHealthPanel() {
                     </div>
                   </div>
                 ))}
+                {!loading && !checks.length && (
+                  <div className="text-sm text-muted-foreground p-3 rounded-lg bg-muted/30">
+                    No health checks available.
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </CardContent>
@@ -294,20 +407,32 @@ export function AdminHealthPanel() {
         <CardContent>
           <div className="space-y-3">
             {recentEvents.map((event, i) => (
-              <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
+              <div
+                key={`${event.timeIso}-${i}`}
+                className="flex items-center gap-4 p-3 rounded-lg bg-muted/50"
+              >
                 {event.type === "success" ? (
                   <CheckCircle className="h-5 w-5 text-success" />
                 ) : event.type === "warning" ? (
                   <AlertTriangle className="h-5 w-5 text-warning" />
+                ) : event.type === "error" ? (
+                  <XCircle className="h-5 w-5 text-destructive" />
                 ) : (
                   <Activity className="h-5 w-5 text-primary" />
                 )}
                 <div className="flex-1">
                   <p className="font-medium">{event.event}</p>
                 </div>
-                <span className="text-sm text-muted-foreground">{event.time}</span>
+                <span className="text-sm text-muted-foreground">
+                  {formatTimeAgo(event.timeIso)}
+                </span>
               </div>
             ))}
+            {!loading && recentEvents.length === 0 && (
+              <div className="text-sm text-muted-foreground p-3 rounded-lg bg-muted/30">
+                No recent events available.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

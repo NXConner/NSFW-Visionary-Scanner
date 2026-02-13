@@ -35,11 +35,6 @@ import { SUPPORT_CONTACT_EMAIL, PRIVACY_CONTACT_EMAIL, DPO_CONTACT_EMAIL } from 
 import { useAdminMetrics } from "@/hooks/useAdminMetrics";
 import { useAuth } from "@/contexts/AuthContext";
 
-// Admin email whitelist from environment
-const ADMIN_SUPER_EMAIL = import.meta.env.VITE_ADMIN_SUPER_EMAIL || "n8ter8@gmail.com";
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "butterflii18@gmail.com";
-const ADMIN_EMAILS = [ADMIN_SUPER_EMAIL, ADMIN_EMAIL].filter(Boolean).map(e => e.toLowerCase());
-
 const ContentModerationPanel = lazy(() =>
   import("@/components/admin/ContentModerationPanel").then(m => ({
     default: m.ContentModerationPanel,
@@ -149,14 +144,12 @@ export interface AdminDashboardProps {
 
 export default function AdminDashboard({ initialSection }: AdminDashboardProps) {
   // Auth guard - redirect non-admin users
-  const { user, loading: authLoading, isSuperAdmin } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
 
   const isAuthorized = useMemo(() => {
-    if (!user?.email) return false;
-    const userEmail = user.email.toLowerCase();
-    // Allow if user is super admin OR email is in whitelist
-    return isSuperAdmin || ADMIN_EMAILS.includes(userEmail);
-  }, [user?.email, isSuperAdmin]);
+    // Centralized privileged resolution (roles + core-email allowlist) lives in AuthContext.
+    return Boolean(isAdmin);
+  }, [isAdmin]);
 
   const allowedSections = useMemo(
     () =>
