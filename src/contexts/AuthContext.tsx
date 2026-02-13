@@ -19,8 +19,11 @@ import {
   getLastUserId,
 } from "@/lib/auth/userPersistence";
 import { EmailService } from "@/lib/email";
-import { isEmailPreVerified } from "@/lib/email/emailConfig";
-import { emitSupabaseInvalidApiKeyEvent, isInvalidSupabaseApiKeyError } from "@/integrations/supabase/events";
+import { getEmailRedirectUrl, isEmailPreVerified } from "@/lib/email/emailConfig";
+import {
+  emitSupabaseInvalidApiKeyEvent,
+  isInvalidSupabaseApiKeyError,
+} from "@/integrations/supabase/events";
 
 interface AuthContextType {
   user: User | null;
@@ -262,7 +265,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const signUp = useCallback(async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/auth?verified=true`;
+    const redirectUrl = getEmailRedirectUrl("/auth?verified=true");
     const { error } = await supabase.auth.signUp({
       email,
       password,
