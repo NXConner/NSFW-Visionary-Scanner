@@ -376,27 +376,48 @@ export const ja: TranslationDictionary = {
   "partnerSync.recommendations.datesTitle": "デートナイト",
   "partnerSync.recommendations.positionsTitle": "ポジション",
   "partnerSync.recommendations.safetyTitle": "安全と快適さ",
-  "partnerSync.recommendations.pings.1": "ピンは短く具体的にして素早く返せるように。",
-  "partnerSync.recommendations.pings.2": "遊び心とロマンチックさを混ぜて疲れを防ぐ。",
+  "partnerSync.recommendations.pings.1":
+    "ピンは短く具体的にして素早く返せるように。",
+  "partnerSync.recommendations.pings.2":
+    "遊び心とロマンチックさを混ぜて疲れを防ぐ。",
   "partnerSync.recommendations.pings.3": "テーマで期待を合わせる。",
-  "partnerSync.recommendations.pings.4": "返信で関心と境界を確認する。",
-  "partnerSync.recommendations.pings.5": "パートナーの静かな時間に合わせて送信。",
-  "partnerSync.recommendations.pings.6": "リアクションで素早く反応する。",
-  "partnerSync.recommendations.dates.1": "夜をセグメント（外出、食事、家）で計画する。",
-  "partnerSync.recommendations.dates.2": "避けたい妨げを事前に共有する。",
-  "partnerSync.recommendations.dates.3": "ペースと快適さの短いチェックインを入れる。",
-  "partnerSync.recommendations.dates.4": "時間や場所の変更に備えた予備案を用意。",
-  "partnerSync.recommendations.dates.5": "移動や予約のリマインダーを使う。",
-  "partnerSync.recommendations.dates.6": "デート後に振り返りを記録して改善。",
-  "partnerSync.recommendations.positions.1": "まず共同の選択、その後パートナーの選択を追加。",
-  "partnerSync.recommendations.positions.2": "各提案の好みをメモで伝える。",
-  "partnerSync.recommendations.positions.3": "難易度をバランスよく組み合わせる。",
-  "partnerSync.recommendations.positions.4": "試したポジションをマークして新鮮に保つ。",
-  "partnerSync.recommendations.positions.5": "安全チェックリストと境界を先に確認。",
-  "partnerSync.recommendations.positions.6": "交換提案で素早く代替を調整。",
-  "partnerSync.recommendations.safety.1": "開始前に同意と境界を確認。",
-  "partnerSync.recommendations.safety.2": "停止/一時停止ワードを決めて確認する。",
-  "partnerSync.recommendations.safety.3": "アフターケアや落ち着く時間を確保。",
-  "partnerSync.recommendations.safety.4": "場所の詳細はプライバシー設定で管理。",
+  "partnerSync.recommendations.pings.4":
+    "返信で関心と境界を確認する。",
+  "partnerSync.recommendations.pings.5":
+    "パートナーの静かな時間に合わせて送信。",
+  "partnerSync.recommendations.pings.6":
+    "リアクションで素早く反応する。",
+  "partnerSync.recommendations.dates.1":
+    "夜をセグメント（外出、食事、家）で計画する。",
+  "partnerSync.recommendations.dates.2":
+    "避けたい妨げを事前に共有する。",
+  "partnerSync.recommendations.dates.3":
+    "ペースと快適さの短いチェックインを入れる。",
+  "partnerSync.recommendations.dates.4":
+    "時間や場所の変更に備えた予備案を用意。",
+  "partnerSync.recommendations.dates.5":
+    "移動や予約のリマインダーを使う。",
+  "partnerSync.recommendations.dates.6":
+    "デート後に振り返りを記録して改善。",
+  "partnerSync.recommendations.positions.1":
+    "まず共同の選択、その後パートナーの選択を追加。",
+  "partnerSync.recommendations.positions.2":
+    "各提案の好みをメモで伝える。",
+  "partnerSync.recommendations.positions.3":
+    "難易度をバランスよく組み合わせる。",
+  "partnerSync.recommendations.positions.4":
+    "試したポジションをマークして新鮮に保つ。",
+  "partnerSync.recommendations.positions.5":
+    "安全チェックリストと境界を先に確認。",
+  "partnerSync.recommendations.positions.6":
+    "交換提案で素早く代替を調整。",
+  "partnerSync.recommendations.safety.1":
+    "開始前に同意と境界を確認。",
+  "partnerSync.recommendations.safety.2":
+    "停止/一時停止ワードを決めて確認する。",
+  "partnerSync.recommendations.safety.3":
+    "アフターケアや落ち着く時間を確保。",
+  "partnerSync.recommendations.safety.4":
+    "場所の詳細はプライバシー設定で管理。",
   "partnerSync.preview.subtitle": "空の状態とレイアウト確認のプレビュー。",
 };

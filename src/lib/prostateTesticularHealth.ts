@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 import { fromExtended } from "@/lib/supabaseExtensions";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = { from: (t: string) => fromExtended(t as any) };
 
 export interface EducationContent {

@@ -27,30 +27,22 @@ import { DLCProvider } from "@/dlc/context/DLCContext";
 import { useScrollCssVars } from "@/hooks/useScrollCssVars";
 import { useAnalytics } from "@/lib/analytics";
 import { BootWatchdog } from "@/components/BootWatchdog";
-import { SupabaseConfigGate } from "@/components/SupabaseConfigGate";
-import { markAppInteractiveAndHideStaticLoader } from "@/lib/boot/staticLoader";
-import { SupabaseApiKeyFixer } from "@/components/SupabaseApiKeyFixer";
 import { bootstrapAddons } from "@/addons";
 import { RouteLoadingFallback } from "@/components/LoadingFallback";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { AppCommandPalette } from "@/components/commandPalette";
 import { KeyboardShortcutsDialog } from "@/components/keyboardShortcuts";
+import { ScrollToTopButton } from "@/components/navigation/ScrollToTopButton";
 import TabDeepLinkRedirect from "@/routes/TabDeepLinkRedirect";
 import LegacyAdminRedirect from "@/routes/LegacyAdminRedirect";
 import { isAdultContentEnabled } from "@/lib/featureFlags";
 import { BUILD_ALLOW_ADULT_BUNDLE } from "@/lib/buildFlags";
-import NotFound from "./pages/NotFound";
 
 // Lazy load all pages for better code splitting
 const Index = lazy(() => import("./pages/Index"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const DLCStorePage = lazy(() => import("./pages/DLCStorePage"));
-const LazyNotFoundFallback = lazy(() => Promise.resolve({ default: NotFound }));
-const LazyScrollToTopButton = lazy(() =>
-  import("@/components/navigation/ScrollToTopButton").then(m => ({
-    default: m.ScrollToTopButton,
-  })),
-);
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Build-time flag: only ship direct-download deep-link routes outside stores.
 // Store builds should not include optional DLC deep-link pages that may reference adult gating.
@@ -60,12 +52,7 @@ const queryClient = new QueryClient();
 
 // Register addon contributions as early as possible so the DLC manager can see
 // fallback packages/manifests/modules during initialization.
-try {
-  bootstrapAddons();
-} catch (error) {
-  // Never let addon bootstrap failures block first render on mobile.
-  console.error("[App] Addon bootstrap failed (continuing without addon contributions):", error);
-}
+bootstrapAddons();
 
 const Auth = lazy(() => import("./pages/Auth"));
 const AuthCallback = lazy(() =>
@@ -73,7 +60,7 @@ const AuthCallback = lazy(() =>
 );
 const Pricing = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/Pricing"))
-  : LazyNotFoundFallback;
+  : lazy(() => import("./pages/NotFound"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
@@ -104,43 +91,43 @@ const ScannerSettingsScreen = lazy(() =>
 );
 const NSFWDashboardPage = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() => import("./pages/NSFWDashboardPage"))
-  : LazyNotFoundFallback;
+  : lazy(() => import("./pages/NotFound"));
 const NSFWTopicsPage = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() => import("./pages/NSFWTopicsPage"))
-  : LazyNotFoundFallback;
+  : lazy(() => import("./pages/NotFound"));
 const NSFWAddOnsLandingPage = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() => import("./pages/NSFWAddOnsLandingPage"))
-  : LazyNotFoundFallback;
+  : lazy(() => import("./pages/NotFound"));
 const PositionsDLCPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/PositionsDLCPage"))
-  : LazyNotFoundFallback;
+  : lazy(() => import("./pages/NotFound"));
 const VideosDLCPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/VideosDLCPage"))
-  : LazyNotFoundFallback;
+  : lazy(() => import("./pages/NotFound"));
 const PositionsDLCDetailPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/PositionsDLCDetailPage"))
-  : LazyNotFoundFallback;
+  : lazy(() => import("./pages/NotFound"));
 const VideosDLCDetailPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/VideosDLCDetailPage"))
-  : LazyNotFoundFallback;
+  : lazy(() => import("./pages/NotFound"));
 const AnalyticsDLCPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/AnalyticsDLCPage"))
-  : LazyNotFoundFallback;
+  : lazy(() => import("./pages/NotFound"));
 const CommunityDLCPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/CommunityDLCPage"))
-  : LazyNotFoundFallback;
+  : lazy(() => import("./pages/NotFound"));
 const AdvancedDLCPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/AdvancedDLCPage"))
-  : LazyNotFoundFallback;
+  : lazy(() => import("./pages/NotFound"));
 const AIIntimacyCoachDLCPage = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() => import("./pages/dlc/AIIntimacyCoachDLCPage"))
-  : LazyNotFoundFallback;
+  : lazy(() => import("./pages/NotFound"));
 const IntimateDateIdeasDLCPage = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/dlc/IntimateDateIdeasDLCPage"))
-  : LazyNotFoundFallback;
+  : lazy(() => import("./pages/NotFound"));
 const NewDLCShowcase = BUILD_ALLOW_DIRECT_ROUTES
   ? lazy(() => import("./pages/NewDLCShowcase"))
-  : LazyNotFoundFallback;
+  : lazy(() => import("./pages/NotFound"));
 const GrowersVsShowersPage = lazy(() => import("./pages/growersVsShowers"));
 const MeasurementsVsAverageMenPage = lazy(() => import("./pages/measurementsVsAverageMen"));
 
@@ -168,9 +155,8 @@ const AppContent = () => {
   const allowAdultRoutes = BUILD_ALLOW_ADULT_BUNDLE && allowAdult;
 
   useEffect(() => {
-    // Used by boot diagnostics + watchdog logic to detect that React has mounted.
-    // Also hides the static HTML loader once React is ready to paint UI.
-    markAppInteractiveAndHideStaticLoader();
+    // Used by BootWatchdog + boot code to detect that React has mounted.
+    window.__APP_INTERACTIVE__ = true;
   }, []);
 
   return (
@@ -182,15 +168,13 @@ const AppContent = () => {
       <PerformanceMonitor />
       <AppCommandPalette />
       <KeyboardShortcutsDialog />
-      <Suspense fallback={null}>
-        <LazyScrollToTopButton />
-      </Suspense>
+      <ScrollToTopButton />
       <RouteAnalytics />
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
           {/* Landing page at root */}
           <Route path="/" element={<LandingPage />} />
-
+          
           {/* Main app at /app */}
           <Route
             path="/app"
@@ -331,30 +315,27 @@ const AppContent = () => {
 const App = () => (
   <ErrorBoundary>
     <BootWatchdog timeoutMs={7000} />
-    <SupabaseApiKeyFixer />
-    <SupabaseConfigGate>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <I18nProvider>
-            <SettingsProvider>
-              <DataProvider>
-                <DLCProvider>
-                  <TooltipProvider>
-                    <Toaster />
-                    <Sonner />
-                    <BrowserRouter>
-                      <AppLock>
-                        <AppContent />
-                      </AppLock>
-                    </BrowserRouter>
-                  </TooltipProvider>
-                </DLCProvider>
-              </DataProvider>
-            </SettingsProvider>
-          </I18nProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </SupabaseConfigGate>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <I18nProvider>
+          <SettingsProvider>
+            <DataProvider>
+              <DLCProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter>
+                    <AppLock>
+                      <AppContent />
+                    </AppLock>
+                  </BrowserRouter>
+                </TooltipProvider>
+              </DLCProvider>
+            </DataProvider>
+          </SettingsProvider>
+        </I18nProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   </ErrorBoundary>
 );
 

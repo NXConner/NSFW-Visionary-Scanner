@@ -4,13 +4,7 @@ import { fromExtended } from "@/lib/supabaseExtensions";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 
-const PERMISSION_TYPES = [
-  "scans",
-  "wellness_scores",
-  "diary_entries",
-  "goals",
-  "progress_photos",
-] as const;
+const PERMISSION_TYPES = ["scans", "wellness_scores", "diary_entries", "goals", "progress_photos"] as const;
 
 export type PartnerPermissionType = (typeof PERMISSION_TYPES)[number];
 

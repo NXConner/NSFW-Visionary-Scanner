@@ -20,11 +20,7 @@ import {
   THOUGHT_PING_PRIORITIES,
   THOUGHT_PING_TONE_TAGS,
 } from "@/lib/partnerSync";
-import type {
-  ThoughtPingIntensity,
-  ThoughtPingPriority,
-  ThoughtPingTemplate,
-} from "@/lib/partnerSync";
+import type { ThoughtPingIntensity, ThoughtPingPriority, ThoughtPingTemplate } from "@/lib/partnerSync";
 
 type ThoughtPingComposerProps = {
   partnerId: string | null;
@@ -350,9 +346,7 @@ export function ThoughtPingComposer({
             />
             <div>
               <Label className="text-sm">{t("partnerSync.pings.readReceipt")}</Label>
-              <p className="text-xs text-muted-foreground">
-                {t("partnerSync.pings.readReceiptHint")}
-              </p>
+              <p className="text-xs text-muted-foreground">{t("partnerSync.pings.readReceiptHint")}</p>
             </div>
           </div>
         </div>

@@ -91,10 +91,8 @@ export async function updatePrivacySettings(settings: Partial<PrivacySettings>):
     const current = await getPrivacySettings();
     const updated = { ...current, ...settings };
 
-    const { error } = await fromExtended("user_privacy_settings").upsert(
-      { user_id: auth.user.id, ...updated },
-      { onConflict: "user_id" },
-    );
+    const { error } = await fromExtended("user_privacy_settings")
+      .upsert({ user_id: auth.user.id, ...updated }, { onConflict: "user_id" });
 
     if (error) {
       logger.error("updatePrivacySettings failed", { error: error.message });

@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fromExtended } from "@/lib/supabaseExtensions";
 import { logger } from "./logger";
 import { toast } from "sonner";
+import type { VideoQuality } from "@/lib/offlineMedia/videoCache";
 import { downloadNSFWVideoOffline } from "@/lib/nsfwVideoDownloads";
 
 // ==================== NSFW Video Content ====================
@@ -25,7 +26,6 @@ export interface NSFWVideoContent {
     | "beginner";
   video_url_sd: string | null;
   video_url_hd: string | null;
-  video_url_2k: string | null;
   video_url_4k: string | null;
   video_duration_seconds: number | null;
   thumbnail_url: string | null;
@@ -59,11 +59,9 @@ export interface NSFWVideoContent {
 export async function getNSFWVideos(
   category?: NSFWVideoContent["category"],
   difficultyLevel?: NSFWVideoContent["difficulty_level"],
-  contentRating?: NSFWVideoContent["content_rating"],
 ): Promise<NSFWVideoContent[]> {
   try {
-    let query = supabase
-      .from("nsfw_video_content")
+    let query = fromExtended("nsfw_video_content")
       .select("*")
       .eq("is_approved", true)
       .eq("is_active", true)
@@ -76,22 +74,17 @@ export async function getNSFWVideos(
     if (difficultyLevel) {
       query = query.eq("difficulty_level", difficultyLevel);
     }
-    if (contentRating) {
-      query = query.eq("content_rating", contentRating);
-    }
 
     const { data, error } = await query;
 
     if (error) {
-      logger.error("Error fetching videos", { error: error.message });
+      logger.error("Error fetching videos:", { error: error.message });
       return [];
     }
 
     return (data || []) as NSFWVideoContent[];
   } catch (error) {
-    logger.error("Error in getNSFWVideos", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error("Error in getNSFWVideos:", { error });
     return [];
   }
 }
@@ -119,6 +112,16 @@ export interface NSFWVideoPlaylist {
   updated_at: string;
 }
 
+export type NSFWVideoPlaylistCreate = {
+  playlist_name: string;
+  description?: string | null;
+  category?: string | null;
+  video_ids?: string[];
+  is_public?: boolean;
+  auto_play_next?: boolean;
+  shuffle_enabled?: boolean;
+};
+
 export async function createVideoPlaylist(
   playlistName: string,
   videoIds: string[],
@@ -134,8 +137,7 @@ export async function createVideoPlaylist(
       return null;
     }
 
-    const { data, error } = await supabase
-      .from("nsfw_video_playlists")
+    const { data, error } = await fromExtended("nsfw_video_playlists")
       .insert({
         user_id: user.id,
         playlist_name: playlistName,
@@ -148,7 +150,7 @@ export async function createVideoPlaylist(
       .single();
 
     if (error) {
-      logger.error("Error creating playlist", { error: error.message });
+      logger.error("Error creating playlist:", { error: error.message });
       toast.error("Failed to create playlist");
       return null;
     }
@@ -156,164 +158,206 @@ export async function createVideoPlaylist(
     toast.success("Playlist created!");
     return data as NSFWVideoPlaylist;
   } catch (error) {
-    logger.error("Error in createVideoPlaylist", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error("Error in createVideoPlaylist:", { error });
+    return null;
+  }
+}
+
+async function computePlaylistDurationSeconds(videoIds: string[]): Promise<number | null> {
+  try {
+    if (!Array.isArray(videoIds) || videoIds.length === 0) return 0;
+    const { data, error } = await fromExtended("nsfw_video_content")
+      .select("id, video_duration_seconds")
+      .in("id", videoIds);
+
+    if (error) return null;
+
+    const map = new Map<string, number>();
+    for (const row of (data || []) as Array<{
+      id: string;
+      video_duration_seconds: number | null;
+    }>) {
+      map.set(String(row.id), Number(row.video_duration_seconds ?? 0));
+    }
+    let total = 0;
+    for (const id of videoIds) total += map.get(id) ?? 0;
+    return total;
+  } catch {
     return null;
   }
 }
 
 export async function getVideoPlaylists(params?: {
-  scope?: "mine" | "public";
+  scope?: "mine" | "public" | "all";
   limit?: number;
 }): Promise<NSFWVideoPlaylist[]> {
   try {
-    const scope = params?.scope || "mine";
-    const limit = params?.limit || 200;
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const scope = params?.scope ?? "mine";
+    const limit = Math.max(1, Math.min(200, Number(params?.limit ?? 50)));
+
+    const { data: auth } = await supabase.auth.getUser();
+    const user = auth.user;
 
     let query = fromExtended("nsfw_video_playlists")
       .select("*")
-      .order("is_featured", { ascending: false })
       .order("updated_at", { ascending: false })
       .limit(limit);
 
-    if (scope === "mine") {
+    if (scope === "public" || (!user && scope !== "mine")) {
+      query = query.eq("is_public", true);
+    } else if (scope === "mine") {
       if (!user) return [];
       query = query.eq("user_id", user.id);
-    } else {
-      query = query.eq("is_public", true);
+    } else if (scope === "all") {
+      if (user) query = query.or(`user_id.eq.${user.id},is_public.eq.true`);
+      else query = query.eq("is_public", true);
     }
 
     const { data, error } = await query;
     if (error) {
-      logger.error("Error loading playlists", { error: error.message });
+      logger.error("Error fetching playlists:", { error: error.message });
       return [];
     }
     return (data || []) as NSFWVideoPlaylist[];
   } catch (error) {
-    logger.error("Error in getVideoPlaylists", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error("Error in getVideoPlaylists:", { error });
     return [];
   }
 }
 
 export async function updateVideoPlaylist(
   playlistId: string,
-  updates: Partial<
-    Pick<
-      NSFWVideoPlaylist,
-      | "playlist_name"
-      | "description"
-      | "category"
-      | "video_ids"
-      | "auto_play_next"
-      | "shuffle_enabled"
-      | "is_public"
-    >
-  >,
+  updates: Partial<NSFWVideoPlaylistCreate>,
 ): Promise<NSFWVideoPlaylist | null> {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("Please sign in to update playlists");
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) {
+      toast.error("Please sign in");
       return null;
     }
 
-    const payload: Record<string, unknown> = {
-      updated_at: new Date().toISOString(),
-    };
-
-    if (typeof updates.playlist_name === "string") payload.playlist_name = updates.playlist_name;
-    if (typeof updates.description !== "undefined")
-      payload.description = updates.description || null;
-    if (typeof updates.category !== "undefined") payload.category = updates.category || null;
-    if (typeof updates.is_public === "boolean") payload.is_public = updates.is_public;
-    if (typeof updates.auto_play_next === "boolean")
-      payload.auto_play_next = updates.auto_play_next;
-    if (typeof updates.shuffle_enabled === "boolean")
-      payload.shuffle_enabled = updates.shuffle_enabled;
-    if (Array.isArray(updates.video_ids)) {
-      payload.video_ids = updates.video_ids;
-      payload.video_count = updates.video_ids.length;
+    const patch: Record<string, unknown> = {};
+    if (updates.playlist_name != null) patch.playlist_name = updates.playlist_name;
+    if (updates.description !== undefined) patch.description = updates.description ?? null;
+    if (updates.category !== undefined) patch.category = updates.category ?? null;
+    if (updates.is_public !== undefined) patch.is_public = Boolean(updates.is_public);
+    if (updates.auto_play_next !== undefined)
+      patch.auto_play_next = Boolean(updates.auto_play_next);
+    if (updates.shuffle_enabled !== undefined)
+      patch.shuffle_enabled = Boolean(updates.shuffle_enabled);
+    if (updates.video_ids !== undefined) {
+      const ids = Array.isArray(updates.video_ids) ? updates.video_ids.map(String) : [];
+      patch.video_ids = ids;
+      patch.video_count = ids.length;
+      const dur = await computePlaylistDurationSeconds(ids);
+      patch.total_duration_seconds = dur;
     }
+    patch.updated_at = new Date().toISOString();
 
     const { data, error } = await fromExtended("nsfw_video_playlists")
-      .update(payload)
+      .update(patch)
       .eq("id", playlistId)
-      .eq("user_id", user.id)
-      .select()
+      .select("*")
       .single();
 
     if (error) {
-      logger.error("Error updating playlist", { error: error.message });
+      logger.error("Error updating playlist:", { error: error.message });
       toast.error("Failed to update playlist");
       return null;
     }
-
     return data as NSFWVideoPlaylist;
   } catch (error) {
-    logger.error("Error in updateVideoPlaylist", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error("Error in updateVideoPlaylist:", { error });
+    toast.error("Failed to update playlist");
     return null;
   }
 }
 
 export async function deleteVideoPlaylist(playlistId: string): Promise<boolean> {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("Please sign in to delete playlists");
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) {
+      toast.error("Please sign in");
       return false;
     }
 
     const { error } = await fromExtended("nsfw_video_playlists")
       .delete()
-      .eq("id", playlistId)
-      .eq("user_id", user.id);
+      .eq("id", playlistId);
     if (error) {
-      logger.error("Error deleting playlist", { error: error.message });
+      logger.error("Error deleting playlist:", { error: error.message });
       toast.error("Failed to delete playlist");
       return false;
     }
     toast.success("Playlist deleted");
     return true;
   } catch (error) {
-    logger.error("Error in deleteVideoPlaylist", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error("Error in deleteVideoPlaylist:", { error });
+    toast.error("Failed to delete playlist");
     return false;
+  }
+}
+
+export async function addVideoToPlaylist(
+  playlistId: string,
+  videoId: string,
+): Promise<NSFWVideoPlaylist | null> {
+  try {
+    const { data, error } = await fromExtended("nsfw_video_playlists")
+      .select("id, video_ids")
+      .eq("id", playlistId)
+      .maybeSingle();
+    if (error || !data) return null;
+    const current = Array.isArray((data as any).video_ids)
+      ? ((data as any).video_ids as string[]).map(String)
+      : [];
+    if (current.includes(String(videoId))) return null;
+    const next = [...current, String(videoId)];
+    return await updateVideoPlaylist(playlistId, { video_ids: next });
+  } catch {
+    return null;
+  }
+}
+
+export async function removeVideoFromPlaylist(
+  playlistId: string,
+  videoId: string,
+): Promise<NSFWVideoPlaylist | null> {
+  try {
+    const { data, error } = await fromExtended("nsfw_video_playlists")
+      .select("id, video_ids")
+      .eq("id", playlistId)
+      .maybeSingle();
+    if (error || !data) return null;
+    const current = Array.isArray((data as any).video_ids)
+      ? ((data as any).video_ids as string[]).map(String)
+      : [];
+    const next = current.filter(id => id !== String(videoId));
+    return await updateVideoPlaylist(playlistId, { video_ids: next });
+  } catch {
+    return null;
   }
 }
 
 export async function getPlaylistVideos(playlist: NSFWVideoPlaylist): Promise<NSFWVideoContent[]> {
   try {
-    const ids = (playlist.video_ids || []).map(String);
+    const ids = Array.isArray(playlist.video_ids) ? playlist.video_ids.map(String) : [];
     if (ids.length === 0) return [];
 
     const { data, error } = await fromExtended("nsfw_video_content")
       .select("*")
-      .in("id", ids)
-      .eq("is_approved", true)
-      .eq("is_active", true);
+      .in("id", ids);
+
     if (error) {
-      logger.error("Error loading playlist videos", { error: error.message });
+      logger.error("Error fetching playlist videos:", { error: error.message });
       return [];
     }
-    const byId = new Map((data || []).map((v: any) => [String(v.id), v]));
-    return ids.map(id => byId.get(id)).filter(Boolean) as NSFWVideoContent[];
+
+    const rows = (data || []) as NSFWVideoContent[];
+    const order = new Map<string, number>(ids.map((id, idx) => [id, idx]));
+    return rows.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
   } catch (error) {
-    logger.error("Error in getPlaylistVideos", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error("Error in getPlaylistVideos:", { error });
     return [];
   }
 }
@@ -329,7 +373,7 @@ export interface NSFWVideoProgress {
   completion_percentage: number;
   is_completed: boolean;
   playback_speed: number;
-  quality_preference: "sd" | "hd" | "2k" | "4k" | "auto";
+  quality_preference: "sd" | "hd" | "4k" | "auto";
   watched_at: string;
   completed_at: string | null;
   last_position_updated_at: string;
@@ -356,7 +400,7 @@ export async function updateVideoProgress(
           )
         : 0;
 
-    const { error } = await supabase.from("nsfw_video_progress").upsert(
+    const { error } = await fromExtended("nsfw_video_progress").upsert(
       {
         video_id: videoId,
         user_id: user.id,
@@ -372,15 +416,13 @@ export async function updateVideoProgress(
     );
 
     if (error) {
-      logger.error("Error updating progress", { error: error.message });
+      logger.error("Error updating progress:", { error: error.message });
       return false;
     }
 
     return true;
   } catch (error) {
-    logger.error("Error in updateVideoProgress", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error("Error in updateVideoProgress:", { error });
     return false;
   }
 }
@@ -407,7 +449,7 @@ export interface NSFWVideoDownload {
 export async function requestVideoDownload(
   videoId: string,
   quality: NSFWVideoDownload["quality"],
-  options?: { onProgress?: (progressPct: number) => void },
+  onProgress?: (progress: number) => void,
 ): Promise<NSFWVideoDownload | null> {
   try {
     const {
@@ -418,39 +460,32 @@ export async function requestVideoDownload(
       return null;
     }
 
-    // Offline downloads are handled client-side (secure signed URL -> download -> cache -> upsert row).
     const result = await downloadNSFWVideoOffline({
       videoId,
-      quality,
-      onProgress: p => options?.onProgress?.(p.progress),
+      quality: quality as VideoQuality,
+      onProgress: p => onProgress?.(p.progress),
     });
 
     if (!result.success) {
-      toast.error(result.error || "Failed to save offline");
+      toast.error(result.error || "Failed to download");
       return null;
     }
 
-    // Return the latest download row for this video+quality.
-    const { data, error } = await fromExtended("nsfw_video_downloads")
+    toast.success("Saved for offline");
+
+    // Return latest download row
+    const { data: downloads, error: fetchError } = await fromExtended("nsfw_video_downloads")
       .select("*")
       .eq("user_id", user.id)
       .eq("video_id", videoId)
       .eq("quality", quality)
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
 
-    if (error) {
-      logger.error("Error fetching download row", { error: error.message });
-      return null;
-    }
-
-    toast.success("Saved for offline use");
-    return (data || null) as NSFWVideoDownload | null;
+    if (fetchError) return null;
+    return (downloads?.[0] ?? null) as NSFWVideoDownload | null;
   } catch (error) {
-    logger.error("Error in requestVideoDownload", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error("Error in requestVideoDownload:", { error });
     return null;
   }
 }
@@ -462,22 +497,19 @@ export async function getVideoDownloads(): Promise<NSFWVideoDownload[]> {
     } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const { data, error } = await supabase
-      .from("nsfw_video_downloads")
+    const { data, error } = await fromExtended("nsfw_video_downloads")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) {
-      logger.error("Error fetching downloads", { error: error.message });
+      logger.error("Error fetching downloads:", { error: error.message });
       return [];
     }
 
     return (data || []) as NSFWVideoDownload[];
   } catch (error) {
-    logger.error("Error in getVideoDownloads", {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error("Error in getVideoDownloads:", { error });
     return [];
   }
 }

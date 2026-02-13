@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 12+ Data Extraction Rules - Security Hardened
+    Controls what data can be backed up or transferred to new devices
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Include general data -->
+        <include domain="sharedpref" path="." />
+        <include domain="database" path="." />
+        <include domain="file" path="." />
+        
+        <!-- Exclude sensitive data from cloud backups -->
+        <exclude domain="sharedpref" path="auth_tokens.xml" />
+        <exclude domain="sharedpref" path="secure_storage.xml" />
+        <exclude domain="sharedpref" path="device_id.xml" />
+        <exclude domain="sharedpref" path="license_data.xml" />
+        <exclude domain="database" path="secure_*.db" />
+        <exclude domain="file" path="cache/" />
+        <exclude domain="file" path="no_backup/" />
+    </cloud-backup>
+    
+    <device-transfer>
+        <!-- Include for device-to-device transfer -->
+        <include domain="sharedpref" path="." />
+        <include domain="database" path="." />
+        <include domain="file" path="." />
+        
+        <!-- Exclude sensitive credentials from transfers -->
+        <exclude domain="sharedpref" path="auth_tokens.xml" />
+        <exclude domain="sharedpref" path="secure_storage.xml" />
+        <exclude domain="sharedpref" path="device_id.xml" />
+        <exclude domain="file" path="no_backup/" />
+    </device-transfer>
+</data-extraction-rules>
+

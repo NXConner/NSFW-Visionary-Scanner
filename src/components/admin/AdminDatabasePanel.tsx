@@ -35,48 +35,12 @@ interface TableInfo {
 const tables: TableInfo[] = [
   { name: "users", rows: 12543, size: "45.2 MB", lastModified: "2 min ago", status: "healthy" },
   { name: "scans", rows: 45678, size: "128.5 MB", lastModified: "5 min ago", status: "healthy" },
-  {
-    name: "measurements",
-    rows: 89234,
-    size: "256.8 MB",
-    lastModified: "1 min ago",
-    status: "healthy",
-  },
-  {
-    name: "dlc_purchases",
-    rows: 3456,
-    size: "12.3 MB",
-    lastModified: "15 min ago",
-    status: "healthy",
-  },
-  {
-    name: "habit_entries",
-    rows: 156789,
-    size: "89.4 MB",
-    lastModified: "3 min ago",
-    status: "healthy",
-  },
-  {
-    name: "forum_posts",
-    rows: 23456,
-    size: "67.8 MB",
-    lastModified: "10 min ago",
-    status: "warning",
-  },
-  {
-    name: "notifications",
-    rows: 78901,
-    size: "34.2 MB",
-    lastModified: "1 min ago",
-    status: "healthy",
-  },
-  {
-    name: "audit_logs",
-    rows: 234567,
-    size: "456.7 MB",
-    lastModified: "1 min ago",
-    status: "healthy",
-  },
+  { name: "measurements", rows: 89234, size: "256.8 MB", lastModified: "1 min ago", status: "healthy" },
+  { name: "dlc_purchases", rows: 3456, size: "12.3 MB", lastModified: "15 min ago", status: "healthy" },
+  { name: "habit_entries", rows: 156789, size: "89.4 MB", lastModified: "3 min ago", status: "healthy" },
+  { name: "forum_posts", rows: 23456, size: "67.8 MB", lastModified: "10 min ago", status: "warning" },
+  { name: "notifications", rows: 78901, size: "34.2 MB", lastModified: "1 min ago", status: "healthy" },
+  { name: "audit_logs", rows: 234567, size: "456.7 MB", lastModified: "1 min ago", status: "healthy" },
 ];
 
 interface BackupInfo {
@@ -88,34 +52,10 @@ interface BackupInfo {
 }
 
 const backups: BackupInfo[] = [
-  {
-    id: "1",
-    name: "backup_2024-01-15_daily",
-    size: "1.2 GB",
-    createdAt: "2024-01-15 03:00",
-    status: "completed",
-  },
-  {
-    id: "2",
-    name: "backup_2024-01-14_daily",
-    size: "1.1 GB",
-    createdAt: "2024-01-14 03:00",
-    status: "completed",
-  },
-  {
-    id: "3",
-    name: "backup_2024-01-13_daily",
-    size: "1.1 GB",
-    createdAt: "2024-01-13 03:00",
-    status: "completed",
-  },
-  {
-    id: "4",
-    name: "backup_2024-01-08_weekly",
-    size: "1.0 GB",
-    createdAt: "2024-01-08 03:00",
-    status: "completed",
-  },
+  { id: "1", name: "backup_2024-01-15_daily", size: "1.2 GB", createdAt: "2024-01-15 03:00", status: "completed" },
+  { id: "2", name: "backup_2024-01-14_daily", size: "1.1 GB", createdAt: "2024-01-14 03:00", status: "completed" },
+  { id: "3", name: "backup_2024-01-13_daily", size: "1.1 GB", createdAt: "2024-01-13 03:00", status: "completed" },
+  { id: "4", name: "backup_2024-01-08_weekly", size: "1.0 GB", createdAt: "2024-01-08 03:00", status: "completed" },
 ];
 
 export function AdminDatabasePanel() {
@@ -234,7 +174,9 @@ export function AdminDatabasePanel() {
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="text-sm text-muted-foreground">{table.lastModified}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {table.lastModified}
+                        </span>
                         {table.status === "healthy" ? (
                           <CheckCircle className="h-5 w-5 text-success" />
                         ) : table.status === "warning" ? (
@@ -288,8 +230,8 @@ export function AdminDatabasePanel() {
                             backup.status === "completed"
                               ? "default"
                               : backup.status === "in_progress"
-                                ? "secondary"
-                                : "destructive"
+                              ? "secondary"
+                              : "destructive"
                           }
                         >
                           {backup.status}
@@ -349,30 +291,10 @@ export function AdminDatabasePanel() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {[
-                  {
-                    name: "Daily Backup",
-                    schedule: "Every day at 3:00 AM",
-                    lastRun: "6 hours ago",
-                    status: "success",
-                  },
-                  {
-                    name: "Weekly Vacuum",
-                    schedule: "Every Sunday at 4:00 AM",
-                    lastRun: "3 days ago",
-                    status: "success",
-                  },
-                  {
-                    name: "Log Rotation",
-                    schedule: "Every day at midnight",
-                    lastRun: "8 hours ago",
-                    status: "success",
-                  },
-                  {
-                    name: "Analytics Rollup",
-                    schedule: "Every hour",
-                    lastRun: "45 min ago",
-                    status: "success",
-                  },
+                  { name: "Daily Backup", schedule: "Every day at 3:00 AM", lastRun: "6 hours ago", status: "success" },
+                  { name: "Weekly Vacuum", schedule: "Every Sunday at 4:00 AM", lastRun: "3 days ago", status: "success" },
+                  { name: "Log Rotation", schedule: "Every day at midnight", lastRun: "8 hours ago", status: "success" },
+                  { name: "Analytics Rollup", schedule: "Every hour", lastRun: "45 min ago", status: "success" },
                 ].map((job, i) => (
                   <div
                     key={i}

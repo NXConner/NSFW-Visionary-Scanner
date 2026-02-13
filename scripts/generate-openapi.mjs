@@ -8,19 +8,6 @@ const configTomlPath = resolve(supabaseDir, "config.toml");
 const outDir = resolve(repoRoot, "docs", "api");
 const outPath = resolve(outDir, "swagger.json");
 
-async function formatJsonWithPrettier(jsonText) {
-  try {
-    const prettier = await import("prettier");
-    const config = (await prettier.resolveConfig(outPath)) ?? {};
-    // Ensure we always use the JSON parser regardless of user config.
-    const formatted = await prettier.format(jsonText, { ...config, parser: "json" });
-    return formatted.endsWith("\n") ? formatted : `${formatted}\n`;
-  } catch {
-    // Prettier is a dev dependency; keep generator functional even if it's not installed.
-    return jsonText.endsWith("\n") ? jsonText : `${jsonText}\n`;
-  }
-}
-
 function listFunctionNames() {
   const entries = readdirSync(functionsDir, { withFileTypes: true });
   return entries
@@ -116,7 +103,5 @@ const spec = {
 };
 
 mkdirSync(outDir, { recursive: true });
-const rawJson = JSON.stringify(spec, null, 2);
-const formattedJson = await formatJsonWithPrettier(rawJson);
-writeFileSync(outPath, formattedJson, "utf8");
+writeFileSync(outPath, JSON.stringify(spec, null, 2) + "\n", "utf8");
 process.stdout.write(`[openapi] Wrote ${outPath}\n`);

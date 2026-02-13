@@ -260,7 +260,7 @@ CREATE POLICY "Users can view approved threads"
       EXISTS (
         SELECT 1 FROM user_roles ur 
         WHERE ur.user_id = auth.uid() 
-        AND ur.role IN ('admin', 'moderator')
+        AND ur.role::text IN ('admin', 'moderator')
       )
     )
   );
@@ -288,7 +288,7 @@ CREATE POLICY "Users can view approved posts"
       EXISTS (
         SELECT 1 FROM user_roles ur 
         WHERE ur.user_id = auth.uid() 
-        AND ur.role IN ('admin', 'moderator')
+        AND ur.role::text IN ('admin', 'moderator')
       )
     )
   );
@@ -362,7 +362,7 @@ CREATE POLICY "Users can view approved shared content"
       EXISTS (
         SELECT 1 FROM user_roles ur 
         WHERE ur.user_id = auth.uid() 
-        AND ur.role IN ('admin', 'moderator')
+        AND ur.role::text IN ('admin', 'moderator')
       )
     )
   );

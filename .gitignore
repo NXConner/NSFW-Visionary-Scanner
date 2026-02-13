@@ -1,44 +1,71 @@
-# Dependencies
-node_modules/
-.npm
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Test outputs
-coverage/
+node_modules
+*.local
+
+# Vite build output (generated)
+dist/
+
+# Test runner outputs
 playwright-report/
 test-results/
 
-# IDE
-.idea/
-*.iml
-.vscode/
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# Environment (local-only; never commit real secrets)
-.env
-.env.*
-!.env.example
-!.env.production
+# Android local configuration (contains machine-specific paths)
+android/local.properties
 
-# Vite local overrides
-.env.local
-.env.*.local
+# Android Gradle properties (base config tracked; secrets local)
+android/gradle.properties.local
+android/gradle.properties.user
 
-# Firebase / Google Services (local-only)
+# Local Android SDK (if installed in repo root)
+android-sdk/
+
+# Firebase config (do not commit; environment-specific)
 android/app/google-services.json
 ios/App/App/GoogleService-Info.plist
 
-# Android signing / keystores (local-only)
-android/keystore.properties
-android/gradle.properties
-android/app/release.keystore
-**/*.jks
-**/*.keystore
+# Service account / APNs keys (never commit)
+*firebase*service*account*.json
+*.p8
 
-# Local archive workspace (do not commit temporary platform snapshots)
-# Allow archived source diffs under `deleted files/src/**` to be committed when needed.
-deleted files/*
-!deleted files/src/
-!deleted files/src/**
-deleted files/no-longer-needed/ios-archive-2026-02-12/
+# Keystore files (never commit to version control)
+*.keystore
+*.jks
 
-# Supabase CLI temporary state
-supabase/.temp/
+# Environment files with secrets
+.env
+.env.local
+.env.production.local
+.env.development.local
+
+# Build artifacts are intentionally tracked (APK distribution, assets, etc.)
+!**/*.apk
+!**/*.aab
+
+# Gradle cache and build files are intentionally tracked
+
+# Local comparison clones (do not commit)
+external-repos/
+
+# Core dumps (never commit)
+core
+core.*
+*.core

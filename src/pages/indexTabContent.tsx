@@ -250,17 +250,16 @@ export function TabContent({
 }) {
   // SUPER ADMIN BYPASS: Get privileged status to ensure all features are accessible
   const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked } = useAuth();
-
+  
   // Use the module-level cached value - guaranteed to be set before first render
-  const isPrivileged =
-    isSuperAdmin || hasFullAccess || allFeaturesUnlocked || INITIAL_SUPER_ADMIN_CACHED;
-
+  const isPrivileged = isSuperAdmin || hasFullAccess || allFeaturesUnlocked || INITIAL_SUPER_ADMIN_CACHED;
+  
   // Privileged users bypass all feature checks
   const checkFeature = (feature: string): boolean => {
     if (isPrivileged) return true;
     return hasFeature(feature);
   };
-
+  
   switch (activeTab) {
     case "home":
       return <HeroSection onGetStarted={() => onNavigateTab("scanner")} />;

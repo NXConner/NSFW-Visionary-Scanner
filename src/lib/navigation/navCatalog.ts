@@ -84,20 +84,8 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { id: "video-capture", label: "Video Capture", icon: Video, kind: "tab" },
       { id: "photo-editor", label: "Photo Editor", icon: ImageIcon, kind: "tab" },
       { id: "advanced-reporting", label: "Reports", icon: FileText, kind: "tab" },
-      {
-        id: "enhanced-diary",
-        label: "Enhanced Diary",
-        icon: BookOpen,
-        kind: "tab",
-        premiumOnly: true,
-      },
-      {
-        id: "advanced-routines",
-        label: "Advanced Routines",
-        icon: Sparkles,
-        kind: "tab",
-        premiumOnly: true,
-      },
+      { id: "enhanced-diary", label: "Enhanced Diary", icon: BookOpen, kind: "tab", premiumOnly: true },
+      { id: "advanced-routines", label: "Advanced Routines", icon: Sparkles, kind: "tab", premiumOnly: true },
     ],
   },
   {
@@ -219,82 +207,76 @@ export const NAV_CATEGORIES: NavCategory[] = [
     : []),
 ];
 
-const ADMIN_NAV_ITEMS: NavCategory["items"] = [
-  {
-    id: "admin",
-    label: "Admin Dashboard",
-    icon: Shield,
-    adminOnly: true,
-    kind: "route",
-    to: "/admin",
-  },
-  {
-    id: "admin-dlc",
-    label: "DLC Management",
-    icon: Package,
-    adminOnly: true,
-    kind: "route",
-    to: "/admin/dlc",
-  },
-  ...(BUILD_ALLOW_ADULT_BUNDLE
-    ? ([
-        {
-          id: "admin-nsfw",
-          label: "NSFW Content",
-          icon: Flame,
-          adminOnly: true,
-          kind: "route",
-          to: "/admin/nsfw",
-        },
-      ] as NavCategory["items"])
-    : []),
-  {
-    id: "admin-users",
-    label: "User Management",
-    icon: Users,
-    adminOnly: true,
-    kind: "route",
-    to: "/admin/users",
-  },
-  {
-    id: "admin-content",
-    label: "Content Moderation",
-    icon: FileText,
-    adminOnly: true,
-    kind: "route",
-    to: "/admin/content",
-  },
-  {
-    id: "admin-analytics",
-    label: "Analytics Dashboard",
-    icon: BarChart3,
-    adminOnly: true,
-    kind: "route",
-    to: "/admin/analytics",
-  },
-  {
-    id: "admin-settings",
-    label: "System Settings",
-    icon: Settings,
-    adminOnly: true,
-    kind: "route",
-    to: "/admin/settings",
-  },
-  {
-    id: "admin-database",
-    label: "Database",
-    icon: Database,
-    adminOnly: true,
-    kind: "route",
-    to: "/admin/database",
-  },
-];
-
 export const ADMIN_NAV_CATEGORY: NavCategory = {
   label: "Admin Panel",
   icon: Shield,
   adminOnly: true,
-  items: ADMIN_NAV_ITEMS,
+  items: [
+    {
+      id: "admin",
+      label: "Admin Dashboard",
+      icon: Shield,
+      adminOnly: true,
+      kind: "route",
+      to: "/admin",
+    },
+    {
+      id: "admin-dlc",
+      label: "DLC Management",
+      icon: Package,
+      adminOnly: true,
+      kind: "route",
+      to: "/admin/dlc",
+    },
+    {
+      id: "admin-nsfw",
+      label: "NSFW Content",
+      icon: Flame,
+      adminOnly: true,
+      kind: "route",
+      to: "/admin/nsfw",
+    },
+    {
+      id: "admin-users",
+      label: "User Management",
+      icon: Users,
+      adminOnly: true,
+      kind: "route",
+      to: "/admin/users",
+    },
+    {
+      id: "admin-content",
+      label: "Content Moderation",
+      icon: FileText,
+      adminOnly: true,
+      kind: "route",
+      to: "/admin/content",
+    },
+    {
+      id: "admin-analytics",
+      label: "Analytics Dashboard",
+      icon: BarChart3,
+      adminOnly: true,
+      kind: "route",
+      to: "/admin/analytics",
+    },
+    {
+      id: "admin-settings",
+      label: "System Settings",
+      icon: Settings,
+      adminOnly: true,
+      kind: "route",
+      to: "/admin/settings",
+    },
+    {
+      id: "admin-database",
+      label: "Database",
+      icon: Database,
+      adminOnly: true,
+      kind: "route",
+      to: "/admin/database",
+    },
+  ],
 };
 
 // Note: the header navigation has its own layout/visibility logic. This catalog is used for

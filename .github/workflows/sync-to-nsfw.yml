@@ -1,0 +1,47 @@
+# Visionary Scanner - Cross-Repository Sync Workflow
+# This workflow pushes core engine updates from the Safe repo to the NSFW repo
+# 
+# SETUP REQUIRED:
+# 1. Generate a Personal Access Token (PAT) with 'repo' scope
+# 2. Add it as a repository secret named 'SYNC_TOKEN'
+# 3. Update NSFW_REPO below with your actual repo path
+
+name: Sync Core Engine to NSFW Repo
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Allow manual trigger
+
+env:
+  NSFW_REPO: NXConner/NSFW-Visionary-Scanner
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Safe Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "sync-bot@visionary-scanner.app"
+          git config --global user.name "Visionary Sync Bot"
+
+      - name: Add NSFW Remote
+        run: |
+          git remote add nsfw https://x-access-token:${{ secrets.SYNC_TOKEN }}@github.com/${{ env.NSFW_REPO }}.git
+
+      - name: Push to NSFW Repo
+        run: |
+          # Push main branch - protected files in .gitattributes won't overwrite NSFW versions
+          git push nsfw main:main --force-with-lease
+        continue-on-error: true
+
+      - name: Notify on Conflict
+        if: failure()
+        run: |
+          echo "::warning::Sync may have conflicts. Check the NSFW repo and resolve manually."
+          echo "Common fix: In NSFW repo, run 'git pull upstream main' and resolve content-manifest.ts conflicts by keeping 'unrestricted' version."

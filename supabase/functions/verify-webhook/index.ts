@@ -1,4 +1,3 @@
-import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
 /**
  * Supabase Edge Function: verify-webhook
  *
@@ -115,14 +114,6 @@ serve(async req => {
       responseBody = e instanceof Error ? e.message : "Network error";
       ok = false;
     }
-
-    const rateLimitResponse = await applyRateLimit({
-      req,
-      endpoint: "verify-webhook",
-      ...DEFAULT_EDGE_RATE_LIMIT,
-      headers: corsHeaders,
-    });
-    if (rateLimitResponse) return rateLimitResponse;
 
     await supabaseAdmin.from("webhook_deliveries").insert({
       webhook_id,

@@ -50,7 +50,8 @@ export function PopulationPercentileGauge({
   const p50 = clamp(pctPos(p50Cm, min, max), 0, 100);
   const p95 = clamp(pctPos(p95Cm, min, max), 0, 100);
   const you = clamp(pctPos(valueCm, min, max), 0, 100);
-  const comm = communityMeanCm != null ? clamp(pctPos(communityMeanCm, min, max), 0, 100) : null;
+  const comm =
+    communityMeanCm != null ? clamp(pctPos(communityMeanCm, min, max), 0, 100) : null;
   const pers = personalMeanCm != null ? clamp(pctPos(personalMeanCm, min, max), 0, 100) : null;
 
   const pct = approxPercentile(valueCm, p5Cm, p50Cm, p95Cm);
@@ -116,3 +117,4 @@ export function PopulationPercentileGauge({
     </div>
   );
 }
+

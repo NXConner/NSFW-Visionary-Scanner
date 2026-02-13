@@ -1,4 +1,3 @@
-import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
 // Check DLC Updates
 // Checks if there are updates available for the user's DLC content.
 //
@@ -34,14 +33,6 @@ serve(async req => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
-
-  const rateLimitResponse = await applyRateLimit({
-    req,
-    endpoint: "check-dlc-updates",
-    ...DEFAULT_EDGE_RATE_LIMIT,
-    headers: corsHeaders,
-  });
-  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const supabaseClient = createClient(

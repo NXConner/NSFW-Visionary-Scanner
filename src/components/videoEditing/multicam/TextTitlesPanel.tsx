@@ -82,14 +82,7 @@ export function TextTitlesPanel({ state, onChange, currentTime }: Props) {
     const newOverlay: TextOverlay = {
       id: `text-${Date.now()}`,
       type,
-      text:
-        type === "title"
-          ? "Title Text"
-          : type === "lowerThird"
-            ? "Name"
-            : type === "caption"
-              ? "Caption text"
-              : "Watermark",
+      text: type === "title" ? "Title Text" : type === "lowerThird" ? "Name" : type === "caption" ? "Caption text" : "Watermark",
       subtitle: type === "lowerThird" ? "Subtitle" : undefined,
       position: { x: 50, y: type === "lowerThird" ? 85 : type === "caption" ? 90 : 50 },
       fontSize: type === "title" ? 48 : type === "lowerThird" ? 24 : 18,
@@ -153,26 +146,21 @@ export function TextTitlesPanel({ state, onChange, currentTime }: Props) {
           {state.overlays.map(overlay => (
             <div
               key={overlay.id}
+              onClick={() => onChange({ ...state, activeOverlayId: overlay.id })}
               className={`
-                flex items-center justify-between p-2 rounded border
+                flex items-center justify-between p-2 rounded border cursor-pointer
                 ${overlay.id === state.activeOverlayId ? "border-primary bg-primary/5" : "border-border"}
               `}
             >
-              <button
-                type="button"
-                onClick={() => onChange({ ...state, activeOverlayId: overlay.id })}
-                className="min-w-0 flex-1 text-left"
-                aria-pressed={overlay.id === state.activeOverlayId}
-              >
+              <div className="min-w-0">
                 <div className="text-[10px] font-medium truncate">{overlay.text}</div>
                 <div className="text-[9px] text-muted-foreground capitalize">{overlay.type}</div>
-              </button>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => removeOverlay(overlay.id)}
+                onClick={e => { e.stopPropagation(); removeOverlay(overlay.id); }}
                 className="h-6 w-6 p-0"
-                aria-label="Remove overlay"
               >
                 <Trash2 className="w-3 h-3" />
               </Button>
@@ -255,11 +243,7 @@ export function TextTitlesPanel({ state, onChange, currentTime }: Props) {
                   key={a.key}
                   variant={activeOverlay.animation === a.key ? "default" : "outline"}
                   size="sm"
-                  onClick={() =>
-                    updateOverlay(activeOverlay.id, {
-                      animation: a.key as TextOverlay["animation"],
-                    })
-                  }
+                  onClick={() => updateOverlay(activeOverlay.id, { animation: a.key as TextOverlay["animation"] })}
                   className="h-6 text-[8px] px-1"
                 >
                   {a.label}

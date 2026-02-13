@@ -3,8 +3,6 @@ import { Button } from "@/components/ui/button";
 import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
-import { APP_NAME, APP_TAGLINE } from "@/config/brand";
-import { APP_ROUTES } from "@/config/urls";
 
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -24,9 +22,9 @@ export const Footer = () => {
       { label: "Credits & Resources", href: "/credits", isRoute: true },
     ],
     legal: [
-      { label: "Privacy Policy", href: APP_ROUTES.privacy, isRoute: true },
-      { label: "Terms of Service", href: APP_ROUTES.terms, isRoute: true },
-      { label: "Credits & Resources", href: APP_ROUTES.credits, isRoute: true },
+      { label: "Privacy Policy", href: "/privacy", isRoute: true },
+      { label: "Terms of Service", href: "/terms", isRoute: true },
+      { label: "Credits & Resources", href: "/credits", isRoute: true },
       { label: "Data Security", href: "#" },
       { label: "Medical Disclaimer", href: "#" },
     ],
@@ -44,8 +42,8 @@ export const Footer = () => {
                 <div className="absolute inset-0 rounded-xl gradient-primary opacity-50 blur-lg" />
               </div>
               <div>
-                <h3 className="text-lg font-bold gradient-text">{APP_NAME}</h3>
-                <p className="text-[10px] text-muted-foreground -mt-1">{APP_TAGLINE}</p>
+                <h3 className="text-lg font-bold gradient-text">MorphoScan Pro</h3>
+                <p className="text-[10px] text-muted-foreground -mt-1">Men's Health</p>
               </div>
             </div>
             <p className="text-muted-foreground text-sm max-w-xs mb-6">
@@ -151,7 +149,7 @@ export const Footer = () => {
         {/* Bottom */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © {currentYear} {APP_NAME}. Personal use only.
+            © {currentYear} MorphoScan Pro. Personal use only.
           </p>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-2">

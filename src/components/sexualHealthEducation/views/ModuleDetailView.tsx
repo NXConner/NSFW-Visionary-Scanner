@@ -6,6 +6,7 @@ import DOMPurify from "dompurify";
 import type { BookmarkContentType, EducationModule } from "../types";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { EditEducationModuleDialog } from "@/components/sexualHealthEducation/admin/EditEducationModuleDialog";
+import { buildModuleFallback } from "@/lib/learningFallbacks";
 
 export function ModuleDetailView({
   module,
@@ -21,6 +22,13 @@ export function ModuleDetailView({
   onReload: () => void | Promise<void>;
 }): JSX.Element {
   const { isAdmin } = useUserRoles();
+  const fallback = buildModuleFallback({
+    title: module.title,
+    description: module.description,
+    category: module.category,
+    difficultyLevel: module.difficulty_level,
+    estimatedMinutes: module.estimated_duration_minutes,
+  });
   return (
     <div className="space-y-6">
       <Button variant="ghost" onClick={onBack}>
@@ -72,10 +80,29 @@ export function ModuleDetailView({
               {module.content_text}
             </div>
           ) : (
-            <p className="text-muted-foreground">
-              Content coming soon...
-              {isAdmin ? " (Use “Edit Module” to publish content.)" : ""}
-            </p>
+            <div className="space-y-5">
+              <p className="text-muted-foreground">{fallback.summary}</p>
+              {fallback.sections.map(section => (
+                <div key={section.title} className="space-y-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {section.title}
+                  </h4>
+                  <ul className="list-disc pl-5 space-y-1 text-sm">
+                    {section.bullets.map(item => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                  {section.note && (
+                    <p className="text-xs text-muted-foreground">{section.note}</p>
+                  )}
+                </div>
+              ))}
+              {isAdmin && (
+                <p className="text-xs text-muted-foreground">
+                  Admin note: publish the module content to replace this default guidance.
+                </p>
+              )}
+            </div>
           )}
 
           <div className="flex items-center justify-between pt-4 border-t">

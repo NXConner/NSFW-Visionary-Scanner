@@ -70,10 +70,8 @@ export function useCurvatureScanFlow() {
 
   const quality = React.useMemo(() => {
     const blockers: string[] = [];
-    if (dorsal && (!dorsal.centerlinePx || dorsal.centerlinePx.length < 10))
-      blockers.push("Dorsal centerline not found.");
-    if (lateral && (!lateral.centerlinePx || lateral.centerlinePx.length < 10))
-      blockers.push("Lateral centerline not found.");
+    if (dorsal && (!dorsal.centerlinePx || dorsal.centerlinePx.length < 10)) blockers.push("Dorsal centerline not found.");
+    if (lateral && (!lateral.centerlinePx || lateral.centerlinePx.length < 10)) blockers.push("Lateral centerline not found.");
     if (dorsal && dorsal.confidence < 20) blockers.push("Dorsal confidence too low.");
     if (lateral && lateral.confidence < 20) blockers.push("Lateral confidence too low.");
     return { blockers, hardBlocked: blockers.length > 0 };
@@ -105,10 +103,7 @@ export function useCurvatureScanFlow() {
           }
         : { source: "none" as const };
 
-      const det = await measureImage(
-        { imageDataUrl: img, calibration, requestedUnits: "cm" },
-        { maxDim: 1024, polyDegree: 3 },
-      );
+      const det = await measureImage({ imageDataUrl: img, calibration, requestedUnits: "cm" }, { maxDim: 1024, polyDegree: 3 });
 
       const nextState: CapturedViewState = {
         rawImageDataUrl: img,
@@ -170,9 +165,7 @@ export function useCurvatureScanFlow() {
   const handleRefinePick = (targetView: CurvatureCaptureView) => {
     const v = targetView === "dorsal" ? dorsal : lateral;
     if (!v?.rawImageDataUrl || !v.centerlinePx?.length) {
-      toast.message("Refine unavailable", {
-        description: "No centerline found; retake with better framing.",
-      });
+      toast.message("Refine unavailable", { description: "No centerline found; retake with better framing." });
       return;
     }
     setRefinePicking(targetView);
@@ -195,31 +188,19 @@ export function useCurvatureScanFlow() {
       return;
     }
 
-    let dir = computeCurvatureDirectionFromCenterline({
-      view: targetView,
-      centerlinePx: v.centerlinePx,
-      basePointPx,
-    });
+    let dir = computeCurvatureDirectionFromCenterline({ view: targetView, centerlinePx: v.centerlinePx, basePointPx });
     if (targetView === "dorsal" && settings.flipTopViewLeftRight) {
-      dir =
-        dir === "lateral-left" ? "lateral-right" : dir === "lateral-right" ? "lateral-left" : dir;
+      dir = dir === "lateral-left" ? "lateral-right" : dir === "lateral-right" ? "lateral-left" : dir;
     }
     if (targetView === "lateral" && settings.flipSideViewDorsalVentral) {
       dir = dir === "dorsal" ? "ventral" : dir === "ventral" ? "dorsal" : dir;
     }
 
-    const next = {
-      ...v,
-      angleDeg: Math.round(anchored),
-      baseAnchorPx: basePointPx,
-      curvatureDirection: dir,
-    };
+    const next = { ...v, angleDeg: Math.round(anchored), baseAnchorPx: basePointPx, curvatureDirection: dir };
     if (targetView === "dorsal") setDorsal(next);
     else setLateral(next);
 
-    toast.success("Angle refined", {
-      description: `Base-anchored angle: ${Math.round(anchored)}°`,
-    });
+    toast.success("Angle refined", { description: `Base-anchored angle: ${Math.round(anchored)}°` });
     setRefinePicking(null);
   };
 
@@ -263,3 +244,4 @@ export function useCurvatureScanFlow() {
     applyBasePick,
   };
 }
+

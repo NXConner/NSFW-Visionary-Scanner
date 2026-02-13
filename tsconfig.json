@@ -4,8 +4,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "lucide-react": ["./src/lib/lucide"]
+      "@/*": ["./src/*"]
     },
     /* Strict Type-Checking Options */
     "noImplicitAny": true,

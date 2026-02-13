@@ -1,0 +1,21 @@
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = "\.(py|pyi)$"
+exclude = "(dist|node_modules|.git|.husky|supabase/.temp)"
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_glob = ["node_modules/*", "dist/*"]
+
+[tool.flake8]
+max-line-length = 100
+extend-ignore = ["E203", "W503"]
+exclude = [
+  ".git",
+  "__pycache__",
+  "node_modules",
+  "dist",
+  "supabase/.temp"
+]

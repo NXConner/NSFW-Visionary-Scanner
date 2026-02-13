@@ -1,11 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Users } from "lucide-react";
 import { BaselineMiniViz } from "./BaselineMiniViz";
-import {
-  AVERAGE_MAN_BASELINE,
-  formatLength,
-  getAverageManBaselineCm,
-} from "@/lib/measurementsComparison";
+import { AVERAGE_MAN_BASELINE, formatLength, getAverageManBaselineCm } from "@/lib/measurementsComparison";
 import type { UnitSystem } from "@/lib/measurementsComparison";
 
 type Props = {
@@ -118,15 +114,11 @@ export function AverageManBaselineBlock({ unitSystem, latestLengthCm, latestGirt
         <div className="mt-2 grid sm:grid-cols-3 gap-2 text-xs">
           <div className="rounded-md border border-border/50 bg-muted/10 p-2">
             <div className="text-[11px] text-muted-foreground">Flaccid length</div>
-            <div className="font-mono">
-              {formatLength(AVERAGE_MAN_BASELINE.flaccidLengthCm, unitSystem)}
-            </div>
+            <div className="font-mono">{formatLength(AVERAGE_MAN_BASELINE.flaccidLengthCm, unitSystem)}</div>
           </div>
           <div className="rounded-md border border-border/50 bg-muted/10 p-2">
             <div className="text-[11px] text-muted-foreground">Flaccid girth</div>
-            <div className="font-mono">
-              {formatLength(AVERAGE_MAN_BASELINE.flaccidGirthCm, unitSystem)}
-            </div>
+            <div className="font-mono">{formatLength(AVERAGE_MAN_BASELINE.flaccidGirthCm, unitSystem)}</div>
           </div>
           <div className="rounded-md border border-border/50 bg-muted/10 p-2">
             <div className="text-[11px] text-muted-foreground">Stretched flaccid length</div>
@@ -136,8 +128,7 @@ export function AverageManBaselineBlock({ unitSystem, latestLengthCm, latestGirt
           </div>
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          Source: Veale et al., BJU Int (2015) meta-analysis (measurement methods vary across
-          studies).
+          Source: Veale et al., BJU Int (2015) meta-analysis (measurement methods vary across studies).
         </p>
       </div>
     </div>

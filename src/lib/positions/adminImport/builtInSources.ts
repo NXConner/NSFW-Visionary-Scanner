@@ -34,11 +34,10 @@ export async function buildPositionsImportFromBuiltInGuides(): Promise<BuildPosi
     const name = String(p.name || "").trim();
     if (!name) continue;
 
-    const tags = uniq(
-      [String(p.category || ""), ...(p.tags || [])]
-        .map(x => String(x || "").trim())
-        .filter(Boolean),
-    ).slice(0, 24);
+    const tags = uniq([String(p.category || ""), ...(p.tags || [])].map(x => String(x || "").trim()).filter(Boolean)).slice(
+      0,
+      24,
+    );
     const category = normalizeCategory(String(p.category || ""), tags);
     const difficulty = inferDifficultyFromTags([p.difficulty, ...tags]);
     const flexibility = inferFlexibilityFromTags([p.requiredFlexibility, ...tags]);
@@ -56,14 +55,8 @@ export async function buildPositionsImportFromBuiltInGuides(): Promise<BuildPosi
       intimacy_level: intimacy,
       required_flexibility: flexibility,
       tags,
-      benefits: (p.benefits || [])
-        .map(x => String(x || "").trim())
-        .filter(Boolean)
-        .slice(0, 16),
-      tips: (p.tips || [])
-        .map(x => String(x || "").trim())
-        .filter(Boolean)
-        .slice(0, 16),
+      benefits: (p.benefits || []).map(x => String(x || "").trim()).filter(Boolean).slice(0, 16),
+      tips: (p.tips || []).map(x => String(x || "").trim()).filter(Boolean).slice(0, 16),
       // Built-in guide data is text-first; media can be attached later via admin uploads or overrides.
       image_url: null,
       image_url_illustrated: null,
@@ -79,3 +72,4 @@ export async function buildPositionsImportFromBuiltInGuides(): Promise<BuildPosi
 
   return { items: deduped, sources };
 }
+

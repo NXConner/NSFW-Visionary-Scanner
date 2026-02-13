@@ -238,8 +238,7 @@ export function useDLCStore(): UseDLCStoreReturn {
       const promoRecord = promo as Record<string, unknown>;
 
       // Support both promo code schemas present in migrations.
-      const startsAtRaw =
-        promoRecord.valid_from ?? promoRecord.starts_at ?? promoRecord.created_at ?? null;
+      const startsAtRaw = promoRecord.valid_from ?? promoRecord.starts_at ?? promoRecord.created_at ?? null;
       const expiresAtRaw = promoRecord.valid_until ?? promoRecord.expires_at ?? null;
       const startsAt = startsAtRaw ? new Date(String(startsAtRaw)).getTime() : now;
       const expiresAt = expiresAtRaw ? new Date(String(expiresAtRaw)).getTime() : null;
@@ -305,8 +304,7 @@ export function useDLCStore(): UseDLCStoreReturn {
         }
       }
 
-      const minPurchase =
-        promoRecord.min_purchase_amount != null ? Number(promoRecord.min_purchase_amount) : 0;
+      const minPurchase = promoRecord.min_purchase_amount != null ? Number(promoRecord.min_purchase_amount) : 0;
       if (Number.isFinite(minPurchase) && minPurchase > 0 && subtotal < minPurchase) {
         setPromoDiscount(0);
         return false;

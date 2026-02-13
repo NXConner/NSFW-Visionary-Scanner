@@ -31,7 +31,6 @@ export type PlayerDialogProps = {
     ended?: boolean;
   }) => void;
   onPlaybackEnded?: () => void;
-  onRequestRefresh?: () => void;
 };
 
 export function PlayerDialog(props: PlayerDialogProps): JSX.Element {
@@ -49,7 +48,6 @@ export function PlayerDialog(props: PlayerDialogProps): JSX.Element {
     onSaveOffline,
     onProgress,
     onPlaybackEnded,
-    onRequestRefresh,
   } = props;
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -98,7 +96,6 @@ export function PlayerDialog(props: PlayerDialogProps): JSX.Element {
                 <SelectContent>
                   <SelectItem value="sd">SD</SelectItem>
                   <SelectItem value="hd">HD</SelectItem>
-                  <SelectItem value="2k">2K</SelectItem>
                   <SelectItem value="4k">4K</SelectItem>
                 </SelectContent>
               </Select>
@@ -124,9 +121,6 @@ export function PlayerDialog(props: PlayerDialogProps): JSX.Element {
               playsInline
               src={playerUrl}
               ref={videoRef}
-              onError={() => {
-                onRequestRefresh?.();
-              }}
               onTimeUpdate={() => emitProgress(false)}
               onPause={() => emitProgress(false)}
               onEnded={() => {

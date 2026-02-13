@@ -42,3 +42,4 @@ export interface ScanHistoryResponse {
     image_signed_url?: string | null;
   }>;
 }
+

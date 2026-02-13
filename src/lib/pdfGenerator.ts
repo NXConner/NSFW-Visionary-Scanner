@@ -1,6 +1,5 @@
 import type jsPDF from "jspdf";
 import type { ScanEntry, DiaryEntry } from "@/contexts/DataContext";
-import { APP_REPORT_TITLE } from "@/config/brand";
 
 export const generateHealthReport = async (
   scans: ScanEntry[],
@@ -14,7 +13,7 @@ export const generateHealthReport = async (
   // Header
   doc.setFontSize(24);
   doc.setTextColor(0, 150, 136);
-  doc.text(APP_REPORT_TITLE, pageWidth / 2, yPos, { align: "center" });
+  doc.text("MorphoScan Health Report", pageWidth / 2, yPos, { align: "center" });
 
   yPos += 10;
   doc.setFontSize(10);

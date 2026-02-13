@@ -189,9 +189,12 @@ export function useThoughtPings(connectionId: string | null, pageSize: number = 
     );
     if (due.length === 0) return;
     for (const ping of due) {
-      await sendPushNotification(currentUserId, "Reminder", `Follow up on: ${ping.message}`, {
-        pingId: ping.id,
-      });
+      await sendPushNotification(
+        currentUserId,
+        "Reminder",
+        `Follow up on: ${ping.message}`,
+        { pingId: ping.id },
+      );
       await fromExtended("partner_thought_pings")
         .update({ remind_at: null, updated_at: new Date().toISOString() })
         .eq("id", ping.id);
@@ -260,39 +263,34 @@ export function useThoughtPings(connectionId: string | null, pageSize: number = 
 
         // Insert directly since RPC may not exist yet
         const result = await withRetry(() =>
-          fromExtended("partner_thought_pings")
-            .insert({
-              connection_id: connectionId,
-              sender_id: user.id,
-              recipient_id: input.recipientId,
-              message: input.message,
-              detailed_message: input.detailedMessage ?? null,
-              tone_tags: input.toneTags,
-              intensity: input.intensity,
-              theme: input.theme ?? null,
-              priority: input.priority ?? "normal",
-              is_pinned: input.isPinned ?? false,
-              read_receipt_requested: input.readReceiptRequested ?? true,
-              private_note_encrypted: privateNoteEncrypted,
-              scheduled_at: input.scheduledAt ?? null,
-              remind_at: input.remindAt ?? null,
-              images_urls: input.images ?? null,
-              gifs_urls: input.gifs ?? null,
-              voice_message_url: input.voiceMessageUrl ?? null,
-              status: input.scheduledAt ? "scheduled" : "sent",
-              delivery_state: "queued",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .select("*")
-            .single(),
+          fromExtended("partner_thought_pings").insert({
+            connection_id: connectionId,
+            sender_id: user.id,
+            recipient_id: input.recipientId,
+            message: input.message,
+            detailed_message: input.detailedMessage ?? null,
+            tone_tags: input.toneTags,
+            intensity: input.intensity,
+            theme: input.theme ?? null,
+            priority: input.priority ?? "normal",
+            is_pinned: input.isPinned ?? false,
+            read_receipt_requested: input.readReceiptRequested ?? true,
+            private_note_encrypted: privateNoteEncrypted,
+            scheduled_at: input.scheduledAt ?? null,
+            remind_at: input.remindAt ?? null,
+            images_urls: input.images ?? null,
+            gifs_urls: input.gifs ?? null,
+            voice_message_url: input.voiceMessageUrl ?? null,
+            status: input.scheduledAt ? "scheduled" : "sent",
+            delivery_state: "queued",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }).select("*").single(),
         );
 
         const insertResult = result as { data?: PartnerThoughtPing; error?: { message: string } };
         if (insertResult.error) {
-          logger.error("partner sync: send thought ping failed", {
-            error: insertResult.error.message,
-          });
+          logger.error("partner sync: send thought ping failed", { error: insertResult.error.message });
           toast.error(insertResult.error.message || "Failed to send ping");
           await load();
           return false;

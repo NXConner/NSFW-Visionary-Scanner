@@ -9,7 +9,6 @@ import {
   ContentPolicyOverrideCard,
   FeedbackHubCard,
   FeatureTogglesCard,
-  LinkedAccountsCard,
   NsfwPrivacyControlsCard,
   PerformanceModeCard,
   PrivacySecurityCard,
@@ -20,8 +19,6 @@ import {
 import { useAddonContributions } from "@/addons";
 import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { NotificationSettings } from "@/components/NotificationSettings";
-import { DataRetentionSettings } from "@/components/DataRetentionSettings";
-import { AccountDeletion } from "@/components/AccountDeletion";
 import { Reveal } from "@/components/premium";
 import { BUILD_ALLOW_ADULT_BUNDLE } from "@/lib/buildFlags";
 
@@ -77,18 +74,9 @@ export const SettingsPanel = () => {
       <Reveal variant="fade-up" delay={0.35}>
         <NotificationSettings />
       </Reveal>
-      <Reveal variant="fade-up" delay={0.38}>
-        <LinkedAccountsCard />
-      </Reveal>
-      <Reveal variant="fade-up" delay={0.41}>
-        <DataRetentionSettings />
-      </Reveal>
-      <Reveal variant="fade-up" delay={0.44}>
-        <AccountDeletion />
-      </Reveal>
 
       {/* Medical Disclaimer */}
-      <Reveal variant="fade-up" delay={0.47}>
+      <Reveal variant="fade-up" delay={0.4}>
         <MedicalDisclaimer mode="inline" />
       </Reveal>
     </div>

@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
-import { dlcManager } from "../core";
+import { dlcManager, DLCManager } from "../core";
 import { dlcRegistry } from "../core/DLCRegistry";
 import { licenseValidator } from "../core/LicenseValidator";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +18,7 @@ import type {
   LicenseValidationResult,
 } from "../core/types";
 import { logger } from "@/lib/logger";
-import { clearSuperAdminCache, isSuperAdminCached } from "@/lib/superAdmin";
+import { checkSuperAdminRole, clearSuperAdminCache, isSuperAdminCached } from "@/lib/superAdmin";
 import { useUserRoles } from "@/hooks/useUserRoles";
 
 // ============================================
@@ -115,24 +115,6 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
     }
     return false;
   }, []);
-
-  // Privileged role cache (admin/super_admin) persisted by useUserRoles() into localStorage.
-  // This allows admin accounts to bypass age + DLC gates immediately on app start.
-  const cachedPrivilegedRoleStatus = useMemo(() => {
-    try {
-      const raw = localStorage.getItem("user_roles");
-      if (!raw) return false;
-      const parsed = JSON.parse(raw) as unknown;
-      if (!Array.isArray(parsed)) return false;
-      return parsed.some(
-        r => typeof r === "string" && (r === "admin" || r === "super_admin"),
-      );
-    } catch {
-      return false;
-    }
-  }, []);
-
-  const cachedPrivilegedStatus = cachedSuperAdminStatus || cachedPrivilegedRoleStatus;
   const { isAdmin, isSuperAdmin: isSuperAdminRole } = useUserRoles();
   const hasPrivilegedRole = isAdmin || isSuperAdminRole;
 
@@ -143,42 +125,13 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
   const [storeState, setStoreState] = useState<DLCStoreState | null>(null);
   const [availableUpdates, setAvailableUpdates] = useState<DLCUpdate[]>([]);
   // SUPER ADMIN: Initialize with cached status to prevent age verification flash
-  // Also check localStorage for persisted age verification
-  const [isAgeVerified, setIsAgeVerified] = useState(() => {
-    if (DEV_BYPASS_AGE_VERIFICATION || cachedPrivilegedStatus) return true;
-    // Check localStorage for persisted age verification
-    try {
-      const stored = localStorage.getItem("dlc_age_verified_v1");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.verified && parsed.expiresAt && new Date(parsed.expiresAt) > new Date()) {
-          return true;
-        }
-      }
-    } catch {
-      // ignore localStorage errors
-    }
-    return false;
-  });
-  // SUPER ADMIN: Initialize with cached status to prevent locked feature flash
-  const [adminOverrideActive, setAdminOverrideActive] = useState(cachedPrivilegedStatus);
-  const [adminNsfwMasterEnabled, setAdminNsfwMasterEnabled] = useState(cachedPrivilegedStatus);
-  const [adminEnabledPackageIds, setAdminEnabledPackageIds] = useState<Set<string>>(new Set());
-
-  const checkPrivilegedRoleDb = useCallback(
-    async (userId: string): Promise<boolean> => {
-      try {
-        const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-        if (error) throw error;
-        return (data || []).some(r => r.role === "admin" || r.role === "super_admin");
-      } catch {
-        // Best-effort fallback: preserve cached status if the DB call fails.
-        // (This is primarily for offline mode; the server still enforces gates for non-privileged users.)
-        return cachedPrivilegedStatus;
-      }
-    },
-    [cachedPrivilegedStatus],
+  const [isAgeVerified, setIsAgeVerified] = useState(
+    DEV_BYPASS_AGE_VERIFICATION || cachedSuperAdminStatus,
   );
+  // SUPER ADMIN: Initialize with cached status to prevent locked feature flash
+  const [adminOverrideActive, setAdminOverrideActive] = useState(cachedSuperAdminStatus);
+  const [adminNsfwMasterEnabled, setAdminNsfwMasterEnabled] = useState(cachedSuperAdminStatus);
+  const [adminEnabledPackageIds, setAdminEnabledPackageIds] = useState<Set<string>>(new Set());
 
   // Prefer DB-backed catalog, but always merge registry metadata as a fallback.
   // This prevents "blank package name" UI when an older cached schema is present.
@@ -301,7 +254,7 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
 
         if (cancelled) return;
 
-        // Admin override (admin/super_admin in user_roles table - database-driven)
+        // Admin override (ONLY for super_admin in user_roles table - database-driven)
         supabase.auth
           .getUser()
           .then(async ({ data }) => {
@@ -313,15 +266,14 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
               return;
             }
 
-            const isPrivilegedUser = await checkPrivilegedRoleDb(user.id);
-            setAdminOverrideActive(isPrivilegedUser);
+            // Database-driven super admin check - no hardcoded emails
+            const isSuperAdminUser = await checkSuperAdminRole(user.id);
+            setAdminOverrideActive(isSuperAdminUser);
 
-            if (isPrivilegedUser) {
-              // AUTO-UNLOCK: All NSFW and adult content enabled for privileged accounts
+            if (isSuperAdminUser) {
+              // AUTO-UNLOCK: All NSFW and adult content enabled for super_admin
               setAdminNsfwMasterEnabled(true);
-              setAdminEnabledPackageIds(new Set());
-              setIsAgeVerified(true);
-              logger.info("[dlc] PRIVILEGED UNLOCK: All features and NSFW content enabled");
+              logger.info("[dlc] SUPER ADMIN UNLOCK: All features and NSFW content enabled");
             }
           })
           .catch(() => {
@@ -336,12 +288,13 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
 
             if (!user) return;
 
-            // Privileged users bypass age verification
-            const isPrivilegedUser = await checkPrivilegedRoleDb(user.id);
+            // Database-driven super admin check for age verification bypass
+            const isSuperAdminUser = await checkSuperAdminRole(user.id);
 
-            if (isPrivilegedUser) {
+            // Super admin bypasses age verification
+            if (isSuperAdminUser) {
               setIsAgeVerified(true);
-              logger.info("[dlc] PRIVILEGED: Age verification bypassed");
+              logger.info("[dlc] SUPER ADMIN: Age verification bypassed");
               return;
             }
 
@@ -386,7 +339,7 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
     setIsAgeVerified(true);
   }, [hasPrivilegedRole]);
 
-  // Keep privileged override in sync with auth state (login/logout without refresh).
+  // Keep super-admin override in sync with auth state (login/logout without refresh).
   useEffect(() => {
     const {
       data: { subscription },
@@ -404,12 +357,12 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
         return;
       }
 
-      // Database-driven privileged role check (admin/super_admin)
-      const isPrivilegedUser = await checkPrivilegedRoleDb(userId);
+      // Database-driven super admin check
+      const isSuper = await checkSuperAdminRole(userId);
 
-      setAdminOverrideActive(isPrivilegedUser);
+      setAdminOverrideActive(isSuper);
 
-      if (isPrivilegedUser) {
+      if (isSuper) {
         // Absolute unlock: all packages + NSFW + age verified.
         setAdminNsfwMasterEnabled(true);
         setAdminEnabledPackageIds(new Set());
@@ -424,7 +377,7 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
     });
 
     return () => subscription.unsubscribe();
-  }, [checkPrivilegedRoleDb]);
+  }, []);
 
   const loadAdminToggles = useCallback(async (): Promise<void> => {
     if (!adminOverrideActive) return;
@@ -739,45 +692,64 @@ export function useDLCPackage(packageId: string) {
 
 /**
  * Check if a specific feature is available
+ * SUPER ADMIN BYPASS: Admin and super admin users always have access
  */
 export function useDLCFeature(featureId: string) {
   const { hasFeature, isInitialized, isLoading } = useDLC();
+  const { isAdmin, isSuperAdmin } = useUserRoles();
 
   return useMemo(
     () => ({
-      isAvailable: isInitialized && hasFeature(featureId),
-      isLoading,
+      // ADMIN BYPASS: Admin and super admin always have access, even before DLC initializes
+      isAvailable: isAdmin || isSuperAdmin || (isInitialized && hasFeature(featureId)),
+      isLoading: isAdmin || isSuperAdmin ? false : isLoading,
     }),
-    [featureId, hasFeature, isInitialized, isLoading],
+    [featureId, hasFeature, isInitialized, isLoading, isAdmin, isSuperAdmin],
   );
 }
 
 /**
  * Optional variant of `useDLCFeature` that never throws.
  * Useful for components that can run without DLC context (tests, embed modes).
+ * SUPER ADMIN BYPASS: Admin and super admin users always have access
  */
 export function useOptionalDLCFeature(featureId: string) {
   const ctx = useContext(DLCContext);
+  const { isAdmin, isSuperAdmin } = useUserRoles();
   const isInitialized = Boolean(ctx?.isInitialized);
   const isLoading = Boolean(ctx?.isLoading);
-  const isAvailable = Boolean(ctx?.isInitialized && ctx?.hasFeature(featureId));
+  // ADMIN BYPASS: Admin and super admin always have access
+  const isAvailable = isAdmin || isSuperAdmin || Boolean(ctx?.isInitialized && ctx?.hasFeature(featureId));
   return useMemo(
     () => ({
       isAvailable,
-      isLoading,
-      isInitialized,
+      isLoading: isAdmin || isSuperAdmin ? false : isLoading,
+      isInitialized: isAdmin || isSuperAdmin ? true : isInitialized,
     }),
-    [isAvailable, isInitialized, isLoading],
+    [isAvailable, isInitialized, isLoading, isAdmin, isSuperAdmin],
   );
 }
 
 /**
  * Check if NSFW content is available
+ * Uses optional context to avoid throwing when rendered outside DLCProvider
  */
 export function useNSFWAvailable() {
-  const { ownedPackages, installedPackages, isAgeVerified, isInitialized, isLoading } = useDLC();
-
+  const ctx = useOptionalDLC();
+  
   return useMemo(() => {
+    // If no context, return safe defaults
+    if (!ctx) {
+      return {
+        isAvailable: false,
+        requiresAgeVerification: true,
+        requiresDLC: true,
+        isLoading: false,
+      };
+    }
+    
+    const { ownedPackages, installedPackages, isAgeVerified, isInitialized, isLoading } = ctx;
+    
     // Entitlement: owned OR installed adult-rated package.
     // (Some features are server-backed and do not require installation.)
     const hasNSFWPackage = [...ownedPackages, ...installedPackages].some(
@@ -790,5 +762,5 @@ export function useNSFWAvailable() {
       requiresDLC: !hasNSFWPackage,
       isLoading,
     };
-  }, [ownedPackages, installedPackages, isAgeVerified, isInitialized, isLoading]);
+  }, [ctx]);
 }

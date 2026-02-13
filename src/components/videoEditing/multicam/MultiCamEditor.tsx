@@ -1,23 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { CameraStreamRow, VideoEditRow, VideoRecordingRow } from "@/lib/videoEditing";
-import {
-  clamp,
-  getEditsForRecording,
-  queueVideoEdit,
-  renderAndUploadEdit,
-  roundTo,
-  type RenderProgress,
-  uuidLike,
-} from "@/lib/videoEditing";
-import type {
-  CameraSource,
-  CameraSwitchEvent,
-  MaskTrack,
-  MaskKeyframe,
-  TimelineSpecV1,
-  TransitionType,
-} from "@/lib/videoEditing";
+import { clamp, getEditsForRecording, queueVideoEdit, roundTo, uuidLike } from "@/lib/videoEditing";
+import type { CameraSource, CameraSwitchEvent, MaskTrack, MaskKeyframe, TimelineSpecV1, TransitionType } from "@/lib/videoEditing";
 import { EditsList } from "@/components/videoEditing/multicam/EditsList";
 import { TimelineBar } from "@/components/videoEditing/multicam/TimelineBar";
 import { useMultiCamPlayback } from "@/components/videoEditing/multicam/useMultiCamPlayback";
@@ -96,7 +81,7 @@ export function MultiCamEditor(props: {
   const [masks, setMasks] = useState<MaskTrack[]>([]);
   const [activeMaskId, setActiveMaskId] = useState<string | null>(null);
   const [selectedTransition, setSelectedTransition] = useState<TransitionType>("cut");
-
+  
   // Video filter state
   const [filterState, setFilterState] = useState<VideoFilterState>({
     enabled: false,
@@ -109,9 +94,7 @@ export function MultiCamEditor(props: {
     if (!sources.length) return;
     setCameraSwitches(prev => {
       if (prev.length) return prev;
-      return [
-        { id: uuidLike(), atSeconds: 0, cameraIndex: sources[0].cameraIndex, transition: "cut" },
-      ];
+      return [{ id: uuidLike(), atSeconds: 0, cameraIndex: sources[0].cameraIndex, transition: "cut" }];
     });
   }, [sources]);
 
@@ -158,8 +141,6 @@ export function MultiCamEditor(props: {
   const [loadingEdits, setLoadingEdits] = useState(false);
   const [edits, setEdits] = useState<VideoEditRow[]>([]);
   const [queuing, setQueuing] = useState(false);
-  const [rendering, setRendering] = useState(false);
-  const [renderProgress, setRenderProgress] = useState<RenderProgress | null>(null);
 
   const loadEdits = useCallback(async () => {
     setLoadingEdits(true);
@@ -202,16 +183,13 @@ export function MultiCamEditor(props: {
     if (!sources.length) return;
     const id = uuidLike();
     setCameraSwitches(prev =>
-      [
-        ...prev,
-        {
-          id,
-          atSeconds: roundTo(playback.playhead, 3),
-          cameraIndex: realActiveCameraIndex,
-          transition: selectedTransition,
-          transitionDurationMs: selectedTransition === "crossfade" ? 250 : 0,
-        },
-      ].sort((a, b) => a.atSeconds - b.atSeconds),
+      [...prev, {
+        id,
+        atSeconds: roundTo(playback.playhead, 3),
+        cameraIndex: realActiveCameraIndex,
+        transition: selectedTransition,
+        transitionDurationMs: selectedTransition === "crossfade" ? 250 : 0,
+      }].sort((a, b) => a.atSeconds - b.atSeconds),
     );
     toast.success("Switch added");
   }, [playback.playhead, realActiveCameraIndex, selectedTransition, sources.length]);
@@ -234,52 +212,16 @@ export function MultiCamEditor(props: {
     }
   }, [baseRecording.id, editName, loadEdits, onRefresh, timeline]);
 
-  const handleRender = useCallback(async () => {
-    setRendering(true);
-    setRenderProgress({ phase: "loading", progress: 0 });
-    try {
-      const res = await renderAndUploadEdit({
-        recordingId: baseRecording.id,
-        editName,
-        timeline,
-        onProgress: setRenderProgress,
-      });
-      if (!res.ok) {
-        toast.error(res.error || "Render failed");
-        return;
-      }
-      toast.success("Render complete");
-      await loadEdits();
-      await onRefresh();
-    } finally {
-      setRendering(false);
-      setTimeout(() => setRenderProgress(null), 800);
-    }
-  }, [baseRecording.id, editName, loadEdits, onRefresh, timeline]);
-
   const handleAddMaskKeyframeFromDetection = useCallback(() => {
     const det = detection.detections[selectedDetectionIndex];
     if (!det) return toast.info("No detection selected");
     const maskId = activeMaskId ?? uuidLike();
     const nextMask: MaskTrack =
       masks.find(m => m.id === maskId) ??
-      ({
-        id: maskId,
-        name: `Mask ${masks.length + 1}`,
-        mode: "exclude",
-        feather: 0.15,
-        blur: 0,
-        keyframes: [],
-      } satisfies MaskTrack);
+      ({ id: maskId, name: `Mask ${masks.length + 1}`, mode: "exclude", feather: 0.15, blur: 0, keyframes: [] } satisfies MaskTrack);
     const newKeyframe: MaskKeyframe = {
       atSeconds: roundTo(playback.playhead, 3),
-      shape: {
-        kind: "rect" as const,
-        xPct: det.box.x,
-        yPct: det.box.y,
-        wPct: det.box.width,
-        hPct: det.box.height,
-      },
+      shape: { kind: "rect" as const, xPct: det.box.x, yPct: det.box.y, wPct: det.box.width, hPct: det.box.height },
       strength: 1,
     };
     const updated: MaskTrack = {
@@ -308,11 +250,7 @@ export function MultiCamEditor(props: {
           onLoadDraft={handleLoadDraft}
           onSaveDraft={handleSaveDraft}
           onQueue={handleQueue}
-          onRender={handleRender}
           queuing={queuing}
-          rendering={rendering}
-          renderPhase={renderProgress?.phase}
-          renderProgress={renderProgress?.progress}
         />
 
         <div className="flex-1 overflow-hidden grid grid-rows-[auto,1fr,auto]">
@@ -404,3 +342,4 @@ export function MultiCamEditor(props: {
     </div>
   );
 }
+

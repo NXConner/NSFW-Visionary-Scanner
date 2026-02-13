@@ -1,0 +1,42 @@
+# Visionary Scanner - Senior Architect Rules
+# Goal: One-pass implementation, zero redundancy, cross-repo portability.
+
+system_directives:
+  - prioritize_dry: "Never duplicate logic. If a utility is needed in two places, create a shared hook or helper immediately."
+  - content_isolation: "Scanner logic must never reference specific NSFW or Safe content. It must only interact with the 'ContentManifest' interface."
+  - anti_hardcoding: "Never hardcode logic based on content type. Always reference 'APP_CONFIG.features' or 'APP_CONFIG.version' from content-manifest.ts."
+  - master_schema: "Always reference @src/types/scanner.d.ts as the master truth for data shapes. Never create conflicting type definitions."
+
+blueprint_phase_vigilance:
+  - strict_requirement: "Before coding, you must provide a Blueprint. If you skip this, or provide an incomplete one, you have failed."
+  - no_shortcuts: "The Blueprint must explicitly list EVERY file to be created or edited. Do not use 'etc.' or 'additional files as needed'."
+  - type_first: "All data structures must have defined TypeScript interfaces in the blueprint before implementation starts."
+  - error_handling_map: "Identify potential fail points (e.g., API timeouts, corrupt images) and define the handling logic in the blueprint."
+  - implementation_order: "Define a parallel-friendly build order. Identify which files can be built simultaneously without dependency blocks."
+  - sync_check: "Verify that the proposed change does not touch 'content-manifest.ts' unless explicitly asked. Core logic must remain agnostic."
+  - dependency_impact: "Every blueprint must include a 'Dependency Impact' section showing which repos/features are affected."
+
+implementation_rules:
+  - code_completeness: "Write 100% production-ready code. No 'TODOs', no 'placeholder logic', and no '// ... rest of code' comments."
+  - single_pass: "Apply all planned file touches in a single response or a coordinated sequence of steps to ensure the project remains in a runnable state."
+  - nsfw_isolation: "Any NSFW-specific logic must be wrapped in 'if (APP_CONFIG.version === \"nsfw\")' blocks."
+  - agnostic_hooks: "Use useAgnosticScanner and related hooks from src/scanner/hooks/ for all scanning operations."
+
+architecture_principles:
+  - core_provider_pattern: "The Scanner Engine is a universal 'black box'. Content/Filters are plugins via ContentManifest."
+  - variant_separation: "SFW and NSFW variants differ ONLY through content-manifest.ts and build flags."
+  - feature_flag_gating: "All adult content features must check BUILD_ALLOW_ADULT_BUNDLE before rendering."
+
+cross_repo_sync:
+  - bridge_file: "src/config/content-manifest.ts is the ONLY file that should differ between Safe and NSFW repos."
+  - protected_files: "Files in .gitattributes with 'merge=ours' are protected during upstream syncs."
+  - sync_integrity: "When editing core logic, ensure the code works in both Safe and Unrestricted modes."
+
+file_organization:
+  - scanner_core: "src/scanner/ - Universal scanning logic, measurement, calibration"
+  - scanner_hooks: "src/scanner/hooks/ - Agnostic React hooks for scanner operations"
+  - scanner_types: "src/types/scanner.d.ts - Master schema for all scanner data shapes"
+  - config_layer: "src/config/ - Content manifest, build configuration"
+  - lib_utilities: "src/lib/ - Shared utilities, hooks, helpers"
+  - dlc_modules: "src/dlc/ - DLC system with variant-aware content loading"
+  - nsfw_isolation: "src/assets/unrestricted/ - NSFW-only assets that don't sync to Safe repo"

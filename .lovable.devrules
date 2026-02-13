@@ -1,0 +1,42 @@
+# Lovable UI Strategy: Visionary Scanner
+
+# 1. Component Genericization
+# Create UI components that accept 'ContentData' as a prop.
+# The UI should not know if it is displaying safe or NSFW results.
+
+component_strategy:
+  - generic_props: "Components receive data via typed interfaces, not variant-specific structures."
+  - content_agnostic: "UI layer never checks content type directly - use ContentManifest for filtering."
+  - reusable_patterns: "Card, Modal, Button patterns must be reused from shadcn/ui primitives."
+
+# 2. State Management
+# Use a centralized state mapped in the Blueprint phase to avoid UI/Backend mismatch.
+
+state_management:
+  - source_of_truth: "Supabase for persistent data, React Query for caching, Zustand for UI state."
+  - blueprint_mapping: "State shape must be defined in Blueprint before implementation."
+  - type_safety: "All state must have TypeScript interfaces defined in types files."
+
+# 3. Consistency Check
+# Before generating a new view, scan existing components.
+
+consistency_rules:
+  - scan_first: "Check src/components/ui for existing primitives before creating new ones."
+  - no_duplicate_modals: "Use Dialog from shadcn/ui, not custom modal implementations."
+  - design_tokens: "Use semantic tokens from index.css - never hardcode colors."
+
+# 4. Feature Flagging
+# Use the content_manifest to toggle visibility of NSFW modules.
+
+feature_flags:
+  - build_flags: "Import from src/lib/buildFlags.ts for compile-time decisions."
+  - content_manifest: "Import from src/config/content-manifest.ts for runtime config."
+  - conditional_routes: "Use lazy loading with manifest checks for variant-specific routes."
+
+# 5. Design System
+# All colors must be HSL tokens from the design system.
+
+design_system:
+  - primary_colors: "Use --primary, --primary-foreground for main actions."
+  - semantic_colors: "Use --destructive, --muted, --accent for context."
+  - no_hardcoded: "Never use text-white, bg-black, or hex colors in components."

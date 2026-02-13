@@ -1,0 +1,16 @@
+# Visionary Scanner - Cross-Repo Sync Protection
+# These files are protected from being overwritten during upstream merges
+
+# Protect the manifest "Bridge" file - this is the ONLY file that differs between repos
+src/config/content-manifest.ts merge=ours
+
+# Protect build flags (contains version-specific settings)
+src/lib/buildFlags.ts merge=ours
+
+# Protect NSFW-only assets and content
+src/assets/unrestricted/** merge=ours
+src/dlc/adult/** merge=ours
+
+# Protect environment-specific configs
+.env merge=ours
+.env.local merge=ours

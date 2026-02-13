@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Bell, BellOff, Pill, Activity, Calendar, FileText, Trash2, Clock } from "lucide-react";
 import { toast } from "sonner";
-import { formatTime } from "@/lib/notificationPreferences";
 
 export const NotificationSettings = () => {
   const {
@@ -29,27 +28,6 @@ export const NotificationSettings = () => {
   const [medicationName, setMedicationName] = useState("");
   const [medicationTime, setMedicationTime] = useState("09:00");
   const [healthTime, setHealthTime] = useState("08:00");
-  const [medicationDays, setMedicationDays] = useState<number[]>([1, 3, 5]);
-  const [weeklyDay, setWeeklyDay] = useState<number>(1);
-  const [weeklyTime, setWeeklyTime] = useState("10:00");
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-  useEffect(() => {
-    if (settings.medicationSchedule?.name) {
-      setMedicationName(settings.medicationSchedule.name);
-    }
-    if (settings.medicationSchedule) {
-      setMedicationTime(formatTime(settings.medicationSchedule));
-      setMedicationDays(settings.medicationSchedule.daysOfWeek ?? [1, 3, 5]);
-    }
-    if (settings.healthSchedule) {
-      setHealthTime(formatTime(settings.healthSchedule));
-    }
-    if (settings.weeklyReportSchedule) {
-      setWeeklyDay(settings.weeklyReportSchedule.weekday);
-      setWeeklyTime(formatTime(settings.weeklyReportSchedule));
-    }
-  }, [settings.healthSchedule, settings.medicationSchedule, settings.weeklyReportSchedule]);
 
   const handleEnableNotifications = async () => {
     const success = await enableNotifications();
@@ -72,10 +50,11 @@ export const NotificationSettings = () => {
     }
 
     const [hour, minute] = medicationTime.split(":").map(Number);
-    const result = await scheduleMedicationReminder(medicationName, hour, minute, medicationDays);
+    const result = await scheduleMedicationReminder(medicationName, hour, minute);
 
     if (result) {
       toast.success(`Reminder set for ${medicationName} at ${medicationTime}`);
+      setMedicationName("");
     } else {
       toast.error("Failed to set reminder");
     }
@@ -93,11 +72,10 @@ export const NotificationSettings = () => {
   };
 
   const handleAddWeeklyReport = async () => {
-    const [hour, minute] = weeklyTime.split(":").map(Number);
-    const result = await scheduleWeeklyReport(weeklyDay, hour, minute);
+    const result = await scheduleWeeklyReport(1, 10, 0); // Monday at 10 AM
 
     if (result) {
-      toast.success("Weekly report reminder scheduled");
+      toast.success("Weekly report reminder set for Mondays at 10 AM");
     } else {
       toast.error("Failed to set reminder");
     }
@@ -251,31 +229,6 @@ export const NotificationSettings = () => {
                     />
                   </div>
                 </div>
-                <div>
-                  <Label className="text-sm text-muted-foreground">Days of Week</Label>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {dayNames.map((day, index) => {
-                      const selected = medicationDays.includes(index);
-                      return (
-                        <Button
-                          key={day}
-                          type="button"
-                          variant={selected ? "default" : "outline"}
-                          size="sm"
-                          className="w-12"
-                          onClick={() => {
-                            const next = selected
-                              ? medicationDays.filter(d => d !== index)
-                              : [...medicationDays, index].sort();
-                            setMedicationDays(next);
-                          }}
-                        >
-                          {day}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                </div>
                 <Button onClick={handleAddMedicationReminder} className="w-full">
                   Add Reminder
                 </Button>
@@ -311,35 +264,11 @@ export const NotificationSettings = () => {
                   <FileText className="w-4 h-4" />
                   Weekly Health Report
                 </h4>
-                <p className="text-sm text-muted-foreground">Schedule a weekly summary reminder.</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="weekly-day">Day</Label>
-                    <select
-                      id="weekly-day"
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      value={weeklyDay}
-                      onChange={e => setWeeklyDay(Number(e.target.value))}
-                    >
-                      {dayNames.map((day, index) => (
-                        <option key={day} value={index}>
-                          {day}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="weekly-time">Time</Label>
-                    <Input
-                      id="weekly-time"
-                      type="time"
-                      value={weeklyTime}
-                      onChange={e => setWeeklyTime(e.target.value)}
-                    />
-                  </div>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  Get a weekly summary of your health data every Monday at 10 AM.
+                </p>
                 <Button onClick={handleAddWeeklyReport} className="w-full">
-                  Save Weekly Schedule
+                  Enable Weekly Reports
                 </Button>
               </div>
             )}

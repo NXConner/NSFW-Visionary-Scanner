@@ -262,8 +262,7 @@ The development environment is fully configured and operational!
 2. **Review Documentation**
    - Read `SETUP_GUIDE.md` for detailed instructions
    - Check `README.md` for project overview
-
-- Review `docs/guides/deployment/DEPLOYMENT_CHECKLIST.md` before deploying
+  - Review `docs/guides/deployment/DEPLOYMENT_CHECKLIST.md` before deploying
 
 3. **Configure Your Environment**
    - Update `.env.local` with your credentials

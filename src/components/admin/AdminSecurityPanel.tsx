@@ -73,7 +73,7 @@ export function AdminSecurityPanel() {
     log =>
       log.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.ip.includes(searchQuery),
+      log.ip.includes(searchQuery)
   );
 
   const unresolvedAlerts = securityAlerts.filter(a => !a.resolved).length;
@@ -222,7 +222,9 @@ export function AdminSecurityPanel() {
                           <TableCell>{log.user}</TableCell>
                           <TableCell className="font-mono text-sm">{log.ip}</TableCell>
                           <TableCell>{log.device}</TableCell>
-                          <TableCell className="text-muted-foreground">{log.timestamp}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {log.timestamp}
+                          </TableCell>
                           <TableCell>
                             <Badge
                               variant={
@@ -283,7 +285,9 @@ export function AdminSecurityPanel() {
                                   {alert.severity}
                                 </Badge>
                               </div>
-                              <p className="text-sm text-muted-foreground mt-1">{alert.message}</p>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {alert.message}
+                              </p>
                               <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
                                 {alert.timestamp}
@@ -336,12 +340,16 @@ export function AdminSecurityPanel() {
                           <Globe className="h-5 w-5 text-destructive" />
                           <div>
                             <p className="font-mono font-medium">{blocked.ip}</p>
-                            <p className="text-sm text-muted-foreground">{blocked.reason}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {blocked.reason}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right text-sm">
-                            <p className="text-muted-foreground">{blocked.attempts} attempts</p>
+                            <p className="text-muted-foreground">
+                              {blocked.attempts} attempts
+                            </p>
                             <p className="text-xs text-muted-foreground">{blocked.blockedAt}</p>
                           </div>
                           <Button variant="outline" size="sm">

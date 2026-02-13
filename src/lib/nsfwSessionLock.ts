@@ -1,5 +1,4 @@
 import type { NsfwPrivacySettings } from "./nsfwPrivacySettings";
-import { appendAuditLogEntry } from "@/lib/auditLogStorage";
 
 const UNLOCKED_AT_KEY = "morphoscan_nsfw_session_unlocked_at";
 const PANIC_LOCK_KEY = "morphoscan_nsfw_panic_lock";
@@ -58,16 +57,6 @@ export function setNsfwPanicLock(): void {
   } catch {
     // ignore
   }
-}
-
-export function triggerNsfwPanicExit(params?: { reason?: string }): void {
-  setNsfwPanicLock();
-  clearNsfwSessionUnlocked();
-  void appendAuditLogEntry({
-    action: "nsfw_panic_exit",
-    category: "nsfw",
-    details: params?.reason || "User triggered panic exit",
-  });
 }
 
 export function clearNsfwPanicLock(): void {

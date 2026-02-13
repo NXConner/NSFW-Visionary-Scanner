@@ -73,3 +73,4 @@ export interface ScanSessionRecord {
   notes?: string | null;
   tags?: string[] | null;
 }
+

@@ -34,7 +34,8 @@ function detachVideoEl(video: HTMLVideoElement | null): void {
     // ignore
   }
   try {
-    (video as HTMLMediaElement).srcObject = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (video as any).srcObject = null;
   } catch {
     // ignore
   }
@@ -134,6 +135,7 @@ export function useCalibrationCamera({
       let lastErr: unknown = null;
       for (const c of attempts) {
         try {
+          // eslint-disable-next-line no-await-in-loop
           stream = await navigator.mediaDevices.getUserMedia(c);
           break;
         } catch (e) {

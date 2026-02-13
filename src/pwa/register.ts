@@ -4,7 +4,6 @@
  * We only register the SW on stable, user-facing origins to prevent
  * remote preview environments from being bricked by a stale SW.
  */
-import { Capacitor } from "@capacitor/core";
 
 function isPreviewHost(): boolean {
   try {
@@ -23,75 +22,22 @@ function isPreviewHost(): boolean {
   }
 }
 
-function isNativeApp(): boolean {
-  try {
-    if (Capacitor.isNativePlatform()) return true;
-  } catch {
-    // ignore and continue to URL heuristics
-  }
-
-  try {
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname.toLowerCase();
-    return (
-      protocol === "capacitor:" ||
-      protocol === "file:" ||
-      (protocol === "https:" && hostname === "localhost")
-    );
-  } catch {
-    return false;
-  }
-}
-
-function clearRegisteredServiceWorkers(): void {
-  if (!("serviceWorker" in navigator)) return;
-
-  void navigator.serviceWorker
-    .getRegistrations()
-    .then(registrations =>
-      Promise.all(
-        registrations.map(registration => {
-          try {
-            return registration.unregister();
-          } catch {
-            return Promise.resolve(false);
-          }
-        }),
-      ),
-    )
-    .then(() => {
-      if (!("caches" in window)) return;
-      return caches
-        .keys()
-        .then(keys => Promise.all(keys.map(key => caches.delete(key))))
-        .catch(() => undefined);
-    })
-    .catch(() => {
-      // ignore cleanup errors
-    });
-}
-
 /**
  * Register the PWA service worker only on stable, user-facing origins.
  * This prevents remote preview environments from being bricked by a stale SW.
  */
 export function registerPwaIfAllowed(): void {
+  if (import.meta.env.DEV) return;
   if (typeof window === "undefined") return;
   if (!("serviceWorker" in navigator)) return;
-  if (isNativeApp()) {
-    // Native app ships embedded assets; keep SW completely disabled.
-    clearRegisteredServiceWorkers();
-    return;
-  }
-  if (import.meta.env.DEV) return;
   if (isPreviewHost()) return;
 
   // Delay registration to keep boot fast and avoid timing-related races.
   setTimeout(() => {
     // Use Function constructor to completely hide the import from Rollup's static analysis
     // This prevents "virtual:pwa-register" resolution errors when the module doesn't exist
-    const dynamicImport = new Function("modulePath", "return import(modulePath)");
-
+    const dynamicImport = new Function('modulePath', 'return import(modulePath)');
+    
     dynamicImport("virtual:pwa-register")
       .then((module: { registerSW: (options: unknown) => void }) => {
         const { registerSW } = module;

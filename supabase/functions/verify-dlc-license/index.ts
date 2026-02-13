@@ -1,4 +1,3 @@
-import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
 // Verify DLC License
 // Verifies and activates DLC licenses for NSFW content unlock.
 //
@@ -9,7 +8,6 @@ import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,14 +19,6 @@ serve(async req => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
-
-  const rateLimitResponse = await applyRateLimit({
-    req,
-    endpoint: "verify-dlc-license",
-    ...DEFAULT_EDGE_RATE_LIMIT,
-    headers: corsHeaders,
-  });
-  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -71,7 +61,6 @@ serve(async req => {
     }
 
     const userId = authedUser.id;
-    const { isPrivileged } = await getPrivilegedFlags(supabaseClient, userId);
 
     if (!licenseKey) {
       return new Response(JSON.stringify({ error: "Missing required fields: licenseKey" }), {
@@ -157,27 +146,24 @@ serve(async req => {
     }
 
     // Age gate + consent (server enforcement)
-    // Privileged users (admin/super_admin) bypass verification gates.
-    if (!isPrivileged) {
-      const { data: age, error: ageError } = await supabaseClient
-        .from("dlc_age_verifications")
-        .select("is_verified, adult_content_consent, terms_accepted")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (ageError) {
-        console.error("Age verification query failed:", ageError);
-        return new Response(JSON.stringify({ error: "Internal server error" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const okAge = Boolean(age?.is_verified && age?.adult_content_consent && age?.terms_accepted);
-      if (!okAge) {
-        return new Response(JSON.stringify({ error: "Age verification required" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    const { data: age, error: ageError } = await supabaseClient
+      .from("dlc_age_verifications")
+      .select("is_verified, adult_content_consent, terms_accepted")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (ageError) {
+      console.error("Age verification query failed:", ageError);
+      return new Response(JSON.stringify({ error: "Internal server error" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const okAge = Boolean(age?.is_verified && age?.adult_content_consent && age?.terms_accepted);
+    if (!okAge) {
+      return new Response(JSON.stringify({ error: "Age verification required" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Device binding

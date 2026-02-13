@@ -50,31 +50,27 @@ const DetectionBox = memo(function DetectionBox({
   }, [detection.box.height, detection.box.width, calibrationScale]);
 
   // Memoize style object to prevent re-renders
-  const boxStyle = useMemo(
-    () => ({
-      left: `${detection.box.x}%`,
-      top: `${detection.box.y}%`,
-      width: `${detection.box.width}%`,
-      height: `${detection.box.height}%`,
-      transition:
-        "left 90ms ease-out, top 90ms ease-out, width 90ms ease-out, height 90ms ease-out",
-      opacity: isSelected ? 1 : 0.65,
-    }),
-    [detection.box.x, detection.box.y, detection.box.width, detection.box.height, isSelected],
-  );
+  const boxStyle = useMemo(() => ({
+    left: `${detection.box.x}%`,
+    top: `${detection.box.y}%`,
+    width: `${detection.box.width}%`,
+    height: `${detection.box.height}%`,
+    transition: "left 90ms ease-out, top 90ms ease-out, width 90ms ease-out, height 90ms ease-out",
+    opacity: isSelected ? 1 : 0.65,
+  }), [detection.box.x, detection.box.y, detection.box.width, detection.box.height, isSelected]);
 
-  const corners = useMemo(
-    () => [
-      { pos: "-top-0.5 -left-0.5", h: "top-0 left-0", v: "top-0 left-0" },
-      { pos: "-top-0.5 -right-0.5", h: "top-0 right-0", v: "top-0 right-0" },
-      { pos: "-bottom-0.5 -left-0.5", h: "bottom-0 left-0", v: "bottom-0 left-0" },
-      { pos: "-bottom-0.5 -right-0.5", h: "bottom-0 right-0", v: "bottom-0 right-0" },
-    ],
-    [],
-  );
+  const corners = useMemo(() => [
+    { pos: "-top-0.5 -left-0.5", h: "top-0 left-0", v: "top-0 left-0" },
+    { pos: "-top-0.5 -right-0.5", h: "top-0 right-0", v: "top-0 right-0" },
+    { pos: "-bottom-0.5 -left-0.5", h: "bottom-0 left-0", v: "bottom-0 left-0" },
+    { pos: "-bottom-0.5 -right-0.5", h: "bottom-0 right-0", v: "bottom-0 right-0" },
+  ], []);
 
   return (
-    <div className="absolute will-change-transform" style={boxStyle}>
+    <div
+      className="absolute will-change-transform"
+      style={boxStyle}
+    >
       {showDetectionConfidence ? (
         <DetectionConfidenceRing confidence={detection.score} className="absolute inset-0" />
       ) : (
@@ -152,12 +148,9 @@ export const ObjectDetectionOverlay = memo(function ObjectDetectionOverlay({
   const hasDetections = isActive && detections.length > 0;
 
   // Memoize onDetection callback
-  const stableOnDetection = useCallback(
-    (detected: boolean) => {
-      onDetection?.(detected);
-    },
-    [onDetection],
-  );
+  const stableOnDetection = useCallback((detected: boolean) => {
+    onDetection?.(detected);
+  }, [onDetection]);
 
   useEffect(() => {
     stableOnDetection(hasDetections);

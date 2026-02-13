@@ -37,9 +37,7 @@ export function PositionSelectionQueues({
         </CardHeader>
         <CardContent className="space-y-3">
           {pendingForMe.length === 0 ? (
-            <div className="text-sm text-muted-foreground">
-              {t("partnerSync.positions.pendingEmpty")}
-            </div>
+            <div className="text-sm text-muted-foreground">{t("partnerSync.positions.pendingEmpty")}</div>
           ) : (
             pendingForMe.map(item => (
               <Card key={item.id} className="border border-border/60">
@@ -47,9 +45,7 @@ export function PositionSelectionQueues({
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="font-medium">
-                        {item.position_name ||
-                          item.custom_position_name ||
-                          t("partnerSync.positions.customFallback")}
+                        {item.position_name || item.custom_position_name || t("partnerSync.positions.customFallback")}
                       </p>
                       {item.note && <p className="text-xs text-muted-foreground">{item.note}</p>}
                     </div>
@@ -59,7 +55,7 @@ export function PositionSelectionQueues({
                     value={notes[item.id] ?? ""}
                     onChange={e => setNotes(prev => ({ ...prev, [item.id]: e.target.value }))}
                     placeholder={t("partnerSync.positions.replyNote")}
-                    aria-label={t("partnerSync.positions.replyNote")}
+                      aria-label={t("partnerSync.positions.replyNote")}
                   />
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -108,9 +104,7 @@ export function PositionSelectionQueues({
         </CardHeader>
         <CardContent className="space-y-3">
           {pendingFromMe.length === 0 ? (
-            <div className="text-sm text-muted-foreground">
-              {t("partnerSync.positions.pendingEmpty")}
-            </div>
+            <div className="text-sm text-muted-foreground">{t("partnerSync.positions.pendingEmpty")}</div>
           ) : (
             pendingFromMe.map(item => (
               <Card key={item.id} className="border border-border/60">
@@ -118,9 +112,7 @@ export function PositionSelectionQueues({
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="font-medium">
-                        {item.position_name ||
-                          item.custom_position_name ||
-                          t("partnerSync.positions.customFallback")}
+                        {item.position_name || item.custom_position_name || t("partnerSync.positions.customFallback")}
                       </p>
                       {item.note && <p className="text-xs text-muted-foreground">{item.note}</p>}
                     </div>

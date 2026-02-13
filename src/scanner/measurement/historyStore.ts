@@ -27,9 +27,7 @@ export function writeMeasurementHistory(entries: MeasurementHistoryEntry[]): voi
   }
 }
 
-export function addToMeasurementHistory(
-  entry: Omit<MeasurementHistoryEntry, "id" | "createdAt">,
-): void {
+export function addToMeasurementHistory(entry: Omit<MeasurementHistoryEntry, "id" | "createdAt">): void {
   const next: MeasurementHistoryEntry = {
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
@@ -38,3 +36,4 @@ export function addToMeasurementHistory(
   const prev = readMeasurementHistory();
   writeMeasurementHistory([next, ...prev]);
 }
+

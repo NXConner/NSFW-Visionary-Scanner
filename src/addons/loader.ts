@@ -2,7 +2,6 @@ import { registerAddonModule, setAddonContributions, setAddonRuntimeStatus } fro
 import type { AddonModule, AddonRegisterContext } from "./types";
 import { dlcRegistry } from "@/dlc/core/DLCRegistry";
 import { registerDlcModules } from "@/dlc/modules";
-import { evaluateAddonCompatibility, getAppRuntimeInfo } from "./compatibility";
 
 let bootstrapped = false;
 
@@ -28,7 +27,6 @@ export function bootstrapAddons(): void {
 
   const addonModules = collectAddonModules();
   addonModules.forEach(registerAddonModule);
-  const runtimeInfo = getAppRuntimeInfo();
 
   const ctx: AddonRegisterContext = {
     dlc: {
@@ -39,14 +37,6 @@ export function bootstrapAddons(): void {
   };
 
   for (const addon of addonModules) {
-    const compatibility = evaluateAddonCompatibility(addon.manifest, runtimeInfo);
-    if (compatibility.status === "incompatible") {
-      setAddonRuntimeStatus(addon.manifest.id, {
-        status: "blocked",
-        lastError: compatibility.reasons.join("; ") || "Addon blocked by compatibility rules",
-      });
-      continue;
-    }
     try {
       setAddonRuntimeStatus(addon.manifest.id, { status: "registering", lastError: null });
       const res = addon.register(ctx);
@@ -71,3 +61,4 @@ export function bootstrapAddons(): void {
     }
   }
 }
+

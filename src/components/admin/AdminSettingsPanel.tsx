@@ -43,62 +43,14 @@ interface FeatureFlag {
 }
 
 const featureFlags: FeatureFlag[] = [
-  {
-    id: "1",
-    name: "multi_camera_recording",
-    description: "Enable multi-camera video recording",
-    enabled: true,
-    category: "Features",
-  },
-  {
-    id: "2",
-    name: "ai_health_insights",
-    description: "AI-powered health analysis and recommendations",
-    enabled: true,
-    category: "AI",
-  },
-  {
-    id: "3",
-    name: "partner_sync",
-    description: "Real-time partner data synchronization",
-    enabled: true,
-    category: "Features",
-  },
-  {
-    id: "4",
-    name: "beta_features",
-    description: "Show beta features to all users",
-    enabled: false,
-    category: "Testing",
-  },
-  {
-    id: "5",
-    name: "maintenance_mode",
-    description: "Enable site-wide maintenance mode",
-    enabled: false,
-    category: "System",
-  },
-  {
-    id: "6",
-    name: "new_onboarding",
-    description: "New user onboarding flow",
-    enabled: true,
-    category: "Testing",
-  },
-  {
-    id: "7",
-    name: "premium_trial",
-    description: "14-day premium trial for new users",
-    enabled: true,
-    category: "Features",
-  },
-  {
-    id: "8",
-    name: "anonymous_analytics",
-    description: "Collect anonymous usage analytics",
-    enabled: true,
-    category: "Privacy",
-  },
+  { id: "1", name: "multi_camera_recording", description: "Enable multi-camera video recording", enabled: true, category: "Features" },
+  { id: "2", name: "ai_health_insights", description: "AI-powered health analysis and recommendations", enabled: true, category: "AI" },
+  { id: "3", name: "partner_sync", description: "Real-time partner data synchronization", enabled: true, category: "Features" },
+  { id: "4", name: "beta_features", description: "Show beta features to all users", enabled: false, category: "Testing" },
+  { id: "5", name: "maintenance_mode", description: "Enable site-wide maintenance mode", enabled: false, category: "System" },
+  { id: "6", name: "new_onboarding", description: "New user onboarding flow", enabled: true, category: "Testing" },
+  { id: "7", name: "premium_trial", description: "14-day premium trial for new users", enabled: true, category: "Features" },
+  { id: "8", name: "anonymous_analytics", description: "Collect anonymous usage analytics", enabled: true, category: "Privacy" },
 ];
 
 export function AdminSettingsPanel() {
@@ -118,7 +70,9 @@ export function AdminSettingsPanel() {
   });
 
   const toggleFlag = (id: string) => {
-    setFlags(prev => prev.map(f => (f.id === id ? { ...f, enabled: !f.enabled } : f)));
+    setFlags(prev =>
+      prev.map(f => (f.id === id ? { ...f, enabled: !f.enabled } : f))
+    );
     toast.success("Feature flag updated");
   };
 
@@ -163,7 +117,9 @@ export function AdminSettingsPanel() {
                   <Label>Site Name</Label>
                   <Input
                     value={settings.siteName}
-                    onChange={e => setSettings(prev => ({ ...prev, siteName: e.target.value }))}
+                    onChange={e =>
+                      setSettings(prev => ({ ...prev, siteName: e.target.value }))
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -171,7 +127,9 @@ export function AdminSettingsPanel() {
                   <Input
                     type="email"
                     value={settings.supportEmail}
-                    onChange={e => setSettings(prev => ({ ...prev, supportEmail: e.target.value }))}
+                    onChange={e =>
+                      setSettings(prev => ({ ...prev, supportEmail: e.target.value }))
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -303,7 +261,9 @@ export function AdminSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label>Enable Rate Limiting</Label>
-                      <p className="text-sm text-muted-foreground">Limit API requests per user</p>
+                      <p className="text-sm text-muted-foreground">
+                        Limit API requests per user
+                      </p>
                     </div>
                     <Switch
                       checked={settings.enableRateLimiting}
@@ -364,7 +324,9 @@ export function AdminSettingsPanel() {
                             >
                               <div>
                                 <p className="font-medium font-mono text-sm">{flag.name}</p>
-                                <p className="text-sm text-muted-foreground">{flag.description}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {flag.description}
+                                </p>
                               </div>
                               <Switch
                                 checked={flag.enabled}

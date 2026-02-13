@@ -135,7 +135,6 @@ export const MediaUploader = ({
           accept={accept}
           multiple={multiple}
           onChange={e => void handleFileSelect(e.target.files)}
-          aria-label={label}
           className="hidden"
         />
         <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
@@ -164,7 +163,6 @@ export const MediaUploader = ({
           accept={accept}
           multiple={multiple}
           onChange={e => void handleFileSelect(e.target.files)}
-          aria-label={label}
           className="hidden"
         />
         <Button
@@ -203,7 +201,6 @@ export const MediaUploader = ({
               accept={accept}
               multiple={multiple}
               onChange={e => void handleFileSelect(e.target.files)}
-              aria-label={label}
               className="hidden"
             />
             <Button

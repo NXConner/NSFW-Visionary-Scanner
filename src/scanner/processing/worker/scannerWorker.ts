@@ -27,12 +27,7 @@ self.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
     }
 
     if (req.kind !== "measure") {
-      post({
-        id: (req as { id: string }).id,
-        ok: false,
-        kind: "error",
-        error: { message: "Unknown request" },
-      });
+      post({ id: (req as { id: string }).id, ok: false, kind: "error", error: { message: "Unknown request" } });
       return;
     }
 

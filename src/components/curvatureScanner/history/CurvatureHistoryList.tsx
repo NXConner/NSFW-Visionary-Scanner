@@ -50,7 +50,11 @@ export function CurvatureHistoryList({
             className={active ? "border-primary/30" : ""}
           >
             <CardContent className="p-4 flex items-start justify-between gap-4">
-              <button type="button" className="text-left flex-1" onClick={() => onSelect(s.id)}>
+              <button
+                type="button"
+                className="text-left flex-1"
+                onClick={() => onSelect(s.id)}
+              >
                 <div className="flex items-center gap-2">
                   <div className="text-sm font-medium">Curvature Session</div>
                   {conf != null ? (
@@ -62,12 +66,9 @@ export function CurvatureHistoryList({
                 <div className="text-xs text-muted-foreground mt-1">{fmtDate(s.createdAt)}</div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <Badge variant="secondary">Dorsal: {dorsal != null ? `${dorsal}°` : "—"}</Badge>
+                  <Badge variant="secondary">Lateral: {lateral != null ? `${lateral}°` : "—"}</Badge>
                   <Badge variant="secondary">
-                    Lateral: {lateral != null ? `${lateral}°` : "—"}
-                  </Badge>
-                  <Badge variant="secondary">
-                    Length:{" "}
-                    {s.estimatedLengthCm != null ? `${s.estimatedLengthCm.toFixed(1)} cm` : "—"}
+                    Length: {s.estimatedLengthCm != null ? `${s.estimatedLengthCm.toFixed(1)} cm` : "—"}
                   </Badge>
                 </div>
               </button>
@@ -88,3 +89,4 @@ export function CurvatureHistoryList({
     </div>
   );
 }
+

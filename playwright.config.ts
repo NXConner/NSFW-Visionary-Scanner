@@ -1,68 +1,49 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const DEFAULT_BASE_URL = "http://127.0.0.1:8080";
-const baseURL = String(
-  process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || DEFAULT_BASE_URL,
-).trim();
-
-const parsed = (() => {
-  try {
-    return new URL(baseURL);
-  } catch {
-    return null;
-  }
-})();
-
-const isLocalHost = parsed
-  ? ["localhost", "127.0.0.1", "0.0.0.0"].includes(parsed.hostname)
-  : false;
-
-const startServer =
-  (process.env.PLAYWRIGHT_START_SERVER || "1") !== "0" &&
-  // Only auto-start a server for local URLs; remote targets should be managed externally.
-  isLocalHost;
-
-const serverHost =
-  parsed?.hostname && parsed.hostname !== "0.0.0.0" ? parsed.hostname : "127.0.0.1";
-const serverPort = Number(parsed?.port || "8080");
+const FULL_MATRIX = process.env.E2E_FULL === "1";
 
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: "**/*.spec.ts",
-
+  timeout: 120_000,
   fullyParallel: true,
-  forbidOnly: Boolean(process.env.CI),
+  forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
-
-  reporter: process.env.CI
-    ? [["github"], ["html", { open: "never" }]]
-    : [["list"], ["html", { open: "never" }]],
-
-  outputDir: "test-results/playwright",
-
+  workers: process.env.CI ? 1 : undefined,
+  outputDir: "DontNeed/generated/test-results",
+  reporter: [["html", { outputFolder: "DontNeed/generated/playwright-report", open: "never" }]],
+  expect: {
+    timeout: 30_000,
+  },
   use: {
-    baseURL,
-    actionTimeout: 30_000,
-    navigationTimeout: 60_000,
-    trace: process.env.CI ? "on-first-retry" : "retain-on-failure",
+    // Use IPv4 loopback to avoid localhost IPv6 resolution issues in CI/containers.
+    baseURL: "http://127.0.0.1:4173",
+    trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
+    // Hardening for PWA/WebKit flakiness:
+    // - avoid service worker caching during E2E
+    serviceWorkers: "block",
   },
-
-  webServer: startServer
-    ? {
-        command: `npx cross-env VITE_E2E=1 VITE_DISTRIBUTION_CHANNEL=direct npm run dev -- --host ${serverHost} --port ${serverPort}`,
-        url: baseURL,
-        reuseExistingServer: !process.env.CI,
-        timeout: 180_000,
-      }
-    : undefined,
-
-  projects: [
-    {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+  // Default to Chromium for speed/stability; run full matrix with E2E_FULL=1.
+  projects: FULL_MATRIX
+    ? [
+        { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+        { name: "firefox", use: { ...devices["Desktop Firefox"] } },
+        { name: "webkit", use: { ...devices["Desktop Safari"] } },
+        { name: "Mobile Chrome", use: { ...devices["Pixel 5"] } },
+        { name: "Mobile Safari", use: { ...devices["iPhone 12"] } },
+      ]
+    : [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  webServer: {
+    // Ensure preview server can start in clean environments (requires build output).
+    // If you already have the dev/preview server running, Playwright will reuse it.
+    // Use a true SPA static server with history fallback for client-side routes.
+    command: "npm run build && npx sirv-cli dist --single --port 4173 --host 127.0.0.1",
+    url: "http://127.0.0.1:4173",
+    reuseExistingServer: false,
+    timeout: 120_000,
+    env: {
+      NODE_ENV: "production",
     },
-  ],
+  },
 });

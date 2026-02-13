@@ -45,18 +45,15 @@ export function ThoughtPingList({
   const [responses, setResponses] = useState<Record<string, string>>({});
 
   const recent = useMemo(() => pings, [pings]);
-  const replyOptions =
-    quickReplies.length > 0
-      ? quickReplies
-      : QUICK_REPLY_PRESETS.map((p, i) => ({
-          id: `preset-${i}`,
-          label: p.label,
-          message: p.message,
-          is_favorite: false,
-          user_id: "",
-          created_at: "",
-          updated_at: "",
-        }));
+  const replyOptions = quickReplies.length > 0 ? quickReplies : QUICK_REPLY_PRESETS.map((p, i) => ({
+    id: `preset-${i}`,
+    label: p.label,
+    message: p.message,
+    is_favorite: false,
+    user_id: "",
+    created_at: "",
+    updated_at: "",
+  }));
 
   return (
     <Card className="glass-card border-border/50">

@@ -1,0 +1,33 @@
+import { test, expect } from "@playwright/test";
+import { primeLocalStorageForE2E, waitForAppReady } from "./e2eUtils";
+
+test.describe("Authentication Flow", () => {
+  test.beforeEach(async ({ page }) => {
+    await primeLocalStorageForE2E(page);
+  });
+
+  test("should load the application", async ({ page }) => {
+    await page.goto("/");
+    await waitForAppReady(page);
+    await expect(page).toHaveTitle(/MorphoScan Pro/);
+  });
+
+  test("should show login form", async ({ page }) => {
+    await page.goto("/auth");
+    await waitForAppReady(page);
+    await expect(page.locator('input[type="email"]')).toBeVisible();
+    await expect(page.locator('input[type="password"]')).toBeVisible();
+  });
+
+  test("should navigate to privacy policy", async ({ page }) => {
+    await page.goto("/privacy");
+    await waitForAppReady(page);
+    await expect(page.getByRole("heading", { name: "Privacy Policy" })).toBeVisible();
+  });
+
+  test("should navigate to terms of service", async ({ page }) => {
+    await page.goto("/terms");
+    await waitForAppReady(page);
+    await expect(page.getByRole("heading", { name: "Terms of Service" })).toBeVisible();
+  });
+});

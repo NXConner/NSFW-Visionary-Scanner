@@ -94,20 +94,11 @@ export function CurvatureTrends({ sessions }: { sessions: CurvatureScanSession[]
         <CardTitle className="text-lg">Trends (last {Math.min(30, sessions.length)})</CardTitle>
       </CardHeader>
       <CardContent className="p-6 space-y-3">
-        <Sparkline
-          values={dorsalAngles}
-          label="Dorsal angle"
-          unit="°"
-          color="rgba(56,189,248,0.92)"
-        />
-        <Sparkline
-          values={lateralAngles}
-          label="Lateral angle"
-          unit="°"
-          color="rgba(167,139,250,0.82)"
-        />
+        <Sparkline values={dorsalAngles} label="Dorsal angle" unit="°" color="rgba(56,189,248,0.92)" />
+        <Sparkline values={lateralAngles} label="Lateral angle" unit="°" color="rgba(167,139,250,0.82)" />
         <Sparkline values={lengths} label="Length" unit="cm" color="rgba(34,197,94,0.80)" />
       </CardContent>
     </Card>
   );
 }
+

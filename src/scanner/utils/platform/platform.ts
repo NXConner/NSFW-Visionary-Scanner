@@ -6,3 +6,4 @@ export function getPlatformKind(): PlatformKind {
   if (w?.Capacitor) return "capacitor";
   return "web";
 }
+

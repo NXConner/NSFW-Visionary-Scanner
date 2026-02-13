@@ -28,7 +28,6 @@ function createPackage(): DLCPackage {
       "Unlocks NSFW Scanner Mode: on-device explicit-content detection controls, thresholds, and safety policy options. Disabled by default; you must enable it in Settings after age verification.",
     marketingTagline: "Adult-only scanning mode",
     priceUsd: 6.99,
-    currency: "USD",
     priceType: "one_time",
     regionalPricing: { EUR: 5.99, GBP: 5.49, CAD: 8.99 },
     features: [
@@ -53,7 +52,6 @@ function createPackage(): DLCPackage {
     isActive: true,
     isFeatured: false,
     displayOrder: 11,
-    requiresBasePack: false,
     contentRating: "18+",
     createdAt: new Date(),
     updatedAt: new Date(),

@@ -32,7 +32,7 @@ export const MobileBottomNav = memo(function MobileBottomNav({
     <nav
       aria-label="Main navigation"
       className="fixed bottom-0 left-0 right-0 z-[9999] block lg:hidden bg-background border-t border-border shadow-[0_-4px_12px_rgba(0,0,0,0.3)]"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="flex items-stretch justify-around h-16 max-w-lg mx-auto bg-background">
         {navItems.map(item => {

@@ -10,21 +10,21 @@ import { measureBlobInWorker } from "@/scanner/processing/worker";
  */
 function isLowPowerDevice(): boolean {
   if (typeof navigator === "undefined") return false;
-
+  
   // Check CPU cores (low-end devices typically have 2-4)
   const cores = navigator.hardwareConcurrency ?? 4;
   if (cores <= 2) return true;
-
+  
   // Check device memory if available (Chrome only)
   const mem = (navigator as any).deviceMemory;
   if (typeof mem === "number" && mem <= 2) return true;
-
+  
   // Check if mobile
   if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
     // Mobile with low cores
     return cores <= 4;
   }
-
+  
   return false;
 }
 
@@ -33,7 +33,7 @@ function isLowPowerDevice(): boolean {
  */
 function getAdaptiveOptions(opts: ProcessingOptions = {}): ProcessingOptions {
   if (opts.maxDim !== undefined) return opts;
-
+  
   const lowPower = isLowPowerDevice();
   return {
     ...opts,
@@ -72,9 +72,7 @@ export async function measureBlobOptimized(
   opts: ProcessingOptions = {},
 ): Promise<MeasurementResult> {
   const adaptiveOpts = getAdaptiveOptions(opts);
-  const workerRes = await measureBlobInWorker(args.blob, args.calibration, adaptiveOpts).catch(
-    () => null,
-  );
+  const workerRes = await measureBlobInWorker(args.blob, args.calibration, adaptiveOpts).catch(() => null);
   if (workerRes) return workerRes;
   const { blobToDataUrl } = await import("@/scanner/utils/image");
   const dataUrl = await blobToDataUrl(args.blob);

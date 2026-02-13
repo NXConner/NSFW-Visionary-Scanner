@@ -13,7 +13,7 @@ export type RunNavContext = {
 
 export function runNavItem(item: NavItem, ctx: RunNavContext) {
   console.log("[runNavItem] Executing:", { id: item.id, kind: item.kind, to: item.to });
-
+  
   if (item.kind === "route") {
     const to = item.to ?? "/";
     console.log("[runNavItem] Navigating to route:", to);
@@ -21,7 +21,7 @@ export function runNavItem(item: NavItem, ctx: RunNavContext) {
     ctx.afterNavigate?.();
     return;
   }
-
+  
   console.log("[runNavItem] Navigating to tab:", item.id);
   ctx.navigateTab(item.id);
   ctx.afterNavigate?.();

@@ -7,7 +7,6 @@ import { logger } from "@/lib/logger";
 import {
   createMultiCameraSession,
   getMultiCameraSessions,
-  persistMultiCameraRecordingUploads,
   startRecording,
   stopRecording,
   type MultiCameraSession,
@@ -15,7 +14,9 @@ import {
 import { useVideoRecording } from "@/hooks/useVideoRecording";
 import { Play, Square } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { PartnerSyncRecordingPanel } from "./PartnerSyncRecordingPanel";
+import { supabase } from "@/integrations/supabase/client";
+import { fromExtended } from "@/lib/supabaseExtensions";
+import { ensureRecordingForCameraStream } from "@/lib/videoEditing";
 
 type VideoRefs = Record<number, HTMLVideoElement | null>;
 
@@ -136,7 +137,6 @@ export function RecordingTab({ isActive }: { isActive: boolean }): JSX.Element {
     setLoading(true);
     try {
       const { durationSeconds, blobs } = await stopMultiCameraRecording();
-      const streamsForMeta = cameraStreams;
       stopAllStreams();
       const duration =
         durationSeconds ??
@@ -150,27 +150,55 @@ export function RecordingTab({ isActive }: { isActive: boolean }): JSX.Element {
 
       if (blobs.length > 0) {
         const uploads = await uploadRecordingSet({ sessionId: currentSession.id, blobs });
-        if (uploads.length > 0) {
-          await persistMultiCameraRecordingUploads({
-            session: currentSession,
-            uploads,
-            durationSeconds: duration,
-            cameraStreams: streamsForMeta,
-          });
+        // Persist per-camera stream metadata best-effort
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user && uploads.length > 0) {
+          const streamRows = await Promise.all(
+            uploads.map(async u => {
+              const { data: inserted, error } = await fromExtended("camera_streams")
+                .insert({
+                  session_id: currentSession.id,
+                  user_id: user.id,
+                  camera_index: u.cameraIndex,
+                  device_type: "webcam",
+                  is_active: false,
+                  is_recording: false,
+                  video_url: u.publicUrl,
+                  video_storage_path: u.path,
+                  video_duration_seconds: duration,
+                  video_size_bytes: u.sizeBytes,
+                  codec: u.mimeType,
+                })
+                .select(
+                  "id, session_id, camera_index, camera_name, device_type, video_url, video_storage_path, video_duration_seconds, created_at",
+                )
+                .single();
+              if (error) return null;
+              return inserted;
+            }),
+          );
+
+          // Ensure we also have `video_recordings` rows (required for video_edits FK).
+          await Promise.all(
+            streamRows
+              .filter(Boolean)
+              .map((row: any) =>
+                ensureRecordingForCameraStream({
+                  sessionId: currentSession.id,
+                  cameraStream: row,
+                  durationSeconds: duration,
+                }),
+              ),
+          );
         }
       }
       await load();
     } finally {
       setLoading(false);
     }
-  }, [
-    cameraStreams,
-    currentSession,
-    load,
-    stopAllStreams,
-    stopMultiCameraRecording,
-    uploadRecordingSet,
-  ]);
+  }, [currentSession, load, stopAllStreams, stopMultiCameraRecording, uploadRecordingSet]);
 
   return (
     <Card className="glass-card border-border/50">
@@ -221,22 +249,10 @@ export function RecordingTab({ isActive }: { isActive: boolean }): JSX.Element {
           </div>
         )}
 
-        <PartnerSyncRecordingPanel
-          sessions={sessions}
-          currentSession={currentSession}
-          onAddSession={session =>
-            setSessions(prev => (prev.some(s => s.id === session.id) ? prev : [session, ...prev]))
-          }
-          onSelectSession={session => setCurrentSession(session)}
-        />
-
         {isRecording && cameraStreams.length > 0 && (
           <div className="grid grid-cols-2 gap-4">
             {cameraStreams.map((stream, index) => (
-              <div
-                key={stream.id}
-                className="relative aspect-video bg-black rounded overflow-hidden"
-              >
+              <div key={stream.id} className="relative aspect-video bg-black rounded overflow-hidden">
                 <video
                   ref={el => {
                     videoRefs.current[index] = el;

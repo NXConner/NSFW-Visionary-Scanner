@@ -38,3 +38,4 @@ export async function saveCurvatureSessions(sessions: CurvatureScanSession[]): P
     // ignore
   }
 }
+

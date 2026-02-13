@@ -44,10 +44,7 @@ export function BootWatchdog({
 }: BootWatchdogProps): React.ReactElement | null {
   const [tripped, setTripped] = useState(false);
 
-  const shouldWatch = useMemo(() => {
-    // Allow explicitly enabling the watchdog for field diagnostics (e.g. native builds).
-    if (String(import.meta.env.VITE_ENABLE_BOOT_WATCHDOG || "") === "1") return true;
-
+  const isPreviewHost = useMemo(() => {
     try {
       const hostname = window.location.hostname.toLowerCase();
       return (
@@ -66,26 +63,14 @@ export function BootWatchdog({
   }, []);
 
   useEffect(() => {
-    if (!shouldWatch) return;
+    if (!isPreviewHost) return;
 
     const timer = window.setTimeout(() => {
       if (!getWinFlag(readyFlagKey)) setTripped(true);
     }, timeoutMs);
 
     return () => window.clearTimeout(timer);
-  }, [readyFlagKey, shouldWatch, timeoutMs]);
-
-  useEffect(() => {
-    if (!shouldWatch) return;
-    if (!tripped) return;
-
-    // Slow boots can exceed the threshold but still recover; auto-dismiss when ready.
-    const interval = window.setInterval(() => {
-      if (getWinFlag(readyFlagKey)) setTripped(false);
-    }, 250);
-
-    return () => window.clearInterval(interval);
-  }, [readyFlagKey, shouldWatch, tripped]);
+  }, [isPreviewHost, readyFlagKey, timeoutMs]);
 
   if (!tripped) return null;
 

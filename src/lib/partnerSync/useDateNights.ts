@@ -58,11 +58,7 @@ function mapTemplateCategory(
     .trim()
     .toLowerCase();
   if (!normalized) return "custom";
-  if (
-    normalized.includes("romantic") ||
-    normalized.includes("sensual") ||
-    normalized.includes("making love")
-  ) {
+  if (normalized.includes("romantic") || normalized.includes("sensual") || normalized.includes("making love")) {
     return "romantic";
   }
   if (
@@ -88,11 +84,7 @@ function mapTemplateCategory(
     return "adventurous";
   }
   if (normalized.includes("quick")) return "quick";
-  if (
-    normalized.includes("slow") ||
-    normalized.includes("all night") ||
-    normalized.includes("passion")
-  ) {
+  if (normalized.includes("slow") || normalized.includes("all night") || normalized.includes("passion")) {
     return "passionate";
   }
   return "custom";
@@ -150,25 +142,33 @@ export function useDateNights(partnerId: string | null, pageSize: number = 10) {
       setDetails({});
       return;
     }
-    const [
-      itinerary,
-      checklist,
-      packing,
-      distractions,
-      positions,
-      aftercare,
-      reminders,
-      reflections,
-    ] = await Promise.all([
-      fromExtended("intimate_date_itinerary_items").select("*").in("proposal_id", proposalIds),
-      fromExtended("intimate_date_checklist_items").select("*").in("proposal_id", proposalIds),
-      fromExtended("intimate_date_packing_items").select("*").in("proposal_id", proposalIds),
-      fromExtended("intimate_date_distractions").select("*").in("proposal_id", proposalIds),
-      fromExtended("intimate_date_positions").select("*").in("proposal_id", proposalIds),
-      fromExtended("intimate_date_aftercare_items").select("*").in("proposal_id", proposalIds),
-      fromExtended("intimate_date_reminders").select("*").in("proposal_id", proposalIds),
-      fromExtended("intimate_date_reflections").select("*").in("proposal_id", proposalIds),
-    ]);
+    const [itinerary, checklist, packing, distractions, positions, aftercare, reminders, reflections] =
+      await Promise.all([
+        fromExtended("intimate_date_itinerary_items")
+          .select("*")
+          .in("proposal_id", proposalIds),
+        fromExtended("intimate_date_checklist_items")
+          .select("*")
+          .in("proposal_id", proposalIds),
+        fromExtended("intimate_date_packing_items")
+          .select("*")
+          .in("proposal_id", proposalIds),
+        fromExtended("intimate_date_distractions")
+          .select("*")
+          .in("proposal_id", proposalIds),
+        fromExtended("intimate_date_positions")
+          .select("*")
+          .in("proposal_id", proposalIds),
+        fromExtended("intimate_date_aftercare_items")
+          .select("*")
+          .in("proposal_id", proposalIds),
+        fromExtended("intimate_date_reminders")
+          .select("*")
+          .in("proposal_id", proposalIds),
+        fromExtended("intimate_date_reflections")
+          .select("*")
+          .in("proposal_id", proposalIds),
+      ]);
 
     const next: Record<string, ProposalDetails> = {};
     for (const id of proposalIds) {
@@ -393,18 +393,10 @@ export function useDateNights(partnerId: string | null, pageSize: number = 10) {
               is_location_private: input.isLocationPrivate,
               duration_minutes: input.durationMinutes ?? null,
               activities,
-              specialty_intimacy: input.positions,
+              positions: input.positions,
               text_message: input.message || null,
               special_requests: input.specialRequests || null,
-              voice_message_url: input.voiceMessageUrl || null,
-              voice_message_duration_seconds: input.voiceMessageDurationSeconds ?? null,
-              images_urls: input.images ?? null,
-              gifs_urls: input.gifs ?? null,
-              videos_urls: input.videos ?? null,
-              links: input.links ?? null,
-              adult_emojis: input.emojis ?? null,
-              proposal_status: "pending",
-              proposal_type: "custom",
+              status: "pending",
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             })
@@ -511,33 +503,30 @@ export function useDateNights(partnerId: string | null, pageSize: number = 10) {
     [load, proposals],
   );
 
-  const addReflection = useCallback(
-    async (proposalId: string, rating: number, notes: string) => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return false;
-        const { error } = await fromExtended("intimate_date_reflections").insert({
-          proposal_id: proposalId,
-          user_id: user.id,
-          rating,
-          notes,
-          created_at: new Date().toISOString(),
-        });
-        if (error) {
-          toast.error("Failed to save reflection");
-          return false;
-        }
-        await load();
-        return true;
-      } catch (error) {
-        logger.error("partner sync: add reflection failed", { error });
+  const addReflection = useCallback(async (proposalId: string, rating: number, notes: string) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return false;
+      const { error } = await fromExtended("intimate_date_reflections").insert({
+        proposal_id: proposalId,
+        user_id: user.id,
+        rating,
+        notes,
+        created_at: new Date().toISOString(),
+      });
+      if (error) {
+        toast.error("Failed to save reflection");
         return false;
       }
-    },
-    [load],
-  );
+      await load();
+      return true;
+    } catch (error) {
+      logger.error("partner sync: add reflection failed", { error });
+      return false;
+    }
+  }, [load]);
 
   const respondWithModification = useCallback(
     async (proposalId: string, modifications: ProposalModifications) => {
@@ -590,13 +579,6 @@ export function useDateNights(partnerId: string | null, pageSize: number = 10) {
         positions: detail.positions ?? [],
         message: proposal.text_message ?? "",
         specialRequests: proposal.special_requests ?? "",
-        voiceMessageUrl: proposal.voice_message_url ?? "",
-        voiceMessageDurationSeconds: proposal.voice_message_duration_seconds ?? null,
-        images: proposal.images_urls ?? [],
-        gifs: proposal.gifs_urls ?? [],
-        videos: proposal.videos_urls ?? [],
-        links: proposal.links ?? [],
-        emojis: proposal.adult_emojis ?? [],
         budget: (proposal.activities as any)?.budget ?? null,
         travelMinutes: (proposal.activities as any)?.travel_minutes ?? null,
         checklist: detail.checklist ?? [],

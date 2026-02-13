@@ -51,56 +51,11 @@ interface DLCPackage {
 
 // Sample data
 const dlcPackages: DLCPackage[] = [
-  {
-    id: "1",
-    name: "Advanced Techniques Pack",
-    price: 9.99,
-    sales: 1234,
-    revenue: 12327.66,
-    status: "active",
-    category: "Education",
-    createdAt: "2024-01-15",
-  },
-  {
-    id: "2",
-    name: "Premium Positions Library",
-    price: 14.99,
-    sales: 856,
-    revenue: 12831.44,
-    status: "active",
-    category: "Lifestyle",
-    createdAt: "2024-02-20",
-  },
-  {
-    id: "3",
-    name: "Health Monitoring Pro",
-    price: 19.99,
-    sales: 432,
-    revenue: 8635.68,
-    status: "active",
-    category: "Health",
-    createdAt: "2024-03-10",
-  },
-  {
-    id: "4",
-    name: "Partner Sync Bundle",
-    price: 24.99,
-    sales: 289,
-    revenue: 7222.11,
-    status: "draft",
-    category: "Premium",
-    createdAt: "2024-04-05",
-  },
-  {
-    id: "5",
-    name: "Expert Consultations Pack",
-    price: 49.99,
-    sales: 156,
-    revenue: 7798.44,
-    status: "active",
-    category: "Premium",
-    createdAt: "2024-05-01",
-  },
+  { id: "1", name: "Advanced Techniques Pack", price: 9.99, sales: 1234, revenue: 12327.66, status: "active", category: "Education", createdAt: "2024-01-15" },
+  { id: "2", name: "Premium Positions Library", price: 14.99, sales: 856, revenue: 12831.44, status: "active", category: "Lifestyle", createdAt: "2024-02-20" },
+  { id: "3", name: "Health Monitoring Pro", price: 19.99, sales: 432, revenue: 8635.68, status: "active", category: "Health", createdAt: "2024-03-10" },
+  { id: "4", name: "Partner Sync Bundle", price: 24.99, sales: 289, revenue: 7222.11, status: "draft", category: "Premium", createdAt: "2024-04-05" },
+  { id: "5", name: "Expert Consultations Pack", price: 49.99, sales: 156, revenue: 7798.44, status: "active", category: "Premium", createdAt: "2024-05-01" },
 ];
 
 export function AdminDLCPanel() {
@@ -108,7 +63,7 @@ export function AdminDLCPanel() {
   const [activeTab, setActiveTab] = useState("packages");
 
   const filteredPackages = dlcPackages.filter(pkg =>
-    pkg.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    pkg.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const totalRevenue = dlcPackages.reduce((sum, pkg) => sum + pkg.revenue, 0);
@@ -158,10 +113,7 @@ export function AdminDLCPanel() {
               <div>
                 <p className="text-sm text-muted-foreground">Avg. Price</p>
                 <p className="text-2xl font-bold">
-                  $
-                  {(dlcPackages.reduce((sum, p) => sum + p.price, 0) / dlcPackages.length).toFixed(
-                    2,
-                  )}
+                  ${(dlcPackages.reduce((sum, p) => sum + p.price, 0) / dlcPackages.length).toFixed(2)}
                 </p>
               </div>
               <DollarSign className="h-8 w-8 text-muted-foreground" />
@@ -230,13 +182,7 @@ export function AdminDLCPanel() {
                         <TableCell>${pkg.revenue.toLocaleString()}</TableCell>
                         <TableCell>
                           <Badge
-                            variant={
-                              pkg.status === "active"
-                                ? "default"
-                                : pkg.status === "draft"
-                                  ? "secondary"
-                                  : "outline"
-                            }
+                            variant={pkg.status === "active" ? "default" : pkg.status === "draft" ? "secondary" : "outline"}
                           >
                             {pkg.status}
                           </Badge>
@@ -283,10 +229,7 @@ export function AdminDLCPanel() {
                   { name: "Pro Bundle", packages: 5, discount: 25, price: 49.99 },
                   { name: "Complete Collection", packages: 9, discount: 40, price: 79.99 },
                 ].map((bundle, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between p-4 rounded-lg bg-muted/50"
-                  >
+                  <div key={i} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                     <div>
                       <p className="font-semibold">{bundle.name}</p>
                       <p className="text-sm text-muted-foreground">
@@ -318,10 +261,7 @@ export function AdminDLCPanel() {
                   { code: "VIP50", discount: "50%", uses: 12, maxUses: 50, active: true },
                   { code: "EXPIRED10", discount: "10%", uses: 200, maxUses: 200, active: false },
                 ].map((promo, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between p-4 rounded-lg bg-muted/50"
-                  >
+                  <div key={i} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-4">
                       <code className="px-2 py-1 bg-background rounded font-mono text-sm">
                         {promo.code}
@@ -357,10 +297,7 @@ export function AdminDLCPanel() {
                     .sort((a, b) => b.sales - a.sales)
                     .slice(0, 3)
                     .map((pkg, i) => (
-                      <div
-                        key={pkg.id}
-                        className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                      >
+                      <div key={pkg.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                         <div className="flex items-center gap-3">
                           <span className="text-2xl font-bold text-muted-foreground">#{i + 1}</span>
                           <div>
@@ -376,18 +313,11 @@ export function AdminDLCPanel() {
                   <h3 className="font-semibold">Recent Activity</h3>
                   {[
                     { action: "New purchase", package: "Advanced Techniques", time: "2 min ago" },
-                    {
-                      action: "Refund processed",
-                      package: "Health Monitoring Pro",
-                      time: "15 min ago",
-                    },
+                    { action: "Refund processed", package: "Health Monitoring Pro", time: "15 min ago" },
                     { action: "Bundle created", package: "Starter Bundle", time: "1 hour ago" },
                     { action: "Price updated", package: "Premium Positions", time: "3 hours ago" },
                   ].map((activity, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                    >
+                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                       <div>
                         <p className="font-medium">{activity.action}</p>
                         <p className="text-sm text-muted-foreground">{activity.package}</p>

@@ -7,6 +7,7 @@ import { completeLesson, submitQuizAttempt, type QuizQuestion } from "@/lib/inte
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { EditLessonDialog } from "@/components/interactiveLearning/admin/EditLessonDialog";
 import type { LessonState, QuizAnswers, SelectedCourse } from "../types";
+import { buildLessonFallback } from "@/lib/learningFallbacks";
 
 function getQuestionText(q: QuizQuestion): string {
   return q.question_text;
@@ -32,6 +33,20 @@ export function LessonView({
   const { isAdmin } = useUserRoles();
 
   const questions = useMemo(() => quiz?.questions || [], [quiz?.questions]);
+  const moduleTitle = useMemo(() => {
+    const modules = selectedCourse?.modules ?? [];
+    return modules.find(m => m.id === lesson.module_id)?.title ?? null;
+  }, [lesson.module_id, selectedCourse?.modules]);
+  const fallback = useMemo(
+    () =>
+      buildLessonFallback({
+        title: lesson.title,
+        contentType: lesson.content_type,
+        estimatedMinutes: lesson.estimated_duration_minutes,
+        moduleTitle,
+      }),
+    [lesson.content_type, lesson.estimated_duration_minutes, lesson.title, moduleTitle],
+  );
 
   const handleSubmitQuiz = useCallback(async () => {
     if (!quiz) return;
@@ -108,7 +123,6 @@ export function LessonView({
                                 value={option}
                                 checked={checked}
                                 onChange={() => setAnswers(prev => ({ ...prev, [key]: option }))}
-                                aria-label={option}
                               />
                               <span>{option}</span>
                             </label>
@@ -145,10 +159,29 @@ export function LessonView({
               {(lesson.content_data as Record<string, unknown>).text as string}
             </div>
           ) : (
-            <p className="text-muted-foreground">
-              Content coming soon...
-              {isAdmin ? " (Use “Edit Lesson” to publish content.)" : ""}
-            </p>
+            <div className="space-y-5">
+              <p className="text-muted-foreground">{fallback.summary}</p>
+              {fallback.sections.map(section => (
+                <div key={section.title} className="space-y-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {section.title}
+                  </h4>
+                  <ul className="list-disc pl-5 space-y-1 text-sm">
+                    {section.bullets.map(item => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                  {section.note && (
+                    <p className="text-xs text-muted-foreground">{section.note}</p>
+                  )}
+                </div>
+              ))}
+              {isAdmin && (
+                <p className="text-xs text-muted-foreground">
+                  Admin note: publish the lesson content to replace this default guidance.
+                </p>
+              )}
+            </div>
           )}
 
           <div className="flex items-center justify-between pt-4 border-t">

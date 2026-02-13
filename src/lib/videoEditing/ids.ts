@@ -5,3 +5,4 @@ export function uuidLike(): string {
   const r = Math.floor(Math.random() * 1e16).toString(16);
   return `${t}-${r}`.slice(0, 36);
 }
+

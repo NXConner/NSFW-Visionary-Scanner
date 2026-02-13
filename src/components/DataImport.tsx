@@ -12,7 +12,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { z } from "zod";
-import { APP_SHORT_NAME } from "@/config/brand";
 
 const backupSchema = z
   .object({
@@ -87,9 +86,7 @@ export const DataImport = () => {
         const result = backupSchema.safeParse(parsed);
 
         if (!result.success) {
-          setError(
-            `Invalid backup file format. Please use a file exported from ${APP_SHORT_NAME}.`,
-          );
+          setError("Invalid backup file format. Please use a file exported from MorphoScan.");
           return;
         }
 
@@ -181,7 +178,6 @@ export const DataImport = () => {
               type="file"
               accept=".json"
               onChange={handleFileSelect}
-              aria-label="Import data backup file"
               className="hidden"
             />
             <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />

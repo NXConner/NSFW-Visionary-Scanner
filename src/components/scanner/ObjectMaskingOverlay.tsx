@@ -92,8 +92,7 @@ export function ObjectMaskingOverlay({
             width: `${selectedTrack.box.width}%`,
             height: `${selectedTrack.box.height}%`,
             border: "3px solid hsl(var(--primary))",
-            boxShadow:
-              "0 0 20px hsl(var(--primary) / 0.4), inset 0 0 10px hsl(var(--primary) / 0.1)",
+            boxShadow: "0 0 20px hsl(var(--primary) / 0.4), inset 0 0 10px hsl(var(--primary) / 0.1)",
           }}
         >
           {/* Corner brackets for selection emphasis */}

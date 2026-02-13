@@ -25,12 +25,7 @@ export function CurvatureScanOverlay({
 
   return (
     <div className="absolute inset-0 pointer-events-none z-20">
-      <svg
-        className="w-full h-full"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
+      <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
         <defs>
           <linearGradient id="curvGlow" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="rgba(56,189,248,0.82)" />
@@ -137,16 +132,10 @@ export function CurvatureScanOverlay({
 
       {/* header chips */}
       <div className="absolute top-3 left-3 flex items-center gap-2">
-        <Badge
-          className="bg-background/70 border border-border/50 text-foreground"
-          variant="outline"
-        >
+        <Badge className="bg-background/70 border border-border/50 text-foreground" variant="outline">
           Curvature Scan
         </Badge>
-        <Badge
-          className="bg-background/70 border border-border/50 text-foreground"
-          variant="outline"
-        >
+        <Badge className="bg-background/70 border border-border/50 text-foreground" variant="outline">
           {step}/{totalSteps}
         </Badge>
         <Badge className="bg-primary/15 border-primary/25 text-primary" variant="outline">
@@ -158,11 +147,10 @@ export function CurvatureScanOverlay({
       <div className="absolute top-14 left-1/2 -translate-x-1/2 w-[min(560px,92%)]">
         <div className="rounded-xl border border-border/50 bg-background/60 backdrop-blur px-4 py-3 shadow-sm">
           <div className="text-sm font-medium">Guidance</div>
-          <div className="text-xs text-muted-foreground mt-1">
-            {instruction || defaultInstruction}
-          </div>
+          <div className="text-xs text-muted-foreground mt-1">{instruction || defaultInstruction}</div>
         </div>
       </div>
     </div>
   );
 }
+

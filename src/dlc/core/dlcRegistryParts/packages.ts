@@ -1,84 +1,91 @@
-import type { DLCPackage } from "../types";
+import type { DLCPackage } from "../dlcTypes/package";
 
-/**
- * DLC package catalog (pure data).
- *
- * This module is intentionally dependency-free (no browser/Vite env usage) so it can be
- * imported from Node-based scripts (tsx) like `scripts/validate-dlc-catalog.ts`.
- *
- * The application-level registry (DLCRegistry.ts) can enrich these entries with features/routes.
- */
-
-export type DlcCatalogEntry = Pick<
-  DLCPackage,
-  "packageId" | "packageName" | "priceUsd" | "priceType" | "packageType" | "subscriptionInterval"
-> & {
-  isActive?: boolean;
+// Base packages - core functionality
+const BASE_PACKAGES: Record<string, Omit<DLCPackage, "id" | "createdAt" | "updatedAt">> = {
+  "base-scanner": {
+    packageId: "base-scanner",
+    packageName: "Base Scanner Package",
+    packageType: "individual",
+    safeDescription: "Core scanning functionality and measurement tools",
+    fullDescription: "Essential scanning features for all users",
+    priceUsd: 0,
+    priceType: "one_time",
+    version: "1.0.0",
+    contentVersion: "1.0.0",
+    isActive: true,
+    isFeatured: false,
+    displayOrder: 0,
+    contentRating: "18+",
+    features: [
+      { id: "basic-scan", name: "Basic Scanning", description: "Core scanning functionality", category: "advanced" },
+      { id: "measurements", name: "Measurement Tools", description: "Accurate measurement tools", category: "analytics" },
+    ],
+    previewImages: [],
+  },
 };
 
-export const DLC_PACKAGES: Record<string, DlcCatalogEntry> = {
-  "dlc-positions": {
-    packageId: "dlc-positions",
-    packageName: "Positions Collection",
-    priceUsd: 0,
-    priceType: "one-time",
+// Topic packages - specialized content
+const TOPIC_PACKAGES: Record<string, Omit<DLCPackage, "id" | "createdAt" | "updatedAt">> = {
+  "health-insights": {
+    packageId: "health-insights",
+    packageName: "Health Insights Pack",
     packageType: "individual",
+    safeDescription: "Advanced health analysis and personalized recommendations",
+    fullDescription: "Comprehensive health tracking and AI-powered insights",
+    priceUsd: 4.99,
+    priceType: "one_time",
+    version: "1.0.0",
+    contentVersion: "1.0.0",
+    isActive: true,
+    isFeatured: true,
+    displayOrder: 1,
+    contentRating: "18+",
+    features: [
+      { id: "health-trends", name: "Health Trends", description: "Track health trends over time", category: "analytics" },
+      { id: "ai-analysis", name: "AI Analysis", description: "AI-powered health analysis", category: "advanced" },
+    ],
+    previewImages: [],
   },
-  "dlc-videos": {
-    packageId: "dlc-videos",
-    packageName: "Video Library",
-    priceUsd: 0,
-    priceType: "one-time",
+};
+
+// NSFW add-ons - content modules and educational packs
+const NSFW_ADDON_PACKAGES: Record<string, Omit<DLCPackage, "id" | "createdAt" | "updatedAt">> = {
+  "dlc-cock-worshiping": {
+    packageId: "dlc-cock-worshiping",
+    packageName: "Cock Worshiping (Education)",
     packageType: "individual",
+    safeDescription: "Consent-first educational guide focused on communication and emotional safety.",
+    fullDescription:
+      "Educational module: consent, communication frameworks, boundaries, examples, and aftercare. Non-graphic by design.",
+    marketingTagline: "Connection-first education",
+    priceUsd: 2.99,
+    priceType: "one_time",
+    version: "1.0.0",
+    contentVersion: "2025.12.28",
+    minAppVersion: "1.0.0",
+    isActive: true,
+    isFeatured: false,
+    displayOrder: 13,
+    contentRating: "18+",
+    features: [
+      {
+        id: "cock_worshiping_education",
+        name: "Cock Worshiping (Education)",
+        description: "Access the Cock Worshiping educational module",
+        icon: "BookOpen",
+        category: "topics",
+      },
+    ],
+    previewImages: [],
   },
-  "dlc-analytics": {
-    packageId: "dlc-analytics",
-    packageName: "Wellness Analytics",
-    priceUsd: 0,
-    priceType: "one-time",
-    packageType: "individual",
-  },
-  "dlc-community": {
-    packageId: "dlc-community",
-    packageName: "Community",
-    priceUsd: 0,
-    priceType: "one-time",
-    packageType: "individual",
-  },
-  "dlc-advanced": {
-    packageId: "dlc-advanced",
-    packageName: "Advanced Toolkit",
-    priceUsd: 0,
-    priceType: "one-time",
-    packageType: "bundle",
-  },
-  "dlc-intimate": {
-    packageId: "dlc-intimate",
-    packageName: "Intimate Bundle",
-    priceUsd: 0,
-    priceType: "one-time",
-    packageType: "bundle",
-  },
-  "dlc-creator": {
-    packageId: "dlc-creator",
-    packageName: "Creator Suite",
-    priceUsd: 0,
-    priceType: "one-time",
-    packageType: "bundle",
-  },
-  "dlc-complete": {
-    packageId: "dlc-complete",
-    packageName: "Complete Bundle",
-    priceUsd: 0,
-    priceType: "one-time",
-    packageType: "bundle",
-  },
-  "dlc-subscription": {
-    packageId: "dlc-subscription",
-    packageName: "DLC Subscription",
-    priceUsd: 0,
-    priceType: "subscription",
-    packageType: "subscription",
-    subscriptionInterval: "monthly",
-  },
+};
+
+// Enabled additions - dynamically enabled packages
+const ENABLED_PACKAGE_ADDITIONS: Record<string, Omit<DLCPackage, "id" | "createdAt" | "updatedAt">> = {};
+
+export const DLC_PACKAGES: Record<string, Omit<DLCPackage, "id" | "createdAt" | "updatedAt">> = {
+  ...BASE_PACKAGES,
+  ...NSFW_ADDON_PACKAGES,
+  ...ENABLED_PACKAGE_ADDITIONS,
+  ...TOPIC_PACKAGES,
 };

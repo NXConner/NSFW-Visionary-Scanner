@@ -1,13 +1,13 @@
 /**
  * 4-Point Landmark-Based Curvature Detection
- *
+ * 
  * Implementation based on methodology from PMC10150132:
  * "Automated deep learning-based method for measuring penile curvature from 2D images"
- *
+ * 
  * Uses 4 key landmarks to calculate curvature angle via vector analysis:
  * - Distal mid-axis point 1 (D1) and 2 (D2) - near the tip
  * - Proximal mid-axis point 1 (P1) and 2 (P2) - near the base
- *
+ * 
  * Supports both curvature types:
  * - Hinge curvature: Sharp bend at single point
  * - Arc curvature: Gradual curve along length
@@ -55,12 +55,12 @@ export interface LandmarkCurvatureResult {
  */
 export function detectLandmarksFromCenterline(
   centerline: Vec2[],
-  contourPoints: Vec2[],
+  contourPoints: Vec2[]
 ): LandmarkPoint[] {
   if (centerline.length < 16) return [];
 
   const n = centerline.length;
-
+  
   // Divide centerline into proximal (base) and distal (tip) regions
   // Per research: landmarks at 10% and 90% of shaft length
   const distalRegionStart = Math.floor(n * 0.85);
@@ -75,8 +75,7 @@ export function detectLandmarksFromCenterline(
   const p2Pos = centerline[proximalRegionEnd]!;
 
   // Estimate confidence based on contour coverage
-  const contourCoverage =
-    contourPoints.length > 200 ? 0.9 : contourPoints.length > 100 ? 0.75 : 0.5;
+  const contourCoverage = contourPoints.length > 200 ? 0.9 : contourPoints.length > 100 ? 0.75 : 0.5;
 
   const landmarks: LandmarkPoint[] = [
     { position: d1Pos, type: "D1", confidence: contourCoverage },
@@ -96,18 +95,18 @@ export function detectLandmarksEnhanced(
   centerline: Vec2[],
   contourPoints: Vec2[],
   imageWidth: number,
-  imageHeight: number,
+  imageHeight: number
 ): LandmarkPoint[] {
   if (centerline.length < 16 || contourPoints.length < 50) {
     return detectLandmarksFromCenterline(centerline, contourPoints);
   }
 
   const n = centerline.length;
-
+  
   // Build spatial index for contour points
   const cellSize = Math.max(imageWidth, imageHeight) / 50;
   const contourGrid = new Map<string, Vec2[]>();
-
+  
   for (const pt of contourPoints) {
     const key = `${Math.floor(pt.x / cellSize)},${Math.floor(pt.y / cellSize)}`;
     if (!contourGrid.has(key)) contourGrid.set(key, []);
@@ -117,28 +116,28 @@ export function detectLandmarksEnhanced(
   // Find mid-axis points using perpendicular width at key positions
   const findMidAxisPoint = (centerIdx: number): { midPoint: Vec2; confidence: number } => {
     const pt = centerline[centerIdx]!;
-
+    
     // Get local tangent direction
     const prevIdx = Math.max(0, centerIdx - 2);
     const nextIdx = Math.min(n - 1, centerIdx + 2);
     const tangent = norm(sub(centerline[nextIdx]!, centerline[prevIdx]!));
-
+    
     // Perpendicular direction
     const perpendicular: Vec2 = { x: -tangent.y, y: tangent.x };
-
+    
     // Cast rays in both directions to find contour edges
     let leftDist = 0;
     let rightDist = 0;
     const maxRayLength = Math.max(imageWidth, imageHeight) * 0.3;
-
+    
     for (let d = 1; d < maxRayLength; d += 2) {
       const leftPt = add(pt, mul(perpendicular, d));
       const rightPt = add(pt, mul(perpendicular, -d));
-
+      
       // Check if we've hit contour
       const leftKey = `${Math.floor(leftPt.x / cellSize)},${Math.floor(leftPt.y / cellSize)}`;
       const rightKey = `${Math.floor(rightPt.x / cellSize)},${Math.floor(rightPt.y / cellSize)}`;
-
+      
       if (leftDist === 0 && contourGrid.has(leftKey)) {
         const nearbyPoints = contourGrid.get(leftKey)!;
         for (const cp of nearbyPoints) {
@@ -148,7 +147,7 @@ export function detectLandmarksEnhanced(
           }
         }
       }
-
+      
       if (rightDist === 0 && contourGrid.has(rightKey)) {
         const nearbyPoints = contourGrid.get(rightKey)!;
         for (const cp of nearbyPoints) {
@@ -158,20 +157,20 @@ export function detectLandmarksEnhanced(
           }
         }
       }
-
+      
       if (leftDist > 0 && rightDist > 0) break;
     }
-
+    
     // Calculate mid-point between contour edges
     const totalWidth = leftDist + rightDist;
     const offset = (rightDist - leftDist) / 2;
     const midPoint = add(pt, mul(perpendicular, offset));
-
+    
     // Confidence based on symmetry and edge detection success
     const symmetry = totalWidth > 0 ? 1 - Math.abs(leftDist - rightDist) / totalWidth : 0;
     const edgeSuccess = (leftDist > 0 ? 0.5 : 0) + (rightDist > 0 ? 0.5 : 0);
     const confidence = symmetry * 0.4 + edgeSuccess * 0.6;
-
+    
     return { midPoint, confidence };
   };
 
@@ -199,7 +198,7 @@ export function detectLandmarksEnhanced(
  * Implements vector angle calculation as per PMC10150132 methodology.
  */
 export function calculateLandmarkCurvature(
-  landmarks: LandmarkPoint[],
+  landmarks: LandmarkPoint[]
 ): Omit<LandmarkCurvatureResult, "landmarks" | "method"> {
   // Find each landmark type
   const d1 = landmarks.find(l => l.type === "D1");
@@ -221,7 +220,7 @@ export function calculateLandmarkCurvature(
   // Calculate axis vectors
   // Distal axis: vector from D1 to D2 (tip region)
   const distalAxis = norm(sub(d2.position, d1.position));
-
+  
   // Proximal axis: vector from P1 to P2 (base region)
   const proximalAxis = norm(sub(p2.position, p1.position));
 
@@ -235,7 +234,7 @@ export function calculateLandmarkCurvature(
   // Determine direction using cross product (2D: z-component)
   // Cross product gives sign of rotation from proximal to distal
   const crossZ = proximalAxis.x * distalAxis.y - proximalAxis.y * distalAxis.x;
-
+  
   // Map cross product sign to anatomical direction
   // Positive cross = counterclockwise rotation = dorsal (upward) curvature
   // Negative cross = clockwise rotation = ventral (downward) curvature
@@ -281,7 +280,10 @@ export function calculateLandmarkCurvature(
 /**
  * Classify whether curvature is hinge-type (sharp bend) or arc-type (gradual).
  */
-function classifyCurvatureType(angleDeg: number, landmarks: LandmarkPoint[]): CurvatureType {
+function classifyCurvatureType(
+  angleDeg: number,
+  landmarks: LandmarkPoint[]
+): CurvatureType {
   if (angleDeg < 5) return "straight";
 
   // For more accurate classification, we'd need the full centerline
@@ -289,7 +291,7 @@ function classifyCurvatureType(angleDeg: number, landmarks: LandmarkPoint[]): Cu
   // Simplified heuristic: high angles often indicate hinge type
   if (angleDeg > 45) return "hinge";
   if (angleDeg > 15) return "arc";
-
+  
   return "straight";
 }
 
@@ -301,11 +303,11 @@ export function estimateCurvatureFromLandmarks(
   centerline: Vec2[],
   contourPoints: Vec2[],
   imageWidth: number,
-  imageHeight: number,
+  imageHeight: number
 ): LandmarkCurvatureResult {
   // Try enhanced landmark detection first
   let landmarks = detectLandmarksEnhanced(centerline, contourPoints, imageWidth, imageHeight);
-
+  
   if (landmarks.length < 4) {
     // Fallback to basic centerline-based landmarks
     landmarks = detectLandmarksFromCenterline(centerline, contourPoints);
@@ -329,10 +331,9 @@ export function estimateCurvatureFromLandmarks(
   return {
     ...curvatureResult,
     landmarks,
-    method:
-      landmarks.length >= 4 && curvatureResult.confidence > 0.5
-        ? "4-point-landmark"
-        : "centerline-fallback",
+    method: landmarks.length >= 4 && curvatureResult.confidence > 0.5 
+      ? "4-point-landmark" 
+      : "centerline-fallback",
   };
 }
 
@@ -342,7 +343,7 @@ export function estimateCurvatureFromLandmarks(
  */
 export function analyzeCurvatureDistribution(
   centerline: Vec2[],
-  sampleCount: number = 20,
+  sampleCount: number = 20
 ): Array<{ position: Vec2; curvature: number; index: number }> {
   if (centerline.length < 10) return [];
 
@@ -358,7 +359,7 @@ export function analyzeCurvatureDistribution(
     // Local curvature via angle change
     const v1 = norm(sub(curr, prev));
     const v2 = norm(sub(next, curr));
-
+    
     const dotP = clamp(dot(v1, v2), -1, 1);
     const localAngle = Math.acos(dotP);
     const curvature = deg(localAngle);

@@ -79,9 +79,9 @@ export const NavigationDropdown = ({ activeTab, onTabChange }: NavigationDropdow
       isSuperAdmin,
       nsfwAvailable,
     });
-
+    
     console.log("[Navigation] Visibility check:", { visible, locked });
-
+    
     if (!visible) {
       console.log("[Navigation] Item not visible, aborting");
       return;
@@ -154,11 +154,7 @@ export const NavigationDropdown = ({ activeTab, onTabChange }: NavigationDropdow
                 {ADMIN_NAV_CATEGORY.items.map(item => (
                   <DropdownMenuItem
                     key={item.id}
-                    onClick={e => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleNavClick(item);
-                    }}
+                    onSelect={() => handleNavClick(item)}
                     className="gap-2 py-2 cursor-pointer hover:bg-destructive/10"
                   >
                     <item.icon className="w-4 h-4 text-destructive" />
@@ -192,11 +188,7 @@ export const NavigationDropdown = ({ activeTab, onTabChange }: NavigationDropdow
                 .map(item => (
                   <DropdownMenuItem
                     key={item.id}
-                    onClick={e => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleNavClick(item);
-                    }}
+                    onSelect={() => handleNavClick(item)}
                     className={`gap-2 py-2 cursor-pointer ${
                       isActiveItem(item) ? "bg-primary/15" : "hover:bg-primary/10"
                     } ${item.nsfwOnly ? "text-pink-500" : ""}`}
@@ -224,8 +216,7 @@ export const NavigationDropdown = ({ activeTab, onTabChange }: NavigationDropdow
         <DropdownMenuSeparator />
         {user ? (
           <DropdownMenuItem
-            onClick={e => {
-              e.preventDefault();
+            onSelect={() => {
               signOut();
               setOpen(false);
             }}
@@ -236,8 +227,7 @@ export const NavigationDropdown = ({ activeTab, onTabChange }: NavigationDropdow
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem
-            onClick={e => {
-              e.preventDefault();
+            onSelect={() => {
               navigate("/auth");
               setOpen(false);
             }}

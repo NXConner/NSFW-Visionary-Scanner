@@ -253,7 +253,7 @@ export const SearchSection = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {results.relatives.map(relative => (
+                    {results.relatives.map((relative) => (
                       <div
                         key={relative}
                         className="px-4 py-2 rounded-full bg-secondary/50 border border-border/50 text-sm hover:border-primary/50 cursor-pointer transition-colors"

@@ -217,7 +217,7 @@ export const SubscriptionTiers = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <ul className="space-y-2">
-                      {tier.features.map(feature => (
+                      {tier.features.map((feature) => (
                         <li key={feature} className="flex items-start gap-2">
                           <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                           <span className="text-sm">{feature}</span>
@@ -228,7 +228,7 @@ export const SubscriptionTiers = () => {
                       <div className="pt-2 border-t">
                         <p className="text-xs text-muted-foreground mb-2">Limitations:</p>
                         <ul className="space-y-1">
-                          {tier.limitations.map(limitation => (
+                          {tier.limitations.map((limitation) => (
                             <li key={limitation} className="text-xs text-muted-foreground">
                               • {limitation}
                             </li>
