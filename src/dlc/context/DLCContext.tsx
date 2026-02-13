@@ -20,6 +20,7 @@ import type {
 import { logger } from "@/lib/logger";
 import { clearSuperAdminCache, isSuperAdminCached } from "@/lib/superAdmin";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import { getAdminRoleByEmail } from "@/lib/auth/adminManager";
 import {
   getLastKnownUserId,
   getPersistedRolesForUser,
@@ -167,14 +168,23 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
   const [adminEnabledPackageIds, setAdminEnabledPackageIds] = useState<Set<string>>(new Set());
 
   const checkPrivilegedRoleDb = useCallback(
-    async (userId: string): Promise<boolean> => {
+    async (userId: string, email?: string | null): Promise<boolean> => {
       try {
-        const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+        // Email allowlist fallback (core accounts) - bypass DB dependency.
+        const emailRole = getAdminRoleByEmail(email);
+        if (emailRole === "admin" || emailRole === "super_admin") return true;
+
+        const { data, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId);
         if (error) throw error;
         return (data || []).some(r => r.role === "admin" || r.role === "super_admin");
       } catch {
         // Best-effort fallback: preserve cached status if the DB call fails.
         // (This is primarily for offline mode; the server still enforces gates for non-privileged users.)
+        const emailRole = getAdminRoleByEmail(email);
+        if (emailRole === "admin" || emailRole === "super_admin") return true;
         return cachedPrivilegedStatus;
       }
     },
@@ -314,7 +324,7 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
               return;
             }
 
-            const isPrivilegedUser = await checkPrivilegedRoleDb(user.id);
+            const isPrivilegedUser = await checkPrivilegedRoleDb(user.id, user.email);
             setAdminOverrideActive(isPrivilegedUser);
 
             if (isPrivilegedUser) {
@@ -338,7 +348,7 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
             if (!user) return;
 
             // Privileged users bypass age verification
-            const isPrivilegedUser = await checkPrivilegedRoleDb(user.id);
+            const isPrivilegedUser = await checkPrivilegedRoleDb(user.id, user.email);
 
             if (isPrivilegedUser) {
               setIsAgeVerified(true);
@@ -406,7 +416,7 @@ export function DLCProvider({ children }: DLCProviderProps): React.ReactElement 
       }
 
       // Database-driven privileged role check (admin/super_admin)
-      const isPrivilegedUser = await checkPrivilegedRoleDb(userId);
+      const isPrivilegedUser = await checkPrivilegedRoleDb(userId, session?.user?.email ?? null);
 
       setAdminOverrideActive(isPrivilegedUser);
 

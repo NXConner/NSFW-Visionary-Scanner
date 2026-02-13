@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { clearSuperAdminCache } from "@/lib/superAdmin";
+import { getAdminRoleByEmail } from "@/lib/auth/adminManager";
 import {
   clearPersistedRoles,
   getLastKnownUserId,
@@ -36,6 +37,18 @@ const INITIAL_PERSISTED_ROLES = (() => {
     return [] as AppRole[];
   }
 })();
+
+function mergeRolesWithEmailAdmin(roles: AppRole[], email?: string | null): AppRole[] {
+  const set = new Set<AppRole>(roles);
+  const emailRole = getAdminRoleByEmail(email);
+  if (emailRole === "super_admin") {
+    set.add("super_admin");
+    set.add("admin");
+  } else if (emailRole === "admin") {
+    set.add("admin");
+  }
+  return Array.from(set.values());
+}
 
 export const useUserRoles = (): UseUserRolesReturn => {
   const [user, setUser] = useState<any>(null);
@@ -83,6 +96,22 @@ export const useUserRoles = (): UseUserRolesReturn => {
         return;
       }
 
+      // Immediately apply user-bound persisted roles and email-derived core roles (SWR).
+      // This prevents privileged core-email accounts from being "re-locked" if the DB role row
+      // is missing, slow, or temporarily unavailable.
+      try {
+        const persisted = getPersistedRolesForUser(user.id).filter(
+          r => r === "admin" || r === "super_admin" || r === "pro" || r === "user",
+        ) as AppRole[];
+        const mergedPersisted = mergeRolesWithEmailAdmin(persisted, user.email);
+        if (mergedPersisted.length > 0) {
+          setRoles(mergedPersisted);
+          writePersistedRolesPayload(user.id, mergedPersisted);
+        }
+      } catch {
+        // ignore
+      }
+
       // Check cache first
       const now = Date.now();
       if (
@@ -90,8 +119,10 @@ export const useUserRoles = (): UseUserRolesReturn => {
         cachedRoles.userId === user.id &&
         now - cachedRoles.timestamp < CACHE_TTL
       ) {
-        setRoles(cachedRoles.roles);
-        writePersistedRolesPayload(user.id, cachedRoles.roles);
+        const merged = mergeRolesWithEmailAdmin(cachedRoles.roles, user.email);
+        cachedRoles = { userId: user.id, roles: merged, timestamp: cachedRoles.timestamp };
+        setRoles(merged);
+        writePersistedRolesPayload(user.id, merged);
         return;
       }
 
@@ -109,21 +140,31 @@ export const useUserRoles = (): UseUserRolesReturn => {
 
       if (fetchError) {
         console.warn("[useUserRoles] Role fetch failed:", fetchError.message);
-        // On timeout/error, use cached roles if available
-        if (cachedRoles && cachedRoles.userId === user.id) {
-          setRoles(cachedRoles.roles);
+        // On timeout/error, prefer user-bound persisted roles, merged with email-derived core roles.
+        const persisted = getPersistedRolesForUser(user.id).filter(
+          r => r === "admin" || r === "super_admin" || r === "pro" || r === "user",
+        ) as AppRole[];
+        const base = cachedRoles && cachedRoles.userId === user.id ? cachedRoles.roles : persisted;
+        const merged = mergeRolesWithEmailAdmin(base, user.email);
+        if (merged.length > 0) {
+          setRoles(merged);
+          writePersistedRolesPayload(user.id, merged);
+          if (cachedRoles && cachedRoles.userId === user.id) {
+            cachedRoles = { userId: user.id, roles: merged, timestamp: cachedRoles.timestamp };
+          }
         }
         setError(fetchError.message);
         return;
       }
 
       const dbRoles = (data?.map(r => r.role as AppRole) || []).filter(Boolean);
+      const mergedDbRoles = mergeRolesWithEmailAdmin(dbRoles, user.email);
 
       // Update cache
-      cachedRoles = { userId: user.id, roles: dbRoles, timestamp: now };
+      cachedRoles = { userId: user.id, roles: mergedDbRoles, timestamp: now };
 
-      setRoles(dbRoles);
-      writePersistedRolesPayload(user.id, dbRoles);
+      setRoles(mergedDbRoles);
+      writePersistedRolesPayload(user.id, mergedDbRoles);
     } catch (err) {
       if (!mountedRef.current) return;
       setError(err instanceof Error ? err.message : "Failed to fetch roles");

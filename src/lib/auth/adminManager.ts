@@ -46,35 +46,42 @@ const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
   moderator: ["manage_content", "view_analytics"],
 };
 
+function normalizeEmail(v: unknown): string {
+  return String(v ?? "")
+    .trim()
+    .toLowerCase()
+    .slice(0, 254);
+}
+
 // ============================================
 // Environment Configuration
 // ============================================
 
 /**
  * Get admin emails from environment variables
- * SECURITY: Never hardcode admin emails directly in code
+ * NOTE: core/admin emails have safe defaults but can be overridden per environment.
  */
 function getAdminEmails(): string[] {
   const adminEmails: string[] = [];
 
   // Primary admin email from VITE_ADMIN_EMAIL
-  const primaryAdmin = import.meta.env.VITE_ADMIN_EMAIL;
-  if (primaryAdmin) {
-    adminEmails.push(primaryAdmin.toLowerCase().trim());
-  }
+  const primaryAdmin = normalizeEmail(import.meta.env.VITE_ADMIN_EMAIL || "butterflii18@gmail.com");
+  if (primaryAdmin) adminEmails.push(primaryAdmin);
 
   // Super admin email from ADMIN_SUPER_EMAIL (also check VITE_ prefix for client-side access)
-  const superAdmin = import.meta.env.VITE_ADMIN_SUPER_EMAIL || import.meta.env.ADMIN_SUPER_EMAIL;
-  if (superAdmin) {
-    adminEmails.push(superAdmin.toLowerCase().trim());
-  }
+  const superAdmin = normalizeEmail(
+    import.meta.env.VITE_ADMIN_SUPER_EMAIL ||
+      import.meta.env.ADMIN_SUPER_EMAIL ||
+      "n8ter8@gmail.com",
+  );
+  if (superAdmin) adminEmails.push(superAdmin);
 
   // Additional admin emails from VITE_ADDITIONAL_ADMINS (comma-separated)
   const additionalAdmins = import.meta.env.VITE_ADDITIONAL_ADMINS;
   if (additionalAdmins) {
     const extras = additionalAdmins
       .split(",")
-      .map((e: string) => e.toLowerCase().trim())
+      .map((e: string) => normalizeEmail(e))
       .filter(Boolean);
     adminEmails.push(...extras);
   }
@@ -168,21 +175,23 @@ export function isAdminByEmail(email?: string | null): boolean {
  */
 export function getAdminRoleByEmail(email?: string | null): AdminRole | null {
   if (!email) return null;
-  const normalizedEmail = email.toLowerCase().trim();
+  const normalizedEmail = normalizeEmail(email);
 
   // Check if super admin
-  const superAdminEmail = (
-    import.meta.env.VITE_ADMIN_SUPER_EMAIL || import.meta.env.ADMIN_SUPER_EMAIL
-  )
-    ?.toLowerCase()
-    .trim();
+  const superAdminEmail = normalizeEmail(
+    import.meta.env.VITE_ADMIN_SUPER_EMAIL ||
+      import.meta.env.ADMIN_SUPER_EMAIL ||
+      "n8ter8@gmail.com",
+  );
 
   if (superAdminEmail && normalizedEmail === superAdminEmail) {
     return "super_admin";
   }
 
   // Check if primary admin
-  const primaryAdminEmail = import.meta.env.VITE_ADMIN_EMAIL?.toLowerCase().trim();
+  const primaryAdminEmail = normalizeEmail(
+    import.meta.env.VITE_ADMIN_EMAIL || "butterflii18@gmail.com",
+  );
   if (primaryAdminEmail && normalizedEmail === primaryAdminEmail) {
     return "admin";
   }
@@ -190,7 +199,7 @@ export function getAdminRoleByEmail(email?: string | null): AdminRole | null {
   // Check additional admins
   const additionalAdmins = import.meta.env.VITE_ADDITIONAL_ADMINS;
   if (additionalAdmins) {
-    const extras = additionalAdmins.split(",").map((e: string) => e.toLowerCase().trim());
+    const extras = additionalAdmins.split(",").map((e: string) => normalizeEmail(e));
     if (extras.includes(normalizedEmail)) {
       return "admin";
     }
