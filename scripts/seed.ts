@@ -5,11 +5,14 @@ import {
   seedDLCBundles,
   seedDLCPacks,
   seedForumCategories,
+  seedEducationContent,
+  seedExpertContent,
   seedLearningContent,
   seedMarketplaceCategories,
   seedPositionsLibrary,
+  seedSupportChatQuickResponses,
   seedTrustBadges,
-} from "./seed";
+} from "./seed/index";
 
 // ============================================================================
 // MAIN EXECUTION
@@ -22,6 +25,9 @@ import {
     await seedAchievements();
     await seedForumCategories();
     await seedLearningContent();
+    await seedEducationContent();
+    await seedExpertContent();
+    await seedSupportChatQuickResponses();
     await seedPositionsLibrary();
     await seedDateTemplates();
     await seedMarketplaceCategories();

@@ -12,8 +12,7 @@ export async function measureImage(
 ): Promise<MeasurementResult> {
   const calibration = input.calibration;
   const pixelsPerMm = calibration?.pixelsPerMm;
-  const calibrated =
-    typeof pixelsPerMm === "number" && Number.isFinite(pixelsPerMm) && pixelsPerMm > 0;
+  const calibrated = typeof pixelsPerMm === "number" && Number.isFinite(pixelsPerMm) && pixelsPerMm > 0;
 
   const pipeline = await runProcessingPipeline(input.imageDataUrl, opts);
 
@@ -49,12 +48,11 @@ export async function measureImage(
     ? `${(lengthCm ?? 0).toFixed(1)} cm`
     : `${Math.round(lengthPx)} px`;
 
-  const girthLabel =
-    calibrated && girthCm
-      ? `${girthCm.toFixed(1)} cm`
-      : girthPx
-        ? `${Math.round(girthPx)} px`
-        : undefined;
+  const girthLabel = calibrated && girthCm
+    ? `${girthCm.toFixed(1)} cm`
+    : girthPx
+      ? `${Math.round(girthPx)} px`
+      : undefined;
 
   const annotatedImageDataUrl = await annotateImage({
     originalImageDataUrl: input.imageDataUrl,
@@ -118,10 +116,7 @@ export async function measureImage(
           edgePx: pipeline.edges.edgePx,
           edgeDensity: pipeline.edges.edgeDensity,
         },
-        contour: {
-          points: pipeline.contour.points.length,
-          componentCount: pipeline.contour.componentCount,
-        },
+        contour: { points: pipeline.contour.points.length, componentCount: pipeline.contour.componentCount },
         fit: {
           rotated: true,
           polynomialDegree: opts.polyDegree ?? 3,
@@ -136,3 +131,4 @@ export async function measureImage(
 
   return result;
 }
+

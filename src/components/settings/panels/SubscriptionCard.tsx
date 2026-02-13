@@ -92,7 +92,9 @@ export function SubscriptionCard() {
                 <p className="text-sm font-medium bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                   {getTierLabel()}
                 </p>
-                <p className="text-xs text-muted-foreground">{getRoleLabel()}</p>
+                <p className="text-xs text-muted-foreground">
+                  {getRoleLabel()}
+                </p>
               </div>
               <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0">
                 <Shield className="w-3 h-3 mr-1" />
@@ -102,8 +104,7 @@ export function SubscriptionCard() {
 
             <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20">
               <p className="text-xs text-muted-foreground">
-                You have {isSuperAdmin ? "lifetime" : "admin"} premium access with all features
-                unlocked including:
+                You have {isSuperAdmin ? "lifetime" : "admin"} premium access with all features unlocked including:
               </p>
               <ul className="text-xs text-muted-foreground mt-2 space-y-1 ml-4">
                 <li>• All DLC packages</li>

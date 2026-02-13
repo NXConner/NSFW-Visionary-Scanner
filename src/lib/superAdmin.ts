@@ -55,13 +55,29 @@ function getPersistedSuperAdminStatus(userId?: string | null): boolean {
 /**
  * CRITICAL: Check if ANY super admin status is persisted
  * This is the synchronous module-level check used on cold starts
+ * Checks BOTH lovable_super_admin_status AND lovable_user_roles for maximum reliability
  */
 export function isAnySuperAdminPersisted(): boolean {
   try {
+    // Check dedicated super admin key first
     const stored = localStorage.getItem(SUPER_ADMIN_STORAGE_KEY);
-    if (!stored) return false;
-    const parsed = JSON.parse(stored);
-    return parsed?.isSuperAdmin === true;
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed?.isSuperAdmin === true) return true;
+    }
+    
+    // CRITICAL: Also check lovable_user_roles (used by useUserRoles hook)
+    // This ensures we catch super_admin role even if dedicated key wasn't set
+    const rolesStored = localStorage.getItem("lovable_user_roles");
+    if (rolesStored) {
+      const rolesParsed = JSON.parse(rolesStored);
+      const roles = rolesParsed?.roles || [];
+      if (Array.isArray(roles) && (roles.includes("super_admin") || roles.includes("admin"))) {
+        return true;
+      }
+    }
+    
+    return false;
   } catch {
     return false;
   }
@@ -73,31 +89,34 @@ export function isAnySuperAdminPersisted(): boolean {
  */
 export async function checkSuperAdminRole(userId: string): Promise<boolean> {
   const now = Date.now();
-
+  
   // Return cached result if still valid
   if (cachedUserId === userId && now - cacheTimestamp < CACHE_TTL_MS) {
     return cachedIsSuperAdmin;
   }
-
+  
   try {
-    const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    
     if (error) {
       console.error("[superAdmin] Role check failed:", error.message);
       // On error, fall back to persisted localStorage value
       return getPersistedSuperAdminStatus(userId);
     }
-
+    
     const isSuperAdmin = (data || []).some(r => r.role === "super_admin");
-
+    
     // Update in-memory cache
     cachedUserId = userId;
     cachedIsSuperAdmin = isSuperAdmin;
     cacheTimestamp = now;
-
+    
     // CRITICAL: Persist to localStorage so status survives page reload
     persistSuperAdminStatus(userId, isSuperAdmin);
-
+    
     return isSuperAdmin;
   } catch (err) {
     console.error("[superAdmin] Role check error:", err);
@@ -117,12 +136,12 @@ export function isSuperAdminCached(userId?: string | null): boolean {
   if (!userId) {
     return isAnySuperAdminPersisted();
   }
-
+  
   // First check in-memory cache
   if (cachedUserId === userId) {
     return cachedIsSuperAdmin;
   }
-
+  
   // CRITICAL: Fall back to localStorage persisted value
   // This prevents locked UI flash on fresh page loads
   const persisted = getPersistedSuperAdminStatus(userId);
@@ -133,7 +152,7 @@ export function isSuperAdminCached(userId?: string | null): boolean {
     cacheTimestamp = Date.now();
     return true;
   }
-
+  
   return false;
 }
 
@@ -172,10 +191,7 @@ export async function hasFullAccess(user?: User | null): Promise<boolean> {
  * Bypass lock checks for super admin - async
  * Returns true if super admin, otherwise returns the default check result
  */
-export async function bypassLock(
-  user?: User | null,
-  defaultCheck: boolean = false,
-): Promise<boolean> {
+export async function bypassLock(user?: User | null, defaultCheck: boolean = false): Promise<boolean> {
   if (await isSuperAdmin(user)) return true;
   return defaultCheck;
 }
@@ -184,10 +200,7 @@ export async function bypassLock(
  * Check if super admin has a specific feature unlocked - async
  * Super admin always returns true for any feature
  */
-export async function hasFeatureAccess(
-  user?: User | null,
-  defaultCheck: boolean = false,
-): Promise<boolean> {
+export async function hasFeatureAccess(user?: User | null, defaultCheck: boolean = false): Promise<boolean> {
   return bypassLock(user, defaultCheck);
 }
 
@@ -195,10 +208,7 @@ export async function hasFeatureAccess(
  * Get super admin subscription status - async
  * Returns "tier3_premium_lifetime" for super admin, otherwise returns the actual status
  */
-export async function getSubscriptionStatus(
-  user?: User | null,
-  actualStatus?: string | null,
-): Promise<string> {
+export async function getSubscriptionStatus(user?: User | null, actualStatus?: string | null): Promise<string> {
   if (await isSuperAdmin(user)) return "tier3_premium_lifetime";
   return actualStatus || "free";
 }
@@ -225,10 +235,7 @@ export async function getSubscriptionTier(user?: User | null) {
 /**
  * Check if a package should be unlocked for super admin - async
  */
-export async function shouldUnlockPackage(
-  user: User | null | undefined,
-  packageId: string,
-): Promise<boolean> {
+export async function shouldUnlockPackage(user: User | null | undefined, packageId: string): Promise<boolean> {
   return isSuperAdmin(user);
 }
 

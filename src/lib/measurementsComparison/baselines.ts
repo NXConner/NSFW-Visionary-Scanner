@@ -95,16 +95,18 @@ export function getAverageManBaselineCm(): {
   const girthOverride = readAverageManOverride("girth");
 
   return {
-    length: lengthOverride ?? {
-      valueCm: AVERAGE_MAN_BASELINE.erectLengthCm,
-      source: "default",
-      envKeyUsed: null,
-    },
-    girth: girthOverride ?? {
-      valueCm: AVERAGE_MAN_BASELINE.erectGirthCm,
-      source: "default",
-      envKeyUsed: null,
-    },
+    length:
+      lengthOverride ?? {
+        valueCm: AVERAGE_MAN_BASELINE.erectLengthCm,
+        source: "default",
+        envKeyUsed: null,
+      },
+    girth:
+      girthOverride ?? {
+        valueCm: AVERAGE_MAN_BASELINE.erectGirthCm,
+        source: "default",
+        envKeyUsed: null,
+      },
   };
 }
 

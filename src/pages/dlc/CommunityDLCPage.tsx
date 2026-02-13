@@ -1,5 +1,5 @@
 import React from "react";
-import { NSFWCommunityForum } from "@/components/nsfwCommunityForum";
+import { NSFWCommunityForum } from "@/components/NSFWCommunityForum";
 import { NsfwSessionGate } from "@/components/nsfw/NsfwSessionGate";
 import { FeatureGate as DlcFeatureGate } from "@/dlc/components/FeatureGate";
 

@@ -88,7 +88,9 @@ export async function getUserVideoProgress(videoId?: string): Promise<VideoProgr
 async function fetchVideosByIds(videoIds: string[]): Promise<Video[]> {
   if (videoIds.length === 0) return [];
 
-  const { data, error } = await fromExtended("video_library").select("*").in("id", videoIds);
+  const { data, error } = await fromExtended("video_library")
+    .select("*")
+    .in("id", videoIds);
   if (error) return [];
   const list = (data || []) as unknown as Video[];
   const byId = new Map(list.map(v => [String(v.id), v]));

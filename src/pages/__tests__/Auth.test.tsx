@@ -9,16 +9,12 @@ import { toast } from "sonner";
 // Mock the auth context
 const mockSignIn = vi.fn();
 const mockSignUp = vi.fn();
-const mockSignInWithGoogle = vi.fn();
-const mockSignInWithApple = vi.fn();
 
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({
     user: null,
     signIn: mockSignIn,
     signUp: mockSignUp,
-    signInWithGoogle: mockSignInWithGoogle,
-    signInWithApple: mockSignInWithApple,
     signOut: vi.fn(),
     loading: false,
   }),
@@ -107,7 +103,7 @@ describe("Auth", () => {
     const passwordInput = screen.getByLabelText(/password/i);
     const submitButton = screen.getByRole("button", { name: /sign in/i });
 
-    fireEvent.change(emailInput, { target: { value: "test@example.invalid" } });
+    fireEvent.change(emailInput, { target: { value: "test@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "123" } });
     fireEvent.click(submitButton);
 
@@ -125,12 +121,12 @@ describe("Auth", () => {
     const passwordInput = screen.getByLabelText(/password/i);
     const submitButton = screen.getByRole("button", { name: /sign in/i });
 
-    fireEvent.change(emailInput, { target: { value: "test@example.invalid" } });
+    fireEvent.change(emailInput, { target: { value: "test@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "password123" } });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(mockSignIn).toHaveBeenCalledWith("test@example.invalid", "password123", false);
+      expect(mockSignIn).toHaveBeenCalledWith("test@example.com", "password123", false);
     });
   });
 
@@ -157,11 +153,11 @@ describe("Auth", () => {
   });
 
   it("loads remembered email on mount", () => {
-    localStorage.setItem("remembered_email", "remembered@example.invalid");
+    localStorage.setItem("remembered_email", "remembered@example.com");
     renderAuth();
 
     const emailInput = screen.getByLabelText(/email/i) as HTMLInputElement;
-    expect(emailInput.value).toBe("remembered@example.invalid");
+    expect(emailInput.value).toBe("remembered@example.com");
   });
 
   it("shows loading state during authentication", async () => {
@@ -174,7 +170,7 @@ describe("Auth", () => {
     const passwordInput = screen.getByLabelText(/password/i);
     const submitButton = screen.getByRole("button", { name: /sign in/i });
 
-    fireEvent.change(emailInput, { target: { value: "test@example.invalid" } });
+    fireEvent.change(emailInput, { target: { value: "test@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "password123" } });
     fireEvent.click(submitButton);
 

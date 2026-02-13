@@ -1,8 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { fromExtended } from "@/lib/supabaseExtensions";
 import { logger } from "@/lib/logger";
-import { signUserMediaPaths } from "@/lib/userMediaSignedUrls";
-import { isHttpUrl } from "@/lib/nsfwAssets";
 
 export type MultiCameraSessionRow = {
   id: string;
@@ -43,7 +41,6 @@ export type VideoEditRow = {
   edit_status: string;
   preview_url: string | null;
   edited_video_url: string | null;
-  edited_video_storage_path: string | null;
   created_at: string | null;
 };
 
@@ -80,31 +77,14 @@ export async function getCameraStreamsForSession(sessionId: string): Promise<Cam
       .order("camera_index", { ascending: true })
       .order("created_at", { ascending: false });
     if (error) return [];
-    const rows = (data || []) as CameraStreamRow[];
-    const paths = rows.map(r => r.video_storage_path).filter(Boolean) as string[];
-    if (paths.length > 0) {
-      const signed = await signUserMediaPaths({
-        bucket: "recordings",
-        paths,
-        expiresInSeconds: 15 * 60,
-      });
-      for (const row of rows) {
-        const path = row.video_storage_path || "";
-        if (path && (!row.video_url || !isHttpUrl(row.video_url))) {
-          if (signed[path]) row.video_url = signed[path];
-        }
-      }
-    }
-    return rows;
+    return (data || []) as CameraStreamRow[];
   } catch (err) {
     logger.error("getCameraStreamsForSession error", { error: err });
     return [];
   }
 }
 
-export async function getVideoRecordingsForSession(
-  sessionId: string,
-): Promise<VideoRecordingRow[]> {
+export async function getVideoRecordingsForSession(sessionId: string): Promise<VideoRecordingRow[]> {
   try {
     const { data, error } = await fromExtended("video_recordings")
       .select(
@@ -113,22 +93,7 @@ export async function getVideoRecordingsForSession(
       .eq("session_id", sessionId)
       .order("created_at", { ascending: false });
     if (error) return [];
-    const rows = (data || []) as VideoRecordingRow[];
-    const paths = rows.map(r => r.video_storage_path).filter(Boolean) as string[];
-    if (paths.length > 0) {
-      const signed = await signUserMediaPaths({
-        bucket: "recordings",
-        paths,
-        expiresInSeconds: 15 * 60,
-      });
-      for (const row of rows) {
-        const path = row.video_storage_path || "";
-        if (path && (!row.video_url || !isHttpUrl(row.video_url))) {
-          if (signed[path]) row.video_url = signed[path];
-        }
-      }
-    }
-    return rows;
+    return (data || []) as VideoRecordingRow[];
   } catch (err) {
     logger.error("getVideoRecordingsForSession error", { error: err });
     return [];
@@ -139,43 +104,13 @@ export async function getEditsForRecording(recordingId: string): Promise<VideoEd
   try {
     const { data, error } = await fromExtended("video_edits")
       .select(
-        "id, recording_id, edit_name, edit_type, edit_status, preview_url, edited_video_url, edited_video_storage_path, created_at",
+        "id, recording_id, edit_name, edit_type, edit_status, preview_url, edited_video_url, created_at",
       )
       .eq("recording_id", recordingId)
       .order("created_at", { ascending: false })
       .limit(50);
     if (error) return [];
-    const rows = (data || []) as VideoEditRow[];
-    const editedPaths = rows.map(r => r.edited_video_storage_path).filter(Boolean) as string[];
-    const previewPaths = rows.map(r => r.preview_url).filter(p => p && !isHttpUrl(p)) as string[];
-
-    if (editedPaths.length > 0) {
-      const signedEdited = await signUserMediaPaths({
-        bucket: "recordings",
-        paths: editedPaths,
-        expiresInSeconds: 15 * 60,
-      });
-      for (const row of rows) {
-        const path = row.edited_video_storage_path;
-        if (path && signedEdited[path]) row.edited_video_url = signedEdited[path];
-      }
-    }
-
-    if (previewPaths.length > 0) {
-      const signedPreview = await signUserMediaPaths({
-        bucket: "screenshots",
-        paths: previewPaths,
-        expiresInSeconds: 15 * 60,
-      });
-      for (const row of rows) {
-        const path = row.preview_url;
-        if (path && !isHttpUrl(path) && signedPreview[path]) {
-          row.preview_url = signedPreview[path];
-        }
-      }
-    }
-
-    return rows;
+    return (data || []) as VideoEditRow[];
   } catch (err) {
     logger.error("getEditsForRecording error", { error: err });
     return [];
@@ -223,8 +158,7 @@ export async function ensureRecordingForCameraStream(params: {
         recording_type: "single",
         video_url: params.cameraStream.video_url ?? null,
         video_storage_path: storagePath,
-        duration_seconds:
-          params.durationSeconds ?? params.cameraStream.video_duration_seconds ?? null,
+        duration_seconds: params.durationSeconds ?? params.cameraStream.video_duration_seconds ?? null,
         file_size_bytes: null,
         is_private: true,
         share_with_partner: true,
@@ -244,3 +178,4 @@ export async function ensureRecordingForCameraStream(params: {
     return null;
   }
 }
+

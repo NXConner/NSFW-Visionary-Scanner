@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { clamp } from "@/lib/videoEditing/time";
 import type { CameraSource } from "@/lib/videoEditing/types";
 
-export function useMultiCamPlayback(params: { durationSeconds: number; sources: CameraSource[] }) {
+export function useMultiCamPlayback(params: {
+  durationSeconds: number;
+  sources: CameraSource[];
+}) {
   const { durationSeconds, sources } = params;
 
   const videoElsRef = useRef<Map<number, HTMLVideoElement>>(new Map());
@@ -124,3 +127,4 @@ export function useMultiCamPlayback(params: { durationSeconds: number; sources: 
     setPlaybackRate: setRate,
   };
 }
+

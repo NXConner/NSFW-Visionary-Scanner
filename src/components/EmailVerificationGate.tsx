@@ -5,9 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
-import { APP_NAME } from "@/config/brand";
-import { useUserRoles } from "@/hooks/useUserRoles";
-import { isEmailPreVerified } from "@/lib/email/emailConfig";
+import { AppLoadingScreen } from "./AppLoadingScreen";
 
 interface EmailVerificationGateProps {
   children: React.ReactNode;
@@ -18,49 +16,24 @@ export const EmailVerificationGate = ({
   children,
   requireVerification = true,
 }: EmailVerificationGateProps) => {
-  const { user, loading, isSuperAdmin, hasFullAccess, allFeaturesUnlocked, rolesLoading } =
-    useAuth();
-  const { isAdmin, isSuperAdmin: isSuperAdminRole, isLoading: rolesHookLoading } = useUserRoles();
-  const isPreVerified = isEmailPreVerified(user?.email);
+  const { user, loading, isSuperAdmin, hasFullAccess, allFeaturesUnlocked, rolesLoading } = useAuth();
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(true);
 
-  // Fallback: avoid indefinite loading, but keep verification strict
+  // AGGRESSIVE fallback: 1s max for verification check
   useEffect(() => {
-    if (!requireVerification) return;
-    if (!user) return;
-    // Pre-verified users must never be blocked by email verification checks.
-    if (isPreVerified) return;
-    // Privileged users must never be blocked by email verification checks.
-    if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole) return;
     const fallback = setTimeout(() => {
       if (checking) {
-        logger.warn("[verify] Verification check timed out");
+        logger.warn("[verify] Fallback triggered - allowing access");
         setChecking(false);
-        setIsVerified(false);
+        setIsVerified(true);
       }
-    }, 4000);
+    }, 1000);
 
     return () => clearTimeout(fallback);
-  }, [
-    checking,
-    requireVerification,
-    user,
-    isSuperAdmin,
-    hasFullAccess,
-    allFeaturesUnlocked,
-    isAdmin,
-    isSuperAdminRole,
-    isPreVerified,
-  ]);
+  }, [checking]);
 
   useEffect(() => {
-    if (!requireVerification) {
-      setChecking(false);
-      setIsVerified(true);
-      return;
-    }
-
     // Skip check if no user or still loading auth
     if (loading) return;
 
@@ -70,35 +43,21 @@ export const EmailVerificationGate = ({
       return;
     }
 
-    // Pre-verified bypass: treat as verified without checking Supabase.
-    if (isPreVerified) {
-      setIsVerified(true);
-      setChecking(false);
-      return;
-    }
-
-    // Privileged bypass: do not block on verification checks.
-    if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole) {
-      setIsVerified(true);
-      setChecking(false);
-      return;
-    }
-
-    // Quick async check with 2s timeout
+    // Quick async check with 800ms timeout
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
+    const timeout = setTimeout(() => controller.abort(), 800);
 
     supabase.auth
       .getUser()
       .then(({ data: { user: currentUser } }) => {
         if (!controller.signal.aborted) {
-          setIsVerified(isEmailPreVerified(currentUser?.email) || !!currentUser?.email_confirmed_at);
+          setIsVerified(!!currentUser?.email_confirmed_at);
         }
       })
       .catch(() => {
-        // On error, keep strict (do not allow access)
+        // On error, allow access
         if (!controller.signal.aborted) {
-          setIsVerified(false);
+          setIsVerified(true);
         }
       })
       .finally(() => {
@@ -112,17 +71,7 @@ export const EmailVerificationGate = ({
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [
-    user,
-    loading,
-    requireVerification,
-    isSuperAdmin,
-    hasFullAccess,
-    allFeaturesUnlocked,
-    isAdmin,
-    isSuperAdminRole,
-    isPreVerified,
-  ]);
+  }, [user, loading]);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -130,35 +79,19 @@ export const EmailVerificationGate = ({
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-        // Pre-verified bypass: never block on email verification.
-        if (isEmailPreVerified(session?.user?.email)) {
-          setIsVerified(true);
-          return;
-        }
-        // Privileged bypass: never block on email verification.
-        if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked) {
-          setIsVerified(true);
-        } else {
-          setIsVerified(!!session?.user?.email_confirmed_at);
-        }
+        setIsVerified(!!session?.user?.email_confirmed_at);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [allFeaturesUnlocked, hasFullAccess, isSuperAdmin]);
+  }, []);
 
-  const isPrivileged =
-    isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole;
+  // Combined loading state for access checks
+  const stillCheckingAccess = loading || rolesLoading || checking;
 
-  // Combined loading state for role checks (email verification itself is skipped for privileged users)
-  const stillCheckingRoles = loading || rolesLoading || rolesHookLoading;
-
-  if (stillCheckingRoles) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
+  // Show loading while checking (auth, roles, or verification)
+  if (stillCheckingAccess) {
+    return <AppLoadingScreen message="Loading MorphoScan Pro..." />;
   }
 
   // If verification is not required, show children
@@ -166,23 +99,14 @@ export const EmailVerificationGate = ({
     return <>{children}</>;
   }
 
-  // Privileged bypass: never block on email verification (checked AFTER roles resolve)
-  if (isPrivileged) {
+  // Super admin bypass: never block on email verification (checked AFTER loading completes)
+  if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked) {
     return <>{children}</>;
   }
 
   // If no user, show children (auth will handle it)
   if (!user) {
     return <>{children}</>;
-  }
-
-  // Show loading while checking verification (only for non-privileged users)
-  if (checking) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
   }
 
   // If verified, show children
@@ -202,7 +126,7 @@ export const EmailVerificationGate = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-center text-muted-foreground">
-            Please verify your email address to access all features of {APP_NAME}.
+            Please verify your email address to access all features of MorphoScan Pro.
           </p>
 
           <EmailVerificationBanner

@@ -1,4 +1,3 @@
-import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
 // Get DLC Content Package
 // Returns download information for DLC content packages.
 //
@@ -9,35 +8,17 @@ import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const ADULT_RATINGS = new Set(["18+", "adult", "explicit", "nsfw"]);
-
-const isAdultRating = (rating?: string | null): boolean =>
-  ADULT_RATINGS.has(
-    String(rating || "")
-      .trim()
-      .toLowerCase(),
-  );
-
 serve(async req => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
-
-  const rateLimitResponse = await applyRateLimit({
-    req,
-    endpoint: "get-dlc-content",
-    ...DEFAULT_EDGE_RATE_LIMIT,
-    headers: corsHeaders,
-  });
-  if (rateLimitResponse) return rateLimitResponse;
 
   try {
     const supabaseClient = createClient(
@@ -73,8 +54,6 @@ serve(async req => {
       });
     }
 
-    const { isPrivileged } = await getPrivilegedFlags(supabaseClient, user.id);
-
     // Optional packageId request (if client wants a specific package)
     let requestedPackageId: string | null = null;
     try {
@@ -84,92 +63,40 @@ serve(async req => {
       // ignore
     }
 
-    // Load active licenses (users can own multiple).
-    // Privileged users bypass license gating entirely.
-    let activeLicenses: any[] = [];
-    let packageIds: string[] = [];
+    // Load active licenses (users can own multiple)
+    let licensesQuery = supabaseClient
+      .from("dlc_licenses")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("is_active", true);
 
-    if (!isPrivileged) {
-      let licensesQuery = supabaseClient
-        .from("dlc_licenses")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("is_active", true);
-
-      if (requestedPackageId) {
-        licensesQuery = licensesQuery.eq("package_id", requestedPackageId);
-      }
-
-      const { data: licenses, error: licensesError } = await licensesQuery;
-
-      if (licensesError || !licenses || licenses.length === 0) {
-        return new Response(JSON.stringify({ error: "No active DLC license found" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Filter out expired licenses (support expiration_date and subscription_end)
-      const now = new Date();
-      activeLicenses = licenses.filter((l: any) => {
-        if (l.refunded_at || l.deactivated_at) return false;
-        const exp = l.expiration_date ?? l.subscription_end ?? null;
-        if (!exp) return true;
-        return new Date(exp) >= now;
-      });
-
-      if (activeLicenses.length === 0) {
-        return new Response(JSON.stringify({ error: "DLC license has expired" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      packageIds = activeLicenses
-        .map((l: any) => String(l.package_id || "").trim())
-        .filter(Boolean);
-    } else if (requestedPackageId) {
-      packageIds = [String(requestedPackageId || "").trim()].filter(Boolean);
-    }
-
-    let requiresAdultEntitlement = false;
     if (requestedPackageId) {
-      const { data: pkgRow, error: pkgError } = await supabaseClient
-        .from("dlc_packages")
-        .select("package_id, content_rating, is_active")
-        .eq("package_id", requestedPackageId)
-        .maybeSingle();
-      if (pkgError) throw pkgError;
-      if (!pkgRow || pkgRow.is_active === false) {
-        return new Response(JSON.stringify({ error: "Package not available" }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      requiresAdultEntitlement = isAdultRating(pkgRow.content_rating);
-    } else if (packageIds.length > 0) {
-      const { data: pkgRows, error: pkgError } = await supabaseClient
-        .from("dlc_packages")
-        .select("package_id, content_rating, is_active")
-        .in("package_id", packageIds);
-      if (pkgError) throw pkgError;
-      requiresAdultEntitlement = (pkgRows || []).some(row => isAdultRating(row.content_rating));
+      licensesQuery = licensesQuery.eq("package_id", requestedPackageId);
     }
 
-    if (requiresAdultEntitlement && !isPrivileged) {
-      const { data: age, error: ageError } = await supabaseClient
-        .from("dlc_age_verifications")
-        .select("is_verified, adult_content_consent, terms_accepted")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (ageError) throw ageError;
-      const okAge = Boolean(age?.is_verified && age?.adult_content_consent && age?.terms_accepted);
-      if (!okAge) {
-        return new Response(JSON.stringify({ error: "Age verification required" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    const { data: licenses, error: licensesError } = await licensesQuery;
+
+    if (licensesError || !licenses || licenses.length === 0) {
+      return new Response(JSON.stringify({ error: "No active DLC license found" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Filter out expired licenses (support expiration_date and subscription_end)
+    const now = new Date();
+    const activeLicenses = licenses.filter((l: any) => {
+      if (l.refunded_at || l.deactivated_at) return false;
+      const exp = l.expiration_date ?? l.subscription_end ?? null;
+      if (!exp) return true;
+      return new Date(exp) >= now;
+    });
+
+    if (activeLicenses.length === 0) {
+      return new Response(JSON.stringify({ error: "DLC license has expired" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Get latest content package (global)

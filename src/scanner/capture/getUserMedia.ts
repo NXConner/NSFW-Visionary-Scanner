@@ -9,3 +9,4 @@ export async function startGetUserMediaCamera(
   }
   return await navigator.mediaDevices.getUserMedia(constraints);
 }
+

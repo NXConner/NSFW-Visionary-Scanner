@@ -17,14 +17,8 @@ export function TimelineBar(props: {
   onUpdateSwitch: (next: CameraSwitchEvent) => void;
   onDeleteSwitch: (id: string) => void;
 }): JSX.Element {
-  const {
-    durationSeconds,
-    playheadSeconds,
-    cameraSwitches,
-    onSeek,
-    onUpdateSwitch,
-    onDeleteSwitch,
-  } = props;
+  const { durationSeconds, playheadSeconds, cameraSwitches, onSeek, onUpdateSwitch, onDeleteSwitch } =
+    props;
 
   const barRef = useRef<HTMLDivElement | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -139,7 +133,9 @@ export function TimelineBar(props: {
                   attachWindowDrag();
                 }}
               >
-                <div className="text-[10px] font-mono leading-none">C{s.cameraIndex + 1}</div>
+                <div className="text-[10px] font-mono leading-none">
+                  C{s.cameraIndex + 1}
+                </div>
               </button>
               <Button
                 size="icon"
@@ -160,3 +156,4 @@ export function TimelineBar(props: {
     </div>
   );
 }
+

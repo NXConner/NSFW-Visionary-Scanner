@@ -11,3 +11,4 @@ export function exportMeasurement(result: MeasurementResult): MeasurementExportB
     annotatedImageDataUrl: result.annotatedImageDataUrl,
   };
 }
+

@@ -30,46 +30,6 @@
     }
   },
   "paths": {
-    "/functions/v1/_shared": {
-      "post": {
-        "operationId": "_shared",
-        "summary": "Supabase Edge Function: _shared",
-        "tags": ["edge-functions"],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "500": {
-            "description": "Server Error"
-          }
-        }
-      }
-    },
     "/functions/v1/admin-beta-access": {
       "post": {
         "operationId": "admin_beta_access",
@@ -194,46 +154,6 @@
       "post": {
         "operationId": "admin_import_dlc_content",
         "summary": "Supabase Edge Function: admin-import-dlc-content",
-        "tags": ["edge-functions"],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "500": {
-            "description": "Server Error"
-          }
-        }
-      }
-    },
-    "/functions/v1/admin-rollback-dlc-import": {
-      "post": {
-        "operationId": "admin_rollback_dlc_import",
-        "summary": "Supabase Edge Function: admin-rollback-dlc-import",
         "tags": ["edge-functions"],
         "security": [
           {
@@ -1465,46 +1385,6 @@
         }
       }
     },
-    "/functions/v1/get-user-media-signed-url": {
-      "post": {
-        "operationId": "get_user_media_signed_url",
-        "summary": "Supabase Edge Function: get-user-media-signed-url",
-        "tags": ["edge-functions"],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "500": {
-            "description": "Server Error"
-          }
-        }
-      }
-    },
     "/functions/v1/merge-video-chunks": {
       "post": {
         "operationId": "merge_video_chunks",
@@ -1700,126 +1580,6 @@
         }
       }
     },
-    "/functions/v1/scan-analyze": {
-      "post": {
-        "operationId": "scan_analyze",
-        "summary": "Supabase Edge Function: scan-analyze",
-        "tags": ["edge-functions"],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "500": {
-            "description": "Server Error"
-          }
-        }
-      }
-    },
-    "/functions/v1/scan-history": {
-      "post": {
-        "operationId": "scan_history",
-        "summary": "Supabase Edge Function: scan-history",
-        "tags": ["edge-functions"],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "500": {
-            "description": "Server Error"
-          }
-        }
-      }
-    },
-    "/functions/v1/scan-upload": {
-      "post": {
-        "operationId": "scan_upload",
-        "summary": "Supabase Edge Function: scan-upload",
-        "tags": ["edge-functions"],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "500": {
-            "description": "Server Error"
-          }
-        }
-      }
-    },
     "/functions/v1/seductive-ai-chat": {
       "post": {
         "operationId": "seductive_ai_chat",
@@ -1935,41 +1695,6 @@
         }
       }
     },
-    "/functions/v1/send-medication-reminder": {
-      "post": {
-        "operationId": "send_medication_reminder",
-        "summary": "Supabase Edge Function: send-medication-reminder",
-        "tags": ["edge-functions"],
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "500": {
-            "description": "Server Error"
-          }
-        }
-      }
-    },
     "/functions/v1/send-push-notification": {
       "post": {
         "operationId": "send_push_notification",
@@ -1980,41 +1705,6 @@
             "bearerAuth": []
           }
         ],
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "500": {
-            "description": "Server Error"
-          }
-        }
-      }
-    },
-    "/functions/v1/send-weekly-report": {
-      "post": {
-        "operationId": "send_weekly_report",
-        "summary": "Supabase Edge Function: send-weekly-report",
-        "tags": ["edge-functions"],
         "requestBody": {
           "required": false,
           "content": {

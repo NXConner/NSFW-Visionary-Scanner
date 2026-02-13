@@ -6,14 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -153,9 +146,7 @@ export function NsfwTopicLibraryAdminPanel(): JSX.Element {
                         <TableCell>
                           <Switch
                             checked={topic.is_active}
-                            onCheckedChange={v =>
-                              void updateTopic(topic.topic_id, { is_active: v })
-                            }
+                            onCheckedChange={v => void updateTopic(topic.topic_id, { is_active: v })}
                           />
                         </TableCell>
                       </TableRow>

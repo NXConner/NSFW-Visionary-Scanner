@@ -170,7 +170,7 @@ export const PredictiveHealthModeling = () => {
                           <div className="mt-4">
                             <h4 className="font-semibold mb-2">Recommendations:</h4>
                             <ul className="list-disc list-inside space-y-1">
-                              {prediction.recommendations.map(rec => (
+                              {prediction.recommendations.map((rec) => (
                                 <li key={rec} className="text-sm">
                                   {rec}
                                 </li>

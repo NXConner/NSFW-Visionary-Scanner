@@ -7,7 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { Palette, Sun, Moon, Contrast, Camera, Sparkles } from "lucide-react";
+import {
+  Palette,
+  Sun,
+  Moon,
+  Contrast,
+  Camera,
+  Sparkles,
+} from "lucide-react";
 
 export interface PresetFilter {
   key: string;
@@ -20,27 +27,12 @@ export const PRESET_FILTERS: PresetFilter[] = [
   // Basic
   { key: "blackAndWhite", label: "B&W", icon: <Moon className="w-4 h-4" />, category: "basic" },
   { key: "hdr", label: "HDR", icon: <Sun className="w-4 h-4" />, category: "basic" },
-  {
-    key: "highContrast",
-    label: "High Contrast",
-    icon: <Contrast className="w-4 h-4" />,
-    category: "basic",
-  },
-  {
-    key: "lowContrast",
-    label: "Low Contrast",
-    icon: <Contrast className="w-4 h-4" />,
-    category: "basic",
-  },
+  { key: "highContrast", label: "High Contrast", icon: <Contrast className="w-4 h-4" />, category: "basic" },
+  { key: "lowContrast", label: "Low Contrast", icon: <Contrast className="w-4 h-4" />, category: "basic" },
   // Artistic
   { key: "vintage", label: "Vintage", icon: <Camera className="w-4 h-4" />, category: "artistic" },
   { key: "sepia", label: "Sepia", icon: <Palette className="w-4 h-4" />, category: "artistic" },
-  {
-    key: "polaroid",
-    label: "Polaroid",
-    icon: <Camera className="w-4 h-4" />,
-    category: "artistic",
-  },
+  { key: "polaroid", label: "Polaroid", icon: <Camera className="w-4 h-4" />, category: "artistic" },
   { key: "filmNoir", label: "Film Noir", icon: <Moon className="w-4 h-4" />, category: "artistic" },
   // Mood
   { key: "warm", label: "Warm", icon: <Sun className="w-4 h-4" />, category: "mood" },

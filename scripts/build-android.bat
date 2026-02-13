@@ -34,12 +34,8 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo Setting Capacitor build mode...
-set "CAPACITOR_BUILD=1"
-
-echo.
-echo [2/5] Building web app (NSFW direct)...
-call npm run build:nsfw:direct
+echo [2/5] Building web app...
+call npm run build
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to build web app
     pause

@@ -382,14 +382,12 @@ export function usePositionSelections(
   );
 
   const pendingForMe = useMemo(
-    () =>
-      selections.filter(s => s.selection_status === "pending" && s.suggested_for === currentUserId),
+    () => selections.filter(s => s.selection_status === "pending" && s.suggested_for === currentUserId),
     [selections, currentUserId],
   );
 
   const pendingFromMe = useMemo(
-    () =>
-      selections.filter(s => s.selection_status === "pending" && s.suggested_by === currentUserId),
+    () => selections.filter(s => s.selection_status === "pending" && s.suggested_by === currentUserId),
     [selections, currentUserId],
   );
 

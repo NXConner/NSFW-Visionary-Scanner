@@ -5,7 +5,6 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { toast } from "sonner";
 import { Lock, Fingerprint, Shield, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { APP_SHORT_NAME } from "@/config/brand";
 
 interface AppLockProps {
   children: React.ReactNode;
@@ -22,13 +21,7 @@ interface LockSettings {
 }
 
 export const AppLock = ({ children }: AppLockProps) => {
-  const {
-    isSuperAdmin,
-    hasFullAccess,
-    allFeaturesUnlocked,
-    loading: authLoading,
-    rolesLoading,
-  } = useAuth();
+  const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked, loading: authLoading, rolesLoading } = useAuth();
   const [isLocked, setIsLocked] = useState(false);
   const [enteredPin, setEnteredPin] = useState("");
   const [attempts, setAttempts] = useState(0);
@@ -64,7 +57,7 @@ export const AppLock = ({ children }: AppLockProps) => {
     const timeout = setTimeout(() => setRolesTimeout(true), 3000);
     return () => clearTimeout(timeout);
   }, []);
-
+  
   // Use timeout override if rolesLoading is taking too long
   const effectiveRolesLoading = rolesLoading && !rolesTimeout;
 
@@ -112,13 +105,7 @@ export const AppLock = ({ children }: AppLockProps) => {
       clearTimeout(timeout);
       events.forEach(event => window.removeEventListener(event, resetTimer));
     };
-  }, [
-    allFeaturesUnlocked,
-    hasFullAccess,
-    isSuperAdmin,
-    lockSettings?.autoLockMinutes,
-    lockSettings?.enabled,
-  ]);
+  }, [allFeaturesUnlocked, hasFullAccess, isSuperAdmin, lockSettings?.autoLockMinutes, lockSettings?.enabled]);
 
   // Visibility change - lock when tab hidden
   useEffect(() => {
@@ -239,7 +226,7 @@ export const AppLock = ({ children }: AppLockProps) => {
             <Lock className="w-10 h-10 text-primary-foreground" />
           </div>
           <CardTitle className="text-2xl">App Locked</CardTitle>
-          <CardDescription>Enter your PIN to access {APP_SHORT_NAME}</CardDescription>
+          <CardDescription>Enter your PIN to access MorphoScan</CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6">

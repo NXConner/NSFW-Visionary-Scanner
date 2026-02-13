@@ -25,3 +25,4 @@ export async function captureWithCapacitorCamera(): Promise<string | null> {
     return null;
   }
 }
+

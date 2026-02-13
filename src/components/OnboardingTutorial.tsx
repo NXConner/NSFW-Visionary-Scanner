@@ -18,7 +18,6 @@ import { VisualContentDisplay } from "./VisualContentDisplay";
 import { useVisualContent } from "@/hooks/useVisualContent";
 import { VISUAL_CONTENT_CATEGORIES } from "@/lib/visualContentManager";
 import { useAnalytics } from "@/lib/analytics";
-import { APP_NAME } from "@/config/brand";
 
 interface OnboardingTutorialProps {
   onComplete: () => void;
@@ -29,7 +28,7 @@ const ONBOARDING_KEY = "morphoscan_onboarding_complete";
 const steps = [
   {
     icon: Scan,
-    title: `Welcome to ${APP_NAME}`,
+    title: "Welcome to MorphoScan Pro",
     description:
       "Your private men’s health & education companion. You control your data and your experience.",
     color: "primary",
@@ -184,7 +183,6 @@ export const OnboardingTutorial = ({ onComplete }: OnboardingTutorialProps) => {
           <button
             onClick={handleSkip}
             className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Skip onboarding"
           >
             <X className="w-5 h-5" />
           </button>
@@ -221,7 +219,7 @@ export const OnboardingTutorial = ({ onComplete }: OnboardingTutorialProps) => {
             {/* Optional analytics consent on the privacy step */}
             {step.title === "Your Privacy Matters" && (
               <div className="mt-4 rounded-lg border bg-muted/30 p-4 text-left">
-                <p className="text-sm font-medium mb-2">Optional: Help improve {APP_NAME}</p>
+                <p className="text-sm font-medium mb-2">Optional: Help improve MorphoScan Pro</p>
                 <p className="text-xs text-muted-foreground mb-3">
                   If enabled, we collect minimal product usage events (e.g., onboarding completion,
                   paywall views) to improve UX. We do not store your sensitive content in analytics.

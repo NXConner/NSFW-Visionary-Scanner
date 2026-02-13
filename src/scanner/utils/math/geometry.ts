@@ -84,3 +84,4 @@ export function principalAxisAngle(points: Vec2[]): number {
   const theta = 0.5 * Math.atan2(2 * cov.xy, cov.xx - cov.yy);
   return theta;
 }
+

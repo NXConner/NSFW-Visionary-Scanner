@@ -4,13 +4,21 @@ import { secureDownloader } from "@/dlc/security";
 import { getDeviceId, getDevicePlatform } from "@/dlc/core/device";
 import { cacheVideoBytes, type VideoQuality } from "@/lib/offlineMedia/videoCache";
 import { logger } from "@/lib/logger";
-import { inferPackageIdFromAssetPath, isHttpUrl, signAssetPath } from "@/lib/nsfwAssets";
 
 type DownloadProgressCb = (p: {
   progress: number;
   downloadedBytes: number;
   totalBytes: number;
 }) => void;
+
+function isHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
+function inferPackageIdFromAssetPath(assetPath: string): string {
+  const first = assetPath.split("/")[0];
+  return first || "dlc-videos";
+}
 
 const dlcPackageIdCache = new Map<string, string>();
 
@@ -31,7 +39,7 @@ async function resolvePackageIdForVideo(params: {
       return String(data.package_id);
     }
   }
-  return inferPackageIdFromAssetPath(assetPath, "dlc-videos");
+  return inferPackageIdFromAssetPath(assetPath);
 }
 
 function guessMimeType(assetPathOrUrl: string): string {
@@ -42,47 +50,12 @@ function guessMimeType(assetPathOrUrl: string): string {
   return "video/mp4";
 }
 
-const MAX_OFFLINE_BYTES = Number(
-  (import.meta as any).env?.VITE_NSFW_OFFLINE_MAX_BYTES ?? 5 * 1024 * 1024 * 1024,
-);
-const MIN_FREE_BYTES = Number(
-  (import.meta as any).env?.VITE_NSFW_OFFLINE_MIN_FREE_BYTES ?? 500 * 1024 * 1024,
-);
-
-async function getContentLength(url: string): Promise<number> {
-  try {
-    const head = await fetch(url, { method: "HEAD" });
-    if (!head.ok) return 0;
-    return parseInt(head.headers.get("Content-Length") || "0", 10) || 0;
-  } catch {
-    return 0;
-  }
-}
-
-async function hasStorageCapacity(expectedBytes?: number): Promise<boolean> {
-  if (typeof navigator === "undefined" || !navigator.storage?.estimate) return true;
-  try {
-    const { usage = 0, quota = 0 } = await navigator.storage.estimate();
-    if (!quota) return true;
-    const free = Math.max(0, quota - usage);
-    if (expectedBytes && expectedBytes > 0) {
-      if (free < expectedBytes + MIN_FREE_BYTES) return false;
-      if (usage + expectedBytes > MAX_OFFLINE_BYTES) return false;
-    }
-    return true;
-  } catch {
-    return true;
-  }
-}
-
 async function resolveVideoAsset(
   videoId: string,
   quality: VideoQuality,
 ): Promise<{ asset: string; dlcPackId: string | null } | null> {
   const { data: video, error } = await fromExtended("nsfw_video_content")
-    .select(
-      "id, dlc_pack_id, video_url_sd, video_url_hd, video_url_2k, video_url_4k, is_active, is_approved",
-    )
+    .select("id, dlc_pack_id, video_url_sd, video_url_hd, video_url_4k, is_active, is_approved")
     .eq("id", videoId)
     .maybeSingle();
 
@@ -94,8 +67,6 @@ async function resolveVideoAsset(
   const candidate =
     quality === "4k"
       ? video.video_url_4k
-      : quality === "2k"
-        ? ((video as any).video_url_2k ?? video.video_url_hd)
       : quality === "sd"
         ? video.video_url_sd
         : video.video_url_hd;
@@ -118,14 +89,16 @@ async function resolveDownloadUrl(params: {
   const deviceId = getDeviceId();
   const devicePlatform = getDevicePlatform();
 
-  const signedUrl = await signAssetPath({
-    assetPath,
-    packageId,
-    expiresInSeconds: 900,
-    deviceId,
-    devicePlatform,
-  });
-  return { url: signedUrl, assetRef: assetPath };
+  const { data: signed, error: signedError } = await supabase.functions.invoke(
+    "get-dlc-signed-url",
+    {
+      body: { packageId, assetPath, expiresInSeconds: 900, deviceId, devicePlatform },
+    },
+  );
+  if (signedError || !signed?.signedUrl) {
+    throw new Error(signedError?.message || "Unable to authorize download");
+  }
+  return { url: String(signed.signedUrl), assetRef: assetPath };
 }
 
 async function upsertDownloadRow(params: {
@@ -196,19 +169,6 @@ export async function downloadNSFWVideoOffline(params: {
       dlcPackId: assetRes.dlcPackId,
     });
     const mimeType = guessMimeType(assetRef);
-
-    const expectedBytes = await getContentLength(url);
-    const okStorage = await hasStorageCapacity(expectedBytes || undefined);
-    if (!okStorage) {
-      await upsertDownloadRow({
-        videoId: params.videoId,
-        quality: params.quality,
-        status: "failed",
-        filePath: `nsfw_video:${params.videoId}:${params.quality}`,
-        errorMessage: "Insufficient storage for offline download",
-      });
-      return { success: false, error: "Insufficient storage for offline download" };
-    }
 
     await upsertDownloadRow({
       videoId: params.videoId,

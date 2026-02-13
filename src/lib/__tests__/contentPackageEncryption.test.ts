@@ -58,7 +58,7 @@ describe("contentPackage encrypted file install", () => {
       [
         {
           path: "data/hello.txt",
-          url: "https://example.invalid/encrypted",
+          url: "https://example.com/encrypted",
           encrypted: true,
           mimeType: "text/plain",
           checksum: hashHex,

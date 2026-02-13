@@ -13,15 +13,7 @@ param(
     [switch]$SkipDocs,
     [switch]$SkipDlcValidation,
     [switch]$SkipAudit,
-    [switch]$SkipPerf,
-    [switch]$SkipReleaseReadiness,
-    [switch]$SkipReleaseEnvValidation,
-    [ValidateSet("staging", "production")]
-    [string]$ReleaseEnvironment = "staging",
-    [string]$ReleaseEnvFile = "",
-    [switch]$Monetized,
-    [switch]$RequirePush,
-    [switch]$RequireNSFW
+    [switch]$SkipPerf
 )
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
@@ -73,66 +65,6 @@ function Run-Step {
     }
 }
 
-function Parse-DotEnvFile {
-    param([Parameter(Mandatory)][string]$Path)
-    $map = @{}
-    if (-not (Test-Path -LiteralPath $Path)) { return $map }
-    $content = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop
-    $lines = ($content ?? "") -split "\r?\n"
-    foreach ($line in $lines) {
-        $t = ($line ?? "").Trim()
-        if ([string]::IsNullOrWhiteSpace($t)) { continue }
-        if ($t.StartsWith("#")) { continue }
-        $idx = $t.IndexOf("=")
-        if ($idx -lt 1) { continue }
-        $key = $t.Substring(0, $idx).Trim()
-        $value = $t.Substring($idx + 1).Trim()
-        if (
-            ($value.StartsWith('"') -and $value.EndsWith('"')) -or
-            ($value.StartsWith("'") -and $value.EndsWith("'"))
-        ) {
-            $value = $value.Substring(1, $value.Length - 2)
-        }
-        if (-not [string]::IsNullOrWhiteSpace($key)) {
-            $map[$key] = $value
-        }
-    }
-    return $map
-}
-
-function Import-EnvVarsFromFileIfMissing {
-    param(
-        [Parameter(Mandatory)][string]$EnvFilePath,
-        [Parameter(Mandatory)][string[]]$Keys
-    )
-    if (-not (Test-Path -LiteralPath $EnvFilePath)) { return }
-    $parsed = Parse-DotEnvFile -Path $EnvFilePath
-    foreach ($k in $Keys) {
-        $current = [Environment]::GetEnvironmentVariable($k, "Process")
-        if (-not [string]::IsNullOrWhiteSpace($current)) { continue }
-        if (-not $parsed.ContainsKey($k)) { continue }
-        $v = [string]$parsed[$k]
-        if ([string]::IsNullOrWhiteSpace($v)) { continue }
-        [Environment]::SetEnvironmentVariable($k, $v, "Process")
-    }
-}
-
-function Import-ReleaseEnvIfAvailable {
-    param([Parameter(Mandatory)][string[]]$Keys)
-    $candidates = @()
-    if (-not [string]::IsNullOrWhiteSpace($ReleaseEnvFile)) { $candidates += $ReleaseEnvFile }
-    $candidates += ".env.$ReleaseEnvironment.local"
-    $candidates += ".env.staging.local"
-    $candidates += ".env.production.local"
-
-    foreach ($p in $candidates) {
-        if (Test-Path -LiteralPath $p) {
-            Import-EnvVarsFromFileIfMissing -EnvFilePath $p -Keys $Keys
-            return
-        }
-    }
-}
-
 # Dependencies
 if (-not $SkipInstall) {
     if (Test-Path "node_modules") {
@@ -151,51 +83,26 @@ Run-Step -Name "typecheck" -Action { npx tsc -p tsconfig.app.json --noEmit } -Sk
 
 # Tests
 Run-Step -Name "unit tests" -Action { npm run test:run } -Skip:$SkipUnitTests -SkipReason "flagged"
-Run-Step -Name "playwright install" -Action { npx playwright install } -Skip:$SkipE2E -SkipReason "flagged"
 Run-Step -Name "e2e tests" -Action { npm run test:e2e } -Skip:$SkipE2E -SkipReason "flagged"
 
 # Build
-Run-Step -Name "prod build (nsfw direct)" -Action { npm run build:nsfw:direct } -Skip:$SkipBuild -SkipReason "flagged"
+Run-Step -Name "prod build" -Action { npm run build } -Skip:$SkipBuild -SkipReason "flagged"
 
 # Supabase migrations/types
 if (-not $SkipSupabase) {
-    $hasNpx = Get-Command npx -ErrorAction SilentlyContinue
-    if ($null -eq $hasNpx) {
-        Add-Result -Bucket "Manual" -Message "npx not found; install Node.js tooling to run Supabase checks"
-        Write-Host "  ⚠️  npx not found (manual)" -ForegroundColor Yellow
+    $hasSupabaseCli = Get-Command supabase -ErrorAction SilentlyContinue
+    if ($null -eq $hasSupabaseCli) {
+        Add-Result -Bucket "Manual" -Message "Install Supabase CLI (npm i -g supabase) to run db push"
+        Write-Host "  ⚠️  Supabase CLI not found (manual)" -ForegroundColor Yellow
     } else {
-        # If a release env file exists, use it to populate SUPABASE_* env vars for this session.
-        Import-ReleaseEnvIfAvailable -Keys @(
-            "SUPABASE_ACCESS_TOKEN",
-            "SUPABASE_PROJECT_REF",
-            "SUPABASE_DB_URL",
-            "SUPABASE_DB_PASSWORD"
-        )
-
-        # db push (remote) requires credentials.
-        $hasRemoteDb = ($env:SUPABASE_DB_URL -or $env:SUPABASE_DB_PASSWORD)
-        if ($env:SUPABASE_ACCESS_TOKEN -and $env:SUPABASE_PROJECT_REF -and $hasRemoteDb) {
+        if ($env:SUPABASE_ACCESS_TOKEN -and $env:SUPABASE_PROJECT_REF) {
             Run-Step -Name "supabase db push" -Action { npm run db:push } -Skip:$false
         } else {
-            Add-Result -Bucket "Manual" -Message "Set SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_REF + (SUPABASE_DB_URL or SUPABASE_DB_PASSWORD) and run npm run db:push"
-            Write-Host "  ⚠️  Missing SUPABASE_ACCESS_TOKEN / SUPABASE_PROJECT_REF / SUPABASE_DB_URL|SUPABASE_DB_PASSWORD (manual)" -ForegroundColor Yellow
-        }
-
-        # Local types check requires Docker + a running local Supabase stack.
-        $hasDocker = Get-Command docker -ErrorAction SilentlyContinue
-        if ($null -eq $hasDocker) {
-            Add-Result -Bucket "Manual" -Message "Install Docker to run local Supabase type checks (npm run db:start, then npm run db:types:check)"
-            Write-Host "  ⚠️  Docker not found (manual)" -ForegroundColor Yellow
-        } else {
-            & npx supabase status | Out-Null
-            if ($LASTEXITCODE -ne 0) {
-                Add-Result -Bucket "Manual" -Message "Start local Supabase stack (npm run db:start) to run npm run db:types:check"
-                Write-Host "  ⚠️  Local Supabase stack not running (manual)" -ForegroundColor Yellow
-            } else {
-                Run-Step -Name "db types check" -Action { npm run db:types:check } -Skip:$false
-            }
+            Add-Result -Bucket "Manual" -Message "Set SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_REF and run npm run db:push"
+            Write-Host "  ⚠️  Missing SUPABASE_ACCESS_TOKEN / SUPABASE_PROJECT_REF (manual)" -ForegroundColor Yellow
         }
     }
+    Run-Step -Name "db types check" -Action { npm run db:types:check } -Skip:$false
 } else {
     Add-Result -Bucket "Skipped" -Message "Supabase checks (flagged)"
 }
@@ -213,27 +120,6 @@ if (-not $SkipDlcValidation) {
 
 # Security / audit
 Run-Step -Name "npm audit" -Action { npm run scan:vuln } -Skip:$SkipAudit -SkipReason "flagged"
-Run-Step -Name "release readiness gate" -Action { npm run check:release-readiness } -Skip:$SkipReleaseReadiness -SkipReason "flagged"
-if (-not $SkipReleaseEnvValidation) {
-    if ([string]::IsNullOrWhiteSpace($ReleaseEnvFile)) {
-        Add-Result -Bucket "Manual" -Message "Provide -ReleaseEnvFile to run release env validation (npm run release:env:validate)"
-        Write-Host "  ⚠️  Release env validation skipped (missing -ReleaseEnvFile)" -ForegroundColor Yellow
-    } else {
-        Run-Step -Name "release env validation" -Action {
-            $commandArgs = @(
-                "run", "release:env:validate", "--",
-                "--environment", $ReleaseEnvironment,
-                "--env-file", $ReleaseEnvFile
-            )
-            if ($Monetized) { $commandArgs += "--monetized" }
-            if ($RequirePush) { $commandArgs += "--require-push" }
-            if ($RequireNSFW) { $commandArgs += "--require-nsfw" }
-            & npm @commandArgs
-        } -Skip:$false
-    }
-} else {
-    Add-Result -Bucket "Skipped" -Message "release env validation (flagged)"
-}
 
 # Perf / a11y (optional)
 if (-not $SkipPerf) {

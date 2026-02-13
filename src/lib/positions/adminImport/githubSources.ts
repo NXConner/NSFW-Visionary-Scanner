@@ -28,9 +28,7 @@ function toTitleCase(value: string): string {
 }
 
 function parseFromPath(path: string): ParsedFromPath {
-  const parts = String(path || "")
-    .split("/")
-    .filter(Boolean);
+  const parts = String(path || "").split("/").filter(Boolean);
   const fileName = parts[parts.length - 1] ?? path;
   const dir = parts.length >= 2 ? parts[parts.length - 2] : undefined;
   const base = stripExt(fileName);
@@ -62,10 +60,8 @@ function defaultTips(tags: string[]): string[] {
     "Consider warm-up stretching for hips and lower back if needed.",
     "Hydrate and take breaks as needed.",
   ];
-  if (t.has("standing") || t.has("balance"))
-    tips.unshift("Use a wall/chair for balance and reduce fall risk.");
-  if (t.has("floor") || t.has("knees"))
-    tips.unshift("Use a mat/blanket to protect knees and elbows.");
+  if (t.has("standing") || t.has("balance")) tips.unshift("Use a wall/chair for balance and reduce fall risk.");
+  if (t.has("floor") || t.has("knees")) tips.unshift("Use a mat/blanket to protect knees and elbows.");
   return tips.slice(0, 8);
 }
 
@@ -76,8 +72,7 @@ function defaultBenefits(tags: string[]): string[] {
     "Can be adapted with props for comfort and accessibility.",
   ];
   if (t.has("standing")) benefits.push("Offers variation in height/angle without complex setup.");
-  if (t.has("cuddle") || t.has("close") || t.has("romantic"))
-    benefits.push("Supports closeness and eye contact.");
+  if (t.has("cuddle") || t.has("close") || t.has("romantic")) benefits.push("Supports closeness and eye contact.");
   return benefits.slice(0, 8);
 }
 
@@ -99,20 +94,14 @@ export async function buildPositionsImportFromGitHubSources(): Promise<BuildPosi
     const url = String(f.download_url || "").trim();
     if (!url) continue;
     const parsed = parseFromPath(f.path);
-    const tags = uniq([slugify(parsed.categoryHint || ""), ...parsed.tags].filter(Boolean)).slice(
-      0,
-      24,
-    );
+    const tags = uniq([slugify(parsed.categoryHint || ""), ...parsed.tags].filter(Boolean)).slice(0, 24);
     const category = normalizeCategory(parsed.categoryHint || "", tags);
     const difficulty = inferDifficultyFromTags(tags);
     const flexibility = inferFlexibilityFromTags(tags);
     const intimacy = inferIntimacyFromTags(tags);
 
     const positionName = parsed.name || "Untitled";
-    const positionSlug = ensureUniqueSlug({
-      desired: `${positionName}-${category}`,
-      used: usedSlugs,
-    });
+    const positionSlug = ensureUniqueSlug({ desired: `${positionName}-${category}`, used: usedSlugs });
 
     items.push({
       position_slug: positionSlug,
@@ -139,3 +128,4 @@ export async function buildPositionsImportFromGitHubSources(): Promise<BuildPosi
 
   return { items: deduped, sources };
 }
+

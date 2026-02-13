@@ -10,12 +10,12 @@ export type AppVersion = "sfw" | "nsfw" | "hybrid";
  * Get the current app version from environment variable
  */
 export const getAppVersion = (): AppVersion => {
-  const version = import.meta.env.VITE_APP_VERSION || "nsfw";
+  const version = import.meta.env.VITE_APP_VERSION || "sfw";
   if (version === "sfw" || version === "nsfw" || version === "hybrid") {
     return version;
   }
-  // Default to nsfw for this repo (direct distribution)
-  return "nsfw";
+  // Default to sfw for store compliance
+  return "sfw";
 };
 
 /**
@@ -83,8 +83,6 @@ export const isLovableHost = (): boolean => {
 };
 
 const CONTENT_POLICY_OVERRIDE_KEY = "morphoscan_content_policy_override";
-const USER_ROLES_STORAGE_KEY = "user_roles";
-const SUPER_ADMIN_STORAGE_KEY = "lovable_super_admin_status";
 
 export type ContentPolicy = "lovable" | "direct";
 
@@ -163,53 +161,8 @@ export const isLovablePolicyBuild = (): boolean => {
  */
 export const isAdultContentEnabled = (): boolean => {
   if (isLovablePolicyBuild()) return false;
-  // Admin/super-admin should always have adult access in NSFW builds.
-  if (hasAdminRoleOverride()) return true;
   // Adult surfaces are only intended for NSFW or hybrid builds (direct distribution).
   return isNSFW() || isHybrid();
-};
-
-/**
- * Check if NSFW content should be available (async for hybrid DLC checks).
- */
-export const hasNSFWContent = async (): Promise<boolean> => {
-  if (isLovablePolicyBuild()) return false;
-  if (hasAdminRoleOverride()) return true;
-
-  const version = getAppVersion();
-  if (version === "nsfw") return true;
-  if (version === "sfw") return false;
-
-  // Hybrid version - check DLC license
-  if (version === "hybrid") {
-    try {
-      const { hasDLCLicense } = await import("./dlcManager");
-      return await hasDLCLicense();
-    } catch (error) {
-      console.warn("DLC manager not available, NSFW content disabled", error);
-      return false;
-    }
-  }
-
-  return false;
-};
-
-/**
- * Check if a specific feature is available
- */
-export const isFeatureAvailable = async (feature: string): Promise<boolean> => {
-  // Positions Gallery is NSFW-only
-  if (feature === "positionsGallery") {
-    return await hasNSFWContent();
-  }
-
-  // Visual content system is NSFW-only
-  if (feature === "visualContent" || feature === "visualContentSystem") {
-    return await hasNSFWContent();
-  }
-
-  // All other features are available in all versions
-  return true;
 };
 
 /**
@@ -239,39 +192,6 @@ const isBrowser = (): boolean => typeof window !== "undefined" && typeof documen
 
 // Fallback for environments where localStorage is unavailable (quota, privacy mode, sandboxed iframes, etc.)
 let volatileOverrides: FeatureFlagOverrides = {};
-
-type StoredSuperAdmin = { userId?: string | null; isSuperAdmin?: boolean } | null;
-
-const parseJson = <T>(raw: string | null, fallback: T): T => {
-  if (!raw) return fallback;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-};
-
-const getStoredRoles = (): string[] => {
-  if (!isBrowser()) return [];
-  const parsed = parseJson<unknown>(window.localStorage.getItem(USER_ROLES_STORAGE_KEY), []);
-  if (!Array.isArray(parsed)) return [];
-  return parsed.filter(role => typeof role === "string") as string[];
-};
-
-const isSuperAdminPersisted = (): boolean => {
-  if (!isBrowser()) return false;
-  const parsed = parseJson<StoredSuperAdmin>(
-    window.localStorage.getItem(SUPER_ADMIN_STORAGE_KEY),
-    null,
-  );
-  return Boolean(parsed && parsed.isSuperAdmin === true);
-};
-
-const hasAdminRoleOverride = (): boolean => {
-  const roles = getStoredRoles();
-  if (roles.includes("admin") || roles.includes("super_admin")) return true;
-  return isSuperAdminPersisted();
-};
 
 const readOverrides = (): FeatureFlagOverrides => {
   if (!isBrowser()) return {};

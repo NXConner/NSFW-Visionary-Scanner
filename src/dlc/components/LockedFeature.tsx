@@ -165,7 +165,15 @@ export function FeatureGate({
 }: FeatureGateProps): React.ReactElement {
   const { hasFeature, isInitialized, isLoading } = useDLC();
 
+  // SUPER ADMIN BYPASS: hasFeature already includes admin bypass in DLCContext
+  // But we need to handle the loading state - privileged users should never see spinner
+  // The hasFeature function in DLCContext returns true for admins regardless of initialization
+
   if (isLoading || !isInitialized) {
+    // Check if hasFeature returns true (it does for admins even during loading)
+    if (hasFeature(featureId)) {
+      return <>{children}</>;
+    }
     return (
       <div className="flex items-center justify-center min-h-[200px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />

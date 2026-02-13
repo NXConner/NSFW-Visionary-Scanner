@@ -335,7 +335,7 @@ export const EmergencyGuidance = () => {
                 <AccordionContent>
                   <CardContent className="pt-0">
                     <div className="space-y-3">
-                      {urgentSymptoms.map(item => (
+                      {urgentSymptoms.map((item) => (
                         <div
                           key={item.symptom}
                           className="p-4 rounded-lg bg-warning/5 border border-warning/20"
@@ -381,7 +381,7 @@ export const EmergencyGuidance = () => {
                 <AccordionContent>
                   <CardContent className="pt-0">
                     <div className="space-y-3">
-                      {scheduleSymptoms.map(item => (
+                      {scheduleSymptoms.map((item) => (
                         <div
                           key={item.symptom}
                           className="p-4 rounded-lg bg-primary/5 border border-primary/20"

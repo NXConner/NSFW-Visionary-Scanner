@@ -6,12 +6,12 @@ import type { LearningPath } from "./types";
 type LearningPathRow = {
   id: string;
   user_id: string;
-  name: string;
-  description: string | null;
+  path_name: string;
   path_type: string | null;
-  course_ids: string[];
+  course_ids: string[] | null;
   current_course_index: number | null;
   progress_percentage: number | null;
+  estimated_completion_date: string | null;
   started_at: string | null;
   completed_at: string | null;
   created_at: string | null;
@@ -22,8 +22,8 @@ function mapPath(row: LearningPathRow): LearningPath {
   return {
     id: row.id,
     user_id: row.user_id,
-    name: row.name,
-    description: row.description,
+    name: row.path_name,
+    description: null,
     path_type: row.path_type,
     course_ids: row.course_ids || [],
     current_course_index: row.current_course_index,
@@ -76,8 +76,7 @@ export async function createLearningPath(
       .from("learning_paths")
       .insert({
         user_id: user.id,
-        name,
-        description: description ?? null,
+        path_name: name,
         path_type: "custom",
         course_ids: courseIds,
         current_course_index: 0,

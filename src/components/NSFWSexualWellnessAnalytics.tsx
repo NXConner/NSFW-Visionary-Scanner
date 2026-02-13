@@ -32,7 +32,8 @@ import {
   type NSFWFrequencyTracking,
   type NSFWWellnessScore,
 } from "@/lib/nsfwSexualWellnessAnalytics";
-import { hasNSFWContent, isSFW } from "@/lib/featureFlags";
+import { AgeVerificationModal } from "@/dlc/components/AgeVerificationModal";
+import { Link } from "react-router-dom";
 import {
   Activity,
   Heart,
@@ -43,6 +44,7 @@ import {
   Loader2,
   Lock,
   Calendar,
+  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -61,22 +63,37 @@ import {
   PolarRadiusAxis,
   Radar,
 } from "recharts";
+import { useDLC, useDLCFeature } from "@/dlc/context/DLCContext";
+import { useNsfwPrivacySettings } from "@/lib/nsfwPrivacySettings";
+import { NsfwConsentGate } from "@/components/nsfw/NsfwConsentGate";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
-export type NSFWSexualWellnessAnalyticsTab = "function" | "libido" | "satisfaction" | "wellness";
+const erectionQualityOptions = ["none", "partial", "full", "rigid"] as const;
+type ErectionQuality = (typeof erectionQualityOptions)[number];
 
 export const NSFWSexualWellnessAnalytics = ({
   initialTab,
 }: {
-  initialTab?: NSFWSexualWellnessAnalyticsTab;
-}) => {
-  const [activeTab, setActiveTab] = useState<NSFWSexualWellnessAnalyticsTab>(
+  initialTab?: "function" | "libido" | "satisfaction" | "wellness";
+} = {}) => {
+  const consentEnabled = useFeatureFlag("nsfw_consent_gate", true);
+  const { isAgeVerified } = useDLC();
+  const { isAvailable: hasAnalyticsDLC, isLoading: dlcLoading } =
+    useDLCFeature("wellness_analytics");
+  const { settings: privacy } = useNsfwPrivacySettings();
+  const incognito = Boolean(privacy.incognitoMode);
+  const [activeTab, setActiveTab] = useState<"function" | "libido" | "satisfaction" | "wellness">(
     initialTab ?? "function",
   );
   const [loading, setLoading] = useState(false);
   const [functionTracking, setFunctionTracking] = useState<NSFWSexualFunctionTracking[]>([]);
   const [wellnessScores, setWellnessScores] = useState<NSFWWellnessScore[]>([]);
-  const [nsfwAvailable, setNsfwAvailable] = useState(false);
-  const [isCheckingNsfw, setIsCheckingNsfw] = useState(true);
+  const [showAgeModal, setShowAgeModal] = useState(false);
+  const [revealAnalytics, setRevealAnalytics] = useState(false);
+
+  useEffect(() => {
+    setRevealAnalytics(false);
+  }, [activeTab, incognito]);
 
   const [functionEntry, setFunctionEntry] = useState<Partial<NSFWSexualFunctionTracking>>({
     entry_date: new Date().toISOString().split("T")[0],
@@ -119,24 +136,9 @@ export const NSFWSexualWellnessAnalytics = ({
   }, [activeTab]);
 
   useEffect(() => {
-    const checkNsfw = async () => {
-      setIsCheckingNsfw(true);
-      const available = await hasNSFWContent();
-      setNsfwAvailable(available);
-      setIsCheckingNsfw(false);
-    };
-    void checkNsfw();
-  }, []);
-
-  useEffect(() => {
-    if (initialTab) setActiveTab(initialTab);
-  }, [initialTab]);
-
-  useEffect(() => {
-    if (nsfwAvailable) {
-      void loadData();
-    }
-  }, [activeTab, nsfwAvailable, loadData]);
+    if (!hasAnalyticsDLC || !isAgeVerified) return;
+    void loadData();
+  }, [hasAnalyticsDLC, isAgeVerified, loadData]);
 
   const handleTrackFunction = async () => {
     if (!functionEntry.entry_date) {
@@ -172,7 +174,7 @@ export const NSFWSexualWellnessAnalytics = ({
     }
   };
 
-  if (isCheckingNsfw) {
+  if (dlcLoading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <Card className="glass-card border-border/50">
@@ -185,7 +187,7 @@ export const NSFWSexualWellnessAnalytics = ({
     );
   }
 
-  if (isSFW() || !nsfwAvailable) {
+  if (!isAgeVerified || !hasAnalyticsDLC) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <Card className="glass-card border-border/50">
@@ -193,14 +195,44 @@ export const NSFWSexualWellnessAnalytics = ({
             <div className="p-4 rounded-full bg-muted/30 mb-4">
               <Lock className="w-12 h-12 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">NSFW Content Not Available</h3>
+            <h3 className="text-xl font-semibold mb-2">
+              {!isAgeVerified ? "Age Verification Required" : "Analytics Add-On Not Available"}
+            </h3>
             <p className="text-muted-foreground max-w-md mb-4">
-              NSFW sexual wellness analytics are only available in the NSFW version or with a DLC
-              upgrade.
+              {!isAgeVerified
+                ? "Please verify you are 18+ to access analytics."
+                : "This feature requires the Intimate/Analytics add-on (or a bundle that includes it)."}
             </p>
-            <Badge variant="secondary">Requires NSFW Version or DLC</Badge>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {!isAgeVerified ? (
+                <Button onClick={() => setShowAgeModal(true)} className="gap-2">
+                  <Shield className="w-4 h-4" />
+                  Verify Age
+                </Button>
+              ) : (
+                <Button asChild className="gap-2">
+                  <Link to="/store">
+                    <Lock className="w-4 h-4" />
+                    Open DLC Store
+                  </Link>
+                </Button>
+              )}
+              <Button asChild variant="outline">
+                <Link to="/pricing">View Pricing</Link>
+              </Button>
+            </div>
+            <Badge variant="secondary" className="mt-3">
+              {!isAgeVerified ? "18+ Required" : "Requires Analytics"}
+            </Badge>
           </CardContent>
         </Card>
+        <AgeVerificationModal
+          isOpen={showAgeModal}
+          onClose={() => setShowAgeModal(false)}
+          onVerified={() => {
+            setShowAgeModal(false);
+          }}
+        />
       </div>
     );
   }
@@ -227,8 +259,15 @@ export const NSFWSexualWellnessAnalytics = ({
     satisfaction: score.satisfaction_score || 0,
   }));
 
-  return (
+  const content = (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <AgeVerificationModal
+        isOpen={showAgeModal}
+        onClose={() => setShowAgeModal(false)}
+        onVerified={() => {
+          setShowAgeModal(false);
+        }}
+      />
       <Card className="glass-card border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -241,9 +280,24 @@ export const NSFWSexualWellnessAnalytics = ({
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {incognito ? (
+            <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-secondary/20 p-3">
+              <Badge variant="secondary">Incognito</Badge>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setRevealAnalytics(true)}
+              >
+                Reveal charts
+              </Button>
+            </div>
+          ) : null}
           <Tabs
             value={activeTab}
-            onValueChange={v => setActiveTab(v as NSFWSexualWellnessAnalyticsTab)}
+            onValueChange={v =>
+              setActiveTab(v as "function" | "libido" | "satisfaction" | "wellness")
+            }
           >
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="function">Function</TabsTrigger>
@@ -287,9 +341,12 @@ export const NSFWSexualWellnessAnalytics = ({
                     <Label>Erection Quality</Label>
                     <Select
                       value={functionEntry.erection_quality || ""}
-                      onValueChange={value =>
-                        setFunctionEntry({ ...functionEntry, erection_quality: value as any })
-                      }
+                      onValueChange={value => {
+                        const v = value as ErectionQuality;
+                        if (erectionQualityOptions.includes(v)) {
+                          setFunctionEntry({ ...functionEntry, erection_quality: v });
+                        }
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select quality" />
@@ -327,21 +384,47 @@ export const NSFWSexualWellnessAnalytics = ({
                     <CardTitle>Function Trends</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={functionChartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip />
-                        <Line
-                          type="monotone"
-                          dataKey="function"
-                          stroke="#8884d8"
-                          name="Function Score"
-                        />
-                        <Line type="monotone" dataKey="quality" stroke="#82ca9d" name="Quality" />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    <div className="relative">
+                      <div
+                        className={
+                          incognito && !revealAnalytics
+                            ? "blur-md pointer-events-none select-none"
+                            : ""
+                        }
+                      >
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={functionChartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" />
+                            <YAxis />
+                            <Tooltip />
+                            <Line
+                              type="monotone"
+                              dataKey="function"
+                              stroke="#8884d8"
+                              name="Function Score"
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="quality"
+                              stroke="#82ca9d"
+                              name="Quality"
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                      {incognito && !revealAnalytics ? (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setRevealAnalytics(true)}
+                          >
+                            Tap to reveal
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -484,28 +567,54 @@ export const NSFWSexualWellnessAnalytics = ({
                     <CardTitle>Wellness Trends</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={wellnessChartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip />
-                        <Line
-                          type="monotone"
-                          dataKey="overall"
-                          stroke="#8884d8"
-                          name="Overall Score"
-                        />
-                        <Line type="monotone" dataKey="function" stroke="#82ca9d" name="Function" />
-                        <Line type="monotone" dataKey="libido" stroke="#ffc658" name="Libido" />
-                        <Line
-                          type="monotone"
-                          dataKey="satisfaction"
-                          stroke="#ff7300"
-                          name="Satisfaction"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    <div className="relative">
+                      <div
+                        className={
+                          incognito && !revealAnalytics
+                            ? "blur-md pointer-events-none select-none"
+                            : ""
+                        }
+                      >
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={wellnessChartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" />
+                            <YAxis />
+                            <Tooltip />
+                            <Line
+                              type="monotone"
+                              dataKey="overall"
+                              stroke="#8884d8"
+                              name="Overall Score"
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="function"
+                              stroke="#82ca9d"
+                              name="Function"
+                            />
+                            <Line type="monotone" dataKey="libido" stroke="#ffc658" name="Libido" />
+                            <Line
+                              type="monotone"
+                              dataKey="satisfaction"
+                              stroke="#ff7300"
+                              name="Satisfaction"
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                      {incognito && !revealAnalytics ? (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setRevealAnalytics(true)}
+                          >
+                            Tap to reveal
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -520,5 +629,10 @@ export const NSFWSexualWellnessAnalytics = ({
         </CardContent>
       </Card>
     </div>
+  );
+  return consentEnabled ? (
+    <NsfwConsentGate featureIds={["nsfw", "wellness_analytics"]}>{content}</NsfwConsentGate>
+  ) : (
+    content
   );
 };

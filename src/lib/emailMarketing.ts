@@ -243,10 +243,8 @@ export async function getEmailAnalytics(): Promise<{
   click_rate: number;
 } | null> {
   try {
-    const { data: sent, error } = await fromExtended("email_send_events").select("status", {
-      count: "exact",
-      head: true,
-    });
+    const { data: sent, error } = await fromExtended("email_send_events")
+      .select("status", { count: "exact", head: true });
 
     if (error) return null;
 

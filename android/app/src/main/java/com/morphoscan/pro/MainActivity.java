@@ -1,55 +1,53 @@
 package com.morphoscan.pro;
 
-import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        // Enable Chrome devtools inspection for debug builds.
-        // This is critical for diagnosing "blank WebView" issues on real devices.
-        try {
-            // Do not rely on BuildConfig (can be disabled by Gradle buildFeatures on some setups).
-            final boolean debuggable =
-                    (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
-            if (debuggable) {
-                WebView.setWebContentsDebuggingEnabled(true);
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    
+    // Configure WebView for camera access
+    WebView webView = getBridge().getWebView();
+    if (webView != null) {
+      WebSettings settings = webView.getSettings();
+      
+      // Enable JavaScript (required for Capacitor)
+      settings.setJavaScriptEnabled(true);
+      
+      // Enable DOM storage (required for modern web apps)
+      settings.setDomStorageEnabled(true);
+      
+      // Enable database storage
+      settings.setDatabaseEnabled(true);
+      
+      // Allow file access (for camera/media)
+      settings.setAllowFileAccess(true);
+      settings.setAllowContentAccess(true);
+      
+      // Enable media playback
+      settings.setMediaPlaybackRequiresUserGesture(false);
+      
+      // Set WebChromeClient for camera permissions
+      webView.setWebChromeClient(new WebChromeClient() {
+        @Override
+        public void onPermissionRequest(android.webkit.PermissionRequest request) {
+          // Grant camera and microphone permissions
+          String[] resources = request.getResources();
+          for (String resource : resources) {
+            if (android.webkit.PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource) ||
+                android.webkit.PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resource)) {
+              request.grant(new String[]{resource});
+              break;
             }
-        } catch (Throwable ignored) {
-            // ignore
+          }
         }
-        configureWebViewForDeviceCompatibility();
+      });
     }
-
-    private void configureWebViewForDeviceCompatibility() {
-        Bridge bridge = getBridge();
-        if (bridge == null) {
-            return;
-        }
-
-        WebView webView = bridge.getWebView();
-        if (webView == null) {
-            return;
-        }
-
-        WebSettings settings = webView.getSettings();
-        if (settings == null) {
-            return;
-        }
-
-        // Defensive duplicate of core settings to avoid OEM WebView defaults causing
-        // stuck loading states on some Android builds.
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setAllowFileAccess(true);
-        settings.setAllowContentAccess(true);
-        settings.setMediaPlaybackRequiresUserGesture(false);
-        settings.setLoadsImagesAutomatically(true);
-    }
+  }
 }
+

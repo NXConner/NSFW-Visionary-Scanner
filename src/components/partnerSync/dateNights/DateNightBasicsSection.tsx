@@ -62,10 +62,7 @@ export function DateNightBasicsSection({
           </div>
           <div className="space-y-2">
             <Label>{t("partnerSync.dates.theme")}</Label>
-            <Select
-              value={plan.theme}
-              onValueChange={value => onUpdate({ theme: value as DateNightPlanInput["theme"] })}
-            >
+            <Select value={plan.theme} onValueChange={value => onUpdate({ theme: value as DateNightPlanInput["theme"] })}>
               <SelectTrigger>
                 <SelectValue placeholder={t("partnerSync.dates.themePlaceholder")} />
               </SelectTrigger>

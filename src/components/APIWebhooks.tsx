@@ -3,7 +3,7 @@
  * UI component for managing API keys, webhooks, and API usage analytics
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +36,13 @@ export const APIWebhooks = () => {
   const [newWebhookUrl, setNewWebhookUrl] = useState("");
   const [newWebhookEvents, setNewWebhookEvents] = useState<string[]>([]);
   const [webhookUrlError, setWebhookUrlError] = useState<string | null>(null);
+  const webhookPlaceholder = useMemo(() => {
+    const envUrl = String(import.meta.env.VITE_PUBLIC_APP_URL ?? "").trim();
+    const base =
+      envUrl ||
+      (typeof window !== "undefined" ? String(window.location.origin || "").trim() : "");
+    return base ? `${base.replace(/\/$/, "")}/webhooks/pavement-events` : "/webhooks/pavement-events";
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -262,7 +269,7 @@ export const APIWebhooks = () => {
                       <Input
                         value={newWebhookUrl}
                         onChange={e => handleWebhookUrlChange(e.target.value)}
-                        placeholder="https://your-domain.tld/webhooks/morphoscan"
+                        placeholder={webhookPlaceholder}
                         className={webhookUrlError ? "border-destructive" : ""}
                       />
                       {webhookUrlError && (

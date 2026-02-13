@@ -40,3 +40,4 @@ export const DEFAULT_NSFW_SCANNER_POLICY: NsfwScannerPolicy = {
   enableOnDeviceDetection: true,
   storeClassificationMetadata: false,
 };
+

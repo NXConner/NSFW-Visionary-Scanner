@@ -5,3 +5,4 @@ export interface FrameSource {
   /** Optional cleanup. */
   stop?: () => void;
 }
+

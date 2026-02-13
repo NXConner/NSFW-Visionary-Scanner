@@ -11,7 +11,12 @@ export function OverlaySvgGuides({
 }) {
   // SVG viewBox is normalized to 100x100; consumer should stretch to container.
   return (
-    <svg className={className} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <svg
+      className={className}
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
       <defs>
         <linearGradient id="scannerGuideGlow" x1="0" x2="1" y1="0" y2="1">
           <stop offset="0" stopColor="rgba(56,189,248,0.85)" />
@@ -92,22 +97,8 @@ export function OverlaySvgGuides({
             stroke="url(#scannerGuideGlow)"
             strokeWidth="0.8"
           />
-          <line
-            x1="50"
-            y1="10"
-            x2="50"
-            y2="90"
-            stroke="rgba(255,255,255,0.22)"
-            strokeWidth="0.35"
-          />
-          <line
-            x1="10"
-            y1="50"
-            x2="90"
-            y2="50"
-            stroke="rgba(255,255,255,0.22)"
-            strokeWidth="0.35"
-          />
+          <line x1="50" y1="10" x2="50" y2="90" stroke="rgba(255,255,255,0.22)" strokeWidth="0.35" />
+          <line x1="10" y1="50" x2="90" y2="50" stroke="rgba(255,255,255,0.22)" strokeWidth="0.35" />
           <text x="12" y="16" fontSize="4" fill="rgba(255,255,255,0.8)">
             Front / Left / Right
           </text>
@@ -116,3 +107,4 @@ export function OverlaySvgGuides({
     </svg>
   );
 }
+

@@ -12,26 +12,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { analytics } from "@/lib/analytics";
 import { logger } from "@/lib/logger";
 import { checkSuperAdminRole, clearSuperAdminCache, isSuperAdminCached } from "@/lib/superAdmin";
-import {
-  persistUserData,
-  clearPersistedUserData,
-  wasRememberMeSelected,
-  getLastUserId,
-} from "@/lib/auth/userPersistence";
-import { EmailService } from "@/lib/email";
-import { getEmailRedirectUrl, isEmailPreVerified } from "@/lib/email/emailConfig";
-import {
-  emitSupabaseInvalidApiKeyEvent,
-  isInvalidSupabaseApiKeyError,
-} from "@/integrations/supabase/events";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   rolesLoading: boolean; // Separate loading state for super admin role check
-  // Email Verification
-  isEmailVerified: boolean;
   // Super Admin Properties (database-driven)
   isSuperAdmin: boolean;
   role: "super_admin" | "user";
@@ -51,9 +37,6 @@ interface AuthContextType {
   signInWithApple: () => Promise<{ error: Error | null }>;
   linkSocialAccount: (provider: "google" | "apple") => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
-  // Email Methods
-  resendVerificationEmail: () => Promise<{ error: Error | null }>;
-  sendPasswordResetEmail: (email: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -79,7 +62,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-
+  
   // SUPER ADMIN EARLY UNLOCK: Use module-level cached value as initial state
   // This ensures isSuperAdmin is TRUE from the very first render for returning super admins
   const [isSuperAdmin, setIsSuperAdmin] = useState(INITIAL_SUPER_ADMIN_STATUS);
@@ -99,21 +82,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setRolesLoading(false);
       return;
     }
-
+    
     // Store user ID for cache lookup on next app load
     try {
       localStorage.setItem("lovable_last_user_id", userId);
     } catch {
       // localStorage may not be available
     }
-
+    
     try {
       // Race against timeout to prevent hanging forever
       const isSuper = await Promise.race([
         checkSuperAdminRole(userId),
-        new Promise<boolean>(resolve =>
-          setTimeout(() => resolve(isSuperAdminCached(userId)), 2000),
-        ),
+        new Promise<boolean>((resolve) => setTimeout(() => resolve(isSuperAdminCached(userId)), 2000)),
       ]);
       setIsSuperAdmin(isSuper);
     } catch (err) {
@@ -145,14 +126,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-
+      
       // Load super admin status from database
       loadSuperAdminStatus(session?.user?.id ?? null);
 
       try {
         if (event === "SIGNED_IN" && session?.user?.id) {
-          // Persist user data for session restoration
-          persistUserData(session.user, wasRememberMeSelected());
           analytics.trackUserAction("auth_signed_in", "auth", {
             provider: session.user?.app_metadata?.provider,
           });
@@ -160,65 +139,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (event === "SIGNED_OUT") {
           analytics.trackUserAction("auth_signed_out", "auth");
           clearSuperAdminCache();
-          clearPersistedUserData();
-        }
-        if (event === "TOKEN_REFRESHED" && session?.user) {
-          // Update persisted data with fresh session
-          persistUserData(session.user, wasRememberMeSelected());
         }
       } catch {
         // ignore analytics errors
       }
     });
 
-    // Check for existing session with 3s timeout (increased from 1s for better reliability)
+    // Check for existing session with 1s timeout
     const checkSession = async () => {
       try {
         const result = await Promise.race([
           supabase.auth.getSession(),
           new Promise<{ data: { session: null } }>(resolve =>
-            setTimeout(() => resolve({ data: { session: null } }), 3000),
+            setTimeout(() => resolve({ data: { session: null } }), 1000),
           ),
         ]);
 
         if (!mounted) return;
-
-        // If we got a session, use it
-        if (result.data.session) {
-          setSession(result.data.session);
-          setUser(result.data.session.user);
-          // Persist session data for future restores
-          persistUserData(result.data.session.user, wasRememberMeSelected());
-          // Load super admin status from database
-          await loadSuperAdminStatus(result.data.session.user.id);
-        } else {
-          // No session from Supabase - check if we have persisted user data
-          // This can help show UI quickly while session refreshes
-          const lastUserId = getLastUserId();
-          if (lastUserId) {
-            // We had a previous session - try to refresh
-            try {
-              const { data: refreshData } = await supabase.auth.refreshSession();
-              if (refreshData.session && mounted) {
-                setSession(refreshData.session);
-                setUser(refreshData.session.user);
-                await loadSuperAdminStatus(refreshData.session.user.id);
-                return;
-              }
-            } catch {
-              // Refresh failed - session is truly gone
-            }
-          }
-          setSession(null);
-          setUser(null);
-          await loadSuperAdminStatus(null);
-        }
+        setSession(result.data.session);
+        setUser(result.data.session?.user ?? null);
+        
+        // Load super admin status from database
+        await loadSuperAdminStatus(result.data.session?.user?.id ?? null);
       } catch {
         // Ignore errors - fallback will handle
-        if (mounted) {
-          setSession(null);
-          setUser(null);
-        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -241,11 +185,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         password,
       });
 
-      // If backend keys are wrong, help users recover on-device (Android builds).
-      if (error && isInvalidSupabaseApiKeyError(error)) {
-        emitSupabaseInvalidApiKeyEvent();
-      }
-
       try {
         analytics.trackUserAction(error ? "auth_sign_in_failed" : "auth_sign_in_success", "auth", {
           rememberMe,
@@ -265,15 +204,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const signUp = useCallback(async (email: string, password: string) => {
-    const redirectUrl = getEmailRedirectUrl("/auth?verified=true");
+    const redirectUrl = `${window.location.origin}/`;
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: redirectUrl },
     });
-    if (error && isInvalidSupabaseApiKeyError(error)) {
-      emitSupabaseInvalidApiKeyEvent();
-    }
     try {
       analytics.trackUserAction(error ? "auth_sign_up_failed" : "auth_sign_up_success", "auth", {
         error: error ? String(error.message || "unknown") : undefined,
@@ -296,9 +232,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       },
     });
-    if (error && isInvalidSupabaseApiKeyError(error)) {
-      emitSupabaseInvalidApiKeyEvent();
-    }
     try {
       analytics.trackUserAction(error ? "auth_google_start_failed" : "auth_google_start", "auth", {
         error: error ? String(error.message || "unknown") : undefined,
@@ -317,9 +250,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         redirectTo: redirectUrl,
       },
     });
-    if (error && isInvalidSupabaseApiKeyError(error)) {
-      emitSupabaseInvalidApiKeyEvent();
-    }
     try {
       analytics.trackUserAction(error ? "auth_apple_start_failed" : "auth_apple_start", "auth", {
         error: error ? String(error.message || "unknown") : undefined,
@@ -343,9 +273,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           redirectTo: redirectUrl,
         },
       });
-      if (error && isInvalidSupabaseApiKeyError(error)) {
-        emitSupabaseInvalidApiKeyEvent();
-      }
       try {
         analytics.trackUserAction(
           error ? "auth_link_social_failed" : "auth_link_social_success",
@@ -376,61 +303,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // Email verification methods
-  const resendVerificationEmail = useCallback(async () => {
-    if (!user?.email) {
-      return { error: new Error("No email address found") };
-    }
-    try {
-      const result = await EmailService.sendVerificationEmail(user.email);
-      if (!result.success) {
-        return { error: new Error(result.error || "Failed to send verification email") };
-      }
-      analytics.trackUserAction("auth_verification_email_resent", "auth");
-      return { error: null };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      return { error: new Error(errorMessage) };
-    }
-  }, [user?.email]);
-
-  const sendPasswordResetEmail = useCallback(async (email: string) => {
-    try {
-      const result = await EmailService.sendPasswordResetEmail(email);
-      if (!result.success) {
-        return { error: new Error(result.error || "Failed to send password reset email") };
-      }
-      analytics.trackUserAction("auth_password_reset_requested", "auth");
-      return { error: null };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      return { error: new Error(errorMessage) };
-    }
-  }, []);
-
-  // Check if user's email is verified
-  // Returns true if email is in pre-verified whitelist OR confirmed via Supabase Auth
-  const isEmailVerified = useMemo(() => {
-    // Check whitelist first
-    if (isEmailPreVerified(user?.email)) {
-      return true;
-    }
-    return user?.email_confirmed_at !== null && user?.email_confirmed_at !== undefined;
-  }, [user?.email_confirmed_at, user?.email]);
-
   // Compute super admin properties based on database-driven role check
-  const superAdminProps = useMemo(
-    () => ({
-      isSuperAdmin,
-      role: isSuperAdmin ? "super_admin" : "user",
-      subscription: isSuperAdmin ? "tier3_premium_lifetime" : "free",
-      subscriptionStatus: isSuperAdmin ? "active" : "inactive",
-      allFeaturesUnlocked: isSuperAdmin,
-      badge: isSuperAdmin ? "Super Admin" : null,
-      hasFullAccess: isSuperAdmin,
-    }),
-    [isSuperAdmin],
-  );
+  const superAdminProps = useMemo(() => ({
+    isSuperAdmin,
+    role: isSuperAdmin ? "super_admin" : "user",
+    subscription: isSuperAdmin ? "tier3_premium_lifetime" : "free",
+    subscriptionStatus: isSuperAdmin ? "active" : "inactive",
+    allFeaturesUnlocked: isSuperAdmin,
+    badge: isSuperAdmin ? "Super Admin" : null,
+    hasFullAccess: isSuperAdmin,
+  }), [isSuperAdmin]);
 
   const contextValue = useMemo(
     () => ({
@@ -438,8 +320,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       session,
       loading,
       rolesLoading,
-      // Email Verification
-      isEmailVerified,
       // Super Admin Properties (database-driven)
       isSuperAdmin: superAdminProps.isSuperAdmin,
       role: superAdminProps.role as "super_admin" | "user",
@@ -455,16 +335,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signInWithApple,
       linkSocialAccount,
       signOut,
-      // Email Methods
-      resendVerificationEmail,
-      sendPasswordResetEmail,
     }),
     [
       user,
       session,
       loading,
       rolesLoading,
-      isEmailVerified,
       superAdminProps,
       signIn,
       signUp,
@@ -472,8 +348,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signInWithApple,
       linkSocialAccount,
       signOut,
-      resendVerificationEmail,
-      sendPasswordResetEmail,
     ],
   );
 

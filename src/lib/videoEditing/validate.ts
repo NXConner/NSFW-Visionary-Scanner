@@ -36,11 +36,7 @@ export function normalizeTimeline(input: TimelineSpec): TimelineSpecV1 {
             (e as any).transition === "crossfade" || (e as any).transition === "dip_to_black"
               ? (e as any).transition
               : "cut",
-          transitionDurationMs: clamp(
-            Math.floor(safeNumber((e as any).transitionDurationMs, 0)),
-            0,
-            10000,
-          ),
+          transitionDurationMs: clamp(Math.floor(safeNumber((e as any).transitionDurationMs, 0)), 0, 10000),
         }))
         .filter(e => Boolean(e.id))
         .sort((a, b) => a.atSeconds - b.atSeconds)
@@ -48,56 +44,54 @@ export function normalizeTimeline(input: TimelineSpec): TimelineSpecV1 {
 
   const masks: MaskTrack[] = Array.isArray(t.masks)
     ? t.masks
-        .map(
-          (m): MaskTrack => ({
-            id: String((m as any).id || ""),
-            name: String((m as any).name || "Mask"),
-            mode: ((m as any).mode === "include" ? "include" : "exclude") as MaskMode,
-            feather: clamp(safeNumber((m as any).feather, 0.15), 0, 1),
-            blur: clamp(safeNumber((m as any).blur, 0), 0, 1),
-            sourceTrackId: (m as any).sourceTrackId ? String((m as any).sourceTrackId) : undefined,
-            keyframes: Array.isArray((m as any).keyframes)
-              ? (m as any).keyframes
-                  .map((k: any) => {
-                    const atSeconds = clamp(safeNumber(k?.atSeconds, 0), 0, duration || 0);
-                    const shape = k?.shape;
-                    if (!isObject(shape)) return null;
-                    if (shape.kind === "rect") {
-                      return {
-                        atSeconds,
-                        shape: {
-                          kind: "rect" as const,
-                          xPct: clamp(safeNumber(shape.xPct, 0), -50, 150),
-                          yPct: clamp(safeNumber(shape.yPct, 0), -50, 150),
-                          wPct: clamp(safeNumber(shape.wPct, 0), 0, 200),
-                          hPct: clamp(safeNumber(shape.hPct, 0), 0, 200),
-                          radiusPct: clamp(safeNumber(shape.radiusPct, 0), 0, 50),
-                        },
-                        strength: clamp(safeNumber(k?.strength, 1), 0, 1),
-                      };
-                    }
-                    if (shape.kind === "polygon") {
-                      const pts = Array.isArray((shape as any).points) ? (shape as any).points : [];
-                      const points = pts
-                        .map((p: any) => ({
-                          xPct: clamp(safeNumber(p?.xPct, 0), -50, 150),
-                          yPct: clamp(safeNumber(p?.yPct, 0), -50, 150),
-                        }))
-                        .slice(0, 512);
-                      if (points.length < 3) return null;
-                      return {
-                        atSeconds,
-                        shape: { kind: "polygon" as const, points },
-                        strength: clamp(safeNumber(k?.strength, 1), 0, 1),
-                      };
-                    }
-                    return null;
-                  })
-                  .filter(Boolean)
-                  .sort((a: any, b: any) => a.atSeconds - b.atSeconds)
-              : [],
-          }),
-        )
+        .map((m): MaskTrack => ({
+          id: String((m as any).id || ""),
+          name: String((m as any).name || "Mask"),
+          mode: ((m as any).mode === "include" ? "include" : "exclude") as MaskMode,
+          feather: clamp(safeNumber((m as any).feather, 0.15), 0, 1),
+          blur: clamp(safeNumber((m as any).blur, 0), 0, 1),
+          sourceTrackId: (m as any).sourceTrackId ? String((m as any).sourceTrackId) : undefined,
+          keyframes: Array.isArray((m as any).keyframes)
+            ? (m as any).keyframes
+                .map((k: any) => {
+                  const atSeconds = clamp(safeNumber(k?.atSeconds, 0), 0, duration || 0);
+                  const shape = k?.shape;
+                  if (!isObject(shape)) return null;
+                  if (shape.kind === "rect") {
+                    return {
+                      atSeconds,
+                      shape: {
+                        kind: "rect" as const,
+                        xPct: clamp(safeNumber(shape.xPct, 0), -50, 150),
+                        yPct: clamp(safeNumber(shape.yPct, 0), -50, 150),
+                        wPct: clamp(safeNumber(shape.wPct, 0), 0, 200),
+                        hPct: clamp(safeNumber(shape.hPct, 0), 0, 200),
+                        radiusPct: clamp(safeNumber(shape.radiusPct, 0), 0, 50),
+                      },
+                      strength: clamp(safeNumber(k?.strength, 1), 0, 1),
+                    };
+                  }
+                  if (shape.kind === "polygon") {
+                    const pts = Array.isArray((shape as any).points) ? (shape as any).points : [];
+                    const points = pts
+                      .map((p: any) => ({
+                        xPct: clamp(safeNumber(p?.xPct, 0), -50, 150),
+                        yPct: clamp(safeNumber(p?.yPct, 0), -50, 150),
+                      }))
+                      .slice(0, 512);
+                    if (points.length < 3) return null;
+                    return {
+                      atSeconds,
+                      shape: { kind: "polygon" as const, points },
+                      strength: clamp(safeNumber(k?.strength, 1), 0, 1),
+                    };
+                  }
+                  return null;
+                })
+                .filter(Boolean)
+                .sort((a: any, b: any) => a.atSeconds - b.atSeconds)
+            : [],
+        }))
         .filter(m => Boolean(m.id))
     : [];
 
@@ -136,3 +130,4 @@ export function isTimelineSpecV1(v: unknown): v is TimelineSpecV1 {
   if (!Array.isArray((v as any).masks)) return false;
   return true;
 }
+

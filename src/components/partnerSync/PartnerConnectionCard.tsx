@@ -9,10 +9,7 @@ import { Check, Copy, Link2, Lock, Send, Shield, Trash2, UserPlus, Users } from 
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 import type { PartnerConnection } from "@/lib/partnerSync";
-import type {
-  PartnerPermissionType,
-  PartnerPermissionsMap,
-} from "@/lib/partnerSync/usePartnerPermissions";
+import type { PartnerPermissionType, PartnerPermissionsMap } from "@/lib/partnerSync/usePartnerPermissions";
 import { formatDateTime, getPartnerUserId } from "@/lib/partnerSync";
 
 type InviteInput = {
@@ -91,11 +88,9 @@ export function PartnerConnectionCard({
           <Users className="w-6 h-6" />
           {t("partnerSync.connection.title")}
         </CardTitle>
-        <CardDescription>{t("partnerSync.connection.subtitle")}</CardDescription>
-        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-          <Shield className="w-3 h-3" />
-          {t("partnerSync.connection.autoConnectNote")}
-        </p>
+        <CardDescription>
+          {t("partnerSync.connection.subtitle")}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {connection ? (
@@ -109,13 +104,10 @@ export function PartnerConnectionCard({
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">{t("partnerSync.connection.connected")}</span>
-                      <Badge className="bg-success gap-1">
-                        {t("partnerSync.connection.accepted")}
-                      </Badge>
+                      <Badge className="bg-success gap-1">{t("partnerSync.connection.accepted")}</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {t("partnerSync.connection.partnerId")}:{" "}
-                      {partnerId ?? t("partnerSync.connection.unknown")}
+                      {t("partnerSync.connection.partnerId")}: {partnerId ?? t("partnerSync.connection.unknown")}
                     </p>
                     {connection.accepted_at && (
                       <p className="text-xs text-muted-foreground mt-1">
@@ -311,9 +303,7 @@ export function PartnerConnectionCard({
               <Shield className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-sm">{t("partnerSync.connection.privacyTitle")}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t("partnerSync.connection.privacyCopy")}
-                </p>
+                <p className="text-xs text-muted-foreground">{t("partnerSync.connection.privacyCopy")}</p>
               </div>
               <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             </div>

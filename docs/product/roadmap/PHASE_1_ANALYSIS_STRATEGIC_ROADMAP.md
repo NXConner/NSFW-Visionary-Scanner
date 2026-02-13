@@ -1,12 +1,14 @@
 # Phase 1 — Analysis & Strategic Roadmap (Repo Reality-Based)
 
-**Date**: 2026-02-12  
+**Date**: 2025-12-24  
 **Workspace**: `/workspace` (git repo)  
-**Canonical product identity found in repo**: **Visionary Scanner Suite** (MorphoScan Pro + NSFW Visionary Scanner)
+**Canonical product identity found in repo**: **MorphoScan Pro**  
+**User-stated identity in rules**: **Pavement Performance Suite** (no supporting code found in `src/` for pavement/asphalt workflows)
 
-This Phase 1 report is intentionally **reality-based**: it describes what is implemented in this codebase today, what is still missing to ship safely, and the chosen path forward:
+This Phase 1 report is intentionally **reality-based**: it describes what is implemented in this codebase today, what is still missing to ship safely, and two clean paths forward:
 
-- **Track A (Ship current product)**: Productionize Visionary Scanner Suite (SFW/NSFW/Hybrid variants) with Stripe + Push + Store submission.
+- **Track A (Ship current product)**: Productionize MorphoScan Pro (SFW/NSFW/Hybrid variants) with Stripe + Push + Store submission.
+- **Track B (Pivot)**: Stand up Pavement Performance Suite as a separate product surface (new domain model, workflows, UI), while keeping MorphoScan as a separate app or archiving it.
 
 ---
 
@@ -14,7 +16,7 @@ This Phase 1 report is intentionally **reality-based**: it describes what is imp
 
 ### Purpose (as implemented)
 
-Visionary Scanner Suite is a **privacy-first health tracking and “scanner” SPA** with:
+MorphoScan Pro is a **privacy-first health tracking and “scanner” SPA** with:
 
 - Scanning + analysis flows (including AI-assisted features)
 - Health diary + progress tracking (including photos)
@@ -35,12 +37,19 @@ Visionary Scanner Suite is a **privacy-first health tracking and “scanner” S
 
 ---
 
-## Repo Reality Check: Identity Alignment
+## Repo Reality Check: Identity Mismatch
 
 ### What I found
 
-- App routes and content are aligned to the Visionary Scanner Suite health/DLC feature set.
-- Canonical naming: **MorphoScan Pro** (SFW/store) and **NSFW Visionary Scanner** (direct/NSFW).
+- No code references for pavement/asphalt/sealcoating/line-striping/church parking workflows in `src/`.
+- App routes and content are aligned to MorphoScan Pro’s health/DLC feature set.
+
+### Options (recommended decision)
+
+- **Option A — Ship MorphoScan Pro** (fastest path): treat Pavement Performance Suite as a future product and finish Phase 8 + integrations + store submission.
+- **Option B — Pivot to Pavement Performance Suite** (clean architecture): keep MorphoScan as a separate branch/product; create a new domain module and UI, or a new repo/app shell, to avoid mixing regulated health content patterns with contractor workflow needs.
+
+If you want Pavement Performance Suite to be the canonical product, Phase 1 recommends **Option B** to avoid “half-pivoting” the existing app into an unrelated domain.
 
 ---
 
@@ -64,7 +73,6 @@ Visionary Scanner Suite is a **privacy-first health tracking and “scanner” S
 - **Manual production QA is not completed** (device matrix, performance, a11y).
 - **Store submission and signing are manual** (keystore/certs are local-only).
 - **Residual placeholder/legacy links exist** (e.g., `example.com` in several UI files).
-- **Android APK boot hangs on loader if Capacitor assets/scheme are misconfigured** (ensure `CAPACITOR_BUILD=1`, `androidScheme=https`, and re-sync before Gradle build).
 
 ---
 
@@ -95,15 +103,6 @@ Visionary Scanner Suite is a **privacy-first health tracking and “scanner” S
 - **P0.5 Remove placeholder/unsafe links**
   - Replace or remove `example.com` and other placeholders from UI and tests.
   - Centralize “support/privacy/terms” URLs in a single config module to prevent drift.
-
-- **P0.6 Remove production mocks/stubs for real backend integrations**
-  - Replace the **client-side mock AI response** in `src/components/AIHealthChatbot.tsx` with a real call to the **`ai-health-chat`** Edge Function.
-  - Fix **client/server contract mismatches** for `ai-health-chat` (some callers send `{ message, context }` while the function expects `{ messages: [...] }` and streams SSE).
-  - Replace the **`VideoCaptureTab` mock sessions** with real `multi_camera_sessions` data and persist actual recordings to Storage/DB.
-
-- **P0.7 Align DB constraints with UI-supported options**
-  - `multi_camera_sessions.quality` constraint currently excludes `"2k"` while UI + recording utilities support `"2k"`.
-  - Add a forward migration to include `"2k"` and update type unions accordingly.
 
 ### P1 — Phase 8 polish (performance, bundle, accessibility)
 
@@ -143,10 +142,6 @@ These features exist; here’s their **max potential** state and what to do next
   - Max: resilient offline queue + conflict strategy + retry/backoff + clear UI states and error recovery.
   - Next: ensure all core CRUD flows have deterministic offline behavior and reconciling.
 
-- **Video tooling (recording + editing)**
-  - Max: thumbnails, previews, streaming-safe playback, client-side compression fallback, and reliable chunk merge pipeline.
-  - Next: implement real thumbnail generation and upgrade the current `compressVideo()` stub to a best-effort encoder with graceful fallback.
-
 ### P3 — Optional expansions (only after ship-safety)
 
 - **Admin platform improvements** (content import pipelines, audit trails, abuse prevention).
@@ -159,22 +154,17 @@ These features exist; here’s their **max potential** state and what to do next
 
 | Priority | Task Description                                                             | Task Type (Max-Feature/New-Feature/Refactor/Fix) | Files to Modify/Create                                                                                                                                    |
 | -------: | ---------------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|       P0 | Configure Stripe secrets + webhook endpoint + live price IDs                 | Fix                                              | `docs/guides/integrations/payments/STRIPE_SETUP_GUIDE.md`, Supabase secrets, `.env` (local only), `src/lib/pricing.ts`, `src/lib/stripe.ts`               |
+|       P0 | Configure Stripe secrets + webhook endpoint + live price IDs                 | Fix                                              | `docs/guides/integrations/payments/STRIPE_SETUP_GUIDE.md`, Supabase secrets, `.env` (local only), `src/lib/pricing.ts`, `src/lib/stripe.ts`              |
 |       P0 | End-to-end Stripe QA (subscription + DLC if used)                            | Fix                                              | `supabase/functions/stripe-webhook/index.ts`, `supabase/functions/create-checkout-session/*`, `src/components/payments/*`                                 |
 |       P0 | Configure push notifications (FCM/APNs) + verify on devices                  | Fix                                              | `docs/guides/integrations/notifications/FCM_SETUP.md`, Supabase secrets, `android/app/google-services.json` (local only), `ios/*` (local only)            |
 |       P0 | Run production QA checklist + fix failures                                   | Fix                                              | `docs/guides/testing/PRODUCTION_TESTING_GUIDE.md`, targeted `src/**` as issues found                                                                      |
-|       P0 | Android boot loader hang fix (Capacitor scheme + build sync)                 | Fix                                              | `capacitor.config.ts`, `docs/guides/build/MOBILE_BUILD_GUIDE.md`                                                                                          |
-|       P0 | Remove placeholder URLs (`example.com`) and centralize legal/support URLs    | Fix/Refactor                                     | `src/components/partnerSync/dateNights/DateNightMediaSection.tsx`, tests containing `example.com`, new `src/config/urls.ts`                                |
-|       P0 | Replace AIHealthChatbot mock response with real Edge Function streaming      | Fix                                              | `src/components/AIHealthChatbot.tsx`, new `src/lib/edge/aiHealthChat.ts`, update `src/components/__tests__/AIHealthChatbot.test.tsx`                        |
-|       P0 | Fix `ai-health-chat` contract mismatch across callers                        | Fix/Refactor                                     | `src/lib/liveSupportChat.ts`, any callers using `supabase.functions.invoke("ai-health-chat")`                                                             |
-|       P0 | Replace VideoCaptureTab `mockSessions` with real `multi_camera_sessions`     | Fix/Refactor                                     | `src/components/videoCapture/VideoCaptureTab.tsx`, `src/lib/nsfwAdvancedFeatures/multiCamera.ts`, shared session helpers                                   |
-|       P0 | Add `"2k"` support to `multi_camera_sessions.quality` constraint + types     | Fix                                              | new migration under `supabase/migrations/`, `src/lib/nsfwAdvancedFeatures/types.ts`                                                                        |
+|       P0 | Remove placeholder URLs (`example.com`) and centralize legal/support URLs    | Fix/Refactor                                     | `src/pages/Auth.tsx`, `src/components/payments/PaymentForm.tsx`, `src/components/APIWebhooks.tsx`, `src/__tests__/e2e/utils.ts`, new `src/config/urls.ts` |
 |       P1 | Accessibility audit + fixes on primary flows                                 | Fix                                              | `src/components/**`, `src/pages/**`, `eslint.config.js` (rules tuning only if needed)                                                                     |
 |       P1 | Performance + bundle optimization pass (verify lazy boundaries)              | Refactor                                         | `src/pages/indexLazyTabs.ts`, heavy feature modules, `vite.config.ts`                                                                                     |
 |       P2 | Social login (Google/Apple) via Supabase OAuth                               | New-Feature                                      | `src/pages/Auth.tsx`, `src/pages/AuthCallback.tsx`, `src/contexts/AuthContext.tsx`, docs update                                                           |
 |       P2 | Biometric/AppLock UX completion                                              | Max-Feature                                      | `src/components/AppLock.tsx`, `src/hooks/useBiometricAuth.ts`                                                                                             |
 |       P2 | Analytics Dashboard (privacy-compliant)                                      | New-Feature                                      | `src/lib/analytics.ts`, new `src/pages/AnalyticsDashboard.tsx`, admin routing if needed                                                                   |
-|       P2 | DLC production hardening (idempotency/refunds/signed URLs/restore purchases) | Fix/Max-Feature                                  | `docs/archive/nsfw/NSFW_DLC_REMAINING_WORK.md`, `supabase/functions/stripe-webhook/index.ts`, new migration for webhook events table                      |
+|       P2 | DLC production hardening (idempotency/refunds/signed URLs/restore purchases) | Fix/Max-Feature                                  | `docs/archive/nsfw/NSFW_DLC_REMAINING_WORK.md`, `supabase/functions/stripe-webhook/index.ts`, new migration for webhook events table                       |
 |       P3 | Mobile polish + store assets + compliance review                             | Max-Feature                                      | `docs/product/store/app-store-listing.md`, `docs/security/compliance/COMPLIANCE_DISTRIBUTION.md`, platform-specific assets                                |
 
 ---
@@ -185,7 +175,5 @@ These features exist; here’s their **max potential** state and what to do next
 2. **P0: Push secrets + device verification**
 3. **P0: Execute production QA checklist**
 4. **P0: Fix placeholder URLs / centralize outbound links**
-5. **P0: Replace production mocks/stubs (AI chatbot + video capture sessions)**
-6. **P0: Align DB constraints/types (multi-camera quality = include 2k)**
-7. **P1: Accessibility audit + performance/bundle pass**
-8. **(Optional) DLC hardening** per `docs/archive/nsfw/NSFW_DLC_REMAINING_WORK.md`
+5. **P1: Accessibility audit + performance/bundle pass**
+6. **(Optional) DLC hardening** per `docs/archive/nsfw/NSFW_DLC_REMAINING_WORK.md`

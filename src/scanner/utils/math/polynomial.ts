@@ -110,3 +110,4 @@ function solveLinearSystem(Ain: number[][], bin: number[]): number[] {
   }
   return x;
 }
+

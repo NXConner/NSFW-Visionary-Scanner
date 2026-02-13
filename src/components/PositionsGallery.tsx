@@ -36,10 +36,16 @@ import {
 import { useGenericStorage } from "@/hooks/useGenericStorage";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { isAnySuperAdminPersisted } from "@/lib/superAdmin";
 import { PositionDetailView } from "@/components/PositionDetailView";
 import { AgeVerificationModal } from "@/dlc/components/AgeVerificationModal";
 import { Link } from "react-router-dom";
 import { useDLC, useDLCFeature } from "@/dlc/context/DLCContext";
+
+// CRITICAL: Module-level cached super admin check - runs ONCE at import time
+// This ensures privileged status is known BEFORE any component renders
+const INITIAL_SUPER_ADMIN_STATUS = isAnySuperAdminPersisted();
 import {
   fetchMyPositionMediaOverrides,
   type UserPositionMediaOverridesMap,
@@ -111,6 +117,7 @@ export const PositionsGallery = ({
     loading: authLoading,
     rolesLoading,
   } = useAuth();
+  const { isAdmin, isSuperAdmin: isSuperAdminRole } = useUserRoles();
   const [showAgeModal, setShowAgeModal] = useState(false);
   const { isAgeVerified } = useDLC();
   const { isAvailable: hasPositionsDlc, isLoading: dlcLoading } =
@@ -550,8 +557,29 @@ export const PositionsGallery = ({
     );
   }
 
-  // Hide in SFW mode or if NSFW content not available
-  if (!isAgeVerified) {
+  // CRITICAL: Wait for ALL access checks to complete FIRST before making any gating decisions
+  // This prevents showing locked screens while roles are still loading
+  const stillCheckingAccess = featureLoading || dlcLoading || authLoading || rolesLoading;
+  if (stillCheckingAccess) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  // Super admin bypass: always allow access (check AFTER loading completes)
+  // CRITICAL: Include module-level cached value for instant privileged access
+  const hasSuperAdminAccess =
+    INITIAL_SUPER_ADMIN_STATUS ||
+    isSuperAdmin ||
+    hasFullAccess ||
+    allFeaturesUnlocked ||
+    isAdmin ||
+    isSuperAdminRole;
+
+  // Hide in SFW mode or if NSFW content not available (bypass for super admins)
+  if (!isAgeVerified && !hasSuperAdminAccess) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Card className="glass-card border-border/50">
@@ -587,20 +615,6 @@ export const PositionsGallery = ({
       </div>
     );
   }
-
-  // Wait for feature access checks to complete before showing premium gate
-  // CRITICAL: Must wait for rolesLoading to complete - this is where super admin status is determined
-  const stillCheckingAccess = featureLoading || dlcLoading || authLoading || rolesLoading;
-  if (stillCheckingAccess) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
-  }
-
-  // Super admin bypass: always allow access
-  const hasSuperAdminAccess = isSuperAdmin || hasFullAccess || allFeaturesUnlocked;
 
   // Entitlement for positions gallery: super admin OR subscription OR DLC feature
   if (!hasSuperAdminAccess && !hasFeature("positionsGallery") && !hasPositionsDlc) {

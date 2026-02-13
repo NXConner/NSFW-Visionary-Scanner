@@ -3,9 +3,9 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import NewDLCShowcase from "@/pages/NewDLCShowcase";
 
-const mockNavigate = vi.hoisted(() => vi.fn());
+const mockNavigate = vi.fn();
 
-const mockPackages = vi.hoisted(() => [
+const mockPackages = [
   {
     id: "p1",
     packageId: "dlc-nsfw-scanner",
@@ -73,7 +73,7 @@ const mockPackages = vi.hoisted(() => [
     createdAt: new Date(),
     updatedAt: new Date(),
   },
-]);
+];
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual("react-router-dom");

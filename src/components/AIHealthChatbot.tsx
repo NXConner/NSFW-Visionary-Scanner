@@ -1,225 +1,165 @@
 /**
  * AI Health Chatbot
- * Interactive AI-powered health assistant
+ * Interactive AI-powered assistant backed by Supabase AI sessions
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, Send, Bot, User, Square } from "lucide-react";
+import { MessageCircle, Send, Bot, User, Loader2 } from "lucide-react";
+import {
+  createAIConversationSession,
+  getAIConversationMessages,
+  getAIConversationSessions,
+  sendAIMessage,
+  type AIConversationMessage,
+} from "@/lib/conversationalAIEnhancement";
 import { toast } from "sonner";
-import { invokeAiHealthChat, type AiHealthChatMessage } from "@/lib/edge/aiHealthChat";
-import { logger } from "@/lib/logger";
 
-interface Message {
+type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  isStreaming?: boolean;
-}
+  createdAt?: string;
+  pending?: boolean;
+};
 
-export const AIHealthChatbot = ({ compact = false }: { compact?: boolean }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "assistant",
-      content: "Hello! I'm your AI health assistant. How can I help you today?",
-    },
-  ]);
+const mapMessages = (rows: AIConversationMessage[]): ChatMessage[] =>
+  rows
+    .filter(row => (row.content_text ?? "").trim().length > 0)
+    .map(row => ({
+      id: row.id,
+      role: row.sender_type === "user" ? "user" : "assistant",
+      content: String(row.content_text ?? ""),
+      createdAt: row.created_at,
+    }));
+
+export const AIHealthChatbot = () => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
-  const endRef = useRef<HTMLDivElement | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
+  const endRef = useRef<HTMLDivElement>(null);
 
-  const canSend = useMemo(() => input.trim().length > 0 && !isSending, [input, isSending]);
-  const suggestedQuestions = [
-    "What are common symptoms I should watch for?",
-    "How can I improve my overall health routine?",
-    "When should I consult a healthcare professional?",
-  ];
+  const loadMessages = useCallback(async (id: string) => {
+    const rows = await getAIConversationMessages(id);
+    setMessages(mapMessages(rows));
+  }, []);
+
+  const initSession = useCallback(async () => {
+    setLoading(true);
+    setInitError(null);
+    try {
+      const sessions = await getAIConversationSessions();
+      const active = sessions[0] ?? (await createAIConversationSession("Field Advisor", "support"));
+      if (!active) {
+        setInitError("Unable to start AI chat. Please sign in and retry.");
+        return;
+      }
+      setSessionId(active.id);
+      await loadMessages(active.id);
+    } catch (error) {
+      setInitError("Failed to initialize AI chat.");
+    } finally {
+      setLoading(false);
+    }
+  }, [loadMessages]);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages.length]);
+    void initSession();
+  }, [initSession]);
 
-  const buildEdgeMessages = (history: Message[]): AiHealthChatMessage[] => {
-    // Exclude the UI-only welcome message and any empty assistant placeholders.
-    const filtered = history
-      .filter(m => m.id !== "1")
-      .filter(m => m.content.trim().length > 0)
-      .map(m => ({ role: m.role, content: m.content })) satisfies AiHealthChatMessage[];
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading, sending]);
 
-    // Keep a bounded context window.
-    const windowed = filtered.slice(-18);
-    return windowed;
-  };
-
-  const handleCancel = () => {
-    abortRef.current?.abort();
-    abortRef.current = null;
-    setIsSending(false);
-  };
-
-  const handleSend = async () => {
-    const trimmed = input.trim();
-    if (!trimmed || isSending) return;
-
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    const userMsg: Message = { id: `user-${Date.now()}`, role: "user", content: trimmed };
-    const assistantId = `assistant-${Date.now()}`;
-    const assistantPlaceholder: Message = {
-      id: assistantId,
-      role: "assistant",
-      content: "",
-      isStreaming: true,
-    };
-
-    const historyForRequest = buildEdgeMessages([...messages, userMsg]);
-
-    setMessages(prev => [...prev, userMsg, assistantPlaceholder]);
+  const handleSend = useCallback(async () => {
+    const message = input.trim();
+    if (!message || !sessionId || sending) return;
+    const tempId = `local-${Date.now()}`;
+    setMessages(prev => [
+      ...prev,
+      { id: tempId, role: "user", content: message, createdAt: new Date().toISOString(), pending: true },
+    ]);
     setInput("");
-    setIsSending(true);
-
-    const result = await invokeAiHealthChat({
-      messages: historyForRequest,
-      signal: controller.signal,
-      onDelta: (_delta, aggregate) => {
-        setMessages(prev =>
-          prev.map(m =>
-            m.id === assistantId ? { ...m, content: aggregate, isStreaming: true } : m,
-          ),
-        );
-      },
-    });
-
-    setIsSending(false);
-    abortRef.current = null;
-
-    if (result.ok) {
-      const finalText = result.text || "I couldn’t generate a response. Please try again.";
-      setMessages(prev =>
-        prev.map(m =>
-          m.id === assistantId ? { ...m, content: finalText, isStreaming: false } : m,
-        ),
-      );
-      return;
+    setSending(true);
+    try {
+      const result = await sendAIMessage(sessionId, message, "text");
+      if (!result) {
+        toast.error("AI assistant could not respond. Please try again.");
+      }
+      await loadMessages(sessionId);
+    } catch {
+      toast.error("Failed to send message.");
+    } finally {
+      setSending(false);
     }
-
-    // Remove streaming placeholder and show a clear (non-mock) error.
-    setMessages(prev => prev.filter(m => m.id !== assistantId));
-    if (result.status === 404) {
-      toast.message("AI chat isn’t available in this build.");
-      setMessages(prev => [
-        ...prev,
-        {
-          id: `assistant-${Date.now()}`,
-          role: "assistant",
-          content:
-            "AI chat is not enabled for this deployment. If you’re running a direct build, enable it by setting Edge Function secrets: CONTENT_POLICY=direct and ENABLE_MEDICAL_AI_CHAT=true.",
-        },
-      ]);
-      return;
-    }
-
-    logger.warn("AIHealthChatbot: AI request failed", {
-      status: result.status,
-      error: result.error,
-    });
-    toast.error(result.error || "Failed to get AI response");
-  };
+  }, [input, loadMessages, sending, sessionId]);
 
   return (
-    <Card className={`${compact ? "h-[360px]" : "h-[500px]"} flex flex-col`}>
+    <Card className="h-[520px] flex flex-col">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2">
           <MessageCircle className="w-5 h-5" />
-          AI Health Assistant
+          AI Field Advisor
         </CardTitle>
-        <p className="text-xs text-muted-foreground mt-1">
-          Medical Disclaimer: This assistant provides general information and is not a substitute
-          for professional medical advice.
-        </p>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col">
         <ScrollArea className="flex-1 pr-4 mb-4">
-          <div className="space-y-4">
-            {messages.map(msg => (
-              <div
-                key={msg.id}
-                className={`flex gap-2 ${msg.role === "user" ? "justify-end" : ""}`}
-              >
-                {msg.role === "assistant" && (
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Bot className="w-4 h-4 text-primary" />
+          {loading ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Loading chat...
+            </div>
+          ) : initError ? (
+            <div className="text-center text-muted-foreground py-6">{initError}</div>
+          ) : messages.length === 0 ? (
+            <div className="text-center text-muted-foreground py-8 space-y-2">
+              <Bot className="w-8 h-8 mx-auto opacity-60" />
+              <p>Ask about inspections, maintenance, or project planning.</p>
+              <p className="text-xs">Your conversation is saved for follow-up recommendations.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map(msg => (
+                <div key={msg.id} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : ""}`}>
+                  {msg.role === "assistant" && (
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Bot className="w-4 h-4 text-primary" />
+                    </div>
+                  )}
+                  <div
+                    className={`max-w-[80%] p-3 rounded-lg ${
+                      msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                    }`}
+                  >
+                    <p className="text-sm">{msg.content}</p>
                   </div>
-                )}
-                <div
-                  className={`max-w-[80%] p-3 rounded-lg ${
-                    msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
-                  }`}
-                >
-                  <p className="text-sm">{msg.content}</p>
-                  {msg.role === "assistant" && msg.isStreaming && (
-                    <p className="text-[10px] text-muted-foreground mt-2">Streaming…</p>
+                  {msg.role === "user" && (
+                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4" />
+                    </div>
                   )}
                 </div>
-                {msg.role === "user" && (
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                    <User className="w-4 h-4" />
-                  </div>
-                )}
-              </div>
-            ))}
-            <div ref={endRef} />
-          </div>
+              ))}
+              <div ref={endRef} />
+            </div>
+          )}
         </ScrollArea>
-        <div className="flex flex-wrap gap-2 mb-3">
-          {suggestedQuestions.map(question => (
-            <Button
-              key={question}
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setInput(question)}
-              disabled={isSending}
-            >
-              {question}
-            </Button>
-          ))}
-        </div>
         <div className="flex gap-2">
           <Input
-            placeholder="Ask about health..."
+            placeholder="Ask about site conditions, repairs, or scheduling..."
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && void handleSend()}
-            aria-label="Health question"
-            disabled={isSending}
+            onKeyDown={e => e.key === "Enter" && handleSend()}
+            disabled={loading || !!initError || !sessionId}
           />
-          {isSending ? (
-            <Button
-              onClick={handleCancel}
-              size="icon"
-              variant="outline"
-              aria-label="Cancel request"
-              title="Cancel"
-            >
-              <Square className="w-4 h-4" />
-            </Button>
-          ) : (
-            <Button
-              onClick={() => void handleSend()}
-              size="icon"
-              disabled={!canSend}
-              aria-label="Send message"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          )}
+          <Button onClick={handleSend} size="icon" disabled={loading || sending || !sessionId}>
+            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </Button>
         </div>
       </CardContent>
     </Card>

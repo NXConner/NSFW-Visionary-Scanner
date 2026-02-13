@@ -1,4 +1,11 @@
-export type MultiAngleId = "front" | "left" | "right" | "top" | "bottom" | "custom-1" | "custom-2";
+export type MultiAngleId =
+  | "front"
+  | "left"
+  | "right"
+  | "top"
+  | "bottom"
+  | "custom-1"
+  | "custom-2";
 
 export interface MultiAngleCapture {
   requiredAngles: MultiAngleId[];
@@ -20,3 +27,4 @@ export function setCapturedAngle(
 ): MultiAngleCapture {
   return { ...s, captured: { ...s.captured, [angle]: imageDataUrl } };
 }
+

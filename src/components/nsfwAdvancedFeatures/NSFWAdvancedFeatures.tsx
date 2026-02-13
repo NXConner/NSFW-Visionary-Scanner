@@ -1,6 +1,7 @@
 /**
  * NSFW Advanced Features
  * UI component for pornmd.com integration, multi-camera recording, intimate date planning, seductive AI chat, and sex positions
+ * SUPER ADMIN BYPASS: Super admin users always get immediate access
  */
 
 import { useState } from "react";
@@ -15,14 +16,20 @@ import { AIChatTab } from "./tabs/AIChatTab";
 import { PositionsTab } from "./tabs/PositionsTab";
 import { AgeVerificationModal } from "@/dlc/components/AgeVerificationModal";
 import { useDLC, useDLCFeature } from "@/dlc/context/DLCContext";
-import { NavLink } from "@/components/NavLink";
+import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card as UiCard, CardContent as UiCardContent } from "@/components/ui/card";
 import { Loader2, Lock, Shield } from "lucide-react";
 import { NsfwConsentGate } from "@/components/nsfw/NsfwConsentGate";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
-import { useNsfwPrivacySettings } from "@/lib/nsfwPrivacySettings";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { isAnySuperAdminPersisted } from "@/lib/superAdmin";
+
+// CRITICAL: Module-level cached super admin check - runs ONCE at import time
+// This ensures privileged status is known BEFORE any component renders
+const INITIAL_SUPER_ADMIN_STATUS = isAnySuperAdminPersisted();
 
 type TabKey = "pornmd" | "recording" | "studio" | "dates" | "ai-chat" | "positions";
 
@@ -32,15 +39,27 @@ export const NSFWAdvancedFeatures = ({
   initialTab?: TabKey;
 } = {}): JSX.Element => {
   const consentEnabled = useFeatureFlag("nsfw_consent_gate", true);
-  const { settings: privacy } = useNsfwPrivacySettings();
-  const incognito = Boolean(privacy.incognitoMode);
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab ?? "pornmd");
   const [showAgeModal, setShowAgeModal] = useState(false);
   const { isAgeVerified } = useDLC();
   // Representative advanced entitlement (present in dlc-advanced, dlc-complete, dlc-subscription).
   const { isAvailable: hasAdvancedDLC, isLoading: dlcLoading } = useDLCFeature("multi_camera");
+  
+  // SUPER ADMIN BYPASS: Get privileged status from multiple sources
+  const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked, loading: authLoading } = useAuth();
+  const { isAdmin, isSuperAdmin: isSuperAdminRole, isLoading: rolesLoading } = useUserRoles();
+  
+  // CRITICAL: Include module-level cached value for instant privileged access
+  const hasSuperAdminAccess =
+    INITIAL_SUPER_ADMIN_STATUS ||
+    isSuperAdmin ||
+    hasFullAccess ||
+    allFeaturesUnlocked ||
+    isAdmin ||
+    isSuperAdminRole;
 
-  if (dlcLoading) {
+  // Wait for loading only if not a known super admin
+  if (!hasSuperAdminAccess && (dlcLoading || authLoading || rolesLoading)) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <UiCard className="glass-card border-border/50">
@@ -53,7 +72,8 @@ export const NSFWAdvancedFeatures = ({
     );
   }
 
-  if (!isAgeVerified || !hasAdvancedDLC) {
+  // SUPER ADMIN BYPASS: Skip access checks for privileged users
+  if (!hasSuperAdminAccess && (!isAgeVerified || !hasAdvancedDLC)) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <UiCard className="glass-card border-border/50">
@@ -77,14 +97,14 @@ export const NSFWAdvancedFeatures = ({
                 </Button>
               ) : (
                 <Button asChild className="gap-2">
-                  <NavLink to="/store">
+                  <Link to="/store">
                     <Lock className="w-4 h-4" />
                     Open DLC Store
-                  </NavLink>
+                  </Link>
                 </Button>
               )}
               <Button asChild variant="outline">
-                <NavLink to="/pricing">View Pricing</NavLink>
+                <Link to="/pricing">View Pricing</Link>
               </Button>
             </div>
             <Badge variant="secondary" className="mt-3">
@@ -103,24 +123,6 @@ export const NSFWAdvancedFeatures = ({
     );
   }
 
-  const tabLabels: Record<TabKey, string> = incognito
-    ? {
-        pornmd: "Browse",
-        recording: "Record",
-        studio: "Studio",
-        dates: "Plans",
-        "ai-chat": "Chat",
-        positions: "Library",
-      }
-    : {
-        pornmd: "PornMD",
-        recording: "Recording",
-        studio: "Studio",
-        dates: "Intimate Dates",
-        "ai-chat": "AI Chat",
-        positions: "Positions",
-      };
-
   const content = (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <AgeVerificationModal
@@ -134,23 +136,22 @@ export const NSFWAdvancedFeatures = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Heart className="w-6 h-6" />
-            {incognito ? "Private Tools" : "NSFW Advanced Features"}
+            NSFW Advanced Features
           </CardTitle>
           <CardDescription>
-            {incognito
-              ? "Discreet private tools with redacted labels."
-              : "PornMD integration, multi-camera recording, intimate date planning, seductive AI chat, and sex positions library"}
+            PornMD integration, multi-camera recording, intimate date planning, seductive AI chat,
+            and sex positions library
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={v => setActiveTab(v as TabKey)}>
             <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="pornmd">{tabLabels.pornmd}</TabsTrigger>
-              <TabsTrigger value="recording">{tabLabels.recording}</TabsTrigger>
-              <TabsTrigger value="studio">{tabLabels.studio}</TabsTrigger>
-              <TabsTrigger value="dates">{tabLabels.dates}</TabsTrigger>
-              <TabsTrigger value="ai-chat">{tabLabels["ai-chat"]}</TabsTrigger>
-              <TabsTrigger value="positions">{tabLabels.positions}</TabsTrigger>
+              <TabsTrigger value="pornmd">PornMD</TabsTrigger>
+              <TabsTrigger value="recording">Recording</TabsTrigger>
+              <TabsTrigger value="studio">Studio</TabsTrigger>
+              <TabsTrigger value="dates">Intimate Dates</TabsTrigger>
+              <TabsTrigger value="ai-chat">AI Chat</TabsTrigger>
+              <TabsTrigger value="positions">Positions</TabsTrigger>
             </TabsList>
 
             <TabsContent value="pornmd" className="space-y-4">

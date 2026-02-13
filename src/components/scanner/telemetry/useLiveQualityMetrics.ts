@@ -38,16 +38,13 @@ export function useLiveQualityMetrics(args: {
   const lastAtRef = React.useRef(0);
   const lastPublishedRef = React.useRef<LiveQualityScores>(DEFAULT_SCORES);
 
-  const scoresChangedMeaningfully = React.useCallback(
-    (a: LiveQualityScores, b: LiveQualityScores) => {
-      // Avoid rerenders for tiny fluctuations; the UI only needs coarse-grained feedback.
-      if (Math.abs(a.lightingScore - b.lightingScore) >= 1) return true;
-      if (Math.abs(a.sharpnessScore - b.sharpnessScore) >= 1) return true;
-      if (Math.abs(a.qualityScore - b.qualityScore) >= 1) return true;
-      return false;
-    },
-    [],
-  );
+  const scoresChangedMeaningfully = React.useCallback((a: LiveQualityScores, b: LiveQualityScores) => {
+    // Avoid rerenders for tiny fluctuations; the UI only needs coarse-grained feedback.
+    if (Math.abs(a.lightingScore - b.lightingScore) >= 1) return true;
+    if (Math.abs(a.sharpnessScore - b.sharpnessScore) >= 1) return true;
+    if (Math.abs(a.qualityScore - b.qualityScore) >= 1) return true;
+    return false;
+  }, []);
 
   React.useEffect(() => {
     if (!enabled) return;
@@ -126,7 +123,14 @@ export function useLiveQualityMetrics(args: {
       stopped = true;
       if (timeoutId) window.clearTimeout(timeoutId);
     };
-  }, [enabled, videoEl, sampleFps, sampleSize.height, sampleSize.width, scoresChangedMeaningfully]);
+  }, [
+    enabled,
+    videoEl,
+    sampleFps,
+    sampleSize.height,
+    sampleSize.width,
+    scoresChangedMeaningfully,
+  ]);
 
   return state;
 }

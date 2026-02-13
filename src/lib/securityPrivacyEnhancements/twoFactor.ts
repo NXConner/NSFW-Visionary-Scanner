@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 import type { JsonObject, TwoFactorAuthentication, TwoFactorSetupResult } from "./types";
 import { generateReadableCodes, sha256Hex } from "./crypto";
-import { APP_NAME } from "@/config/brand";
 
 async function getUserIdOrThrow(): Promise<string> {
   const {
@@ -68,7 +67,7 @@ export async function enable2FA(
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: "totp",
       friendlyName: "Authenticator",
-      issuer: APP_NAME,
+      issuer: "MorphoScan Pro",
     });
     if (error || !data || data.type !== "totp") {
       logger.error("Failed to enroll MFA", { error: error?.message });

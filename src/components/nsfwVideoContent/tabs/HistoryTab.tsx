@@ -78,7 +78,12 @@ export function HistoryTab({
         onPlay={onPlay}
         privacy={privacy}
       />
-      <Section title="Recently watched" items={recentlyWatched} onPlay={onPlay} privacy={privacy} />
+      <Section
+        title="Recently watched"
+        items={recentlyWatched}
+        onPlay={onPlay}
+        privacy={privacy}
+      />
     </div>
   );
 }

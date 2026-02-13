@@ -1,10 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Camera, RotateCw, CheckCircle2, AlertCircle, ChevronRight, Layers } from "lucide-react";
+import { useCamera } from "@/hooks/useCamera";
 
 interface CapturedAngle {
   id: string;
@@ -37,36 +38,64 @@ export const MultiAngleCapture = ({
   const [captures, setCaptures] = useState<CapturedAngle[]>([]);
   const [currentAngleIndex, setCurrentAngleIndex] = useState(0);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [captureError, setCaptureError] = useState<string | null>(null);
+  const {
+    videoRef,
+    canvasRef,
+    isActive: cameraActive,
+    isStarting,
+    error: cameraError,
+    startCamera,
+    stopCamera,
+    captureImageAsync,
+  } = useCamera();
 
   const currentAngle = REQUIRED_ANGLES[currentAngleIndex];
   const progress = (captures.length / REQUIRED_ANGLES.length) * 100;
 
   const handleCapture = useCallback(
-    (imageData: string) => {
+    async () => {
+      if (!currentAngle?.id || !cameraActive) return;
       setIsCapturing(true);
+      setCaptureError(null);
 
-      // Simulate quality analysis
-      setTimeout(() => {
-        const quality = 70 + Math.random() * 30;
-        const newCapture: CapturedAngle = {
-          id: currentAngle.id,
-          angle: currentAngle.label,
-          image: imageData,
-          timestamp: new Date(),
-          quality,
-        };
-
-        setCaptures(prev => [...prev, newCapture]);
-        onCapture(imageData, currentAngle.id);
-
-        if (currentAngleIndex < REQUIRED_ANGLES.length - 1) {
-          setCurrentAngleIndex(prev => prev + 1);
-        }
-
+      const imageData = await captureImageAsync({ maxWidth: 2048, maxHeight: 2048, quality: 0.9 });
+      if (!imageData) {
         setIsCapturing(false);
-      }, 500);
+        setCaptureError("Unable to capture image. Adjust the camera and retry.");
+        return;
+      }
+
+      const quality = await new Promise<number>(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          const pixels = img.width * img.height;
+          const baseline = 1280 * 720;
+          const score = Math.max(60, Math.min(100, Math.round((pixels / baseline) * 100)));
+          resolve(score);
+        };
+        img.onerror = () => resolve(70);
+        img.src = imageData;
+      });
+
+      const newCapture: CapturedAngle = {
+        id: currentAngle.id,
+        angle: currentAngle.label,
+        image: imageData,
+        timestamp: new Date(),
+        quality,
+      };
+
+      setCaptures(prev => [...prev, newCapture]);
+      onCapture(imageData, currentAngle.id);
+
+      if (currentAngleIndex < REQUIRED_ANGLES.length - 1) {
+        setCurrentAngleIndex(prev => prev + 1);
+      }
+
+      setIsCapturing(false);
     },
-    [currentAngle, currentAngleIndex, onCapture],
+    [cameraActive, captureImageAsync, currentAngle, currentAngleIndex, onCapture],
   );
 
   const handleComplete = () => {
@@ -79,6 +108,28 @@ export const MultiAngleCapture = ({
     setCaptures(prev => prev.filter((_, i) => i !== index));
     setCurrentAngleIndex(index);
   };
+
+  useEffect(() => {
+    if (!isActive) {
+      stopCamera();
+      return;
+    }
+
+    let cancelled = false;
+    const run = async () => {
+      setCaptureError(null);
+      const result = await startCamera();
+      if (!result.ok && !cancelled && "error" in result) {
+        setCaptureError(result.error);
+      }
+    };
+    void run();
+
+    return () => {
+      cancelled = true;
+      stopCamera();
+    };
+  }, [isActive, startCamera, stopCamera]);
 
   if (!isActive) return null;
 
@@ -189,7 +240,6 @@ export const MultiAngleCapture = ({
                     <button
                       onClick={() => handleRetake(index)}
                       className="absolute top-1 right-1 p-1 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
-                      aria-label={`Retake ${angle.label} capture`}
                     >
                       <RotateCw className="w-3 h-3 text-white" />
                     </button>
@@ -212,10 +262,42 @@ export const MultiAngleCapture = ({
           })}
         </div>
 
-        {/* Camera viewfinder placeholder */}
+        {/* Camera viewfinder */}
         <div className="flex-1 relative rounded-2xl overflow-hidden bg-black/50 border border-border/50 mb-4">
-          <div className="absolute inset-0 flex items-center justify-center">
-            {isCapturing ? (
+          {cameraActive && !captureError ? (
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-center p-6">
+              <div className="space-y-3">
+                <Camera className="w-12 h-12 text-muted-foreground mx-auto" />
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">
+                    {cameraError || captureError || "Camera is not active yet."}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Grant camera access to capture each angle.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void startCamera()}
+                  disabled={isStarting}
+                >
+                  {isStarting ? "Starting..." : "Start Camera"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {isCapturing && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
               <motion.div
                 initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -224,13 +306,10 @@ export const MultiAngleCapture = ({
                 <div className="w-16 h-16 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">Analyzing quality...</p>
               </motion.div>
-            ) : (
-              <div className="text-center">
-                <Camera className="w-12 h-12 text-muted-foreground mb-2 mx-auto" />
-                <p className="text-sm text-muted-foreground">Camera preview</p>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          <canvas ref={canvasRef} className="hidden" />
 
           {/* AR overlay guides */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none">
@@ -284,8 +363,8 @@ export const MultiAngleCapture = ({
             <Button
               variant="hero"
               className="flex-1"
-              onClick={() => handleCapture("data:image/jpeg;base64,placeholder")}
-              disabled={isCapturing}
+              onClick={() => void handleCapture()}
+              disabled={isCapturing || isStarting || !cameraActive}
             >
               <Camera className="w-4 h-4 mr-2" />
               Capture {currentAngle?.label}

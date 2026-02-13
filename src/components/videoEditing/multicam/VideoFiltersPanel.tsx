@@ -18,10 +18,7 @@ interface FilterConfig {
   label: string;
   description: string;
   icon: React.ReactNode;
-  options: Record<
-    string,
-    { label: string; min: number; max: number; step: number; default: number }
-  >;
+  options: Record<string, { label: string; min: number; max: number; step: number; default: number }>;
 }
 
 const FILTER_CONFIGS: FilterConfig[] = [
@@ -89,40 +86,31 @@ export function VideoFiltersPanel(props: {
 }): JSX.Element {
   const { filterState, onFilterChange } = props;
 
-  const handleToggle = useCallback(
-    (enabled: boolean) => {
-      onFilterChange({ ...filterState, enabled });
-    },
-    [filterState, onFilterChange],
-  );
+  const handleToggle = useCallback((enabled: boolean) => {
+    onFilterChange({ ...filterState, enabled });
+  }, [filterState, onFilterChange]);
 
-  const handleSelectFilter = useCallback(
-    (filterKey: FilterType) => {
-      if (filterState.filterType === filterKey) {
-        onFilterChange({ ...filterState, filterType: null, options: {} });
-      } else {
-        const config = FILTER_CONFIGS.find(f => f.key === filterKey);
-        const defaults: Record<string, number> = {};
-        if (config) {
-          for (const [key, def] of Object.entries(config.options)) {
-            defaults[key] = def.default;
-          }
+  const handleSelectFilter = useCallback((filterKey: FilterType) => {
+    if (filterState.filterType === filterKey) {
+      onFilterChange({ ...filterState, filterType: null, options: {} });
+    } else {
+      const config = FILTER_CONFIGS.find(f => f.key === filterKey);
+      const defaults: Record<string, number> = {};
+      if (config) {
+        for (const [key, def] of Object.entries(config.options)) {
+          defaults[key] = def.default;
         }
-        onFilterChange({ ...filterState, filterType: filterKey, options: defaults });
       }
-    },
-    [filterState, onFilterChange],
-  );
+      onFilterChange({ ...filterState, filterType: filterKey, options: defaults });
+    }
+  }, [filterState, onFilterChange]);
 
-  const handleOptionChange = useCallback(
-    (key: string, value: number) => {
-      onFilterChange({
-        ...filterState,
-        options: { ...filterState.options, [key]: value },
-      });
-    },
-    [filterState, onFilterChange],
-  );
+  const handleOptionChange = useCallback((key: string, value: number) => {
+    onFilterChange({
+      ...filterState,
+      options: { ...filterState.options, [key]: value },
+    });
+  }, [filterState, onFilterChange]);
 
   const activeConfig = FILTER_CONFIGS.find(f => f.key === filterState.filterType);
 
@@ -134,10 +122,12 @@ export function VideoFiltersPanel(props: {
           <span className="text-sm font-medium">Video Filters</span>
         </div>
         <div className="flex items-center gap-2">
-          <Label htmlFor="filter-toggle" className="text-xs">
-            Enable
-          </Label>
-          <Switch id="filter-toggle" checked={filterState.enabled} onCheckedChange={handleToggle} />
+          <Label htmlFor="filter-toggle" className="text-xs">Enable</Label>
+          <Switch
+            id="filter-toggle"
+            checked={filterState.enabled}
+            onCheckedChange={handleToggle}
+          />
         </div>
       </div>
 
@@ -162,11 +152,9 @@ export function VideoFiltersPanel(props: {
             <div className="space-y-2 pt-2 border-t border-border">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium">{activeConfig.label}</span>
-                <Badge variant="secondary" className="text-[10px]">
-                  Preview
-                </Badge>
+                <Badge variant="secondary" className="text-[10px]">Preview</Badge>
               </div>
-
+              
               {Object.entries(activeConfig.options).map(([key, opt]) => (
                 <div key={key} className="space-y-1">
                   <div className="flex justify-between">

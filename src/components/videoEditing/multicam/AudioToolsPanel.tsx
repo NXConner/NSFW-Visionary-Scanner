@@ -8,7 +8,15 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Volume2, VolumeX, Music, Mic, RefreshCw, TrendingUp, TrendingDown } from "lucide-react";
+import {
+  Volume2,
+  VolumeX,
+  Music,
+  Mic,
+  RefreshCw,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
 
 export interface AudioState {
   volume: number;
@@ -155,7 +163,10 @@ export function AudioToolsPanel({ state, onChange }: Props) {
             />
             <div className="flex items-center justify-between">
               <Label className="text-[10px]">Auto-Duck</Label>
-              <Switch checked={state.ducking} onCheckedChange={v => update("ducking", v)} />
+              <Switch
+                checked={state.ducking}
+                onCheckedChange={v => update("ducking", v)}
+              />
             </div>
             {state.ducking && (
               <div className="space-y-1">
@@ -209,7 +220,10 @@ export function AudioToolsPanel({ state, onChange }: Props) {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label className="text-[10px]">Normalize Audio</Label>
-          <Switch checked={state.normalize} onCheckedChange={v => update("normalize", v)} />
+          <Switch
+            checked={state.normalize}
+            onCheckedChange={v => update("normalize", v)}
+          />
         </div>
         <div className="space-y-1">
           <div className="flex justify-between">

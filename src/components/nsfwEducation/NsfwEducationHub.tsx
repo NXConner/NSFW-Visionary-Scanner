@@ -55,9 +55,7 @@ interface NsfwEducationHubProps {
   initialCategory?: CategoryKey;
 }
 
-export function NsfwEducationHub({
-  initialCategory = "cock-worshiping",
-}: NsfwEducationHubProps): JSX.Element {
+export function NsfwEducationHub({ initialCategory = "cock-worshiping" }: NsfwEducationHubProps): JSX.Element {
   const [activeCategory, setActiveCategory] = React.useState<CategoryKey>(initialCategory);
 
   const renderContent = () => {
@@ -113,17 +111,11 @@ export function NsfwEducationHub({
                   : "border-border/50 bg-background/40 hover:border-primary/50 hover:bg-primary/5",
               ].join(" ")}
             >
-              <Icon
-                className={`h-5 w-5 mb-2 ${isActive ? "text-primary" : "text-muted-foreground"}`}
-              />
-              <div
-                className={`font-medium text-sm ${isActive ? "text-primary" : "text-foreground"}`}
-              >
+              <Icon className={`h-5 w-5 mb-2 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+              <div className={`font-medium text-sm ${isActive ? "text-primary" : "text-foreground"}`}>
                 {cat.label}
               </div>
-              <div className="text-xs text-muted-foreground mt-1 hidden md:block">
-                {cat.description}
-              </div>
+              <div className="text-xs text-muted-foreground mt-1 hidden md:block">{cat.description}</div>
             </button>
           );
         })}

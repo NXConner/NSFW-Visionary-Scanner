@@ -1,223 +1,174 @@
-import type { DLCPackage, DLCFeature, DLCFeatureCategory } from "./types";
-import type { DLCBundleManifest } from "./dlcRegistryParts/manifests";
-import { DLC_MODULES, MODULE_PACKAGE_MAP } from "../modules";
+/**
+ * DLC Registry
+ * Manages the catalog of available DLC packages and bundles
+ */
 
-type PackageMeta = {
-  packageName: string;
-  safeDescription: string;
-  fullDescription?: string;
-  packageType: DLCPackage["packageType"];
-  priceType: DLCPackage["priceType"];
-  contentRating?: string;
-  isFeatured?: boolean;
-  includedPackages?: string[];
-  regionalPricing?: Record<string, number>;
-};
+import type { DLCPackage, DLCBundleManifest, DLCFeature, DLCFeatureCategory } from "./types";
+import { DLC_PACKAGES } from "./dlcRegistryParts/packages";
+import { BUNDLE_MANIFESTS } from "./dlcRegistryParts/manifests";
 
-const FEATURE_NAME_OVERRIDES: Record<string, string> = {
-  positions_gallery: "Positions Gallery",
-  position_details: "Position Details",
-  position_favorites: "Favorites",
-  position_filters: "Advanced Filters",
-  position_playlists: "Playlists",
-  video_library: "Video Library",
-  video_lessons: "Video Lessons",
-  wellness_analytics: "Wellness Analytics",
-  private_forum: "Private Community",
-  multi_camera: "Advanced Capture",
-};
+export { DLC_PACKAGES, BUNDLE_MANIFESTS };
 
-const PACKAGE_META: Record<string, PackageMeta> = {
-  "dlc-positions": {
-    packageName: "Positions Collection",
-    safeDescription: "Unlock the curated positions library with guides, filters, and favorites.",
-    packageType: "individual",
-    priceType: "one-time",
-    contentRating: "18+",
-    isFeatured: true,
-  },
-  "dlc-videos": {
-    packageName: "Video Library",
-    safeDescription: "Premium instructional videos with safety guidance and progress tracking.",
-    packageType: "individual",
-    priceType: "one-time",
-    contentRating: "18+",
-  },
-  "dlc-analytics": {
-    packageName: "Wellness Analytics",
-    safeDescription: "Advanced analytics dashboards and trend insights.",
-    packageType: "individual",
-    priceType: "one-time",
-  },
-  "dlc-community": {
-    packageName: "Community",
-    safeDescription: "Private community access with discussions and expert events.",
-    packageType: "individual",
-    priceType: "one-time",
-  },
-  "dlc-advanced": {
-    packageName: "Advanced Toolkit",
-    safeDescription: "Advanced modules and pro tools bundled together.",
-    packageType: "bundle",
-    priceType: "one-time",
-    contentRating: "18+",
-    isFeatured: true,
-  },
-  "dlc-intimate": {
-    packageName: "Intimate Bundle",
-    safeDescription: "A bundled experience with positions and analytics upgrades.",
-    packageType: "bundle",
-    priceType: "one-time",
-    contentRating: "18+",
-  },
-  "dlc-creator": {
-    packageName: "Creator Suite",
-    safeDescription: "Video + community tools for creators and partners.",
-    packageType: "bundle",
-    priceType: "one-time",
-  },
-  "dlc-complete": {
-    packageName: "Complete Bundle",
-    safeDescription: "All DLC modules in one premium bundle.",
-    packageType: "bundle",
-    priceType: "one-time",
-    contentRating: "18+",
-    isFeatured: true,
-  },
-  "dlc-subscription": {
-    packageName: "DLC Subscription",
-    safeDescription: "Subscription access to all DLC modules with continuous updates.",
-    packageType: "subscription",
-    priceType: "subscription",
-    contentRating: "18+",
-    isFeatured: true,
-  },
-};
+function newId(): string {
+  try {
+    return typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  } catch {
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+}
 
-const PACKAGE_ORDER = Object.keys(MODULE_PACKAGE_MAP);
+export class DLCRegistry {
+  private packages: Map<string, DLCPackage> = new Map();
+  private manifests: Map<string, DLCBundleManifest> = new Map();
 
-const featureNameFromId = (featureId: string): string => {
-  const override = FEATURE_NAME_OVERRIDES[featureId];
-  if (override) return override;
-  return featureId
-    .split("_")
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-};
+  constructor() {
+    this.initializePackages();
+  }
 
-const categoryFromModule = (moduleId: string): DLCFeatureCategory => {
-  const allowed: DLCFeatureCategory[] = [
-    "positions",
-    "videos",
-    "analytics",
-    "community",
-    "advanced",
-    "topics",
-    "marketplace",
-  ];
-  return allowed.includes(moduleId as DLCFeatureCategory)
-    ? (moduleId as DLCFeatureCategory)
-    : "other";
-};
-
-const buildFeaturesForPackage = (packageId: string): DLCFeature[] => {
-  const moduleIds = MODULE_PACKAGE_MAP[packageId] || [];
-  const features: DLCFeature[] = [];
-  const seen = new Set<string>();
-
-  moduleIds.forEach(moduleId => {
-    const module = DLC_MODULES[moduleId];
-    if (!module) return;
-    const category = categoryFromModule(moduleId);
-    module.features.forEach(featureId => {
-      if (seen.has(featureId)) return;
-      seen.add(featureId);
-      features.push({
-        id: featureId,
-        name: featureNameFromId(featureId),
-        category,
+  private initializePackages(): void {
+    Object.entries(DLC_PACKAGES).forEach(([id, pkg]) => {
+      this.packages.set(id, {
+        ...pkg,
+        id: newId(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
     });
-  });
 
-  return features;
-};
-
-const buildPackage = (packageId: string, index: number): DLCPackage => {
-  const meta = PACKAGE_META[packageId];
-  const moduleIds = MODULE_PACKAGE_MAP[packageId] || [];
-  const fallbackName = moduleIds.length ? DLC_MODULES[moduleIds[0]]?.name || packageId : packageId;
-  return {
-    packageId,
-    packageName: meta?.packageName || fallbackName,
-    safeDescription: meta?.safeDescription || "Premium DLC package.",
-    fullDescription: meta?.fullDescription,
-    contentRating: meta?.contentRating,
-    version: "1.0.0",
-    priceUsd: 0,
-    currency: "USD",
-    priceType: meta?.priceType || "one-time",
-    packageType: meta?.packageType || "individual",
-    isActive: true,
-    isFeatured: Boolean(meta?.isFeatured),
-    displayOrder: index,
-    requiresBasePack: false,
-    basePackId: null,
-    features: buildFeaturesForPackage(packageId),
-    includedPackages: meta?.includedPackages,
-    regionalPricing: meta?.regionalPricing,
-    tags: [],
-  };
-};
-
-export const DLC_PACKAGES: DLCPackage[] = PACKAGE_ORDER.map(buildPackage);
-
-class DLCRegistry {
-  private packages = new Map<string, DLCPackage>(
-    DLC_PACKAGES.map(pkg => [pkg.packageId, pkg] as const),
-  );
-  private bundleManifests = new Map<string, DLCBundleManifest>();
+    Object.entries(BUNDLE_MANIFESTS).forEach(([id, manifest]) => {
+      this.manifests.set(id, manifest);
+    });
+  }
 
   getAllPackages(): DLCPackage[] {
-    return Array.from(this.packages.values());
+    return Array.from(this.packages.values())
+      .filter(pkg => pkg.isActive)
+      .sort((a, b) => a.displayOrder - b.displayOrder);
+  }
+
+  /**
+   * Runtime registration (used by addon system).
+   * Must be idempotent: repeated calls should not duplicate or throw.
+   */
+  registerPackages(packages: Record<string, DLCPackage>): void {
+    for (const [key, pkg] of Object.entries(packages || {})) {
+      const packageId = String(pkg?.packageId || key).trim();
+      if (!packageId) continue;
+      if (this.packages.has(packageId)) continue;
+      this.packages.set(packageId, {
+        ...pkg,
+        id: pkg.id || newId(),
+        createdAt: pkg.createdAt || new Date(),
+        updatedAt: pkg.updatedAt || new Date(),
+      });
+    }
+  }
+
+  registerManifests(manifests: Record<string, DLCBundleManifest>): void {
+    for (const [key, manifest] of Object.entries(manifests || {})) {
+      const id = String((manifest as any)?.id || key).trim();
+      if (!id) continue;
+      if (this.manifests.has(id)) continue;
+      this.manifests.set(id, manifest as DLCBundleManifest);
+    }
   }
 
   getPackage(packageId: string): DLCPackage | undefined {
     return this.packages.get(packageId);
   }
 
+  getFeaturedPackages(): DLCPackage[] {
+    return this.getAllPackages().filter(pkg => pkg.isFeatured);
+  }
+
+  getIndividualPackages(): DLCPackage[] {
+    return this.getAllPackages().filter(pkg => pkg.packageType === "individual");
+  }
+
+  getBundlePackages(): DLCPackage[] {
+    return this.getAllPackages().filter(pkg => pkg.packageType === "bundle");
+  }
+
+  getSubscriptionPackages(): DLCPackage[] {
+    return this.getAllPackages().filter(pkg => pkg.packageType === "subscription");
+  }
+
+  getManifest(packageId: string): DLCBundleManifest | undefined {
+    return this.manifests.get(packageId);
+  }
+
   getAllFeaturesForPackage(packageId: string): DLCFeature[] {
-    return this.getPackage(packageId)?.features || [];
+    const pkg = this.getPackage(packageId);
+    if (!pkg) return [];
+
+    const features = [...pkg.features];
+
+    if (pkg.includedPackages) {
+      pkg.includedPackages.forEach(includedId => {
+        const includedPkg = this.getPackage(includedId);
+        if (!includedPkg) return;
+        includedPkg.features.forEach(feature => {
+          if (!features.some(f => f.id === feature.id)) features.push(feature);
+        });
+      });
+    }
+
+    return features;
+  }
+
+  hasFeature(packageId: string, featureId: string): boolean {
+    return this.getAllFeaturesForPackage(packageId).some(f => f.id === featureId);
+  }
+
+  getFeaturesByCategory(category: DLCFeatureCategory): DLCFeature[] {
+    const allFeatures: DLCFeature[] = [];
+
+    this.packages.forEach(pkg => {
+      pkg.features.forEach(feature => {
+        if (feature.category !== category) return;
+        if (!allFeatures.some(f => f.id === feature.id)) allFeatures.push(feature);
+      });
+    });
+
+    return allFeatures;
+  }
+
+  calculateUpgradePrice(targetPackageId: string, ownedPackageIds: string[]): number {
+    const targetPkg = this.getPackage(targetPackageId);
+    if (!targetPkg) return 0;
+
+    const targetFeatureIds = new Set(this.getAllFeaturesForPackage(targetPackageId).map(f => f.id));
+
+    const ownedValue = ownedPackageIds.reduce((acc, ownedId) => {
+      const ownedPkg = this.getPackage(ownedId);
+      if (!ownedPkg) return acc;
+
+      const ownedFeatureIds = new Set(ownedPkg.features.map(f => f.id));
+      const isSubset = [...ownedFeatureIds].every(id => targetFeatureIds.has(id));
+      return isSubset ? acc + ownedPkg.priceUsd : acc;
+    }, 0);
+
+    return Math.max(0, targetPkg.priceUsd - ownedValue);
+  }
+
+  getLocalizedName(packageId: string, locale: string): string {
+    const pkg = this.getPackage(packageId);
+    if (!pkg) return "";
+    return pkg.localizedNames?.[locale] || pkg.packageName;
+  }
+
+  getLocalizedDescription(packageId: string, locale: string): string {
+    const pkg = this.getPackage(packageId);
+    if (!pkg) return "";
+    return pkg.localizedDescriptions?.[locale] || pkg.safeDescription;
   }
 
   getRegionalPrice(packageId: string, currency: string): number {
     const pkg = this.getPackage(packageId);
     if (!pkg) return 0;
-    const regional = pkg.regionalPricing?.[currency.toUpperCase()];
-    return typeof regional === "number" ? regional : pkg.priceUsd;
-  }
-
-  registerPackages(packages: Record<string, DLCPackage>): void {
-    Object.entries(packages || {}).forEach(([key, pkg]) => {
-      const packageId = pkg.packageId || key;
-      const existing = this.packages.get(packageId);
-      this.packages.set(packageId, {
-        ...(existing || {}),
-        ...pkg,
-        packageId,
-      });
-    });
-  }
-
-  registerManifests(manifests: Record<string, DLCBundleManifest>): void {
-    Object.entries(manifests || {}).forEach(([key, manifest]) => {
-      const id = manifest.id || key;
-      this.bundleManifests.set(id, { ...manifest, id });
-    });
-  }
-
-  getManifests(): DLCBundleManifest[] {
-    return Array.from(this.bundleManifests.values());
+    return pkg.regionalPricing?.[currency] || pkg.priceUsd;
   }
 }
 

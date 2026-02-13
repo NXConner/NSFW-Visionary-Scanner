@@ -131,7 +131,7 @@ export function ContentModerationPanel() {
       // Fetch forum posts
       const { data: posts } = await supabase
         .from("nsfw_forum_posts")
-        .select("id, content, user_id, created_at, is_approved")
+        .select("id, post_content, user_id, created_at, is_approved")
         .order("created_at", { ascending: false })
         .limit(50);
 
@@ -139,7 +139,7 @@ export function ContentModerationPanel() {
         items.push({
           id: p.id,
           type: "comment",
-          title: p.content?.substring(0, 50) + "..." || "Forum Post",
+          title: p.post_content?.substring(0, 50) + "..." || "Forum Post",
           submittedBy: p.user_id?.substring(0, 8) + "..." || "Unknown",
           submittedAt: p.created_at ? format(new Date(p.created_at), "MMM d, yyyy") : "Unknown",
           status: p.is_approved ? "approved" : "pending",
@@ -171,7 +171,7 @@ export function ContentModerationPanel() {
       // Fetch expert articles
       const { data: articles } = await supabase
         .from("expert_articles")
-        .select("id, article_title, expert_id, created_at, published_at")
+        .select("id, title, expert_id, created_at, published_at")
         .order("created_at", { ascending: false })
         .limit(50);
 
@@ -179,7 +179,7 @@ export function ContentModerationPanel() {
         items.push({
           id: a.id,
           type: "text",
-          title: a.article_title || "Article",
+          title: a.title || "Article",
           submittedBy: a.expert_id?.substring(0, 8) + "..." || "Unknown",
           submittedAt: a.created_at ? format(new Date(a.created_at), "MMM d, yyyy") : "Unknown",
           status: a.published_at ? "approved" : "pending",

@@ -6,12 +6,6 @@ import { initializeSecurity, generateCSPHeader } from "./lib/security";
 import { initStorageMonitoring } from "./lib/storageErrorHandler";
 import { installConsoleInterceptor } from "./lib/logger";
 import { registerPwaIfAllowed } from "./pwa/register";
-import {
-  initializeCapacitor,
-  hideSplashScreen,
-  isNative,
-  installMobileErrorHandler,
-} from "./lib/capacitor";
 
 // === AGGRESSIVE STARTUP OPTIMIZATION ===
 // Prevent infinite loading in pop-out preview / iframe scenarios
@@ -57,7 +51,6 @@ const cleanupSync = () => {
 
 // Run cleanup immediately on any Lovable/preview host
 const hostname = window.location.hostname.toLowerCase();
-const protocol = window.location.protocol.toLowerCase();
 const isPreviewHost =
   hostname.includes("lovable") ||
   hostname.includes("cursor") ||
@@ -66,17 +59,12 @@ const isPreviewHost =
   hostname.endsWith(".lovable.app") ||
   hostname.endsWith(".cursor.sh") ||
   hostname.endsWith(".cursor.so");
-const isLikelyNativeHost =
-  protocol === "capacitor:" ||
-  protocol === "file:" ||
-  (protocol === "https:" && hostname === "localhost");
-const isLikelyNativeBoot = isNative() || isLikelyNativeHost;
 
 // Allow forcing cleanup for debugging without slowing down local dev by default.
 // Set VITE_FORCE_SW_CLEANUP=1 to enable.
 const forceCleanup = import.meta.env.VITE_FORCE_SW_CLEANUP === "1";
 
-if (isPreviewHost || forceCleanup || isLikelyNativeBoot) {
+if (isPreviewHost || forceCleanup) {
   cleanupSync();
 }
 
@@ -89,10 +77,8 @@ const hideLoader = () => {
   setTimeout(() => loader.remove(), 150);
 };
 
-// Boot UX:
-// Keep the HTML loader visible until React mounts (AppContent removes it).
-// The index.html boot diagnostics watchdog will surface failures if the JS bundle
-// never executes or the app never becomes interactive.
+// EMERGENCY: Force hide loader after 1.5s no matter what
+setTimeout(hideLoader, 1500);
 
 // 3. Safe initialization wrapper (never blocks boot)
 const safeInit = (fn: () => void) => {
@@ -119,69 +105,19 @@ const deferInit = (fn: () => void) => {
   setTimeout(() => safeInit(fn), 0);
 };
 
-let splashFallbackTimer: ReturnType<typeof setTimeout> | null = null;
-const clearSplashFallbackTimer = () => {
-  if (!splashFallbackTimer) return;
-  clearTimeout(splashFallbackTimer);
-  splashFallbackTimer = null;
-};
-const hideNativeSplashSafely = async () => {
-  if (!isLikelyNativeBoot) return;
-  try {
-    await hideSplashScreen();
-  } finally {
-    clearSplashFallbackTimer();
-  }
-};
-
-if (isLikelyNativeBoot) {
-  // Absolute fail-safe: never leave users pinned behind native splash forever.
-  splashFallbackTimer = setTimeout(() => {
-    void hideNativeSplashSafely();
-  }, 7000);
-}
-
-// 4. Initialize Capacitor for mobile (non-blocking)
-if (isLikelyNativeBoot) {
-  // Install mobile error handlers immediately
-  safeInit(installMobileErrorHandler);
-  // Initialize Capacitor (async, non-blocking)
-  initializeCapacitor().catch(err => {
-    console.warn("[Main] Capacitor init error (non-fatal):", err);
-  });
-}
-
-// 5. Initialize React app IMMEDIATELY (do not block on non-critical init)
+// 4. Initialize React app IMMEDIATELY (do not block on non-critical init)
 const rootEl = document.getElementById("root");
 if (rootEl) {
   try {
     const root = createRoot(rootEl);
     root.render(<App />);
-
-    // Hide splash screen after React renders (for Capacitor)
-    if (isLikelyNativeBoot) {
-      // Give React a moment to render, then hide splash
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          hideNativeSplashSafely().catch(err => {
-            console.warn("[Main] Failed to hide splash:", err);
-          });
-        }, 100);
-      });
-    }
-  } catch {
+  } catch (err) {
     // Emergency fallback: show error message instead of infinite loader
-    // Also hide splash screen on error so user sees the error
-    hideLoader();
-    if (isLikelyNativeBoot) {
-      void hideNativeSplashSafely();
-    }
     rootEl.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;background:#0a0a0a;">
+      <div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;">
         <div style="text-align:center;padding:2rem;">
-          <p style="color:#f87171;font-weight:600;">Failed to load application</p>
-          <p style="color:#666;margin-top:0.5rem;font-size:14px;">Please try again or reinstall the app</p>
-          <button onclick="location.reload()" style="margin-top:1rem;padding:0.5rem 1rem;cursor:pointer;background:#8B5CF6;color:white;border:none;border-radius:8px;">
+          <p style="color:#666;">Failed to load application</p>
+          <button onclick="location.reload()" style="margin-top:1rem;padding:0.5rem 1rem;cursor:pointer;">
             Reload
           </button>
         </div>
@@ -189,6 +125,37 @@ if (rootEl) {
     `;
   }
 }
+
+// 5. Watchdog: if React doesn't mount, never show a blank screen
+setTimeout(() => {
+  try {
+    hideLoader();
+    const el = document.getElementById("root");
+    if (!el) return;
+    if (el.childElementCount > 0) return;
+    // Avoid overwriting if something already wrote a fallback.
+    if (el.getAttribute("data-boot-fallback") === "1") return;
+    el.setAttribute("data-boot-fallback", "1");
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;padding:2rem;">
+        <div style="max-width:520px;text-align:center;">
+          <p style="margin:0 0 0.5rem;color:#111;font-size:18px;font-weight:600;">App didn’t finish loading</p>
+          <p style="margin:0 0 1rem;color:#666;line-height:1.4;">
+            This is usually caused by a stale preview cache or a blocked storage/service worker state.
+          </p>
+          <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;">
+            <button onclick="location.reload()" style="padding:0.5rem 1rem;cursor:pointer;">Reload</button>
+            <button onclick="try{localStorage.clear()}catch(e){}; try{sessionStorage.clear()}catch(e){}; location.reload()" style="padding:0.5rem 1rem;cursor:pointer;">
+              Clear Storage + Reload
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch {
+    // ignore
+  }
+}, 4500);
 
 // 6. Non-critical startup - defer so UI shows ASAP
 deferInit(initSentry);
@@ -204,3 +171,6 @@ deferInit(() => {
   cspMeta.setAttribute("content", generateCSPHeader());
   document.head.appendChild(cspMeta);
 });
+
+// Final cleanup: ensure loader is gone
+requestAnimationFrame(hideLoader);

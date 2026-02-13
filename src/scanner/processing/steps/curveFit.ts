@@ -102,3 +102,4 @@ export function fitCurve(points: Vec2[], opts: { degree?: number } = {}): CurveF
     rmse: err,
   };
 }
+

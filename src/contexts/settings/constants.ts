@@ -1,19 +1,5 @@
 import type { ThemePresetId } from "@/design-system";
-import type {
-  CustomInterfaceColors,
-  StoredSettings,
-  ThemeMode,
-  DEFAULT_AR_OVERLAY_SETTINGS,
-  DEFAULT_OFFLINE_MODE_SETTINGS,
-  DEFAULT_NOTIFICATION_PREFERENCES,
-  DEFAULT_PROFILE_SETTINGS,
-  DEFAULT_VOICE_GUIDANCE_SETTINGS,
-  DEFAULT_ACHIEVEMENT_SETTINGS,
-  DEFAULT_HEALTH_TRACKING_SETTINGS,
-  DEFAULT_DASHBOARD_SETTINGS,
-  DEFAULT_THEME_EXTENDED_SETTINGS,
-  DEFAULT_API_ACCESS_SETTINGS,
-} from "./types";
+import type { CustomInterfaceColors, StoredSettings, ThemeMode } from "./types";
 
 export const SETTINGS_KEY = "morphoscan_settings";
 export const CUSTOM_WALLPAPER_BLOB_SENTINEL = "__idb_blob_wallpaper__";
@@ -57,102 +43,6 @@ export const DEFAULT_SETTINGS: StoredSettings = {
   uiFxGlowEnabled: true,
   uiFxRippleEnabled: true,
   uiFxWallpaperMotionEnabled: true,
-  // New feature settings
-  arOverlay: {
-    showGuides: true,
-    showDetectionPoints: true,
-    showMeasurementLines: true,
-    showQualityIndicator: true,
-    showPositioningPrompts: true,
-    sensitivity: "medium",
-    feedbackStyle: "standard",
-    hapticFeedback: true,
-    soundFeedback: false,
-  },
-  offlineMode: {
-    enabled: true,
-    autoSync: true,
-    syncOnWifiOnly: false,
-    maxOfflineStorage: 100,
-    backgroundSyncEnabled: true,
-    syncInterval: 15,
-  },
-  notificationPreferences: {
-    enabled: true,
-    sound: true,
-    vibration: true,
-    frequency: "realtime",
-    quietHoursEnabled: false,
-    quietHoursStart: "22:00",
-    quietHoursEnd: "08:00",
-    types: {
-      measurement: true,
-      achievement: true,
-      reminder: true,
-      health: true,
-      system: true,
-    },
-  },
-  profileSettings: {
-    multiProfileEnabled: false,
-    maxProfiles: 5,
-    requirePinForSwitch: false,
-    showProfileSwitcher: true,
-  },
-  voiceGuidance: {
-    enabled: false,
-    speed: "normal",
-    voice: "default",
-    volume: 80,
-    announceSteps: true,
-    announceMeasurements: true,
-    announceErrors: true,
-  },
-  achievements: {
-    enabled: true,
-    showNotifications: true,
-    showBadges: true,
-    showProgress: true,
-    shareAchievements: false,
-  },
-  healthTracking: {
-    medicationTrackingEnabled: false,
-    symptomTrackingEnabled: false,
-    dailyRemindersEnabled: false,
-    reminderTimes: ["09:00", "21:00"],
-    trackingCategories: ["general", "pain", "mood"],
-  },
-  dashboard: {
-    layout: "grid",
-    visibleWidgets: ["measurements", "progress", "achievements"],
-    widgetOrder: [
-      "measurements",
-      "progress",
-      "achievements",
-      "health",
-      "calendar",
-      "tips",
-      "goals",
-    ],
-    refreshInterval: 30,
-    showQuickActions: true,
-  },
-  themeExtended: {
-    useSystemTheme: false,
-    scheduledTheme: false,
-    lightThemeStart: "06:00",
-    darkThemeStart: "18:00",
-    animationsEnabled: true,
-    reducedMotion: false,
-    highContrast: false,
-  },
-  apiAccess: {
-    apiEnabled: false,
-    webhooksEnabled: false,
-    allowedEndpoints: [],
-    rateLimitPerMinute: 60,
-    apiKeyRotationDays: 90,
-  },
 };
 
 export const defaultPresetForMode: Record<ThemeMode, ThemePresetId> = {

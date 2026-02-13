@@ -72,3 +72,4 @@ export async function resizeToMax(
   (ctx as any).drawImage(bitmap, 0, 0, outW, outH);
   return { canvas, scale };
 }
+

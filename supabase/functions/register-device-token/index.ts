@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { buildRateLimitHeaders, enforceRateLimit } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,23 +30,6 @@ serve(async req => {
 
     if (authError || !user) {
       throw new Error("Invalid user token");
-    }
-
-    const rate = await enforceRateLimit({
-      identifier: user.id,
-      endpoint: "register-device-token",
-      windowSeconds: 60,
-      maxRequests: 20,
-    });
-    if (!rate.allowed) {
-      return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
-        headers: {
-          ...corsHeaders,
-          ...buildRateLimitHeaders(rate),
-          "Content-Type": "application/json",
-        },
-        status: 429,
-      });
     }
 
     const { token, platform, deviceId, deviceName, appVersion } = await req.json();
@@ -92,11 +74,7 @@ serve(async req => {
         device_token: data,
       }),
       {
-        headers: {
-          ...corsHeaders,
-          ...buildRateLimitHeaders(rate),
-          "Content-Type": "application/json",
-        },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       },
     );

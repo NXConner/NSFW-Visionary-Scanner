@@ -130,7 +130,7 @@ export const UpgradePrompt: React.FC<UpgradePromptProps> = ({
       <CardContent className="relative">
         {features.length > 0 && (
           <ul className="space-y-2 mb-4">
-            {features.map(feature => (
+            {features.map((feature) => (
               <li key={feature} className="flex items-center gap-2 text-sm">
                 <Gift className="h-4 w-4 text-primary" />
                 <span>{feature}</span>

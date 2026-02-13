@@ -1,6 +1,7 @@
 /**
  * Smart Upsell System Component
  * Context-aware upgrade prompts, feature teasers, and trial offers
+ * SUPER ADMIN BYPASS: Admin and super admin users never see upsells
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -11,6 +12,11 @@ import { Progress } from "@/components/ui/progress";
 import { X, Sparkles, Crown, Zap, ArrowRight, Lock } from "lucide-react";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { isAnySuperAdminPersisted } from "@/lib/superAdmin";
+
+// CRITICAL: Module-level cached check for instant bypass
+const INITIAL_SUPER_ADMIN_STATUS = isAnySuperAdminPersisted();
 
 type FeatureKey = "positionsGallery" | "peProgressPhotos" | "peRoutineBuilder" | "aiHealthChatbot";
 import { createCheckoutSession } from "@/lib/stripe";
@@ -39,20 +45,16 @@ interface UpsellPrompt {
 
 export const SmartUpsell = () => {
   const { tier, features, hasFeature, loading: featureLoading } = useFeatureAccess();
-  const {
-    isSuperAdmin,
-    hasFullAccess,
-    allFeaturesUnlocked,
-    loading: authLoading,
-    rolesLoading,
-  } = useAuth();
+  const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked, loading: authLoading, rolesLoading } = useAuth();
+  const { isAdmin, isSuperAdmin: isSuperAdminRole } = useUserRoles();
   const [showPrompt, setShowPrompt] = useState(false);
   const [currentPrompt, setCurrentPrompt] = useState<UpsellPrompt | null>(null);
   const [dismissedPrompts, setDismissedPrompts] = useState<Set<string>>(new Set());
 
   // Combined loading state check
   const stillCheckingAccess = featureLoading || authLoading || rolesLoading;
-  const hasSuperAdminAccess = isSuperAdmin || hasFullAccess || allFeaturesUnlocked;
+  // SUPER ADMIN BYPASS: Include all privileged status checks
+  const hasSuperAdminAccess = INITIAL_SUPER_ADMIN_STATUS || isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole;
 
   const handleUpgrade = useCallback(async (targetTier: "pro" | "premium") => {
     try {
@@ -257,22 +259,21 @@ export const SmartUpsell = () => {
 /**
  * Inline Upsell Banner Component
  * Shows in specific contexts (e.g., locked features)
+ * SUPER ADMIN BYPASS: Admin and super admin users never see upsells
  */
 export const InlineUpsellBanner = ({ feature, context }: { feature: string; context?: string }) => {
   const { tier, loading: featureLoading } = useFeatureAccess();
-  const {
-    isSuperAdmin,
-    hasFullAccess,
-    allFeaturesUnlocked,
-    loading: authLoading,
-    rolesLoading,
-  } = useAuth();
+  const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked, loading: authLoading, rolesLoading } = useAuth();
+  const { isAdmin, isSuperAdmin: isSuperAdminRole } = useUserRoles();
+
+  // SUPER ADMIN BYPASS: Check module-level cache first for instant bypass
+  if (INITIAL_SUPER_ADMIN_STATUS) return null;
 
   // Wait for access checks before deciding to show upsell
   // CRITICAL: Must wait for rolesLoading to complete - this is where super admin status is determined
   const stillCheckingAccess = featureLoading || authLoading || rolesLoading;
   if (stillCheckingAccess) return null;
-  if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked) return null;
+  if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole) return null;
   if (tier === "premium" || tier === "admin") return null;
 
   const handleUpgrade = async () => {

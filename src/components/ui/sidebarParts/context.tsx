@@ -37,9 +37,7 @@ function readBooleanCookie(name: string): boolean | undefined {
     .map(s => s.trim())
     .find(s => s.startsWith(`${name}=`));
   if (!raw) return undefined;
-  const value = decodeURIComponent(raw.slice(name.length + 1))
-    .trim()
-    .toLowerCase();
+  const value = decodeURIComponent(raw.slice(name.length + 1)).trim().toLowerCase();
   if (value === "true") return true;
   if (value === "false") return false;
   return undefined;
@@ -68,9 +66,7 @@ export const SidebarProvider = React.forwardRef<
     const isMobile = useIsMobile();
     const [openMobile, setOpenMobile] = React.useState(false);
 
-    const [_open, _setOpen] = React.useState(
-      () => readBooleanCookie(SIDEBAR_COOKIE_NAME) ?? defaultOpen,
-    );
+    const [_open, _setOpen] = React.useState(() => readBooleanCookie(SIDEBAR_COOKIE_NAME) ?? defaultOpen);
     const open = openProp ?? _open;
 
     const setOpen = React.useCallback(

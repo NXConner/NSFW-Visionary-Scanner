@@ -408,7 +408,6 @@ const ColorSwatch = ({ label, colorKey, value, onChange, defaultHsl }: ColorSwat
               triggerHaptic("selection");
             }
           }}
-          aria-label={`${label} color`}
           className="w-10 h-10 rounded-full cursor-pointer border-2 border-border appearance-none overflow-hidden"
           style={{ backgroundColor: displayHex }}
         />

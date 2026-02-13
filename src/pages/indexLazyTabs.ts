@@ -1,8 +1,5 @@
 import { lazy } from "react";
 import { BUILD_ALLOW_ADULT_BUNDLE } from "@/lib/buildFlags";
-import NotFound from "@/pages/NotFound";
-
-const LazyNotFoundFallback = lazy(() => Promise.resolve({ default: NotFound }));
 
 // Unified Scanner Page (consolidates all scanner features)
 export const LazyUnifiedScannerPage = lazy(() =>
@@ -126,14 +123,14 @@ export const LazyAdvancedRoutineFeatures = lazy(() =>
   })),
 );
 export const LazyNSFWVideoContent = BUILD_ALLOW_ADULT_BUNDLE
-  ? lazy(() => import("@/components/nsfwVideoContent").then(m => ({ default: m.NSFWVideoContent })))
-  : LazyNotFoundFallback;
+  ? lazy(() => import("@/components/NSFWVideoContent").then(m => ({ default: m.NSFWVideoContent })))
+  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
 
 export const LazyNSFWCommunityForum = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
       import("@/components/NSFWCommunityForum").then(m => ({ default: m.NSFWCommunityForum })),
     )
-  : LazyNotFoundFallback;
+  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
 
 export const LazyNSFWSexualWellnessAnalytics = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
@@ -141,7 +138,7 @@ export const LazyNSFWSexualWellnessAnalytics = BUILD_ALLOW_ADULT_BUNDLE
         default: m.NSFWSexualWellnessAnalytics,
       })),
     )
-  : LazyNotFoundFallback;
+  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
 export const LazyPremiumContentMarketplace = lazy(() =>
   import("@/components/PremiumContentMarketplace").then(m => ({
     default: m.PremiumContentMarketplace,
@@ -192,7 +189,7 @@ export const LazyNSFWAdvancedFeatures = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
       import("@/components/NSFWAdvancedFeatures").then(m => ({ default: m.NSFWAdvancedFeatures })),
     )
-  : LazyNotFoundFallback;
+  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
 
 export const LazyNSFWCockWorshipingEducation = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
@@ -200,7 +197,7 @@ export const LazyNSFWCockWorshipingEducation = BUILD_ALLOW_ADULT_BUNDLE
         default: m.CockWorshipingEducation,
       })),
     )
-  : LazyNotFoundFallback;
+  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
 
 export const LazyNSFWEducationHub = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
@@ -208,7 +205,7 @@ export const LazyNSFWEducationHub = BUILD_ALLOW_ADULT_BUNDLE
         default: m.NsfwEducationHub,
       })),
     )
-  : LazyNotFoundFallback;
+  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
 
 export const LazyBondageBdsmEducation = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
@@ -216,7 +213,7 @@ export const LazyBondageBdsmEducation = BUILD_ALLOW_ADULT_BUNDLE
         default: m.BondageBdsmEducation,
       })),
     )
-  : LazyNotFoundFallback;
+  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
 
 export const LazyTantricEducation = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
@@ -224,7 +221,7 @@ export const LazyTantricEducation = BUILD_ALLOW_ADULT_BUNDLE
         default: m.TantricEducation,
       })),
     )
-  : LazyNotFoundFallback;
+  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
 
 export const LazyKamaSutraEducation = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
@@ -232,7 +229,7 @@ export const LazyKamaSutraEducation = BUILD_ALLOW_ADULT_BUNDLE
         default: m.KamaSutraEducation,
       })),
     )
-  : LazyNotFoundFallback;
+  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
 
 export const LazySubmissiveEducation = BUILD_ALLOW_ADULT_BUNDLE
   ? lazy(() =>
@@ -240,7 +237,7 @@ export const LazySubmissiveEducation = BUILD_ALLOW_ADULT_BUNDLE
         default: m.SubmissiveEducation,
       })),
     )
-  : LazyNotFoundFallback;
+  : lazy(() => import("@/pages/NotFound").then(m => ({ default: m.default })));
 export const LazyExpertContentConsultations = lazy(() =>
   import("@/components/ExpertContentConsultations").then(m => ({
     default: m.ExpertContentConsultations,

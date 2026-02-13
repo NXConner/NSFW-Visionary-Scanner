@@ -141,7 +141,7 @@ export const CalendarView = () => {
 
           {/* Calendar grid */}
           <div className="grid grid-cols-7 gap-1">
-            {calendarDays.map(day => {
+            {calendarDays.map((day) => {
               const indicators = getDayIndicators(day);
               const isCurrentMonth = isSameMonth(day, currentMonth);
               const isCurrentDay = isToday(day);

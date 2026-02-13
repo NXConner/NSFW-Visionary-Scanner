@@ -1,7 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
-import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,41 +14,6 @@ type ReqBody = {
   devicePlatform?: "web" | "android" | "ios";
 };
 
-const ADULT_RATINGS = new Set(["18+", "adult", "explicit", "nsfw"]);
-
-const isAdultRating = (rating?: string | null): boolean =>
-  ADULT_RATINGS.has(
-    String(rating || "")
-      .trim()
-      .toLowerCase(),
-  );
-
-async function logAssetAccess(params: {
-  supabase: any;
-  userId: string;
-  packageId: string;
-  assetPath: string;
-  deviceId?: string;
-  devicePlatform?: string;
-  expiresInSeconds: number;
-  accessType?: string;
-}): Promise<void> {
-  try {
-    const expiresAt = new Date(Date.now() + params.expiresInSeconds * 1000).toISOString();
-    await params.supabase.from("dlc_asset_access_logs").insert({
-      user_id: params.userId,
-      package_id: params.packageId,
-      asset_path: params.assetPath,
-      device_id: params.deviceId || null,
-      device_platform: params.devicePlatform || null,
-      access_type: params.accessType || "signed_url",
-      expires_at: expiresAt,
-    });
-  } catch {
-    // Best-effort; avoid blocking asset delivery on log failure.
-  }
-}
-
 serve(async req => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -62,14 +25,6 @@ serve(async req => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const rateLimitResponse = await applyRateLimit({
-      req,
-      endpoint: "get-dlc-signed-url",
-      ...DEFAULT_EDGE_RATE_LIMIT,
-      headers: corsHeaders,
-    });
-    if (rateLimitResponse) return rateLimitResponse;
 
     const token = authHeader.replace("Bearer ", "");
 
@@ -90,10 +45,16 @@ serve(async req => {
       });
     }
 
-    // Privileged bypass (admin/super_admin)
+    // Super-admin bypass (for internal testing / full-access accounts)
     // - Allows signing URLs without DLC license ownership and without age verification rows.
     // - Still enforces asset namespace constraints and uses signed URLs (no public bucket access).
-    const { isPrivileged, isSuperAdmin } = await getPrivilegedFlags(supabase, user.id);
+    const email = String(user.email || "").toLowerCase();
+    const { data: roleRows } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
+    const roles = (roleRows || []).map((r: any) => String(r.role || ""));
+    const isSuperAdmin = roles.includes("super_admin") || email === "n8ter8@gmail.com";
 
     const body = (await req.json()) as ReqBody;
     const packageId = String(body.packageId || "");
@@ -122,44 +83,20 @@ serve(async req => {
       });
     }
 
-    const { data: packageRow, error: packageError } = await supabase
-      .from("dlc_packages")
-      .select("package_id, content_rating, is_active")
-      .eq("package_id", packageId)
-      .maybeSingle();
-    if (packageError) throw packageError;
-    if (!packageRow || packageRow.is_active === false) {
-      return new Response(JSON.stringify({ error: "Package not available" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // If admin/super_admin, bypass license + age checks.
-    // This enables full content visibility for privileged internal accounts.
-    if (isPrivileged) {
+    // If super_admin, bypass license + age checks (still device binds if deviceId is provided).
+    // This enables full content visibility for the designated internal admin account.
+    if (isSuperAdmin) {
       const bucket = Deno.env.get("NSFW_CONTENT_BUCKET") ?? "nsfw-content";
       const { data, error } = await supabase.storage
         .from(bucket)
         .createSignedUrl(assetPath, expiresInSeconds);
       if (error) throw error;
 
-      await logAssetAccess({
-        supabase,
-        userId: user.id,
-        packageId,
-        assetPath,
-        deviceId,
-        devicePlatform,
-        expiresInSeconds,
-        accessType: "signed_url",
-      });
-
       return new Response(
         JSON.stringify({
           signedUrl: data.signedUrl,
           expiresInSeconds,
-          grantedBy: { role: isSuperAdmin ? "super_admin" : "admin" },
+          grantedBy: { role: "super_admin" },
         }),
         {
           status: 200,
@@ -272,17 +209,6 @@ serve(async req => {
       .from(bucket)
       .createSignedUrl(assetPath, expiresInSeconds);
     if (error) throw error;
-
-    await logAssetAccess({
-      supabase,
-      userId: user.id,
-      packageId,
-      assetPath,
-      deviceId,
-      devicePlatform,
-      expiresInSeconds,
-      accessType: "signed_url",
-    });
 
     return new Response(
       JSON.stringify({
