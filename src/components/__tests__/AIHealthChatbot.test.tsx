@@ -8,36 +8,8 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 
-// Mock dependencies
-vi.mock("@/contexts/AuthContext", () => ({
-  useAuth: () => ({
-    user: { id: "test-user", email: "test@example.com" },
-  }),
-}));
-
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          order: vi.fn(() => ({
-            limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
-          })),
-        })),
-      })),
-      insert: vi.fn(() => ({
-        select: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve({ data: { id: "session-1" }, error: null })),
-        })),
-      })),
-      update: vi.fn(() => ({
-        eq: vi.fn(() => Promise.resolve({ error: null })),
-      })),
-    })),
-    functions: {
-      invoke: vi.fn(),
-    },
-  },
+vi.mock("@/lib/edge/aiHealthChat", () => ({
+  invokeAiHealthChat: vi.fn(),
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -54,11 +26,13 @@ vi.mock("sonner", () => ({
     success: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
+    message: vi.fn(),
   },
 }));
 
 // Import after mocks
 import { AIHealthChatbot } from "../AIHealthChatbot";
+import { invokeAiHealthChat } from "@/lib/edge/aiHealthChat";
 
 describe("AIHealthChatbot", () => {
   beforeEach(() => {
@@ -122,14 +96,21 @@ describe("AIHealthChatbot", () => {
 
     it("should clear input after sending", async () => {
       const user = userEvent.setup();
+      vi.mocked(invokeAiHealthChat).mockResolvedValueOnce({
+        ok: true,
+        text: "This is an AI response.",
+      });
       render(<AIHealthChatbot />);
 
       const input = screen.getByPlaceholderText(/Ask about health/i);
       await user.type(input, "Test question");
 
-      // Simulate form submission would require mocking the API response
-      // For now, just verify input exists
-      expect(input).toBeInTheDocument();
+      const sendButton = screen.getByRole("button", { name: /send message/i });
+      fireEvent.click(sendButton);
+
+      await waitFor(() => {
+        expect(input).toHaveValue("");
+      });
     });
   });
 
@@ -138,6 +119,24 @@ describe("AIHealthChatbot", () => {
       render(<AIHealthChatbot />);
 
       expect(screen.getByText(/How can I help you today/i)).toBeInTheDocument();
+    });
+
+    it("should render assistant message from edge function", async () => {
+      const user = userEvent.setup();
+      vi.mocked(invokeAiHealthChat).mockResolvedValueOnce({
+        ok: true,
+        text: "Edge function reply.",
+      });
+      render(<AIHealthChatbot />);
+
+      const input = screen.getByPlaceholderText(/Ask about health/i);
+      await user.type(input, "Hello");
+
+      fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Edge function reply.")).toBeInTheDocument();
+      });
     });
   });
 

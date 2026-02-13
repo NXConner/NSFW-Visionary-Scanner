@@ -200,7 +200,7 @@ describe("fetchWithRateLimit", () => {
 
     (global.fetch as any).mockResolvedValueOnce(mockResponse);
 
-    const response = await fetchWithRateLimit("https://api.example.com/test");
+    const response = await fetchWithRateLimit("https://api.example.invalid/test");
 
     expect(global.fetch).toHaveBeenCalled();
     expect(response.status).toBe(200);
@@ -214,7 +214,7 @@ describe("fetchWithRateLimit", () => {
       resetAt: Date.now() + 60000,
     });
 
-    await expect(fetchWithRateLimit(`https://api.example.com${endpoint}`)).rejects.toThrow(
+    await expect(fetchWithRateLimit(`https://api.example.invalid${endpoint}`)).rejects.toThrow(
       RateLimitError,
     );
   });
@@ -229,7 +229,7 @@ describe("fetchWithRateLimit", () => {
 
     (global.fetch as any).mockResolvedValueOnce(mockResponse);
 
-    await expect(fetchWithRateLimit("https://api.example.com/test")).rejects.toThrow(
+    await expect(fetchWithRateLimit("https://api.example.invalid/test")).rejects.toThrow(
       RateLimitError,
     );
   });

@@ -43,6 +43,7 @@ export async function createSeductiveAISession(
   personality: SeductiveAISession["ai_personality"] = "seductive",
   intensity: SeductiveAISession["ai_intensity"] = "medium",
   partnerId: string | null = null,
+  sessionName?: string | null,
 ): Promise<SeductiveAISession | null> {
   try {
     const {
@@ -61,6 +62,7 @@ export async function createSeductiveAISession(
         session_type: partnerId ? "partner" : "solo",
         ai_personality: personality,
         ai_intensity: intensity,
+        session_name: typeof sessionName === "string" ? sessionName : null,
       })
       .select("*")
       .single();
@@ -189,6 +191,16 @@ export async function sendSeductiveAIMessage(
       return null;
     }
 
+    // Touch the parent session for "recent activity" ordering (best-effort).
+    try {
+      await supabase
+        .from("seductive_ai_sessions")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", sessionId);
+    } catch {
+      // ignore
+    }
+
     return {
       userMessage: userMessage as unknown as SeductiveAIMessageRow,
       aiResponse: aiMessage as unknown as SeductiveAIMessageRow,
@@ -196,5 +208,97 @@ export async function sendSeductiveAIMessage(
   } catch (error) {
     logger.error("Error in sendSeductiveAIMessage", { error });
     return null;
+  }
+}
+
+export async function getSeductiveAISessions(opts?: {
+  includeInactive?: boolean;
+  limit?: number;
+}): Promise<SeductiveAISession[]> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const limit = Math.max(1, Math.min(50, opts?.limit ?? 25));
+    let q = supabase
+      .from("seductive_ai_sessions")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false })
+      .limit(limit);
+
+    if (!opts?.includeInactive) q = q.eq("is_active", true);
+
+    const { data, error } = await q;
+    if (error) {
+      logger.error("Error fetching seductive AI sessions", { error: error.message });
+      return [];
+    }
+    return (data ?? []) as unknown as SeductiveAISession[];
+  } catch (error) {
+    logger.error("Error in getSeductiveAISessions", { error });
+    return [];
+  }
+}
+
+export async function getSeductiveAIMessages(
+  sessionId: string,
+  opts?: { limit?: number },
+): Promise<SeductiveAIMessageRow[]> {
+  try {
+    const limit = Math.max(1, Math.min(400, opts?.limit ?? 200));
+    const { data, error } = await fromExtended("seductive_ai_messages")
+      .select("*")
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: true })
+      .limit(limit);
+    if (error) {
+      logger.error("Error fetching seductive AI messages", { error: error.message, sessionId });
+      return [];
+    }
+    return (data ?? []) as unknown as SeductiveAIMessageRow[];
+  } catch (error) {
+    logger.error("Error in getSeductiveAIMessages", { error, sessionId });
+    return [];
+  }
+}
+
+export async function renameSeductiveAISession(
+  sessionId: string,
+  name: string | null,
+): Promise<boolean> {
+  try {
+    const safeName = name?.trim() ? name.trim().slice(0, 80) : null;
+    const { error } = await supabase
+      .from("seductive_ai_sessions")
+      .update({ session_name: safeName, updated_at: new Date().toISOString() })
+      .eq("id", sessionId);
+    if (error) {
+      logger.error("Error renaming seductive AI session", { error: error.message, sessionId });
+      return false;
+    }
+    return true;
+  } catch (error) {
+    logger.error("Error in renameSeductiveAISession", { error, sessionId });
+    return false;
+  }
+}
+
+export async function archiveSeductiveAISession(sessionId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("seductive_ai_sessions")
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq("id", sessionId);
+    if (error) {
+      logger.error("Error archiving seductive AI session", { error: error.message, sessionId });
+      return false;
+    }
+    return true;
+  } catch (error) {
+    logger.error("Error in archiveSeductiveAISession", { error, sessionId });
+    return false;
   }
 }

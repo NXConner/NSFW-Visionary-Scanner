@@ -4,7 +4,6 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { FeatureGate } from "../components/FeatureGate";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Send, Bot, User, Sparkles, History, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  archiveSeductiveAISession,
+  createSeductiveAISession,
+  getSeductiveAIMessages,
+  getSeductiveAISessions,
+  sendSeductiveAIMessage,
+  type SeductiveAISession,
+  type SeductiveAIMessageRow,
+} from "@/lib/nsfwAdvancedFeatures";
 
 interface Message {
   id: string;
@@ -24,8 +32,9 @@ interface Message {
 interface ChatSession {
   id: string;
   name: string;
-  messageCount: number;
-  lastMessageAt: Date;
+  updatedAt: Date;
+  personality: SeductiveAISession["ai_personality"];
+  intensity: SeductiveAISession["ai_intensity"];
 }
 
 interface AIIntimacyChatProps {
@@ -50,34 +59,22 @@ export function AIIntimacyChat({ dlcPackageId }: AIIntimacyChatProps) {
   }, [messages]);
 
   const loadSessions = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("nsfw_ai_chat_sessions")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("is_active", true)
-        .order("last_message_at", { ascending: false });
-
-      if (error) throw error;
-
+      const list = await getSeductiveAISessions({ limit: 30 });
       setSessions(
-        (data || []).map(s => ({
+        list.map(s => ({
           id: s.id,
           name: s.session_name || "New Chat",
-          messageCount: s.message_count || 0,
-          lastMessageAt: new Date(s.last_message_at || s.created_at || Date.now()),
+          updatedAt: new Date(s.updated_at || s.created_at || Date.now()),
+          personality: s.ai_personality,
+          intensity: s.ai_intensity,
         })),
       );
 
       // Set first session as active if exists
-      if (data && data.length > 0 && !activeSessionId) {
-        setActiveSessionId(data[0].id);
+      if (list.length > 0 && !activeSessionId) {
+        setActiveSessionId(list[0].id);
       }
     } catch (error) {
       // Error silently handled
@@ -87,26 +84,16 @@ export function AIIntimacyChat({ dlcPackageId }: AIIntimacyChatProps) {
   }, [activeSessionId]);
 
   const loadMessages = useCallback(async (sessionId: string) => {
-    const { data, error } = await supabase
-      .from("nsfw_ai_chat_sessions")
-      .select("messages")
-      .eq("id", sessionId)
-      .single();
-
-    if (error) {
-      return;
-    }
-
-    const messagesData =
-      (data?.messages as Array<{ role: string; content: string; timestamp: string }>) || [];
-    setMessages(
-      messagesData.map((m, i) => ({
-        id: `${sessionId}-${i}`,
-        role: m.role as "user" | "assistant",
-        content: m.content,
-        timestamp: new Date(m.timestamp),
-      })),
-    );
+    const rows = await getSeductiveAIMessages(sessionId, { limit: 250 });
+    const mapped = rows
+      .filter(r => r.message_type === "user" || r.message_type === "ai")
+      .map((m: SeductiveAIMessageRow) => ({
+        id: m.id,
+        role: m.message_type === "user" ? ("user" as const) : ("assistant" as const),
+        content: m.message_content,
+        timestamp: new Date(m.created_at),
+      }));
+    setMessages(mapped);
   }, []);
 
   useEffect(() => {
@@ -119,32 +106,21 @@ export function AIIntimacyChat({ dlcPackageId }: AIIntimacyChatProps) {
   }, [activeSessionId, loadMessages]);
 
   const createNewSession = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
     try {
-      const { data, error } = await supabase
-        .from("nsfw_ai_chat_sessions")
-        .insert({
-          user_id: user.id,
-          session_name: `Chat ${sessions.length + 1}`,
-          chat_type: "intimacy_coaching",
-          messages: [],
-          is_active: true,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
+      const data = await createSeductiveAISession(
+        "seductive",
+        "medium",
+        null,
+        `Chat ${sessions.length + 1}`,
+      );
+      if (!data) throw new Error("Failed to create session");
       setSessions(prev => [
         {
           id: data.id,
           name: data.session_name || "New Chat",
-          messageCount: 0,
-          lastMessageAt: new Date(),
+          updatedAt: new Date(data.updated_at || data.created_at || Date.now()),
+          personality: data.ai_personality,
+          intensity: data.ai_intensity,
         },
         ...prev,
       ]);
@@ -159,7 +135,8 @@ export function AIIntimacyChat({ dlcPackageId }: AIIntimacyChatProps) {
 
   const deleteSession = async (sessionId: string) => {
     try {
-      await supabase.from("nsfw_ai_chat_sessions").update({ is_active: false }).eq("id", sessionId);
+      const ok = await archiveSeductiveAISession(sessionId);
+      if (!ok) throw new Error("Archive failed");
 
       setSessions(prev => prev.filter(s => s.id !== sessionId));
 
@@ -189,41 +166,25 @@ export function AIIntimacyChat({ dlcPackageId }: AIIntimacyChatProps) {
     setIsSending(true);
 
     try {
-      // Call AI edge function
-      const { data, error } = await supabase.functions.invoke("ai-health-chat", {
-        body: {
-          message: userMessage.content,
-          context: "intimacy_coaching",
-          sessionId: activeSessionId,
-        },
-      });
-
-      if (error) throw error;
+      const res = await sendSeductiveAIMessage(activeSessionId, userMessage.content);
+      if (!res) throw new Error("No AI response");
 
       const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
+        id: res.aiResponse.id,
         role: "assistant",
-        content: data.response || "I apologize, but I encountered an issue. Please try again.",
-        timestamp: new Date(),
+        content: res.aiResponse.message_content,
+        timestamp: new Date(res.aiResponse.created_at),
       };
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Update session in database
-      const allMessages = [...messages, userMessage, assistantMessage].map(m => ({
-        role: m.role,
-        content: m.content,
-        timestamp: m.timestamp.toISOString(),
-      }));
-
-      await supabase
-        .from("nsfw_ai_chat_sessions")
-        .update({
-          messages: allMessages,
-          message_count: allMessages.length,
-          last_message_at: new Date().toISOString(),
-        })
-        .eq("id", activeSessionId);
+      setSessions(prev =>
+        prev.map(s =>
+          s.id === activeSessionId
+            ? { ...s, updatedAt: new Date(), name: s.name || "New Chat" }
+            : s,
+        ),
+      );
     } catch (error) {
       toast.error("Failed to get response");
     } finally {
@@ -293,7 +254,14 @@ export function AIIntimacyChat({ dlcPackageId }: AIIntimacyChatProps) {
                       <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
-                  <div className="text-xs opacity-70">{session.messageCount} messages</div>
+                  <div className="text-xs opacity-70">
+                    {session.personality} • {session.intensity} •{" "}
+                    {session.updatedAt.toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </div>
                 </div>
               ))}
 

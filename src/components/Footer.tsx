@@ -4,6 +4,7 @@ import { MedicalDisclaimer } from "@/components/MedicalDisclaimer";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { APP_NAME, APP_TAGLINE } from "@/config/brand";
+import { APP_ROUTES } from "@/config/urls";
 
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -23,9 +24,9 @@ export const Footer = () => {
       { label: "Credits & Resources", href: "/credits", isRoute: true },
     ],
     legal: [
-      { label: "Privacy Policy", href: "/privacy", isRoute: true },
-      { label: "Terms of Service", href: "/terms", isRoute: true },
-      { label: "Credits & Resources", href: "/credits", isRoute: true },
+      { label: "Privacy Policy", href: APP_ROUTES.privacy, isRoute: true },
+      { label: "Terms of Service", href: APP_ROUTES.terms, isRoute: true },
+      { label: "Credits & Resources", href: APP_ROUTES.credits, isRoute: true },
       { label: "Data Security", href: "#" },
       { label: "Medical Disclaimer", href: "#" },
     ],

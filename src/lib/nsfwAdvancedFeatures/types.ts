@@ -31,7 +31,7 @@ export interface MultiCameraSession {
   recording_status: "draft" | "recording" | "paused" | "completed" | "editing" | "published";
   camera_count: number;
   sync_enabled: boolean;
-  quality: "720p" | "1080p" | "4k";
+  quality: "720p" | "1080p" | "2k" | "4k";
   started_at: string | null;
   completed_at: string | null;
   duration_seconds: number | null;

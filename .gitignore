@@ -34,7 +34,10 @@ android/app/release.keystore
 **/*.keystore
 
 # Local archive workspace (do not commit temporary platform snapshots)
-deleted files/
+# Allow archived source diffs under `deleted files/src/**` to be committed when needed.
+deleted files/*
+!deleted files/src/
+!deleted files/src/**
 deleted files/no-longer-needed/ios-archive-2026-02-12/
 
 # Supabase CLI temporary state
