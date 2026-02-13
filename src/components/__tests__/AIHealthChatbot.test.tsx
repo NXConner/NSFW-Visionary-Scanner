@@ -30,6 +30,12 @@ vi.mock("sonner", () => ({
   },
 }));
 
+// Radix ScrollArea performs async layout work that is irrelevant to these unit tests and can
+// produce noisy "not wrapped in act(...)" warnings. Use a simple div wrapper here.
+vi.mock("@/components/ui/scroll-area", () => ({
+  ScrollArea: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+}));
+
 // Import after mocks
 import { AIHealthChatbot } from "../AIHealthChatbot";
 import { invokeAiHealthChat } from "@/lib/edge/aiHealthChat";
