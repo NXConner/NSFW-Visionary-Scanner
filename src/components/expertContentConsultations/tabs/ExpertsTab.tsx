@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { GraduationCap, Star } from "lucide-react";
 import { getExpertProfiles, type ExpertProfile } from "@/lib/expertContentConsultations";
+import { CONTACT_LINKS } from "@/config/urls";
 
 function renderStars(rating: number): JSX.Element[] {
   return Array.from({ length: 5 }, (_, i) => (
@@ -54,8 +56,19 @@ export function ExpertsTab({
     return (
       <div className="text-center py-8 text-muted-foreground">
         <GraduationCap className="h-12 w-12 mx-auto mb-4 opacity-50" />
-        <p>No experts available yet</p>
-        <p className="text-sm">Expert profiles coming soon</p>
+        <p className="font-medium">No expert profiles are available right now</p>
+        <p className="text-sm mt-1">
+          Try again later, or{" "}
+          <a href={CONTACT_LINKS.supportMailto} className="underline underline-offset-4">
+            contact support
+          </a>{" "}
+          to request expert access.
+        </p>
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <Button variant="outline" onClick={load}>
+            Refresh
+          </Button>
+        </div>
       </div>
     );
   }

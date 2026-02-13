@@ -6,7 +6,7 @@ import { FeatureGate as DlcFeatureGate } from "@/dlc/components/FeatureGate";
 export default function AnalyticsDLCPage({
   initialTab,
 }: {
-  initialTab?: "function" | "libido" | "satisfaction" | "wellness";
+  initialTab?: "function" | "libido" | "satisfaction" | "frequency" | "wellness";
 }): React.ReactElement {
   return (
     <NsfwSessionGate>

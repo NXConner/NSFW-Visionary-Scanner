@@ -6,6 +6,7 @@ import DOMPurify from "dompurify";
 import type { BookmarkContentType, EducationModule } from "../types";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { EditEducationModuleDialog } from "@/components/sexualHealthEducation/admin/EditEducationModuleDialog";
+import { InteractiveContentSection } from "@/components/sexualHealthEducation/components";
 
 export function ModuleDetailView({
   module,
@@ -21,6 +22,7 @@ export function ModuleDetailView({
   onReload: () => void | Promise<void>;
 }): JSX.Element {
   const { isAdmin } = useUserRoles();
+  const hasPrimaryContent = Boolean(module.video_url || module.content_html || module.content_text);
   return (
     <div className="space-y-6">
       <Button variant="ghost" onClick={onBack}>
@@ -71,12 +73,15 @@ export function ModuleDetailView({
             <div className="prose prose-invert max-w-none whitespace-pre-wrap">
               {module.content_text}
             </div>
-          ) : (
-            <p className="text-muted-foreground">
-              Content coming soon...
-              {isAdmin ? " (Use “Edit Module” to publish content.)" : ""}
-            </p>
-          )}
+          ) : null}
+
+          {module.id ? (
+            <InteractiveContentSection
+              moduleId={module.id}
+              hasPrimaryContent={hasPrimaryContent}
+              isAdmin={isAdmin}
+            />
+          ) : null}
 
           <div className="flex items-center justify-between pt-4 border-t">
             <div className="flex items-center gap-4 text-sm text-muted-foreground">

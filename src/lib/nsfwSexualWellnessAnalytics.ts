@@ -7,6 +7,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { logger } from "./logger";
 import { toast } from "sonner";
 
+function clampLimit(limit: unknown, fallback: number, max: number): number {
+  const n = typeof limit === "number" ? limit : typeof limit === "string" ? Number(limit) : NaN;
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.max(1, Math.min(max, Math.floor(n)));
+}
+
 // ==================== Sexual Function Tracking ====================
 
 export interface NSFWSexualFunctionTracking {
@@ -170,6 +176,44 @@ export async function trackLibido(
   }
 }
 
+export async function getLibidoTracking(
+  startDate?: string,
+  endDate?: string,
+  limit: number = 365,
+): Promise<NSFWLibidoTracking[]> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const lim = clampLimit(limit, 365, 2000);
+
+    let query = supabase
+      .from("nsfw_libido_tracking")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("entry_date", { ascending: false })
+      .limit(lim);
+
+    if (startDate) query = query.gte("entry_date", startDate);
+    if (endDate) query = query.lte("entry_date", endDate);
+
+    const { data, error } = await query;
+    if (error) {
+      logger.error("Error fetching libido tracking", { error: error.message });
+      return [];
+    }
+
+    return (data || []) as NSFWLibidoTracking[];
+  } catch (error) {
+    logger.error("Error in getLibidoTracking", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return [];
+  }
+}
+
 // ==================== Satisfaction Tracking ====================
 
 export interface NSFWSatisfactionTracking {
@@ -227,6 +271,44 @@ export async function trackSatisfaction(
       error: error instanceof Error ? error.message : String(error),
     });
     return null;
+  }
+}
+
+export async function getSatisfactionTracking(
+  startDate?: string,
+  endDate?: string,
+  limit: number = 365,
+): Promise<NSFWSatisfactionTracking[]> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const lim = clampLimit(limit, 365, 2000);
+
+    let query = supabase
+      .from("nsfw_satisfaction_tracking")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("entry_date", { ascending: false })
+      .limit(lim);
+
+    if (startDate) query = query.gte("entry_date", startDate);
+    if (endDate) query = query.lte("entry_date", endDate);
+
+    const { data, error } = await query;
+    if (error) {
+      logger.error("Error fetching satisfaction tracking", { error: error.message });
+      return [];
+    }
+
+    return (data || []) as NSFWSatisfactionTracking[];
+  } catch (error) {
+    logger.error("Error in getSatisfactionTracking", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return [];
   }
 }
 
@@ -288,6 +370,44 @@ export async function trackFrequency(
       error: error instanceof Error ? error.message : String(error),
     });
     return null;
+  }
+}
+
+export async function getFrequencyTracking(
+  startEndDate?: string,
+  endEndDate?: string,
+  limit: number = 120,
+): Promise<NSFWFrequencyTracking[]> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const lim = clampLimit(limit, 120, 1000);
+
+    let query = supabase
+      .from("nsfw_frequency_tracking")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("tracking_period_end", { ascending: false })
+      .limit(lim);
+
+    if (startEndDate) query = query.gte("tracking_period_end", startEndDate);
+    if (endEndDate) query = query.lte("tracking_period_end", endEndDate);
+
+    const { data, error } = await query;
+    if (error) {
+      logger.error("Error fetching frequency tracking", { error: error.message });
+      return [];
+    }
+
+    return (data || []) as NSFWFrequencyTracking[];
+  } catch (error) {
+    logger.error("Error in getFrequencyTracking", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return [];
   }
 }
 

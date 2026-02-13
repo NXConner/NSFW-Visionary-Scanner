@@ -28,32 +28,45 @@ interface WellnessChartsProps {
   wellnessScores: NSFWWellnessScore[];
 }
 
+function compactDate(d: string): string {
+  try {
+    return new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  } catch {
+    return d;
+  }
+}
+
 export const WellnessCharts: React.FC<WellnessChartsProps> = React.memo(
   ({ functionData, wellnessScores }) => {
-    const trendData = functionData.map(entry => ({
-      date: entry.entry_date,
-      score: entry.erectile_function_score || 0,
-      stamina: entry.stamina_minutes || 0,
-      satisfaction: entry.satisfaction_score || 0,
+    const sortedFunction = [...functionData].sort((a, b) =>
+      String(a.entry_date).localeCompare(String(b.entry_date)),
+    );
+
+    const trendData = sortedFunction.map(entry => ({
+      date: compactDate(entry.entry_date),
+      score: entry.erectile_function_score ?? null,
+      stamina: entry.stamina_minutes ?? null,
+      stability: entry.erection_stability ?? null,
+      control: entry.control_level ?? null,
     }));
 
     const radarData = wellnessScores.length
       ? [
           {
             metric: "Function",
-            value: wellnessScores[wellnessScores.length - 1].function_score,
+            value: Number(wellnessScores[wellnessScores.length - 1].function_score ?? 0),
           },
           {
             metric: "Libido",
-            value: wellnessScores[wellnessScores.length - 1].libido_score,
+            value: Number(wellnessScores[wellnessScores.length - 1].libido_score ?? 0),
           },
           {
             metric: "Satisfaction",
-            value: wellnessScores[wellnessScores.length - 1].satisfaction_score,
+            value: Number(wellnessScores[wellnessScores.length - 1].satisfaction_score ?? 0),
           },
           {
             metric: "Frequency",
-            value: wellnessScores[wellnessScores.length - 1].frequency_score,
+            value: Number(wellnessScores[wellnessScores.length - 1].frequency_score ?? 0),
           },
         ]
       : [];
@@ -70,11 +83,11 @@ export const WellnessCharts: React.FC<WellnessChartsProps> = React.memo(
               <LazyLineChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
-                <YAxis />
+                <YAxis domain={[0, 10]} />
                 <Tooltip />
                 <Line type="monotone" dataKey="score" stroke="#8b5cf6" strokeWidth={2} />
-                <Line type="monotone" dataKey="stamina" stroke="#10b981" strokeWidth={2} />
-                <Line type="monotone" dataKey="satisfaction" stroke="#f59e0b" strokeWidth={2} />
+                <Line type="monotone" dataKey="stability" stroke="#10b981" strokeWidth={2} />
+                <Line type="monotone" dataKey="control" stroke="#f59e0b" strokeWidth={2} />
               </LazyLineChart>
             </ResponsiveContainer>
           </CardContent>

@@ -146,8 +146,8 @@ export function LessonView({
             </div>
           ) : (
             <p className="text-muted-foreground">
-              Content coming soon...
-              {isAdmin ? " (Use “Edit Lesson” to publish content.)" : ""}
+              This lesson does not have published content yet.
+              {isAdmin ? ' Use "Edit Lesson" to publish text or a video URL.' : ""}
             </p>
           )}
 
