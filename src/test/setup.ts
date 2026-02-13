@@ -124,6 +124,13 @@ if (typeof g.cancelAnimationFrame !== "function") {
   });
 }
 
-if (w && w.HTMLElement && typeof w.HTMLElement.prototype.scrollIntoView !== "function") {
-  w.HTMLElement.prototype.scrollIntoView = () => {};
+// jsdom implements scrollIntoView, but it can trigger async layout effects in component libraries
+// (e.g. Radix ScrollArea) which produces noisy "not wrapped in act(...)" warnings in tests.
+// We don't assert scrolling behavior in unit tests, so keep it deterministic.
+if (w && w.HTMLElement) {
+  Object.defineProperty(w.HTMLElement.prototype, "scrollIntoView", {
+    value: () => {},
+    writable: true,
+    configurable: true,
+  });
 }

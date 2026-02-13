@@ -25,54 +25,64 @@ const SYNC_STATS_KEY = "offline_sync_stats";
 const MAX_RETRIES = 5;
 const BASE_RETRY_DELAY = 1000; // 1 second
 
+function readQueueFromStorage(): SyncQueueItem[] {
+  try {
+    if (typeof localStorage === "undefined") return [];
+    const stored = localStorage.getItem(SYNC_QUEUE_KEY);
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? (parsed as SyncQueueItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function filterReady(queue: SyncQueueItem[]): SyncQueueItem[] {
+  return queue.filter(item => {
+    if (!item?.nextRetryAt) return true;
+    return new Date(item.nextRetryAt) <= new Date();
+  });
+}
+
+function readStatsFromStorage(): SyncStats {
+  try {
+    if (typeof localStorage === "undefined") {
+      return { totalSynced: 0, totalFailed: 0, lastSyncAt: null };
+    }
+    const stored = localStorage.getItem(SYNC_STATS_KEY);
+    if (!stored) return { totalSynced: 0, totalFailed: 0, lastSyncAt: null };
+    const parsed = JSON.parse(stored) as Partial<SyncStats> | null;
+    return {
+      totalSynced: Number(parsed?.totalSynced ?? 0) || 0,
+      totalFailed: Number(parsed?.totalFailed ?? 0) || 0,
+      lastSyncAt: typeof parsed?.lastSyncAt === "string" ? parsed.lastSyncAt : null,
+    };
+  } catch {
+    return { totalSynced: 0, totalFailed: 0, lastSyncAt: null };
+  }
+}
+
 export const useOfflineSync = () => {
   const { user } = useAuth();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [syncStats, setSyncStats] = useState<SyncStats>({
-    totalSynced: 0,
-    totalFailed: 0,
-    lastSyncAt: null,
-  });
+  const [pendingCount, setPendingCount] = useState(() => readQueueFromStorage().length);
+  const [syncStats, setSyncStats] = useState<SyncStats>(() => readStatsFromStorage());
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load queue from localStorage
   const getQueue = useCallback((): SyncQueueItem[] => {
-    try {
-      const stored = localStorage.getItem(SYNC_QUEUE_KEY);
-      if (!stored) return [];
-      const queue = JSON.parse(stored) || [];
-      // Filter out items that are not yet ready for retry
-      return queue.filter((item: SyncQueueItem) => {
-        if (!item.nextRetryAt) return true;
-        return new Date(item.nextRetryAt) <= new Date();
-      });
-    } catch {
-      return [];
-    }
+    return filterReady(readQueueFromStorage());
   }, []);
 
   // Get full queue including items waiting for retry
   const getFullQueue = useCallback((): SyncQueueItem[] => {
-    try {
-      const stored = localStorage.getItem(SYNC_QUEUE_KEY);
-      if (!stored) return [];
-      return JSON.parse(stored) || [];
-    } catch {
-      return [];
-    }
+    return readQueueFromStorage();
   }, []);
 
   // Load stats
   const loadStats = useCallback((): SyncStats => {
-    try {
-      const stored = localStorage.getItem(SYNC_STATS_KEY);
-      if (!stored) return { totalSynced: 0, totalFailed: 0, lastSyncAt: null };
-      return JSON.parse(stored);
-    } catch {
-      return { totalSynced: 0, totalFailed: 0, lastSyncAt: null };
-    }
+    return readStatsFromStorage();
   }, []);
 
   // Save stats
@@ -80,7 +90,7 @@ export const useOfflineSync = () => {
     try {
       localStorage.setItem(SYNC_STATS_KEY, JSON.stringify(stats));
       setSyncStats(stats);
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     }
   }, []);
@@ -90,7 +100,7 @@ export const useOfflineSync = () => {
     try {
       localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
       setPendingCount(queue.length);
-    } catch (error) {
+    } catch (_error) {
       // Error silently handled
     }
   }, []);
@@ -280,9 +290,6 @@ export const useOfflineSync = () => {
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
-
-    // Initial count
-    setPendingCount(getQueue().length);
 
     return () => {
       window.removeEventListener("online", handleOnline);
