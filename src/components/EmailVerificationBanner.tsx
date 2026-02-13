@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Mail, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
-import { isEmailPreVerified } from "@/lib/email/emailConfig";
 
 interface EmailVerificationBannerProps {
   email: string;
@@ -15,18 +14,8 @@ interface EmailVerificationBannerProps {
 export const EmailVerificationBanner = ({ email, onVerified }: EmailVerificationBannerProps) => {
   const [isResending, setIsResending] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const preVerified = isEmailPreVerified(email);
-
-  useEffect(() => {
-    if (preVerified) onVerified?.();
-  }, [preVerified, onVerified]);
 
   const handleResendVerification = async () => {
-    if (preVerified) {
-      toast.success("Email already verified.");
-      onVerified?.();
-      return;
-    }
     setIsResending(true);
     try {
       const { error } = await supabase.auth.resend({
@@ -52,11 +41,6 @@ export const EmailVerificationBanner = ({ email, onVerified }: EmailVerification
   const handleCheckVerification = async () => {
     setIsChecking(true);
     try {
-      if (preVerified) {
-        toast.success("Email verified!");
-        onVerified?.();
-        return;
-      }
       const {
         data: { user },
         error,
@@ -78,24 +62,6 @@ export const EmailVerificationBanner = ({ email, onVerified }: EmailVerification
       setIsChecking(false);
     }
   };
-
-  if (preVerified) {
-    return (
-      <Alert className="border-success/50 bg-success/5">
-        <CheckCircle2 className="h-4 w-4 text-success" />
-        <AlertDescription className="flex-1">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex-1">
-              <p className="font-medium text-success mb-1">Email Verified</p>
-              <p className="text-sm text-muted-foreground">
-                {email} is pre-verified and does not require email confirmation.
-              </p>
-            </div>
-          </div>
-        </AlertDescription>
-      </Alert>
-    );
-  }
 
   return (
     <Alert className="border-warning/50 bg-warning/5">
