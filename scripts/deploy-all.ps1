@@ -4,7 +4,11 @@
 Write-Host "=== Deploying NSFW Edge Functions ===" -ForegroundColor Cyan
 
 $functions = @(
+    "get-dlc-content",
+    "get-dlc-key",
+    "get-dlc-signed-url",
     "seductive-ai-chat",
+    "verify-dlc-license",
     "merge-video-chunks",
     "video-editing"
 )
@@ -14,7 +18,13 @@ $failed = @()
 foreach ($func in $functions) {
     Write-Host "`nDeploying $func..." -ForegroundColor Yellow
     
-    $result = supabase functions deploy $func 2>&1
+    $args = @("supabase", "functions", "deploy", $func)
+    if ($env:SUPABASE_PROJECT_REF) {
+        $args += @("--project-ref", $env:SUPABASE_PROJECT_REF)
+    }
+
+    # Use npx so a global supabase install isn't required.
+    $result = npx @args 2>&1
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✓ $func deployed successfully" -ForegroundColor Green
@@ -31,7 +41,8 @@ if ($failed.Count -eq 0) {
     Write-Host "✓ All functions deployed successfully!" -ForegroundColor Green
 } else {
     Write-Host "✗ Failed to deploy: $($failed -join ', ')" -ForegroundColor Red
-    Write-Host "`nMake sure you're logged in: supabase login" -ForegroundColor Yellow
-    Write-Host "And linked to your project: supabase link" -ForegroundColor Yellow
+    Write-Host "`nMake sure you're logged in: npx supabase login" -ForegroundColor Yellow
+    Write-Host "And linked to your project: npx supabase link" -ForegroundColor Yellow
+    Write-Host "Or set SUPABASE_PROJECT_REF to deploy without linking." -ForegroundColor Yellow
 }
 
