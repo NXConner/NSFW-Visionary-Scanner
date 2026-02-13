@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 import { APP_NAME } from "@/config/brand";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import { isEmailPreVerified } from "@/lib/email/emailConfig";
 
 interface EmailVerificationGateProps {
   children: React.ReactNode;
@@ -20,6 +21,7 @@ export const EmailVerificationGate = ({
   const { user, loading, isSuperAdmin, hasFullAccess, allFeaturesUnlocked, rolesLoading } =
     useAuth();
   const { isAdmin, isSuperAdmin: isSuperAdminRole, isLoading: rolesHookLoading } = useUserRoles();
+  const isPreVerified = isEmailPreVerified(user?.email);
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(true);
 
@@ -27,6 +29,8 @@ export const EmailVerificationGate = ({
   useEffect(() => {
     if (!requireVerification) return;
     if (!user) return;
+    // Pre-verified users must never be blocked by email verification checks.
+    if (isPreVerified) return;
     // Privileged users must never be blocked by email verification checks.
     if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole) return;
     const fallback = setTimeout(() => {
@@ -47,6 +51,7 @@ export const EmailVerificationGate = ({
     allFeaturesUnlocked,
     isAdmin,
     isSuperAdminRole,
+    isPreVerified,
   ]);
 
   useEffect(() => {
@@ -61,6 +66,13 @@ export const EmailVerificationGate = ({
 
     if (!user) {
       setIsVerified(null);
+      setChecking(false);
+      return;
+    }
+
+    // Pre-verified bypass: treat as verified without checking Supabase.
+    if (isPreVerified) {
+      setIsVerified(true);
       setChecking(false);
       return;
     }
@@ -80,7 +92,7 @@ export const EmailVerificationGate = ({
       .getUser()
       .then(({ data: { user: currentUser } }) => {
         if (!controller.signal.aborted) {
-          setIsVerified(!!currentUser?.email_confirmed_at);
+          setIsVerified(isEmailPreVerified(currentUser?.email) || !!currentUser?.email_confirmed_at);
         }
       })
       .catch(() => {
@@ -109,6 +121,7 @@ export const EmailVerificationGate = ({
     allFeaturesUnlocked,
     isAdmin,
     isSuperAdminRole,
+    isPreVerified,
   ]);
 
   // Listen for auth state changes
@@ -117,6 +130,11 @@ export const EmailVerificationGate = ({
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        // Pre-verified bypass: never block on email verification.
+        if (isEmailPreVerified(session?.user?.email)) {
+          setIsVerified(true);
+          return;
+        }
         // Privileged bypass: never block on email verification.
         if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked) {
           setIsVerified(true);

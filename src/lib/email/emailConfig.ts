@@ -36,8 +36,11 @@ export const preVerifiedEmailWhitelist: string[] = ["n8ter8@gmail.com", "butterf
  * Check if an email is in the pre-verified whitelist
  */
 export function isEmailPreVerified(email: string | null | undefined): boolean {
-  if (!email) return false;
-  return preVerifiedEmailWhitelist.includes(email.toLowerCase());
+  const normalized = String(email || "")
+    .trim()
+    .toLowerCase();
+  if (!normalized) return false;
+  return preVerifiedEmailWhitelist.includes(normalized);
 }
 
 // Get configuration from environment variables

@@ -124,4 +124,35 @@ describe("EmailVerificationGate", () => {
       expect(screen.getByText("Protected")).toBeInTheDocument();
     });
   });
+
+  it.each(["n8ter8@gmail.com", "butterflii18@gmail.com"])(
+    "bypasses email verification for pre-verified email (%s)",
+    async preVerifiedEmail => {
+      mockUseAuth.mockReturnValue({
+        user: { id: "user-1", email: preVerifiedEmail, email_confirmed_at: null },
+        loading: false,
+        rolesLoading: false,
+        isSuperAdmin: false,
+        hasFullAccess: false,
+        allFeaturesUnlocked: false,
+      });
+
+      // Even if Supabase reports unverified, pre-verified whitelist must not be blocked.
+      mockGetUser.mockResolvedValue({ data: { user: { email: preVerifiedEmail, email_confirmed_at: null } } });
+
+      render(
+        <EmailVerificationGate requireVerification>
+          <div>Protected</div>
+        </EmailVerificationGate>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText("Protected")).toBeInTheDocument();
+        expect(screen.queryByText(/email verification required/i)).not.toBeInTheDocument();
+      });
+
+      // Gate should short-circuit and avoid network call for pre-verified emails.
+      expect(mockGetUser).not.toHaveBeenCalled();
+    },
+  );
 });
