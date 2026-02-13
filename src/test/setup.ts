@@ -118,11 +118,27 @@ const rafImpl = (cb: FrameRequestCallback) => {
 };
 const cafImpl = (_id: number) => {};
 
-Object.defineProperty(g, "requestAnimationFrame", { value: rafImpl, configurable: true });
-Object.defineProperty(g, "cancelAnimationFrame", { value: cafImpl, configurable: true });
+Object.defineProperty(g, "requestAnimationFrame", {
+  value: rafImpl,
+  writable: true,
+  configurable: true,
+});
+Object.defineProperty(g, "cancelAnimationFrame", {
+  value: cafImpl,
+  writable: true,
+  configurable: true,
+});
 if (w) {
-  Object.defineProperty(w, "requestAnimationFrame", { value: rafImpl, configurable: true });
-  Object.defineProperty(w, "cancelAnimationFrame", { value: cafImpl, configurable: true });
+  Object.defineProperty(w, "requestAnimationFrame", {
+    value: rafImpl,
+    writable: true,
+    configurable: true,
+  });
+  Object.defineProperty(w, "cancelAnimationFrame", {
+    value: cafImpl,
+    writable: true,
+    configurable: true,
+  });
 }
 
 // jsdom implements scrollIntoView, but it can trigger async layout effects in component libraries
