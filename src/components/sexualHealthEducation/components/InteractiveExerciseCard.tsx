@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { BookOpenCheck } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 import {
   getUserProgress,
@@ -120,7 +120,7 @@ export function InteractiveExerciseCard({
               disabled={saving || questions.length === 0}
               variant="gradient"
             >
-              <BookOpenCheck className="h-4 w-4 mr-2" />
+              <CheckCircle2 className="h-4 w-4 mr-2" />
               {saving ? "Saving…" : "Submit"}
             </Button>
           </div>
