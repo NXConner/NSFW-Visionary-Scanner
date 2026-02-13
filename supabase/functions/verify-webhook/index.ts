@@ -1,4 +1,4 @@
-import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts";
+import { applyRateLimit } from "../_shared/rateLimit.ts";
 /**
  * Supabase Edge Function: verify-webhook
  *
@@ -11,6 +11,7 @@ import { applyRateLimit, DEFAULT_EDGE_RATE_LIMIT } from "../_shared/rateLimit.ts
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateOutboundWebhookUrl } from "../_shared/webhookSecurity.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,6 +53,12 @@ async function hmacSha256Base64Url(secret: string, payload: string) {
   return base64Url(new Uint8Array(sig));
 }
 
+function truncate(text: string, max: number): string {
+  if (!text) return "";
+  if (text.length <= max) return text;
+  return `${text.slice(0, max)}…`;
+}
+
 serve(async req => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -69,6 +76,17 @@ serve(async req => {
     if (authErr) return json(401, { error: "Unauthorized" });
     if (!auth.user) return json(401, { error: "Unauthorized" });
 
+    // Rate limit BEFORE any outbound network calls.
+    const rateLimitResponse = await applyRateLimit({
+      req,
+      endpoint: "verify-webhook",
+      userId: auth.user.id,
+      windowSeconds: 60,
+      maxRequests: 10,
+      headers: corsHeaders,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
+
     const { webhook_id } = await req.json().catch(() => ({}));
     if (!webhook_id) return json(400, { error: "webhook_id is required" });
 
@@ -81,6 +99,12 @@ serve(async req => {
     if (hookErr) return json(500, { error: hookErr.message });
     if (!hook) return json(404, { error: "Webhook not found" });
     if (hook.user_id !== auth.user.id) return json(403, { error: "Forbidden" });
+
+    const allowHttp = (Deno.env.get("ALLOW_INSECURE_WEBHOOKS") ?? "").toLowerCase() === "true";
+    const validated = await validateOutboundWebhookUrl(String(hook.webhook_url || ""), {
+      allowInsecureHttp: allowHttp,
+    });
+    if (!validated.ok) return json(400, { error: validated.error });
 
     const verificationToken = hook.verification_token || randomSecret(18);
     const webhookSecret = hook.webhook_secret || randomSecret(24);
@@ -96,8 +120,10 @@ serve(async req => {
     let ok = false;
     let status = 0;
     let responseBody = "";
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12_000);
     try {
-      const res = await fetch(hook.webhook_url, {
+      const res = await fetch(validated.normalizedUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -106,6 +132,7 @@ serve(async req => {
           "X-Webhook-Signature": signature,
         },
         body: payload,
+        signal: controller.signal,
       });
       status = res.status;
       responseBody = await res.text();
@@ -114,15 +141,9 @@ serve(async req => {
       status = 0;
       responseBody = e instanceof Error ? e.message : "Network error";
       ok = false;
+    } finally {
+      clearTimeout(timeout);
     }
-
-    const rateLimitResponse = await applyRateLimit({
-      req,
-      endpoint: "verify-webhook",
-      ...DEFAULT_EDGE_RATE_LIMIT,
-      headers: corsHeaders,
-    });
-    if (rateLimitResponse) return rateLimitResponse;
 
     await supabaseAdmin.from("webhook_deliveries").insert({
       webhook_id,
@@ -131,7 +152,7 @@ serve(async req => {
       payload: JSON.parse(payload),
       delivery_status: ok ? "delivered" : "failed",
       http_status_code: status || null,
-      response_body: responseBody || null,
+      response_body: truncate(responseBody || "", 4000) || null,
       retry_count: 0,
       next_retry_at: null,
       attempted_at: nowIso(),

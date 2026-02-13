@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { fromExtended } from "@/lib/supabaseExtensions";
-import type { APIKey, Webhook } from "./types";
+import type { APIKey, Webhook, WebhookDelivery } from "./types";
 import { randomApiKey, sha256Hex } from "./crypto";
 import { validateWebhookUrl } from "@/lib/urlValidation";
 
@@ -80,6 +80,36 @@ export async function revokeAPIKey(keyId: string): Promise<boolean> {
   return true;
 }
 
+/**
+ * Rotate an API key: generates a new secret, replaces the stored hash, and returns the new key once.
+ */
+export async function rotateAPIKey(
+  keyId: string,
+): Promise<{ api_key: string; apiKeyRecord: APIKey } | null> {
+  const userId = await requireUserId();
+  const apiKey = randomApiKey();
+  const apiKeyHash = await sha256Hex(apiKey);
+  const apiKeyPrefix = apiKey.split("_")[1] ?? apiKey.slice(0, 8);
+
+  const { data, error } = await fromExtended("api_keys")
+    .update({
+      api_key_hash: apiKeyHash,
+      api_key_prefix: apiKeyPrefix,
+      is_active: true,
+      updated_at: new Date().toISOString(),
+      last_used_at: null,
+      last_request_at: null,
+      total_requests: 0,
+    })
+    .eq("id", keyId)
+    .eq("user_id", userId)
+    .select("*")
+    .maybeSingle();
+
+  if (error || !data) throw error ?? new Error("API key not found");
+  return { api_key: apiKey, apiKeyRecord: data as unknown as APIKey };
+}
+
 export async function createWebhook(
   webhookName: string,
   webhookUrl: string,
@@ -91,6 +121,11 @@ export async function createWebhook(
   }
   if (webhookName.length > 100) {
     throw new Error("Webhook name must be 100 characters or less");
+  }
+
+  const events = Array.isArray(subscribedEvents) ? subscribedEvents.filter(Boolean) : [];
+  if (events.length === 0) {
+    throw new Error("Select at least one event");
   }
 
   // Validate webhook URL for security (SSRF prevention)
@@ -108,7 +143,7 @@ export async function createWebhook(
       webhook_name: webhookName.trim(),
       webhook_url: urlValidation.normalizedUrl,
       webhook_secret: secret,
-      subscribed_events: subscribedEvents,
+      subscribed_events: events,
       is_active: true,
       is_verified: false,
       verification_token: token,
@@ -144,6 +179,14 @@ export async function verifyWebhook(webhookId: string): Promise<boolean> {
   return true;
 }
 
+export async function deliverTestWebhook(webhookId: string): Promise<boolean> {
+  const { data, error } = await supabase.functions.invoke("deliver-webhook", {
+    body: { webhook_id: webhookId, event_type: "webhook.test", payload: { test: true } },
+  });
+  if (error) throw error;
+  return Boolean((data as any)?.ok);
+}
+
 export async function deleteWebhook(webhookId: string): Promise<boolean> {
   const userId = await requireUserId();
   const { error } = await fromExtended("webhooks")
@@ -152,4 +195,21 @@ export async function deleteWebhook(webhookId: string): Promise<boolean> {
     .eq("user_id", userId);
   if (error) throw error;
   return true;
+}
+
+export async function getWebhookDeliveries(params: {
+  webhookId: string;
+  limit?: number;
+}): Promise<WebhookDelivery[]> {
+  const { webhookId, limit = 25 } = params;
+  if (!webhookId) return [];
+  await requireUserId(); // ensures authenticated (RLS enforces ownership)
+
+  const { data, error } = await fromExtended("webhook_deliveries")
+    .select("*")
+    .eq("webhook_id", webhookId)
+    .order("attempted_at", { ascending: false })
+    .limit(Math.max(1, Math.min(100, limit)));
+  if (error) throw error;
+  return (data ?? []) as unknown as WebhookDelivery[];
 }
