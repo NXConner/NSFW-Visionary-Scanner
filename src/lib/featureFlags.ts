@@ -5,6 +5,7 @@
  */
 
 import { getLastKnownUserId, getPersistedRolesForUser } from "@/lib/auth/rolesCache";
+import { logger } from "@/lib/logger";
 
 export type AppVersion = "sfw" | "nsfw" | "hybrid";
 
@@ -187,7 +188,7 @@ export const hasNSFWContent = async (): Promise<boolean> => {
       const { hasDLCLicense } = await import("./dlcManager");
       return await hasDLCLicense();
     } catch (error) {
-      console.warn("DLC manager not available, NSFW content disabled", error);
+      logger.warn("DLC manager not available, NSFW content disabled", { error });
       return false;
     }
   }

@@ -33,6 +33,7 @@ import {
   milestoneCategories,
 } from "@/lib/achievements/milestones";
 import { useSettings } from "@/contexts/settings";
+import { logger } from "@/lib/logger";
 
 export interface AchievementContextValue {
   // State
@@ -119,7 +120,7 @@ export function AchievementProvider({ children }: AchievementProviderProps) {
         }
       }
     } catch (error) {
-      console.error("[AchievementProvider] Failed to load initial state:", error);
+      logger.error("[AchievementProvider] failed to load initial state", { error });
     } finally {
       // Mark loading as complete
       if (mounted) {

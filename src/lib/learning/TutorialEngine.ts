@@ -1,5 +1,6 @@
 // Interactive Tutorial Engine with Quizzes
 import { v4 as uuidv4 } from "uuid";
+import { logger } from "@/lib/logger";
 
 export interface TutorialStep {
   id: string;
@@ -210,7 +211,7 @@ export class TutorialEngine {
         parsed.forEach((p: TutorialProgress) => this.progress.set(p.tutorialId, p));
       }
     } catch (e) {
-      console.error("Failed to load tutorial progress:", e);
+      logger.error("[tutorials] failed to load progress", { error: e });
     }
   }
 
@@ -219,7 +220,7 @@ export class TutorialEngine {
       localStorage.setItem(PROGRESS_KEY, JSON.stringify(Array.from(this.progress.values())));
       this.notifyListeners();
     } catch (e) {
-      console.error("Failed to save tutorial progress:", e);
+      logger.error("[tutorials] failed to save progress", { error: e });
     }
   }
 

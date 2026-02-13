@@ -17,6 +17,7 @@ import {
   type Milestone,
   type MilestoneProgress,
 } from "./milestones";
+import { logger } from "@/lib/logger";
 
 export interface UnlockedAchievement {
   achievementId: string;
@@ -112,7 +113,7 @@ export class AchievementManager {
         };
       }
     } catch (error) {
-      console.error("Failed to load achievement state:", error);
+      logger.error("[achievements] failed to load state", { error });
     }
 
     this.initialized = true;
@@ -133,7 +134,7 @@ export class AchievementManager {
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
     } catch (error) {
-      console.error("Failed to persist achievement state:", error);
+      logger.error("[achievements] failed to persist state", { error });
     }
   }
 

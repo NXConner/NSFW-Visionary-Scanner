@@ -38,6 +38,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { logger } from "@/lib/logger";
 
 type ContentStatus = "pending" | "approved" | "rejected" | "flagged";
 type ContentType = "image" | "video" | "text" | "comment";
@@ -190,7 +191,7 @@ export function ContentModerationPanel() {
 
       setContent(items);
     } catch (err) {
-      console.error("Error fetching content:", err);
+      logger.error("[contentModeration] failed to fetch content", { error: err });
       toast.error("Failed to load content");
     } finally {
       setLoading(false);

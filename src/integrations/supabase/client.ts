@@ -2,6 +2,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 import { readSupabaseRuntimeOverride } from "./runtimeOverride";
+import { logger } from "@/lib/logger";
 
 // Vite injects `import.meta.env`, but this module is also imported from Node-based scripts (tsx).
 // Keep it safe in both environments.
@@ -160,8 +161,7 @@ const createDisabledSupabaseClient = (): SupabaseClient<Database> => {
 };
 
 if (!isConfigured && !isTestEnv) {
-  // eslint-disable-next-line no-console
-  console.error(supabaseConfigError);
+  logger.error("[supabase] not configured", { missingKeys, error: supabaseConfigError });
 }
 
 // Test localStorage availability for restricted contexts
@@ -185,7 +185,8 @@ function makeSafeSupabaseFetch(supabaseKey: string): typeof fetch {
   return async (input: RequestInfo | URL, init?: RequestInit) => {
     const headers = new Headers(
       // Prefer explicit init headers, else fall back to Request headers.
-      (init?.headers as HeadersInit | undefined) ?? (input instanceof Request ? input.headers : undefined),
+      (init?.headers as HeadersInit | undefined) ??
+        (input instanceof Request ? input.headers : undefined),
     );
 
     // Ensure apikey is always present (some custom calls may omit it).
@@ -205,7 +206,8 @@ function makeSafeSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
-const supabaseGlobal = typeof fetch === "function" ? { fetch: makeSafeSupabaseFetch(SUPABASE_PUBLISHABLE_KEY) } : {};
+const supabaseGlobal =
+  typeof fetch === "function" ? { fetch: makeSafeSupabaseFetch(SUPABASE_PUBLISHABLE_KEY) } : {};
 
 export const supabase = isConfigured
   ? createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {

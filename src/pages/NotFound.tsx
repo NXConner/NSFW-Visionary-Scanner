@@ -1,12 +1,13 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 const NotFound = () => {
   const location = useLocation();
 
   // Log 404 for analytics (location.pathname is already tracked)
   useEffect(() => {
-    console.warn("404 Not Found:", location.pathname);
+    logger.warn("404 Not Found", { path: location.pathname });
   }, [location.pathname]);
 
   return (

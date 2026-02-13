@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { logger } from "@/lib/logger";
 import {
   User,
   Settings,
@@ -118,7 +119,7 @@ export const ProfileSection = () => {
 
       setIsEditing(false);
     } catch (error) {
-      console.error("Failed to save profile:", error);
+      logger.error("[profile] failed to save profile", { error });
       toast({
         title: "Error",
         description: "Failed to save profile. Please try again.",

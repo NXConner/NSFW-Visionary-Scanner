@@ -1,5 +1,6 @@
 // Symptom Journal with Severity Scales
 import { v4 as uuidv4 } from "uuid";
+import { logger } from "@/lib/logger";
 
 export type SeverityLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
@@ -81,7 +82,7 @@ export class SymptomJournal {
       const types = localStorage.getItem(TYPES_KEY);
       if (types) this.customTypes = JSON.parse(types);
     } catch (e) {
-      console.error("Failed to load symptom journal:", e);
+      logger.error("[symptomJournal] failed to load", { error: e });
     }
   }
 
@@ -91,7 +92,7 @@ export class SymptomJournal {
       localStorage.setItem(TYPES_KEY, JSON.stringify(this.customTypes));
       this.notifyListeners();
     } catch (e) {
-      console.error("Failed to save symptom journal:", e);
+      logger.error("[symptomJournal] failed to save", { error: e });
     }
   }
 

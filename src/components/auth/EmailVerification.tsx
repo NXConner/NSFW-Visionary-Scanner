@@ -22,6 +22,7 @@ import { EmailService } from "@/lib/email";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { logger } from "@/lib/logger";
 
 interface EmailVerificationProps {
   onVerified?: () => void;
@@ -55,7 +56,7 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
         onVerified();
       }
     } catch (error) {
-      console.error("Error checking verification status:", error);
+      logger.error("[EmailVerification] failed to check verification status", { error });
     } finally {
       setIsChecking(false);
     }

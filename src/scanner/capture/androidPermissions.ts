@@ -1,5 +1,6 @@
 import { getPlatformKind } from "@/scanner/utils/platform";
 import { Camera } from "@capacitor/camera";
+import { logger } from "@/lib/logger";
 
 export type PermissionStatus = "granted" | "denied" | "prompt" | "unknown";
 
@@ -46,7 +47,7 @@ export async function requestCameraPermission(): Promise<CameraPermissionResult>
 
     return { status: "prompt", canRequest: true };
   } catch (error) {
-    console.warn("Failed to check/request camera permissions:", error);
+    logger.warn("[androidPermissions] camera permission request/check failed", { error });
     // Fallback: assume we can try (getUserMedia will handle the prompt)
     return { status: "unknown", canRequest: true };
   }
@@ -76,7 +77,7 @@ export async function checkCameraPermission(): Promise<PermissionStatus> {
     const result = await Camera.checkPermissions();
     return (result.camera || "unknown") as PermissionStatus;
   } catch (error) {
-    console.warn("Failed to check camera permissions:", error);
+    logger.warn("[androidPermissions] camera permission check failed", { error });
     return "unknown";
   }
 }

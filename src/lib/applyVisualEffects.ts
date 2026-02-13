@@ -13,6 +13,7 @@ import {
   type FilterType,
 } from "./imageFilters";
 import { getEnabledFilters } from "./visualEffectsSettings";
+import { logger } from "@/lib/logger";
 
 /**
  * Apply all enabled visual effects to a data URL image
@@ -51,7 +52,7 @@ export async function applyVisualEffectsToDataURL(dataURL: string): Promise<stri
     return canvasToDataURL(canvas, "image/jpeg");
   } catch (error) {
     // If any error occurs, return original image
-    console.error("Error applying visual effects:", error);
+    logger.error("[visualEffects] failed to apply effects", { error });
     return dataURL;
   }
 }

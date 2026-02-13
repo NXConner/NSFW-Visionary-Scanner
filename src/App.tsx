@@ -39,6 +39,7 @@ import TabDeepLinkRedirect from "@/routes/TabDeepLinkRedirect";
 import LegacyAdminRedirect from "@/routes/LegacyAdminRedirect";
 import { isAdultContentEnabled } from "@/lib/featureFlags";
 import { BUILD_ALLOW_ADULT_BUNDLE } from "@/lib/buildFlags";
+import { logger } from "@/lib/logger";
 import NotFound from "./pages/NotFound";
 
 // Lazy load all pages for better code splitting
@@ -64,7 +65,7 @@ try {
   bootstrapAddons();
 } catch (error) {
   // Never let addon bootstrap failures block first render on mobile.
-  console.error("[App] Addon bootstrap failed (continuing without addon contributions):", error);
+  logger.warn("[App] addon bootstrap failed (continuing without addon contributions)", { error });
 }
 
 const Auth = lazy(() => import("./pages/Auth"));

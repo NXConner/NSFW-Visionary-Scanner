@@ -263,7 +263,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
       });
     } catch (reportError) {
       // Silently fail - don't throw during error handling
-      console.error("Failed to report error:", reportError);
+      logger.warn("[EnhancedErrorBoundary] failed to report error", { error: reportError });
     }
   };
 

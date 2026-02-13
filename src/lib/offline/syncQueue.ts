@@ -4,6 +4,7 @@
  */
 
 import { v4 as uuidv4 } from "uuid";
+import { logger } from "@/lib/logger";
 
 export type SyncOperation = "create" | "update" | "delete";
 export type SyncStatus = "pending" | "syncing" | "synced" | "failed" | "conflict";
@@ -281,7 +282,7 @@ export class SyncQueue {
       for (const item of pending) {
         const handler = this.handlers.get(item.entityType);
         if (!handler) {
-          console.warn(`No handler registered for entity type: ${item.entityType}`);
+          logger.warn("[syncQueue] no handler registered", { entityType: item.entityType });
           continue;
         }
 
@@ -450,7 +451,7 @@ export class SyncQueue {
       const data = Array.from(this.queue.entries());
       localStorage.setItem(this.config.persistKey, JSON.stringify(data));
     } catch (error) {
-      console.error("Failed to persist sync queue:", error);
+      logger.error("[syncQueue] failed to persist", { error });
     }
   }
 
@@ -469,7 +470,7 @@ export class SyncQueue {
         }
       }
     } catch (error) {
-      console.error("Failed to load sync queue:", error);
+      logger.error("[syncQueue] failed to load", { error });
     }
   }
 

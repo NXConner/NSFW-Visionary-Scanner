@@ -1,5 +1,6 @@
 // Medication Tracking System with Reminders
 import { v4 as uuidv4 } from "uuid";
+import { logger } from "@/lib/logger";
 
 export interface Medication {
   id: string;
@@ -62,7 +63,7 @@ export class MedicationTracker {
         parsed.forEach((med: Medication) => this.medications.set(med.id, med));
       }
     } catch (e) {
-      console.error("Failed to load medications:", e);
+      logger.error("[medications] failed to load", { error: e });
     }
   }
 
@@ -71,7 +72,7 @@ export class MedicationTracker {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(this.medications.values())));
       this.notifyListeners();
     } catch (e) {
-      console.error("Failed to save medications:", e);
+      logger.error("[medications] failed to save", { error: e });
     }
   }
 

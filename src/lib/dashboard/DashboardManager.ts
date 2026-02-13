@@ -1,5 +1,6 @@
 // Dashboard Manager for Customizable Widget Arrangement
 import { v4 as uuidv4 } from "uuid";
+import { logger } from "@/lib/logger";
 
 export interface DashboardWidget {
   id: string;
@@ -133,7 +134,7 @@ export class DashboardManager {
         this.preferences = { ...this.preferences, ...JSON.parse(prefs) };
       }
     } catch (e) {
-      console.error("Failed to load dashboard:", e);
+      logger.error("[dashboard] failed to load", { error: e });
     }
 
     // Ensure default layout exists
@@ -157,7 +158,7 @@ export class DashboardManager {
       localStorage.setItem(PREFS_KEY, JSON.stringify(this.preferences));
       this.notifyListeners();
     } catch (e) {
-      console.error("Failed to save dashboard:", e);
+      logger.error("[dashboard] failed to save", { error: e });
     }
   }
 

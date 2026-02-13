@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { clearSuperAdminCache } from "@/lib/superAdmin";
 import { getAdminRoleByEmail } from "@/lib/auth/adminManager";
+import { logger } from "@/lib/logger";
 import {
   clearPersistedRoles,
   getLastKnownUserId,
@@ -139,7 +140,7 @@ export const useUserRoles = (): UseUserRolesReturn => {
       const { data, error: fetchError } = roleResult;
 
       if (fetchError) {
-        console.warn("[useUserRoles] Role fetch failed:", fetchError.message);
+        logger.warn("[roles] role fetch failed", { userId: user.id, error: fetchError.message });
         // On timeout/error, prefer user-bound persisted roles, merged with email-derived core roles.
         const persisted = getPersistedRolesForUser(user.id).filter(
           r => r === "admin" || r === "super_admin" || r === "pro" || r === "user",

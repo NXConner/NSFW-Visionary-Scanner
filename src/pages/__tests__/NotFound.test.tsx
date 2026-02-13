@@ -2,10 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import NotFound from "../NotFound";
+import { logger } from "@/lib/logger";
 
 describe("NotFound", () => {
   beforeEach(() => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(logger, "warn").mockImplementation(() => {});
   });
 
   it("renders 404 message", () => {
@@ -38,6 +39,6 @@ describe("NotFound", () => {
       </MemoryRouter>,
     );
 
-    expect(console.warn).toHaveBeenCalledWith("404 Not Found:", "/some-missing-route");
+    expect(logger.warn).toHaveBeenCalledWith("404 Not Found", { path: "/some-missing-route" });
   });
 });

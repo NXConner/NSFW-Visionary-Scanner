@@ -6,6 +6,7 @@
 import * as React from "react";
 import { createContext, useContext, useCallback, useReducer, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { logger } from "@/lib/logger";
 
 // ======= Types =======
 
@@ -237,7 +238,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         });
       }
     } catch (error) {
-      console.error("Failed to load notifications:", error);
+      logger.error("[notifications] failed to load", { error });
     }
   }, []);
 
@@ -252,7 +253,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }),
       );
     } catch (error) {
-      console.error("Failed to persist notifications:", error);
+      logger.error("[notifications] failed to persist", { error });
     }
   }, [state.notifications, state.preferences]);
 

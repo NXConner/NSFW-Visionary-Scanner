@@ -7,6 +7,7 @@
 
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 // Cache for role checks to avoid repeated DB calls
 let cachedUserId: string | null = null;
@@ -83,7 +84,7 @@ export async function checkSuperAdminRole(userId: string): Promise<boolean> {
     const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
 
     if (error) {
-      console.error("[superAdmin] Role check failed:", error.message);
+      logger.warn("[superAdmin] role check failed", { userId, error: error.message });
       // On error, fall back to persisted localStorage value
       return getPersistedSuperAdminStatus(userId);
     }
@@ -100,7 +101,7 @@ export async function checkSuperAdminRole(userId: string): Promise<boolean> {
 
     return isSuperAdmin;
   } catch (err) {
-    console.error("[superAdmin] Role check error:", err);
+    logger.warn("[superAdmin] role check error", { userId, error: err });
     // On error, fall back to persisted localStorage value
     return getPersistedSuperAdminStatus(userId);
   }

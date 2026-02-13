@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { requestCameraPermission } from "@/scanner/capture/androidPermissions";
+import { logger } from "@/lib/logger";
 
 export type CameraFocusMode = "auto" | "continuous" | "manual" | "single-shot";
 export type FocusVisualState = "searching" | "focusing" | "locked" | "manual" | "unsupported";
@@ -193,7 +194,7 @@ export const useCamera = (): UseCameraReturn => {
         // getUserMedia will handle the actual permission prompt if needed
       } catch (error) {
         // If permission check fails, continue anyway - getUserMedia will handle it
-        console.warn("Permission check failed, continuing with getUserMedia:", error);
+        logger.warn("[camera] permission check failed; continuing with getUserMedia", { error });
       }
 
       // Early permission check when available (best-effort, web only)

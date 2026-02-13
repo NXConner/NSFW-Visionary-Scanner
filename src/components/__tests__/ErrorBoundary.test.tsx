@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import ErrorBoundary, { withErrorBoundary } from "../ErrorBoundary";
+import { logger } from "@/lib/logger";
 
 // Component that throws an error
 const ThrowingComponent = ({ shouldThrow = true }: { shouldThrow?: boolean }) => {
@@ -10,14 +11,15 @@ const ThrowingComponent = ({ shouldThrow = true }: { shouldThrow?: boolean }) =>
   return <div>No error</div>;
 };
 
-// Suppress console.error during error boundary tests
-const originalError = console.error;
+let errorSpy: any;
 beforeEach(() => {
-  console.error = vi.fn();
+  errorSpy?.mockRestore?.();
+  errorSpy = vi.spyOn(logger, "errorBoundary").mockImplementation(() => {});
 });
 
 afterEach(() => {
-  console.error = originalError;
+  errorSpy?.mockRestore?.();
+  errorSpy = null;
 });
 
 describe("ErrorBoundary", () => {

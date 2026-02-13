@@ -2,6 +2,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { invokeAiHealthChat } from "@/lib/edge/aiHealthChat";
 import { isLovablePolicyBuild } from "@/lib/featureFlags";
+import { logger } from "@/lib/logger";
 
 export interface GlossaryTerm {
   id: string;
@@ -182,7 +183,7 @@ export class GlossaryManager {
       const data = localStorage.getItem(AI_HISTORY_KEY);
       if (data) this.aiHistory = JSON.parse(data);
     } catch (e) {
-      console.error("Failed to load AI history:", e);
+      logger.error("[glossary] failed to load AI history", { error: e });
     }
   }
 
@@ -190,7 +191,7 @@ export class GlossaryManager {
     try {
       localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(this.aiHistory.slice(-50)));
     } catch (e) {
-      console.error("Failed to save AI history:", e);
+      logger.error("[glossary] failed to save AI history", { error: e });
     }
   }
 
@@ -202,7 +203,7 @@ export class GlossaryManager {
         Object.entries(parsed).forEach(([id, fb]) => this.feedback.set(id, fb as any));
       }
     } catch (e) {
-      console.error("Failed to load feedback:", e);
+      logger.error("[glossary] failed to load feedback", { error: e });
     }
   }
 
@@ -212,7 +213,7 @@ export class GlossaryManager {
       this.feedback.forEach((v, k) => (obj[k] = v));
       localStorage.setItem(FEEDBACK_KEY, JSON.stringify(obj));
     } catch (e) {
-      console.error("Failed to save feedback:", e);
+      logger.error("[glossary] failed to save feedback", { error: e });
     }
   }
 

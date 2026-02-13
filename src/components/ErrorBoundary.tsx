@@ -4,6 +4,7 @@ import {
   markAppInteractiveAndHideStaticLoader,
   showBootDiagnosticsPanel,
 } from "@/lib/boot/staticLoader";
+import { logger } from "@/lib/logger";
 
 interface Props {
   children: ReactNode;
@@ -36,7 +37,7 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    logger.errorBoundary(error, errorInfo.componentStack || "");
     // Ensure the static HTML loader can't obscure the error UI.
     try {
       markAppInteractiveAndHideStaticLoader();

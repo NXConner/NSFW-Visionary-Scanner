@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import type { LandmarkCurvatureResult } from "@/scanner/processing/steps/landmarkCurvature";
 import { estimateCurvatureFromLandmarks } from "@/scanner/processing/steps/landmarkCurvature";
 import type { Vec2 } from "@/scanner/utils/math/geometry";
+import { logger } from "@/lib/logger";
 
 export interface UseLandmarkCurvatureOptions {
   /** Whether detection is enabled */
@@ -96,7 +97,7 @@ export function useLandmarkCurvature({
         setResult(null);
       }
     } catch (error) {
-      console.error("[useLandmarkCurvature] Detection error:", error);
+      logger.error("[useLandmarkCurvature] detection error", { error });
       setResult(null);
     } finally {
       setIsProcessing(false);

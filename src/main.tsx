@@ -4,7 +4,7 @@ import "./index.css";
 import { initSentry, measureWebVitals } from "./lib/sentry";
 import { initializeSecurity, generateCSPHeader } from "./lib/security";
 import { initStorageMonitoring } from "./lib/storageErrorHandler";
-import { installConsoleInterceptor } from "./lib/logger";
+import { installConsoleInterceptor, logger } from "./lib/logger";
 import { registerPwaIfAllowed } from "./pwa/register";
 import {
   initializeCapacitor,
@@ -147,7 +147,7 @@ if (isLikelyNativeBoot) {
   safeInit(installMobileErrorHandler);
   // Initialize Capacitor (async, non-blocking)
   initializeCapacitor().catch(err => {
-    console.warn("[Main] Capacitor init error (non-fatal):", err);
+    logger.warn("[main] capacitor init error (non-fatal)", { error: err });
   });
 }
 
@@ -164,7 +164,7 @@ if (rootEl) {
       requestAnimationFrame(() => {
         setTimeout(() => {
           hideNativeSplashSafely().catch(err => {
-            console.warn("[Main] Failed to hide splash:", err);
+            logger.warn("[main] failed to hide splash", { error: err });
           });
         }, 100);
       });

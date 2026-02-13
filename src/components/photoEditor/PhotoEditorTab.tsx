@@ -40,6 +40,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import type { FilterType } from "@/lib/imageFilters";
+import { logger } from "@/lib/logger";
 
 // New panels
 import { CropRotatePanel, type CropRotateState } from "./CropRotatePanel";
@@ -220,7 +221,7 @@ export function PhotoEditorTab() {
       const result = applyFilterToImage(img, activeFilter, opts);
       setFilteredSrc(result);
     } catch (err) {
-      console.error("Filter error:", err);
+      logger.error("[photoEditor] filter error", { error: err });
       toast.error("Failed to apply filter");
     } finally {
       setApplyingFilter(false);

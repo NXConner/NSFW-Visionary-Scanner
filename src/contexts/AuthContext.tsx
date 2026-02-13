@@ -72,8 +72,12 @@ function normalizeEmail(v: unknown): string {
 }
 
 // Core privileged emails (defaults; can be overridden per-environment)
-const CORE_SUPER_ADMIN_EMAIL = normalizeEmail(import.meta.env.VITE_ADMIN_SUPER_EMAIL || "n8ter8@gmail.com");
-const CORE_ADMIN_EMAIL = normalizeEmail(import.meta.env.VITE_ADMIN_EMAIL || "butterflii18@gmail.com");
+const CORE_SUPER_ADMIN_EMAIL = normalizeEmail(
+  import.meta.env.VITE_ADMIN_SUPER_EMAIL || "n8ter8@gmail.com",
+);
+const CORE_ADMIN_EMAIL = normalizeEmail(
+  import.meta.env.VITE_ADMIN_EMAIL || "butterflii18@gmail.com",
+);
 
 function getInitialPrivilegedStatus(): { isSuperAdmin: boolean; isAdmin: boolean } {
   try {
@@ -120,77 +124,89 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   // Load privileged status from database with 2s timeout fallback
-  const loadPrivilegedStatus = useCallback(async (params: { userId: string | null; email?: string | null }) => {
-    setRolesLoading(true);
-    const userId = params.userId;
-    const emailNorm = normalizeEmail(params.email);
-    const coreSuper = Boolean(emailNorm && CORE_SUPER_ADMIN_EMAIL && emailNorm === CORE_SUPER_ADMIN_EMAIL);
-    const coreAdmin = Boolean(emailNorm && CORE_ADMIN_EMAIL && emailNorm === CORE_ADMIN_EMAIL);
+  const loadPrivilegedStatus = useCallback(
+    async (params: { userId: string | null; email?: string | null }) => {
+      setRolesLoading(true);
+      const userId = params.userId;
+      const emailNorm = normalizeEmail(params.email);
+      const coreSuper = Boolean(
+        emailNorm && CORE_SUPER_ADMIN_EMAIL && emailNorm === CORE_SUPER_ADMIN_EMAIL,
+      );
+      const coreAdmin = Boolean(emailNorm && CORE_ADMIN_EMAIL && emailNorm === CORE_ADMIN_EMAIL);
 
-    if (!userId) {
-      setIsSuperAdmin(false);
-      setIsAdmin(false);
-      clearSuperAdminCache();
-      clearPersistedRoles();
+      if (!userId) {
+        setIsSuperAdmin(false);
+        setIsAdmin(false);
+        clearSuperAdminCache();
+        clearPersistedRoles();
+        try {
+          localStorage.removeItem("lovable_last_user_id");
+        } catch {
+          // localStorage may not be available
+        }
+        setRolesLoading(false);
+        return;
+      }
+
+      // Store user ID for cache lookup on next app load
       try {
-        localStorage.removeItem("lovable_last_user_id");
+        localStorage.setItem("lovable_last_user_id", userId);
       } catch {
         // localStorage may not be available
       }
-      setRolesLoading(false);
-      return;
-    }
 
-    // Store user ID for cache lookup on next app load
-    try {
-      localStorage.setItem("lovable_last_user_id", userId);
-    } catch {
-      // localStorage may not be available
-    }
+      try {
+        // Race against timeout to prevent hanging forever
+        const rolesResult = await Promise.race([
+          supabase.from("user_roles").select("role").eq("user_id", userId),
+          new Promise<{ data: null; error: { message: string } }>(resolve =>
+            setTimeout(
+              () => resolve({ data: null, error: { message: "Role check timeout" } }),
+              2000,
+            ),
+          ),
+        ]);
 
-    try {
-      // Race against timeout to prevent hanging forever
-      const rolesResult = await Promise.race([
-        supabase.from("user_roles").select("role").eq("user_id", userId),
-        new Promise<{ data: null; error: { message: string } }>(resolve =>
-          setTimeout(() => resolve({ data: null, error: { message: "Role check timeout" } }), 2000),
-        ),
-      ]);
+        const { data, error } = rolesResult as any;
+        if (error) throw new Error(String((error as any).message || "Role check failed"));
 
-      const { data, error } = rolesResult as any;
-      if (error) throw new Error(String((error as any).message || "Role check failed"));
+        const dbRoles = (data || [])
+          .map((r: any) =>
+            String(r?.role ?? "")
+              .trim()
+              .toLowerCase(),
+          )
+          .filter(Boolean) as string[];
+        const roleSet = new Set<string>(dbRoles);
+        if (coreAdmin) roleSet.add("admin");
+        if (coreSuper) roleSet.add("super_admin");
+        // super_admin implies admin privileges in the app UX layer
+        if (roleSet.has("super_admin")) roleSet.add("admin");
 
-      const dbRoles = (data || [])
-        .map((r: any) => String(r?.role ?? "").trim().toLowerCase())
-        .filter(Boolean) as string[];
-      const roleSet = new Set<string>(dbRoles);
-      if (coreAdmin) roleSet.add("admin");
-      if (coreSuper) roleSet.add("super_admin");
-      // super_admin implies admin privileges in the app UX layer
-      if (roleSet.has("super_admin")) roleSet.add("admin");
+        const nextIsSuper = roleSet.has("super_admin");
+        const nextIsAdmin = roleSet.has("admin");
 
-      const nextIsSuper = roleSet.has("super_admin");
-      const nextIsAdmin = roleSet.has("admin");
+        setIsSuperAdmin(nextIsSuper);
+        setIsAdmin(nextIsAdmin);
 
-      setIsSuperAdmin(nextIsSuper);
-      setIsAdmin(nextIsAdmin);
-
-      // Persist role info so cold starts can unlock immediately (safe per-user binding).
-      writePersistedRolesPayload(userId, Array.from(roleSet.values()));
-      persistSuperAdminStatus(userId, nextIsSuper);
-    } catch (err) {
-      console.error("[auth] Failed to check super admin status:", err);
-      // On error, fall back to cached/persisted role state.
-      const persistedRoles = getPersistedRolesForUser(userId);
-      const fallbackIsSuper =
-        isSuperAdminCached(userId) || persistedRoles.includes("super_admin") || coreSuper;
-      const fallbackIsAdmin = persistedRoles.includes("admin") || coreAdmin || fallbackIsSuper;
-      setIsSuperAdmin(fallbackIsSuper);
-      setIsAdmin(fallbackIsAdmin);
-    } finally {
-      setRolesLoading(false);
-    }
-  }, []);
+        // Persist role info so cold starts can unlock immediately (safe per-user binding).
+        writePersistedRolesPayload(userId, Array.from(roleSet.values()));
+        persistSuperAdminStatus(userId, nextIsSuper);
+      } catch (err) {
+        logger.error("[auth] privileged role check failed", { userId, error: err });
+        // On error, fall back to cached/persisted role state.
+        const persistedRoles = getPersistedRolesForUser(userId);
+        const fallbackIsSuper =
+          isSuperAdminCached(userId) || persistedRoles.includes("super_admin") || coreSuper;
+        const fallbackIsAdmin = persistedRoles.includes("admin") || coreAdmin || fallbackIsSuper;
+        setIsSuperAdmin(fallbackIsSuper);
+        setIsAdmin(fallbackIsAdmin);
+      } finally {
+        setRolesLoading(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -214,7 +230,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
 
       // Load privileged status from database
-      loadPrivilegedStatus({ userId: session?.user?.id ?? null, email: session?.user?.email ?? null });
+      loadPrivilegedStatus({
+        userId: session?.user?.id ?? null,
+        email: session?.user?.email ?? null,
+      });
 
       try {
         if (event === "SIGNED_IN" && session?.user?.id) {
@@ -258,7 +277,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Persist session data for future restores
           persistUserData(result.data.session.user, wasRememberMeSelected());
           // Load privileged status from database
-          await loadPrivilegedStatus({ userId: result.data.session.user.id, email: result.data.session.user.email ?? null });
+          await loadPrivilegedStatus({
+            userId: result.data.session.user.id,
+            email: result.data.session.user.email ?? null,
+          });
         } else {
           // No session from Supabase - check if we have persisted user data
           // This can help show UI quickly while session refreshes
@@ -270,7 +292,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               if (refreshData.session && mounted) {
                 setSession(refreshData.session);
                 setUser(refreshData.session.user);
-                await loadPrivilegedStatus({ userId: refreshData.session.user.id, email: refreshData.session.user.email ?? null });
+                await loadPrivilegedStatus({
+                  userId: refreshData.session.user.id,
+                  email: refreshData.session.user.email ?? null,
+                });
                 return;
               }
             } catch {

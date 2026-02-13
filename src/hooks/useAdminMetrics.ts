@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 interface AdminMetrics {
   totalUsers: number;
@@ -76,7 +77,7 @@ export function useAdminMetrics() {
         loading: false,
       });
     } catch (err) {
-      console.error("Error fetching admin metrics:", err);
+      logger.error("[adminMetrics] failed to fetch", { error: err });
       setMetrics(prev => ({ ...prev, loading: false }));
     }
   }, []);

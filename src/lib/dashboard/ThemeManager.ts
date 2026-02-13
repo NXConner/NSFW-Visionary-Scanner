@@ -1,5 +1,6 @@
 // Premium Themes Manager
 import { v4 as uuidv4 } from "uuid";
+import { logger } from "@/lib/logger";
 
 export interface Theme {
   id: string;
@@ -297,7 +298,7 @@ export class ThemeManager {
         this.preferences = { ...this.preferences, ...JSON.parse(prefs) };
       }
     } catch (e) {
-      console.error("Failed to load themes:", e);
+      logger.error("[themes] failed to load", { error: e });
     }
   }
 
@@ -307,7 +308,7 @@ export class ThemeManager {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(customThemes));
       localStorage.setItem(PREFS_KEY, JSON.stringify(this.preferences));
     } catch (e) {
-      console.error("Failed to save themes:", e);
+      logger.error("[themes] failed to save", { error: e });
     }
   }
 
@@ -474,7 +475,7 @@ export class ThemeManager {
       this.save();
       return theme;
     } catch (e) {
-      console.error("Failed to import theme:", e);
+      logger.error("[themes] failed to import", { error: e });
       return null;
     }
   }

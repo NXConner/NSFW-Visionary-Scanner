@@ -13,6 +13,7 @@ import {
   type SequenceType,
   type SequenceCondition,
 } from "./guidanceSequences";
+import { logger } from "@/lib/logger";
 
 export type VoiceGuidanceSpeed = "slow" | "normal" | "fast";
 export type VoiceGuidanceVoice = "default" | "male" | "female";
@@ -227,7 +228,7 @@ export class VoiceGuidanceEngine {
   async speakPrompt(promptId: string, options: Partial<SpeechQueueItem> = {}): Promise<void> {
     const prompt = getPrompt(promptId);
     if (!prompt) {
-      console.warn(`Prompt not found: ${promptId}`);
+      logger.warn("[voiceGuidance] prompt not found", { promptId });
       return;
     }
 
@@ -397,7 +398,7 @@ export class VoiceGuidanceEngine {
           oscillator.stop(this.audioContext.currentTime + 0.1);
       }
     } catch (error) {
-      console.warn("Failed to play sound effect:", error);
+      logger.warn("[voiceGuidance] failed to play sound effect", { error });
     }
   }
 
