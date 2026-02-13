@@ -70,11 +70,6 @@ import {
 } from "@/components/positionsGallery/db";
 import { isHttpUrl, signAssetPaths } from "@/components/positionsGallery/privateAssets";
 import { PositionCard } from "@/components/positionsGallery/PositionCard";
-import {
-  findNsfwFallbackPositionById,
-  getNsfwFallbackCategories,
-  getNsfwFallbackPositions,
-} from "@/components/positionsGallery/nsfwFallback";
 
 // (types + mapping helpers live in `src/components/positionsGallery/*` to keep this file < 500 lines)
 
@@ -165,17 +160,9 @@ export const PositionsGallery = ({
   const loadCategories = useCallback(async () => {
     try {
       const cats = await fetchPositionCategories();
-      if (cats.length > 0) {
-        setAllCategories(cats);
-      } else {
-        // Fallback: derive categories from GitHub catalog
-        const fallbackCats = await getNsfwFallbackCategories();
-        if (fallbackCats.length > 0) setAllCategories(fallbackCats);
-      }
+      setAllCategories(cats);
     } catch {
-      // Fallback to GitHub catalog on error
-      const fallbackCats = await getNsfwFallbackCategories();
-      if (fallbackCats.length > 0) setAllCategories(fallbackCats);
+      setAllCategories([]);
     }
   }, []);
 
@@ -190,51 +177,6 @@ export const PositionsGallery = ({
         selectedCategory,
         selectedDifficulty,
       });
-
-      // If database is empty, use pre-generated GitHub catalog
-      if (rows.length === 0 && count === 0 && page === 0) {
-        const fallbackPositions = await getNsfwFallbackPositions();
-
-        // Apply filters to GitHub positions
-        let filtered = fallbackPositions;
-
-        // Filter by category
-        if (selectedCategory !== "all") {
-          filtered = filtered.filter(p => p.category === selectedCategory);
-        }
-
-        // Filter by difficulty
-        if (selectedDifficulty !== "all") {
-          const diffMap: Record<string, Position["difficulty"][]> = {
-            easy: ["easy"],
-            medium: ["medium"],
-            hard: ["hard"],
-            expert: ["expert"],
-          };
-          const allowed = diffMap[selectedDifficulty] || [];
-          filtered = filtered.filter(p => allowed.includes(p.difficulty));
-        }
-
-        // Filter by search term
-        const term = searchTerm.trim().toLowerCase();
-        if (term) {
-          filtered = filtered.filter(
-            p =>
-              p.name.toLowerCase().includes(term) ||
-              p.description.toLowerCase().includes(term) ||
-              p.tags.some(tag => tag.toLowerCase().includes(term)),
-          );
-        }
-
-        // Apply pagination
-        const from = page * pageSize;
-        const paged = filtered.slice(from, from + pageSize);
-
-        setPositions(paged);
-        setTotalCount(filtered.length);
-        setPositionsLoading(false);
-        return;
-      }
 
       const deviceId = getDeviceId();
       const devicePlatform = getDevicePlatform();
@@ -314,36 +256,10 @@ export const PositionsGallery = ({
         if (Object.keys(next).length > 0) setSignedAssetUrls(prev => ({ ...prev, ...next }));
       }
     } catch (e) {
-      // On error, try falling back to GitHub catalog
-      try {
-        let filtered = await getNsfwFallbackPositions();
-
-        if (selectedCategory !== "all") {
-          filtered = filtered.filter(p => p.category === selectedCategory);
-        }
-
-        const term = searchTerm.trim().toLowerCase();
-        if (term) {
-          filtered = filtered.filter(
-            p =>
-              p.name.toLowerCase().includes(term) ||
-              p.description.toLowerCase().includes(term) ||
-              p.tags.some(tag => tag.toLowerCase().includes(term)),
-          );
-        }
-
-        const from = page * pageSize;
-        const paged = filtered.slice(from, from + pageSize);
-
-        setPositions(paged);
-        setTotalCount(filtered.length);
-        setPositionsError(null);
-      } catch {
-        const msg = e instanceof Error ? e.message : "Failed to load positions";
-        setPositionsError(msg);
-        setPositions([]);
-        setTotalCount(0);
-      }
+      const msg = e instanceof Error ? e.message : "Failed to load positions";
+      setPositionsError(msg);
+      setPositions([]);
+      setTotalCount(0);
     } finally {
       setPositionsLoading(false);
     }
@@ -355,24 +271,9 @@ export const PositionsGallery = ({
       if (!id) return;
       setPositionsError(null);
 
-      // First check if it's a GitHub-based position ID (contains repo path)
-      if (id.includes("/") || id.includes("@")) {
-        const fallbackPos = await findNsfwFallbackPositionById(id);
-        if (fallbackPos) {
-          setSelectedPosition(fallbackPos);
-          return;
-        }
-      }
-
       try {
         const row = await fetchPositionById(id);
         if (!row) {
-          // Fallback: try GitHub catalog
-          const fallbackPos = await findNsfwFallbackPositionById(id);
-          if (fallbackPos) {
-            setSelectedPosition(fallbackPos);
-            return;
-          }
           setPositionsError("Position not found");
           return;
         }
