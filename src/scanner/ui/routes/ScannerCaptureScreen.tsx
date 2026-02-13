@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -30,7 +29,6 @@ import {
   Vibrate,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { DetectionLandmark } from "@/lib/ar/measurementCalculations";
 import type { AROverlaySensitivity } from "@/contexts/settings/types";
 
 export function ScannerCaptureScreen(): React.ReactElement {
@@ -55,14 +53,6 @@ export function ScannerCaptureScreen(): React.ReactElement {
       // Could log quality changes for analytics
     },
   });
-
-  // Mock landmarks for demo - in production these would come from object detection
-  const [mockLandmarks] = useState<DetectionLandmark[]>([
-    { id: "1", point: { x: 150, y: 200 }, confidence: 0.95, type: "reference" },
-    { id: "2", point: { x: 250, y: 200 }, confidence: 0.88, type: "measurement" },
-    { id: "3", point: { x: 250, y: 400 }, confidence: 0.92, type: "measurement" },
-    { id: "4", point: { x: 200, y: 300 }, confidence: 0.85, type: "anchor" },
-  ]);
 
   // Handle AR setting changes
   const handleSettingChange = useCallback(
@@ -275,7 +265,6 @@ export function ScannerCaptureScreen(): React.ReactElement {
               width={200}
               height={280}
               arMeasurement={arMeasurement}
-              landmarks={mockLandmarks}
               className="opacity-90"
             />
             <div className="absolute bottom-2 left-2 text-xs text-white/70">AR Preview</div>
