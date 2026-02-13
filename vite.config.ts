@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
@@ -159,6 +159,20 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
+    globals: true,
+    css: true,
+    environmentOptions: {
+      jsdom: {
+        url: "http://localhost/",
+      },
+    },
+    clearMocks: true,
+    restoreMocks: true,
+    mockReset: true,
+  },
   build: {
     // Production optimizations
     // WebKit/Safari stability: avoid 'esnext' in production builds.
@@ -174,7 +188,7 @@ export default defineConfig(({ mode }) => ({
       output: {
         // Manual chunks split heavy dependencies to reduce main bundle size.
         // Isolated by dependency tree to avoid cyclic cross-chunk imports.
-        manualChunks: (id) => {
+        manualChunks: id => {
           if (id.includes("node_modules")) {
             // Heavy visualization libraries (dynamically imported via LazyCharts/LazyModel3DViewer)
             if (id.includes("recharts") || id.includes("d3-")) return "vendor-charts";
