@@ -31,6 +31,16 @@ test-results/
 # Android local configuration (contains machine-specific paths)
 android/local.properties
 
+# Android/Gradle generated caches and intermediates (do not commit)
+# Keep final APK/AAB artifacts trackable via the allowlist below.
+android/.gradle/
+android/**/.gradle/
+android/**/build/intermediates/
+android/**/build/generated/
+android/**/build/tmp/
+android/**/build/kotlin/
+android/**/build/reports/
+
 # Android Gradle properties (base config tracked; secrets local)
 android/gradle.properties.local
 android/gradle.properties.user
