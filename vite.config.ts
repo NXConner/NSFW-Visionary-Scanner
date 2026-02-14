@@ -199,8 +199,11 @@ export default defineConfig(({ mode }) => ({
             if (id.includes("@radix-ui")) return "vendor-ui";
             if (id.includes("framer-motion")) return "vendor-motion";
             // Core React ecosystem
+            // Note: react-dom check must come before react check to avoid matching react-dom with the react pattern
             if (id.includes("react-dom")) return "vendor-react";
             if (id.includes("react-router")) return "vendor-router";
+            // Put core react in vendor-react chunk (after react-dom and react-router checks)
+            if (id.includes("/react/") || id.includes("node_modules/react/")) return "vendor-react";
             // Supabase
             if (id.includes("@supabase")) return "vendor-supabase";
             // Stripe

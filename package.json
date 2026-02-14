@@ -188,5 +188,9 @@
     "*.{ts,tsx,js,jsx,css,md,json}": [
       "prettier --write"
     ]
+  },
+  "overrides": {
+    "three": "$three",
+    "three-mesh-bvh": "0.8.3"
   }
 }
