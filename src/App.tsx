@@ -18,6 +18,7 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { EmailVerificationGate } from "@/components/EmailVerificationGate";
 import { SkipLink, ColorBlindFilters } from "@/components/accessibility";
+import { RequireAdmin } from "@/components/auth";
 import { lazy, Suspense, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -280,17 +281,87 @@ const AppContent = () => {
           ) : null}
           {/* Backward-compatible typo alias: /afmin/* -> /admin/* */}
           <Route path="/afmin/*" element={<LegacyAdminRedirect />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/dlc" element={<AdminDLC />} />
-          <Route path="/admin/nsfw" element={<AdminNsfwContent />} />
-          <Route path="/admin/commerce" element={<AdminCommerce />} />
+          <Route
+            path="/admin"
+            element={
+              <RequireAdmin>
+                <AdminDashboard />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/dlc"
+            element={
+              <RequireAdmin>
+                <AdminDLC />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/nsfw"
+            element={
+              <RequireAdmin>
+                <AdminNsfwContent />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/commerce"
+            element={
+              <RequireAdmin>
+                <AdminCommerce />
+              </RequireAdmin>
+            }
+          />
           {/* Admin deep-links (prevent falling into generic tab redirect) */}
-          <Route path="/admin/users" element={<AdminDashboard initialSection="users" />} />
-          <Route path="/admin/users/add" element={<AdminDashboard initialSection="users" />} />
-          <Route path="/admin/content" element={<AdminDashboard initialSection="content" />} />
-          <Route path="/admin/analytics" element={<AdminDashboard initialSection="analytics" />} />
-          <Route path="/admin/settings" element={<AdminDashboard initialSection="settings" />} />
-          <Route path="/admin/database" element={<AdminDashboard initialSection="database" />} />
+          <Route
+            path="/admin/users"
+            element={
+              <RequireAdmin>
+                <AdminDashboard initialSection="users" />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/users/add"
+            element={
+              <RequireAdmin>
+                <AdminDashboard initialSection="users" />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/content"
+            element={
+              <RequireAdmin>
+                <AdminDashboard initialSection="content" />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/analytics"
+            element={
+              <RequireAdmin>
+                <AdminDashboard initialSection="analytics" />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/settings"
+            element={
+              <RequireAdmin>
+                <AdminDashboard initialSection="settings" />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/database"
+            element={
+              <RequireAdmin>
+                <AdminDashboard initialSection="database" />
+              </RequireAdmin>
+            }
+          />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/terms-of-service" element={<TermsOfServicePage />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />

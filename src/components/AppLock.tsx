@@ -5,6 +5,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { toast } from "sonner";
 import { Lock, Fingerprint, Shield, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRoles } from "@/hooks/useUserRoles";
 
 interface AppLockProps {
   children: React.ReactNode;
@@ -21,12 +22,22 @@ interface LockSettings {
 }
 
 export const AppLock = ({ children }: AppLockProps) => {
-  const { isSuperAdmin, hasFullAccess, allFeaturesUnlocked, loading: authLoading, rolesLoading } = useAuth();
+  const {
+    isSuperAdmin,
+    hasFullAccess,
+    allFeaturesUnlocked,
+    loading: authLoading,
+    rolesLoading,
+  } = useAuth();
+  const { isAdmin, isSuperAdmin: isSuperAdminRole } = useUserRoles();
   const [isLocked, setIsLocked] = useState(false);
   const [enteredPin, setEnteredPin] = useState("");
   const [attempts, setAttempts] = useState(0);
   const [lockSettings, setLockSettings] = useState<LockSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const isPrivileged =
+    isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole;
 
   // Load settings on mount - FAST with 500ms fallback
   useEffect(() => {
@@ -57,13 +68,13 @@ export const AppLock = ({ children }: AppLockProps) => {
     const timeout = setTimeout(() => setRolesTimeout(true), 3000);
     return () => clearTimeout(timeout);
   }, []);
-  
+
   // Use timeout override if rolesLoading is taking too long
   const effectiveRolesLoading = rolesLoading && !rolesTimeout;
 
-  // Super admin bypass: never block app access with local app lock.
+  // Privileged bypass (admin/super_admin): never block app access with local app lock.
   useEffect(() => {
-    if (!(isSuperAdmin || hasFullAccess || allFeaturesUnlocked)) return;
+    if (!isPrivileged) return;
     setIsLocked(false);
     setEnteredPin("");
     setAttempts(0);
@@ -72,11 +83,11 @@ export const AppLock = ({ children }: AppLockProps) => {
     } catch {
       /* ignore */
     }
-  }, [isSuperAdmin, hasFullAccess, allFeaturesUnlocked]);
+  }, [isPrivileged]);
 
   // Auto-lock timer
   useEffect(() => {
-    if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked) return;
+    if (isPrivileged) return;
     if (!lockSettings?.enabled || !lockSettings.autoLockMinutes) return;
 
     let timeout: NodeJS.Timeout;
@@ -105,11 +116,11 @@ export const AppLock = ({ children }: AppLockProps) => {
       clearTimeout(timeout);
       events.forEach(event => window.removeEventListener(event, resetTimer));
     };
-  }, [allFeaturesUnlocked, hasFullAccess, isSuperAdmin, lockSettings?.autoLockMinutes, lockSettings?.enabled]);
+  }, [isPrivileged, lockSettings?.autoLockMinutes, lockSettings?.enabled]);
 
   // Visibility change - lock when tab hidden
   useEffect(() => {
-    if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked) return;
+    if (isPrivileged) return;
     if (!lockSettings?.enabled) return;
 
     const handleVisibilityChange = () => {
@@ -125,7 +136,7 @@ export const AppLock = ({ children }: AppLockProps) => {
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [allFeaturesUnlocked, hasFullAccess, isSuperAdmin, lockSettings?.enabled]);
+  }, [isPrivileged, lockSettings?.enabled]);
 
   const handleBiometricUnlock = async () => {
     if (!window.PublicKeyCredential) {
@@ -203,8 +214,8 @@ export const AppLock = ({ children }: AppLockProps) => {
     );
   }
 
-  // Super admin bypass: always allow access (checked AFTER loading completes)
-  if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked) {
+  // Privileged bypass: always allow access (checked AFTER loading completes)
+  if (isPrivileged) {
     return <>{children}</>;
   }
 

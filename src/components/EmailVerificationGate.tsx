@@ -6,6 +6,7 @@ import { Mail, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 import { AppLoadingScreen } from "./AppLoadingScreen";
+import { useUserRoles } from "@/hooks/useUserRoles";
 
 interface EmailVerificationGateProps {
   children: React.ReactNode;
@@ -16,7 +17,9 @@ export const EmailVerificationGate = ({
   children,
   requireVerification = true,
 }: EmailVerificationGateProps) => {
-  const { user, loading, isSuperAdmin, hasFullAccess, allFeaturesUnlocked, rolesLoading } = useAuth();
+  const { user, loading, isSuperAdmin, hasFullAccess, allFeaturesUnlocked, rolesLoading } =
+    useAuth();
+  const { isAdmin, isSuperAdmin: isSuperAdminRole, isLoading: rolesHookLoading } = useUserRoles();
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(true);
 
@@ -87,7 +90,7 @@ export const EmailVerificationGate = ({
   }, []);
 
   // Combined loading state for access checks
-  const stillCheckingAccess = loading || rolesLoading || checking;
+  const stillCheckingAccess = loading || rolesLoading || rolesHookLoading || checking;
 
   // Show loading while checking (auth, roles, or verification)
   if (stillCheckingAccess) {
@@ -100,7 +103,7 @@ export const EmailVerificationGate = ({
   }
 
   // Super admin bypass: never block on email verification (checked AFTER loading completes)
-  if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked) {
+  if (isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole) {
     return <>{children}</>;
   }
 
