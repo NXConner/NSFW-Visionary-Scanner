@@ -25,7 +25,8 @@ export async function trackSatisfaction(
       satisfaction_factors: data?.satisfaction_factors ?? null,
       dissatisfaction_factors: data?.dissatisfaction_factors ?? null,
       activity_type: data?.activity_type ?? null,
-      partner_present: data?.partner_present ?? null,
+      // DB schema treats this as boolean (unknown -> false)
+      partner_present: Boolean(data?.partner_present),
       notes: data?.notes ?? null,
     };
 

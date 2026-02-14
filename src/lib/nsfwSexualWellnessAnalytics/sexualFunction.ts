@@ -25,7 +25,8 @@ export async function trackSexualFunction(
       stamina_minutes: data.stamina_minutes ?? null,
       control_level: data.control_level ?? null,
       recovery_time_minutes: data.recovery_time_minutes ?? null,
-      partner_present: data.partner_present ?? null,
+      // DB schema treats this as boolean (unknown -> false)
+      partner_present: Boolean(data.partner_present),
       environment: data.environment ?? null,
       factors_affecting: data.factors_affecting ?? null,
       notes: data.notes ?? null,
