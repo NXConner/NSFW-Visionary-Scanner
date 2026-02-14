@@ -66,8 +66,7 @@ export default function GrowersVsShowersPage() {
               This feature is currently{" "}
               <span className="font-medium">restricted to Super Admin</span>.
               <div className="mt-2 text-xs text-muted-foreground">
-                If you are the super admin, sign in as{" "}
-                <span className="font-mono">n8ter8@gmail.com</span> and refresh.
+                If you are the super admin, sign in with your super admin account and refresh.
               </div>
             </CardContent>
           </Card>

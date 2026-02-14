@@ -1,6 +1,7 @@
 export const APP_NAME = "MorphoScan Pro";
 
-export const DEFAULT_CONTACT_EMAIL = "n8ter8@gmail.com";
+// Fallback only: set VITE_SUPPORT_CONTACT_EMAIL / VITE_PRIVACY_CONTACT_EMAIL in real environments.
+export const DEFAULT_CONTACT_EMAIL = "support@yourdomain.invalid";
 
 export const SUPPORT_CONTACT_EMAIL =
   (import.meta.env.VITE_SUPPORT_CONTACT_EMAIL as string | undefined) ??
