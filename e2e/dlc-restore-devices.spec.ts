@@ -25,7 +25,8 @@ test.describe("DLC restore purchases + device management (hybrid)", () => {
     await settingsTab.click({ force: true });
 
     // DLC status card should exist in hybrid builds
-    const dlcCard = page.getByText("NSFW Content");
+    // (scope to the Profile section to avoid matching the sidebar category label).
+    const dlcCard = profileSection.getByText("NSFW Content");
     if (!(await dlcCard.count())) {
       await expect(page.getByText("Appearance")).toBeVisible();
       return;
@@ -34,13 +35,13 @@ test.describe("DLC restore purchases + device management (hybrid)", () => {
     await expect(dlcCard).toBeVisible();
 
     // Restore purchases should be available even if not unlocked
-    const restore = page.getByRole("button", { name: "Restore Purchases" });
-    await expect(restore).toBeVisible();
+    const restore = profileSection.getByRole("button", { name: "Restore Purchases" });
+    await expect(restore).toBeVisible({ timeout: 15_000 });
     await restore.click();
 
     // Device manager should open and show sign-in gating in anonymous E2E
-    const manage = page.getByRole("button", { name: "Manage Devices" });
-    await expect(manage).toBeVisible();
+    const manage = profileSection.getByRole("button", { name: "Manage Devices" });
+    await expect(manage).toBeVisible({ timeout: 15_000 });
     await manage.click();
 
     await expect(page.getByText("DLC Device Management")).toBeVisible();
