@@ -15,7 +15,8 @@ type ReqBody =
       packageId: string;
       stripePriceId?: string | null;
       stripeProductId?: string | null;
-    };
+    }
+  | { action: "set_active"; packageId: string; isActive: boolean };
 
 function normalizeStripeId(v: unknown): string | null {
   const s = String(v ?? "").trim();
@@ -104,9 +105,13 @@ serve(async req => {
         return {
           packageId,
           displayName,
+          packageType: String(p.package_type ?? p.packageType ?? p.packageTypeRaw ?? ""),
           priceUsd,
           priceType,
           isActive: Boolean(p.is_active ?? true),
+          isFeatured: Boolean(p.is_featured ?? false),
+          displayOrder: Number(p.display_order ?? p.sort_order ?? 0),
+          contentRating: String(p.content_rating ?? p.contentRating ?? "18+"),
           stripePriceId,
           stripeProductId,
         };
@@ -151,6 +156,29 @@ serve(async req => {
           stripe_product_id: stripeProductId,
           updated_at: new Date().toISOString(),
         })
+        .eq("package_id", packageId);
+
+      if (upErr) throw upErr;
+
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (body.action === "set_active") {
+      const packageId = String(body.packageId || "").trim();
+      if (!packageId) {
+        return new Response(JSON.stringify({ error: "Missing packageId" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const isActive = Boolean(body.isActive);
+      const { error: upErr } = await supabase
+        .from("dlc_packages")
+        .update({ is_active: isActive, updated_at: new Date().toISOString() })
         .eq("package_id", packageId);
 
       if (upErr) throw upErr;

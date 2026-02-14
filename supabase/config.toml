@@ -4,6 +4,10 @@ project_id = "xbhjmuaxjpxqzrngubzo"
 enabled = true
 verify_jwt = true
 
+[functions.admin-dlc-promos]
+enabled = true
+verify_jwt = true
+
 [functions.admin-beta-access]
 enabled = true
 verify_jwt = true
