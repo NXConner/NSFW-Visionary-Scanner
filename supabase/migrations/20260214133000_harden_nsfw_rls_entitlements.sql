@@ -19,6 +19,10 @@ ALTER TABLE public.dlc_age_verifications
 ALTER TABLE public.dlc_age_verifications
   ADD COLUMN IF NOT EXISTS terms_accepted BOOLEAN DEFAULT false;
 
+-- Older schemas may not include expires_at; we use it for optional re-verification cadence.
+ALTER TABLE public.dlc_age_verifications
+  ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
+
 -- Helper: age verification + adult consent (self-declared is supported by app).
 CREATE OR REPLACE FUNCTION public.is_nsfw_age_verified(_user_id uuid)
 RETURNS boolean

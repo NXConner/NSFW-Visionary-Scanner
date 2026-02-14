@@ -3,6 +3,86 @@
 -- BATCH 2 (retry): Partner, Wellness, Diary, Messaging, Predictive, Export/Import
 -- ============================================================================
 
+-- Schema-tolerant guard:
+-- Many of the tables in this batch may already exist in production with partial/older schemas.
+-- Since we use CREATE TABLE IF NOT EXISTS, columns might be missing. We add the specific
+-- columns referenced by the RLS policies below so policy creation doesn't fail.
+DO $$
+DECLARE
+  t text;
+BEGIN
+  -- Tables whose policies in this migration reference `user_id`
+  FOREACH t IN ARRAY ARRAY[
+    'sexual_wellness_entries',
+    'sexual_wellness_goals',
+    'sexual_wellness_patterns',
+    'sexual_wellness_scores',
+    'partner_data_permissions',
+    'partner_thought_ping_reactions',
+    'partner_sync_preferences',
+    'partner_sync_consent',
+    'partner_sync_events',
+    'partner_sync_audit_log',
+    'partner_position_activity_log',
+    'ai_conversation_sessions',
+    'ai_conversation_messages',
+    'ai_contextual_memory',
+    'ai_proactive_suggestions',
+    'two_factor_authentication',
+    'support_chat_sessions',
+    'expert_qa',
+    'expert_ratings',
+    'consultation_bookings',
+    'workshop_bookings',
+    'security_alerts',
+    'privacy_controls',
+    'login_history',
+    'enhanced_diary_entries',
+    'diary_search_index',
+    'medication_schedules',
+    'medication_log',
+    'diary_analytics',
+    'group_chat_members',
+    'export_jobs',
+    'import_jobs',
+    'cloud_service_connections',
+    'api_keys',
+    'support_tickets',
+    'predictive_models',
+    'long_term_health_forecasts',
+    'growth_predictions',
+    'health_risk_predictions',
+    'routine_timing_predictions',
+    'outcome_simulations'
+  ]
+  LOOP
+    IF to_regclass('public.' || t) IS NOT NULL THEN
+      EXECUTE format('ALTER TABLE public.%I ADD COLUMN IF NOT EXISTS user_id uuid', t);
+    END IF;
+  END LOOP;
+
+  -- Additional policy columns used by this batch
+  IF to_regclass('public.partner_sync_abuse_signals') IS NOT NULL THEN
+    EXECUTE 'ALTER TABLE public.partner_sync_abuse_signals ADD COLUMN IF NOT EXISTS reporter_id uuid';
+  END IF;
+  IF to_regclass('public.support_chat_messages') IS NOT NULL THEN
+    EXECUTE 'ALTER TABLE public.support_chat_messages ADD COLUMN IF NOT EXISTS sender_id uuid';
+  END IF;
+  IF to_regclass('public.group_chats') IS NOT NULL THEN
+    EXECUTE 'ALTER TABLE public.group_chats ADD COLUMN IF NOT EXISTS created_by uuid';
+  END IF;
+  IF to_regclass('public.group_chat_messages') IS NOT NULL THEN
+    EXECUTE 'ALTER TABLE public.group_chat_messages ADD COLUMN IF NOT EXISTS sender_id uuid';
+  END IF;
+  IF to_regclass('public.direct_messages') IS NOT NULL THEN
+    EXECUTE 'ALTER TABLE public.direct_messages ADD COLUMN IF NOT EXISTS sender_id uuid';
+    EXECUTE 'ALTER TABLE public.direct_messages ADD COLUMN IF NOT EXISTS recipient_id uuid';
+  END IF;
+  IF to_regclass('public.support_ticket_messages') IS NOT NULL THEN
+    EXECUTE 'ALTER TABLE public.support_ticket_messages ADD COLUMN IF NOT EXISTS sender_id uuid';
+  END IF;
+END $$;
+
 -- Sexual Wellness
 CREATE TABLE IF NOT EXISTS public.sexual_wellness_entries (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -34,11 +114,15 @@ CREATE POLICY "Users manage own scores" ON public.sexual_wellness_scores FOR ALL
 
 -- Partner Sync extended tables
 CREATE TABLE IF NOT EXISTS public.partner_data_permissions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, partner_id uuid, permission_type text NOT NULL, is_granted boolean DEFAULT false, created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now());
+ALTER TABLE public.partner_data_permissions ADD COLUMN IF NOT EXISTS user_id uuid;
 ALTER TABLE public.partner_data_permissions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "perm_own" ON public.partner_data_permissions;
 CREATE POLICY "perm_own" ON public.partner_data_permissions FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS public.partner_thought_ping_reactions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), ping_id uuid, user_id uuid NOT NULL, reaction_type text NOT NULL, created_at timestamptz DEFAULT now());
+ALTER TABLE public.partner_thought_ping_reactions ADD COLUMN IF NOT EXISTS user_id uuid;
 ALTER TABLE public.partner_thought_ping_reactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "react_own" ON public.partner_thought_ping_reactions;
 CREATE POLICY "react_own" ON public.partner_thought_ping_reactions FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS public.partner_thought_ping_templates (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), template_text text NOT NULL, category text, is_default boolean DEFAULT false, order_index int DEFAULT 0, created_at timestamptz DEFAULT now());
@@ -50,23 +134,33 @@ ALTER TABLE public.partner_quick_reply_templates ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "read_reply_tpl" ON public.partner_quick_reply_templates FOR SELECT USING (true);
 
 CREATE TABLE IF NOT EXISTS public.partner_sync_preferences (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL UNIQUE, sync_enabled boolean DEFAULT true, notification_enabled boolean DEFAULT true, auto_share_enabled boolean DEFAULT false, preferences jsonb DEFAULT '{}', created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now());
+ALTER TABLE public.partner_sync_preferences ADD COLUMN IF NOT EXISTS user_id uuid;
 ALTER TABLE public.partner_sync_preferences ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "sync_pref_own" ON public.partner_sync_preferences;
 CREATE POLICY "sync_pref_own" ON public.partner_sync_preferences FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS public.partner_sync_consent (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, partner_id uuid, consent_type text NOT NULL, is_granted boolean DEFAULT false, granted_at timestamptz, revoked_at timestamptz, created_at timestamptz DEFAULT now());
+ALTER TABLE public.partner_sync_consent ADD COLUMN IF NOT EXISTS user_id uuid;
 ALTER TABLE public.partner_sync_consent ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "consent_own" ON public.partner_sync_consent;
 CREATE POLICY "consent_own" ON public.partner_sync_consent FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS public.partner_sync_events (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, partner_id uuid, event_type text NOT NULL, event_data jsonb, created_at timestamptz DEFAULT now());
+ALTER TABLE public.partner_sync_events ADD COLUMN IF NOT EXISTS user_id uuid;
 ALTER TABLE public.partner_sync_events ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "sync_ev_own" ON public.partner_sync_events;
 CREATE POLICY "sync_ev_own" ON public.partner_sync_events FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS public.partner_sync_audit_log (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, action text NOT NULL, details jsonb, created_at timestamptz DEFAULT now());
+ALTER TABLE public.partner_sync_audit_log ADD COLUMN IF NOT EXISTS user_id uuid;
 ALTER TABLE public.partner_sync_audit_log ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "audit_own" ON public.partner_sync_audit_log;
 CREATE POLICY "audit_own" ON public.partner_sync_audit_log FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS public.partner_sync_abuse_signals (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), reporter_id uuid NOT NULL, reported_user_id uuid, signal_type text NOT NULL, description text, status text DEFAULT 'pending', created_at timestamptz DEFAULT now());
+ALTER TABLE public.partner_sync_abuse_signals ADD COLUMN IF NOT EXISTS reporter_id uuid;
 ALTER TABLE public.partner_sync_abuse_signals ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "abuse_own" ON public.partner_sync_abuse_signals;
 CREATE POLICY "abuse_own" ON public.partner_sync_abuse_signals FOR ALL USING (auth.uid() = reporter_id) WITH CHECK (auth.uid() = reporter_id);
 
 CREATE TABLE IF NOT EXISTS public.partner_sync_retention_policies (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), policy_name text NOT NULL, retention_days int DEFAULT 30, data_type text, is_active boolean DEFAULT true, created_at timestamptz DEFAULT now());
@@ -74,7 +168,9 @@ ALTER TABLE public.partner_sync_retention_policies ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "read_retention" ON public.partner_sync_retention_policies FOR SELECT USING (true);
 
 CREATE TABLE IF NOT EXISTS public.partner_position_activity_log (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, position_id uuid, activity_type text, notes text, created_at timestamptz DEFAULT now());
+ALTER TABLE public.partner_position_activity_log ADD COLUMN IF NOT EXISTS user_id uuid;
 ALTER TABLE public.partner_position_activity_log ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "pos_act_own" ON public.partner_position_activity_log;
 CREATE POLICY "pos_act_own" ON public.partner_position_activity_log FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- AI Conversation
