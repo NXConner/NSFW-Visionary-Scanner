@@ -48,13 +48,12 @@ serve(async req => {
     // Super-admin bypass (for internal testing / full-access accounts)
     // - Allows signing URLs without DLC license ownership and without age verification rows.
     // - Still enforces asset namespace constraints and uses signed URLs (no public bucket access).
-    const email = String(user.email || "").toLowerCase();
     const { data: roleRows } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id);
     const roles = (roleRows || []).map((r: any) => String(r.role || ""));
-    const isSuperAdmin = roles.includes("super_admin") || email === "n8ter8@gmail.com";
+    const isSuperAdmin = roles.includes("super_admin");
 
     const body = (await req.json()) as ReqBody;
     const packageId = String(body.packageId || "");
