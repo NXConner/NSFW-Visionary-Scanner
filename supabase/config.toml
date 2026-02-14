@@ -12,6 +12,10 @@ verify_jwt = true
 enabled = true
 verify_jwt = true
 
+[functions.admin-licenses]
+enabled = true
+verify_jwt = true
+
 [functions.dispatch-broadcast-notifications]
 enabled = true
 verify_jwt = false
