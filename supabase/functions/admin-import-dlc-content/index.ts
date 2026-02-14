@@ -216,7 +216,8 @@ serve(async req => {
           animation_url: it.animation_url ?? null,
           sort_order: Number.isFinite(Number(it.sort_order)) ? Number(it.sort_order) : 0,
           is_premium: Boolean(it.is_premium ?? false),
-          requires_dlc: Boolean(it.requires_dlc ?? false),
+          // Default to gated content unless explicitly marked as free.
+          requires_dlc: it.requires_dlc == null ? true : Boolean(it.requires_dlc),
           is_active: it.is_active == null ? true : Boolean(it.is_active),
           updated_at: new Date().toISOString(),
         };
@@ -271,7 +272,8 @@ serve(async req => {
           prerequisites: safeArray(it.prerequisites),
           is_premium: Boolean(it.is_premium ?? false),
           is_featured: Boolean(it.is_featured ?? false),
-          requires_dlc: Boolean(it.requires_dlc ?? false),
+          // Default to gated content unless explicitly marked as free.
+          requires_dlc: it.requires_dlc == null ? true : Boolean(it.requires_dlc),
           dlc_pack_id: it.dlc_pack_id ?? null,
           is_approved: it.is_approved == null ? false : Boolean(it.is_approved),
           is_active: it.is_active == null ? true : Boolean(it.is_active),
