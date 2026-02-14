@@ -82,11 +82,13 @@ ios/App/App/GoogleService-Info.plist
 .env.production.local
 .env.development.local
 
-# Build artifacts are intentionally tracked (APK distribution, assets, etc.)
-!**/*.apk
-!**/*.aab
+# Android build outputs (binary artifacts; generate locally/CI, never commit)
+android/**/build/outputs/apk/
+android/**/build/outputs/bundle/
 
-# Gradle cache and build files are intentionally tracked
+# Build artifacts (never commit)
+*.apk
+*.aab
 
 # Local comparison clones (do not commit)
 external-repos/
