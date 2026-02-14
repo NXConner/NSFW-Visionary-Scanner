@@ -7,32 +7,35 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import {
-  Palette,
-  Sun,
-  Moon,
-  Contrast,
-  Camera,
-  Sparkles,
-} from "lucide-react";
+import { Palette, Sun, Moon, Contrast, Camera, Sparkles } from "lucide-react";
+import type { PresetFilter, PresetState } from "./PresetsFiltersPanel.model";
+import { defaultPresetState } from "./PresetsFiltersPanel.model";
 
-export interface PresetFilter {
-  key: string;
-  label: string;
-  icon: React.ReactNode;
-  category: "basic" | "artistic" | "mood";
-}
-
-export const PRESET_FILTERS: PresetFilter[] = [
+const PRESET_FILTERS: PresetFilter[] = [
   // Basic
   { key: "blackAndWhite", label: "B&W", icon: <Moon className="w-4 h-4" />, category: "basic" },
   { key: "hdr", label: "HDR", icon: <Sun className="w-4 h-4" />, category: "basic" },
-  { key: "highContrast", label: "High Contrast", icon: <Contrast className="w-4 h-4" />, category: "basic" },
-  { key: "lowContrast", label: "Low Contrast", icon: <Contrast className="w-4 h-4" />, category: "basic" },
+  {
+    key: "highContrast",
+    label: "High Contrast",
+    icon: <Contrast className="w-4 h-4" />,
+    category: "basic",
+  },
+  {
+    key: "lowContrast",
+    label: "Low Contrast",
+    icon: <Contrast className="w-4 h-4" />,
+    category: "basic",
+  },
   // Artistic
   { key: "vintage", label: "Vintage", icon: <Camera className="w-4 h-4" />, category: "artistic" },
   { key: "sepia", label: "Sepia", icon: <Palette className="w-4 h-4" />, category: "artistic" },
-  { key: "polaroid", label: "Polaroid", icon: <Camera className="w-4 h-4" />, category: "artistic" },
+  {
+    key: "polaroid",
+    label: "Polaroid",
+    icon: <Camera className="w-4 h-4" />,
+    category: "artistic",
+  },
   { key: "filmNoir", label: "Film Noir", icon: <Moon className="w-4 h-4" />, category: "artistic" },
   // Mood
   { key: "warm", label: "Warm", icon: <Sun className="w-4 h-4" />, category: "mood" },
@@ -40,16 +43,6 @@ export const PRESET_FILTERS: PresetFilter[] = [
   { key: "dramatic", label: "Dramatic", icon: <Contrast className="w-4 h-4" />, category: "mood" },
   { key: "fade", label: "Fade", icon: <Palette className="w-4 h-4" />, category: "mood" },
 ];
-
-export interface PresetState {
-  activePreset: string | null;
-  intensity: number;
-}
-
-export const defaultPresetState: PresetState = {
-  activePreset: null,
-  intensity: 100,
-};
 
 interface Props {
   state: PresetState;

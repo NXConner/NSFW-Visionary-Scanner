@@ -3,6 +3,69 @@
 -- BATCH 3: Health Education, Progress Sharing, Routines, Premium, Marketplace, Dates, DLC misc
 -- ============================================================================
 
+-- Schema-tolerant guard:
+-- Some tables in this batch may already exist with partial/older schemas.
+-- Add columns referenced by RLS policies below so policy creation doesn't fail.
+DO $$
+DECLARE
+  t text;
+BEGIN
+  -- Tables whose policies in this migration reference `user_id`
+  FOREACH t IN ARRAY ARRAY[
+    'user_assessment_results',
+    'screening_reminders',
+    'learning_course_reviews',
+    'progress_shares',
+    'progress_share_interactions',
+    'challenge_participants',
+    'challenge_checkins',
+    'leaderboard_entries',
+    'adaptive_routines',
+    'routine_analytics',
+    'shared_routines',
+    'rest_day_recommendations',
+    'premium_content_purchases',
+    'premium_content_reviews',
+    'premium_content_wishlist',
+    'marketplace_purchases',
+    'intimate_date_reminders',
+    'intimate_date_reflections',
+    'dlc_wishlist_packages',
+    'dlc_promo_redemptions',
+    'prostate_health',
+    'testicular_health',
+    'sexual_health_metrics',
+    'hormone_levels',
+    'urinary_health',
+    'health_alerts',
+    'health_risk_factors'
+  ]
+  LOOP
+    IF to_regclass('public.' || t) IS NOT NULL THEN
+      EXECUTE format('ALTER TABLE public.%I ADD COLUMN IF NOT EXISTS user_id uuid', t);
+    END IF;
+  END LOOP;
+
+  -- Columns referenced by SELECT policies
+  IF to_regclass('public.learning_course_reviews') IS NOT NULL THEN
+    EXECUTE 'ALTER TABLE public.learning_course_reviews ADD COLUMN IF NOT EXISTS is_approved boolean DEFAULT false';
+  END IF;
+  IF to_regclass('public.progress_shares') IS NOT NULL THEN
+    EXECUTE 'ALTER TABLE public.progress_shares ADD COLUMN IF NOT EXISTS is_public boolean DEFAULT false';
+  END IF;
+  IF to_regclass('public.shared_routines') IS NOT NULL THEN
+    EXECUTE 'ALTER TABLE public.shared_routines ADD COLUMN IF NOT EXISTS is_public boolean DEFAULT true';
+  END IF;
+
+  -- Additional policy columns
+  IF to_regclass('public.challenges') IS NOT NULL THEN
+    EXECUTE 'ALTER TABLE public.challenges ADD COLUMN IF NOT EXISTS created_by uuid';
+  END IF;
+  IF to_regclass('public.routine_marketplace') IS NOT NULL THEN
+    EXECUTE 'ALTER TABLE public.routine_marketplace ADD COLUMN IF NOT EXISTS creator_id uuid';
+  END IF;
+END $$;
+
 -- Health Education
 CREATE TABLE IF NOT EXISTS public.health_education_content (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), title text NOT NULL, content text, category text, content_type text DEFAULT 'article', difficulty_level text, tags text[], is_published boolean DEFAULT true, view_count int DEFAULT 0, created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now());
 ALTER TABLE public.health_education_content ENABLE ROW LEVEL SECURITY;

@@ -8,33 +8,9 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import {
-  FastForward,
-  Rewind,
-  Clock,
-  Gauge,
-  RefreshCw,
-} from "lucide-react";
-
-export interface SpeedControlState {
-  speed: number; // 0.25 to 8
-  enableSpeedRamp: boolean;
-  rampStartSpeed: number;
-  rampEndSpeed: number;
-  rampDuration: number; // seconds
-  reversePlayback: boolean;
-  frameBlending: boolean;
-}
-
-export const defaultSpeedControl: SpeedControlState = {
-  speed: 1,
-  enableSpeedRamp: false,
-  rampStartSpeed: 1,
-  rampEndSpeed: 0.25,
-  rampDuration: 2,
-  reversePlayback: false,
-  frameBlending: true,
-};
+import { FastForward, Rewind, Clock, Gauge, RefreshCw } from "lucide-react";
+import type { SpeedControlState } from "./SpeedControlsPanel.model";
+import { defaultSpeedControl } from "./SpeedControlsPanel.model";
 
 const SPEED_PRESETS = [
   { value: 0.25, label: "0.25x", type: "slow" },
@@ -176,10 +152,7 @@ export function SpeedControlsPanel({ state, onChange }: Props) {
         </div>
         <div className="flex items-center justify-between">
           <Label className="text-[10px]">Frame Blending</Label>
-          <Switch
-            checked={state.frameBlending}
-            onCheckedChange={v => update("frameBlending", v)}
-          />
+          <Switch checked={state.frameBlending} onCheckedChange={v => update("frameBlending", v)} />
         </div>
       </div>
     </div>

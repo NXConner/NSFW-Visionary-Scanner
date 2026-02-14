@@ -13,6 +13,11 @@ type ReqBody = {
   cancelUrl: string;
 };
 
+function asString(v: unknown, fallback = ""): string {
+  const s = typeof v === "string" ? v : v === null || v === undefined ? "" : String(v);
+  return s.trim() || fallback;
+}
+
 serve(async req => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -45,7 +50,8 @@ serve(async req => {
 
     const { data: item, error: itemError } = await supabase
       .from("routine_marketplace")
-      .select("id, price, currency, is_subscription, subscription_duration_days, is_active")
+      // schema-tolerant: table may evolve; checkout only needs a subset
+      .select("*")
       .eq("id", marketplaceId)
       .maybeSingle();
 
@@ -75,6 +81,8 @@ serve(async req => {
     if (!stripeSecretKey) throw new Error("Stripe not configured");
 
     const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
+    const isLiveMode =
+      stripeSecretKey.startsWith("sk_live_") || stripeSecretKey.startsWith("rk_live_");
 
     // Shared customer mapping
     let { data: subscriptionRow } = await supabase
@@ -101,17 +109,23 @@ serve(async req => {
     const currency = String(item.currency || "USD").toLowerCase();
     const unitAmount = Math.round(priceValue * 100);
 
-    const recurring =
-      mode === "subscription"
-        ? {
-            interval: Number(item.subscription_duration_days ?? 30) >= 365 ? "year" : "month",
-          }
-        : undefined;
+    const stripePriceId =
+      asString((item as any).stripe_price_id ?? (item as any).stripePriceId, "") || null;
 
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      line_items: [
-        {
+    // Live mode must use pre-created Stripe Prices (no inline price_data in production).
+    if (isLiveMode && !stripePriceId) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Stripe price not configured for this routine marketplace item (set routine_marketplace.stripe_price_id)",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const lineItem = stripePriceId
+      ? ({ price: stripePriceId, quantity: 1 } as const)
+      : ({
           price_data: {
             currency,
             unit_amount: unitAmount,
@@ -119,11 +133,20 @@ serve(async req => {
               name: `Routine Marketplace Item ${String(item.id).slice(0, 8)}`,
               metadata: { routine_marketplace_id: String(item.id) },
             },
-            recurring: recurring as any,
+            recurring:
+              mode === "subscription"
+                ? {
+                    interval:
+                      Number(item.subscription_duration_days ?? 30) >= 365 ? "year" : "month",
+                  }
+                : undefined,
           },
           quantity: 1,
-        } as any,
-      ],
+        } as const);
+
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      line_items: [lineItem as any],
       mode: mode as any,
       success_url: successUrl,
       cancel_url: cancelUrl,
@@ -131,6 +154,7 @@ serve(async req => {
         purchase_type: "routine_marketplace",
         routine_marketplace_id: String(item.id),
         supabase_user_id: user.id,
+        ...(stripePriceId ? { stripe_price_id: stripePriceId } : {}),
       },
     });
 

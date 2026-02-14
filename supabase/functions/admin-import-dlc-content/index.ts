@@ -6,8 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SUPER_ADMIN_EMAIL = "n8ter8@gmail.com";
-
 type ImportType = "positions" | "videos" | "topics";
 
 type BaseReq = {
@@ -103,8 +101,7 @@ function slugify(input: string): string {
     .slice(0, 80);
 }
 
-async function isAdminUser(supabase: any, userId: string, email?: string | null): Promise<boolean> {
-  if (email && email.toLowerCase().trim() === SUPER_ADMIN_EMAIL) return true;
+async function isAdminUser(supabase: any, userId: string): Promise<boolean> {
   const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
   if (error) return false;
   return (data || []).some((r: any) => r.role === "admin" || r.role === "super_admin");
@@ -145,7 +142,7 @@ serve(async req => {
       });
     }
 
-    const okAdmin = await isAdminUser(supabase, user.id, user.email);
+    const okAdmin = await isAdminUser(supabase, user.id);
     if (!okAdmin) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
@@ -219,7 +216,8 @@ serve(async req => {
           animation_url: it.animation_url ?? null,
           sort_order: Number.isFinite(Number(it.sort_order)) ? Number(it.sort_order) : 0,
           is_premium: Boolean(it.is_premium ?? false),
-          requires_dlc: Boolean(it.requires_dlc ?? false),
+          // Default to gated content unless explicitly marked as free.
+          requires_dlc: it.requires_dlc == null ? true : Boolean(it.requires_dlc),
           is_active: it.is_active == null ? true : Boolean(it.is_active),
           updated_at: new Date().toISOString(),
         };
@@ -274,7 +272,8 @@ serve(async req => {
           prerequisites: safeArray(it.prerequisites),
           is_premium: Boolean(it.is_premium ?? false),
           is_featured: Boolean(it.is_featured ?? false),
-          requires_dlc: Boolean(it.requires_dlc ?? false),
+          // Default to gated content unless explicitly marked as free.
+          requires_dlc: it.requires_dlc == null ? true : Boolean(it.requires_dlc),
           dlc_pack_id: it.dlc_pack_id ?? null,
           is_approved: it.is_approved == null ? false : Boolean(it.is_approved),
           is_active: it.is_active == null ? true : Boolean(it.is_active),

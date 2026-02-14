@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useData } from "@/contexts/DataContext";
-import { fetchCommunityAverages, getPlaceholderCommunityAverages } from "@/lib/measurementsComparison";
+import { fetchCommunityAverages, getEmptyCommunityAverages } from "@/lib/measurementsComparison";
 import type {
   CommunityAverages,
   MeasurementPoint,
@@ -32,8 +32,9 @@ export function useMeasurementComparison(options: UseMeasurementComparisonOption
   const latest: MeasurementPoint | null = useMemo(() => points[0] ?? null, [points]);
   const personal: MeasurementSummary = useMemo(() => summarize(points), [points]);
 
-  // Initialize with placeholder data so UI always has something to show
-  const [community, setCommunity] = useState<CommunityAverages>(getPlaceholderCommunityAverages());
+  const [community, setCommunity] = useState<CommunityAverages>(() =>
+    getEmptyCommunityAverages({ days: communityWindowDays }),
+  );
   const [isCommunityLoading, setIsCommunityLoading] = useState(false);
 
   useEffect(() => {
@@ -41,8 +42,7 @@ export function useMeasurementComparison(options: UseMeasurementComparisonOption
 
     const run = async () => {
       if (!user) {
-        // Even without user, show placeholder data
-        setCommunity(getPlaceholderCommunityAverages());
+        setCommunity(getEmptyCommunityAverages({ days: communityWindowDays }));
         return;
       }
       setIsCommunityLoading(true);
@@ -54,7 +54,7 @@ export function useMeasurementComparison(options: UseMeasurementComparisonOption
 
     run().catch(() => {
       if (cancelled) return;
-      setCommunity(getPlaceholderCommunityAverages());
+      setCommunity(getEmptyCommunityAverages({ days: communityWindowDays }));
       setIsCommunityLoading(false);
     });
 

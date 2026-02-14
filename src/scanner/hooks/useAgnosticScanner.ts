@@ -4,7 +4,7 @@
  * Feature gating is handled via CONFIG from content-manifest.ts.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { APP_CONFIG } from "@/config/content-manifest";
 import type {
   ScanResult,
@@ -57,9 +57,15 @@ function buildAnalysis(options: ScannerHookOptions): ScanAnalysis {
 }
 
 export function useAgnosticScanner(
-  userOptions: Partial<ScannerHookOptions> = {}
+  userOptions: Partial<ScannerHookOptions> = {},
 ): ScannerHookResult {
-  const options = { ...DEFAULT_OPTIONS, ...userOptions };
+  const options = useMemo<ScannerHookOptions>(() => {
+    return {
+      autoProcess: userOptions.autoProcess ?? DEFAULT_OPTIONS.autoProcess,
+      maxResolution: userOptions.maxResolution ?? DEFAULT_OPTIONS.maxResolution,
+      enableUnrestricted: userOptions.enableUnrestricted ?? DEFAULT_OPTIONS.enableUnrestricted,
+    };
+  }, [userOptions.autoProcess, userOptions.maxResolution, userOptions.enableUnrestricted]);
 
   const [scan, setScan] = useState<ScanResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -78,9 +84,7 @@ export function useAgnosticScanner(
           metadata.resolution.width > options.maxResolution! ||
           metadata.resolution.height > options.maxResolution!
         ) {
-          throw new Error(
-            `Image exceeds maximum resolution of ${options.maxResolution}px`
-          );
+          throw new Error(`Image exceeds maximum resolution of ${options.maxResolution}px`);
         }
 
         const newScan: ScanResult = {
@@ -95,7 +99,7 @@ export function useAgnosticScanner(
         setScan(newScan);
 
         // Simulate async processing (replace with actual scanner logic)
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         const completedScan: ScanResult = {
           ...newScan,
@@ -128,7 +132,7 @@ export function useAgnosticScanner(
         throw new Error(message);
       }
     },
-    [options]
+    [options],
   );
 
   const reset = useCallback(() => {

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import ErrorBoundary, { withErrorBoundary } from "../ErrorBoundary";
+import ErrorBoundary from "../ErrorBoundary";
+import { withErrorBoundary } from "../withErrorBoundary";
 
 // Component that throws an error
 const ThrowingComponent = ({ shouldThrow = true }: { shouldThrow?: boolean }) => {
@@ -25,7 +26,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary>
         <div>Child content</div>
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     expect(screen.getByText("Child content")).toBeInTheDocument();
@@ -35,7 +36,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary>
         <ThrowingComponent />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     expect(screen.getByText("Something went wrong")).toBeInTheDocument();
@@ -46,7 +47,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary section="Scanner">
         <ThrowingComponent />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     expect(screen.getByText("Error in Scanner")).toBeInTheDocument();
@@ -56,7 +57,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary fallback={<div>Custom fallback</div>}>
         <ThrowingComponent />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     expect(screen.getByText("Custom fallback")).toBeInTheDocument();
@@ -66,7 +67,7 @@ describe("ErrorBoundary", () => {
     const { container } = render(
       <ErrorBoundary fallback={null}>
         <ThrowingComponent />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     expect(container.innerHTML).toBe("");
@@ -74,11 +75,11 @@ describe("ErrorBoundary", () => {
 
   it("calls onReset when Try Again button is clicked", () => {
     const onReset = vi.fn();
-    
+
     render(
       <ErrorBoundary onReset={onReset}>
         <ThrowingComponent />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     const tryAgainButton = screen.getByText("Try Again");
@@ -91,7 +92,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary>
         <ThrowingComponent />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     const goHomeButton = screen.getByText("Go Home");
@@ -102,7 +103,7 @@ describe("ErrorBoundary", () => {
 describe("withErrorBoundary HOC", () => {
   it("wraps component with error boundary", () => {
     const WrappedComponent = withErrorBoundary(ThrowingComponent, "TestSection");
-    
+
     render(<WrappedComponent />);
 
     expect(screen.getByText("Error in TestSection")).toBeInTheDocument();
@@ -111,7 +112,7 @@ describe("withErrorBoundary HOC", () => {
   it("renders wrapped component when no error", () => {
     const SafeComponent = () => <div>Safe content</div>;
     const WrappedComponent = withErrorBoundary(SafeComponent);
-    
+
     render(<WrappedComponent />);
 
     expect(screen.getByText("Safe content")).toBeInTheDocument();

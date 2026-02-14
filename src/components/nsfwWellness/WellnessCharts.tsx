@@ -34,26 +34,32 @@ export const WellnessCharts: React.FC<WellnessChartsProps> = React.memo(
       date: entry.entry_date,
       score: entry.erectile_function_score || 0,
       stamina: entry.stamina_minutes || 0,
-      satisfaction: entry.satisfaction_score || 0,
+      duration: entry.erection_duration_minutes || 0,
     }));
 
-    const radarData = wellnessScores.length
+    const latestScore =
+      wellnessScores.reduce<NSFWWellnessScore | null>((acc, s) => {
+        if (!acc) return s;
+        return String(s.calculation_date) > String(acc.calculation_date) ? s : acc;
+      }, null) ?? null;
+
+    const radarData = latestScore
       ? [
           {
             metric: "Function",
-            value: wellnessScores[wellnessScores.length - 1].function_score,
+            value: latestScore.function_score ?? 0,
           },
           {
             metric: "Libido",
-            value: wellnessScores[wellnessScores.length - 1].libido_score,
+            value: latestScore.libido_score ?? 0,
           },
           {
             metric: "Satisfaction",
-            value: wellnessScores[wellnessScores.length - 1].satisfaction_score,
+            value: latestScore.satisfaction_score ?? 0,
           },
           {
             metric: "Frequency",
-            value: wellnessScores[wellnessScores.length - 1].frequency_score,
+            value: latestScore.frequency_score ?? 0,
           },
         ]
       : [];
@@ -74,7 +80,7 @@ export const WellnessCharts: React.FC<WellnessChartsProps> = React.memo(
                 <Tooltip />
                 <Line type="monotone" dataKey="score" stroke="#8b5cf6" strokeWidth={2} />
                 <Line type="monotone" dataKey="stamina" stroke="#10b981" strokeWidth={2} />
-                <Line type="monotone" dataKey="satisfaction" stroke="#f59e0b" strokeWidth={2} />
+                <Line type="monotone" dataKey="duration" stroke="#f59e0b" strokeWidth={2} />
               </LazyLineChart>
             </ResponsiveContainer>
           </CardContent>

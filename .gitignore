@@ -31,6 +31,27 @@ test-results/
 # Android local configuration (contains machine-specific paths)
 android/local.properties
 
+# Android/Gradle generated caches and intermediates (do not commit)
+# Keep final APK/AAB artifacts trackable via the allowlist below.
+android/.gradle/
+android/**/.gradle/
+android/**/build/intermediates/
+android/**/build/generated/
+android/**/build/tmp/
+android/**/build/kotlin/
+android/**/build/reports/
+
+# Android APK metadata (generated alongside APK/AAB; not tracked)
+android/**/build/outputs/**/output-metadata.json
+android/**/build/outputs/**/baselineProfiles/
+android/**/build/outputs/**/baselineProfiles/**
+android/**/build/outputs/logs/
+android/**/build/outputs/logs/**
+android/**/build/outputs/mapping/
+android/**/build/outputs/mapping/**
+android/**/build/outputs/sdk-dependencies/
+android/**/build/outputs/sdk-dependencies/**
+
 # Android Gradle properties (base config tracked; secrets local)
 android/gradle.properties.local
 android/gradle.properties.user
@@ -70,7 +91,10 @@ ios/App/App/GoogleService-Info.plist
 # Local comparison clones (do not commit)
 external-repos/
 
+# Supabase CLI temp files (never commit)
+supabase/.temp/
+
 # Core dumps (never commit)
-core
-core.*
+/core
+/core.*
 *.core

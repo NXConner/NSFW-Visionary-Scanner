@@ -113,6 +113,43 @@ For each product, create prices as follows:
 | NSFW DLC (Store)  | One-time | $24.99 | -        | `VITE_STRIPE_NSFW_DLC_STORE_PRICE_ID`  |
 | NSFW DLC (Direct) | One-time | $19.99 | -        | `VITE_STRIPE_NSFW_DLC_DIRECT_PRICE_ID` |
 
+---
+
+## Premium Content + Marketplace Stripe Mapping (DB-driven)
+
+This repo also supports **paid Premium Content** and **Marketplace** items backed by Supabase tables:
+
+- `premium_content_items`
+- `marketplace_items`
+- `routine_marketplace`
+
+### Live-mode rule (important)
+
+In **live mode** (`STRIPE_SECRET_KEY=sk_live_…`), the Edge Functions will **not** use inline
+`price_data`. Paid checkouts require **pre-created Stripe Prices** referenced by DB columns:
+
+- `stripe_price_id` (required for paid items)
+- `stripe_product_id` (optional but recommended)
+
+Migration: `supabase/migrations/20260214120000_stripe_ids_for_premium_and_marketplace.sql`
+
+### How to configure
+
+1. Create a Stripe Product + Price for each paid item you intend to sell.
+2. Store the IDs in the relevant row:
+   - `premium_content_items.stripe_price_id`
+   - `marketplace_items.stripe_price_id`
+   - `routine_marketplace.stripe_price_id`
+3. Optional: also store `stripe_product_id` (`prod_…`) for auditability.
+
+### Admin UI
+
+Use the admin mapping screen:
+
+- `/admin/commerce` → set `price_*` / `prod_*` for Premium Content + Marketplace rows.
+
+> Note: Free items (price <= 0) do not require Stripe mapping.
+
 ## Step 3: Configure Environment Variables
 
 After creating all prices in Stripe, copy the price IDs and add them to your local `.env` (or inject via your secrets manager in CI/CD):

@@ -4,7 +4,7 @@
  */
 
 import { logger } from '@/lib/logger';
-import { dlcManager } from './index';
+import { dlcManager } from './DLCManager';
 import { DLC_MODULES, getModulesForPackage, MODULE_PACKAGE_MAP } from '../modules';
 import type { DLCModule, DLCNavigationItem, DLCRoute } from './types';
 

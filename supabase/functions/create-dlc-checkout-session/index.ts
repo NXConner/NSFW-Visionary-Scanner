@@ -265,7 +265,8 @@ serve(async req => {
     if (!stripeSecretKey) throw new Error("Stripe not configured");
 
     const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
-    const isLiveMode = stripeSecretKey.startsWith("sk_live_");
+    const isLiveMode =
+      stripeSecretKey.startsWith("sk_live_") || stripeSecretKey.startsWith("rk_live_");
 
     // Reuse/ensure customer for this user (stored in user_subscriptions table)
     // This keeps billing portal & receipts consistent with subscriptions.

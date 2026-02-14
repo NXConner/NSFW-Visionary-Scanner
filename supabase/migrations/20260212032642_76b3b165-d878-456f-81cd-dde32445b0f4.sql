@@ -211,7 +211,20 @@ CREATE TABLE IF NOT EXISTS public.education_qa (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
+-- Schema-tolerant: older/prod environments may already have education_qa without
+-- some of these columns. Ensure columns exist before creating RLS policies.
+ALTER TABLE public.education_qa
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS question text,
+  ADD COLUMN IF NOT EXISTS answer text,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS is_answered boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS upvote_count int DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
 ALTER TABLE public.education_qa ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own qa" ON public.education_qa;
+DROP POLICY IF EXISTS "Public read answered qa" ON public.education_qa;
 CREATE POLICY "Users manage own qa" ON public.education_qa FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Public read answered qa" ON public.education_qa FOR SELECT USING (is_answered = true);
 
@@ -222,7 +235,14 @@ CREATE TABLE IF NOT EXISTS public.education_qa_interactions (
   interaction_type text NOT NULL,
   created_at timestamptz DEFAULT now()
 );
+-- Schema-tolerant: ensure required columns exist for RLS policy creation.
+ALTER TABLE public.education_qa_interactions
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS qa_id uuid,
+  ADD COLUMN IF NOT EXISTS interaction_type text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
 ALTER TABLE public.education_qa_interactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own qa interactions" ON public.education_qa_interactions;
 CREATE POLICY "Users manage own qa interactions" ON public.education_qa_interactions FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS public.education_expert_content (
@@ -422,7 +442,9 @@ CREATE TABLE IF NOT EXISTS public.multi_angle_scan_sessions (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
+ALTER TABLE public.multi_angle_scan_sessions ADD COLUMN IF NOT EXISTS user_id uuid;
 ALTER TABLE public.multi_angle_scan_sessions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own scan sessions" ON public.multi_angle_scan_sessions;
 CREATE POLICY "Users manage own scan sessions" ON public.multi_angle_scan_sessions FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS public.multi_angle_scan_images (
@@ -434,7 +456,9 @@ CREATE TABLE IF NOT EXISTS public.multi_angle_scan_images (
   order_index int DEFAULT 0,
   created_at timestamptz DEFAULT now()
 );
+ALTER TABLE public.multi_angle_scan_images ADD COLUMN IF NOT EXISTS user_id uuid;
 ALTER TABLE public.multi_angle_scan_images ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own scan images" ON public.multi_angle_scan_images;
 CREATE POLICY "Users manage own scan images" ON public.multi_angle_scan_images FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS public.cloud_processing_jobs (
@@ -449,7 +473,9 @@ CREATE TABLE IF NOT EXISTS public.cloud_processing_jobs (
   completed_at timestamptz,
   created_at timestamptz DEFAULT now()
 );
+ALTER TABLE public.cloud_processing_jobs ADD COLUMN IF NOT EXISTS user_id uuid;
 ALTER TABLE public.cloud_processing_jobs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own processing jobs" ON public.cloud_processing_jobs;
 CREATE POLICY "Users manage own processing jobs" ON public.cloud_processing_jobs FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS public.time_lapse_comparisons (
@@ -460,7 +486,9 @@ CREATE TABLE IF NOT EXISTS public.time_lapse_comparisons (
   comparison_data jsonb,
   created_at timestamptz DEFAULT now()
 );
+ALTER TABLE public.time_lapse_comparisons ADD COLUMN IF NOT EXISTS user_id uuid;
 ALTER TABLE public.time_lapse_comparisons ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own comparisons" ON public.time_lapse_comparisons;
 CREATE POLICY "Users manage own comparisons" ON public.time_lapse_comparisons FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS public.measurement_templates (
@@ -483,7 +511,9 @@ CREATE TABLE IF NOT EXISTS public.batch_scan_sessions (
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
+ALTER TABLE public.batch_scan_sessions ADD COLUMN IF NOT EXISTS user_id uuid;
 ALTER TABLE public.batch_scan_sessions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own batch scans" ON public.batch_scan_sessions;
 CREATE POLICY "Users manage own batch scans" ON public.batch_scan_sessions FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS public.exported_3d_models (
@@ -495,5 +525,7 @@ CREATE TABLE IF NOT EXISTS public.exported_3d_models (
   file_size_bytes bigint,
   created_at timestamptz DEFAULT now()
 );
+ALTER TABLE public.exported_3d_models ADD COLUMN IF NOT EXISTS user_id uuid;
 ALTER TABLE public.exported_3d_models ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own 3d models" ON public.exported_3d_models;
 CREATE POLICY "Users manage own 3d models" ON public.exported_3d_models FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);

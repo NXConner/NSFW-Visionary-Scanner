@@ -22,7 +22,7 @@ vi.mock("sonner", () => ({
 describe("useOfflineSync", () => {
   const mockUser = {
     id: "test-user-id",
-    email: "test@example.com",
+    email: "test@example.invalid",
   };
 
   beforeEach(() => {

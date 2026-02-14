@@ -5,9 +5,9 @@
 
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Lock, Sparkles, Phone, MapPin, ChevronRight } from "lucide-react";
+import { AlertCircle, Lock, Phone, MapPin } from "lucide-react";
+import { UnlockPremiumCta } from "./UnlockPremiumCta";
 
 export const EmergencyPlaceholder: React.FC = () => {
   return (
@@ -47,11 +47,7 @@ export const EmergencyPlaceholder: React.FC = () => {
               ))}
             </div>
 
-            <Button size="lg" className="gap-2">
-              <Sparkles className="w-5 h-5" />
-              Unlock Premium
-              <ChevronRight className="w-4 h-4" />
-            </Button>
+            <UnlockPremiumCta />
           </CardContent>
         </Card>
       </div>

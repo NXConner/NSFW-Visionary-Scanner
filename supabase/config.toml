@@ -1,4 +1,4 @@
-project_id = "thajylrvfzjmerqqkmjv"
+project_id = "xbhjmuaxjpxqzrngubzo"
 
 [functions.admin-dlc-catalog]
 enabled = true
@@ -9,6 +9,18 @@ enabled = true
 verify_jwt = true
 
 [functions.admin-import-dlc-content]
+enabled = true
+verify_jwt = true
+
+[functions.admin-marketplace-items-catalog]
+enabled = true
+verify_jwt = true
+
+[functions.admin-premium-content-catalog]
+enabled = true
+verify_jwt = true
+
+[functions.admin-routine-marketplace-catalog]
 enabled = true
 verify_jwt = true
 

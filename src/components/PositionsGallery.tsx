@@ -1,9 +1,8 @@
-import { useCallback, useMemo, useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useMemo, useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -17,17 +16,13 @@ import {
   Shuffle,
   Heart,
   Star,
-  Filter,
   Grid,
   List,
   Flame,
   Sparkles,
   Users,
   Zap,
-  Info,
   Lock,
-  Image as ImageIcon,
-  Video,
   Loader2,
   Moon,
   Sun,
@@ -42,39 +37,13 @@ import { PositionDetailView } from "@/components/PositionDetailView";
 import { AgeVerificationModal } from "@/dlc/components/AgeVerificationModal";
 import { Link } from "react-router-dom";
 import { useDLC, useDLCFeature } from "@/dlc/context/DLCContext";
+import type { Position } from "@/components/positionsGallery/model";
+import { usePositionsGalleryData } from "@/components/positionsGallery/usePositionsGalleryData";
+import { PositionCard } from "@/components/positionsGallery/PositionCard";
 
 // CRITICAL: Module-level cached super admin check - runs ONCE at import time
 // This ensures privileged status is known BEFORE any component renders
 const INITIAL_SUPER_ADMIN_STATUS = isAnySuperAdminPersisted();
-import {
-  fetchMyPositionMediaOverrides,
-  type UserPositionMediaOverridesMap,
-} from "@/lib/positions/userPositionMediaOverrides";
-import { supabase } from "@/integrations/supabase/client";
-import { getDeviceId, getDevicePlatform } from "@/dlc/core/device";
-import type { Position, DbPositionRow } from "@/components/positionsGallery/model";
-import {
-  defaultBenefits,
-  defaultInstructions,
-  defaultTips,
-  deriveStimulation,
-  mapDifficulty,
-  mapFlexibility,
-  mapIntimacy,
-  splitInstructions,
-} from "@/components/positionsGallery/model";
-import {
-  fetchPositionById,
-  fetchPositionCategories,
-  fetchPositionsPage,
-} from "@/components/positionsGallery/db";
-import { isHttpUrl, signAssetPaths } from "@/components/positionsGallery/privateAssets";
-import { PositionCard } from "@/components/positionsGallery/PositionCard";
-import {
-  findNsfwFallbackPositionById,
-  getNsfwFallbackCategories,
-  getNsfwFallbackPositions,
-} from "@/components/positionsGallery/nsfwFallback";
 
 // (types + mapping helpers live in `src/components/positionsGallery/*` to keep this file < 500 lines)
 
@@ -142,373 +111,52 @@ export const PositionsGallery = ({
     setSelectedDifficulty("all");
   }, [allowedDifficultyValues, selectedDifficulty]);
 
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [positionsLoading, setPositionsLoading] = useState(false);
-  const [positionsError, setPositionsError] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
-  const pageSize = 48;
-  const [totalCount, setTotalCount] = useState<number>(0);
-  const [allCategories, setAllCategories] = useState<string[]>([]);
-  const [signedAssetUrls, setSignedAssetUrls] = useState<Record<string, string>>({});
-  const [overridesMap, setOverridesMap] = useState<UserPositionMediaOverridesMap>({});
+  const stillCheckingAccess = featureLoading || dlcLoading || authLoading || rolesLoading;
 
-  const refreshOverrides = useCallback(async () => {
-    const map = await fetchMyPositionMediaOverrides();
-    setOverridesMap(map);
-  }, []);
+  // Super admin bypass: always allow access (but only after loading completes).
+  // Include module-level cached value for instant privileged access in-session.
+  const hasSuperAdminAccess =
+    INITIAL_SUPER_ADMIN_STATUS ||
+    isSuperAdmin ||
+    hasFullAccess ||
+    allFeaturesUnlocked ||
+    isAdmin ||
+    isSuperAdminRole;
 
-  useEffect(() => {
-    if (!isAgeVerified) return;
-    void refreshOverrides();
-  }, [isAgeVerified, refreshOverrides]);
+  const canAccessPositions =
+    hasSuperAdminAccess || hasFeature("positionsGallery") || hasPositionsDlc;
+  const canLoadContent =
+    !stillCheckingAccess && canAccessPositions && (hasSuperAdminAccess || isAgeVerified);
 
-  const loadCategories = useCallback(async () => {
-    try {
-      const cats = await fetchPositionCategories();
-      if (cats.length > 0) {
-        setAllCategories(cats);
-      } else {
-        // Fallback: derive categories from GitHub catalog
-        const fallbackCats = await getNsfwFallbackCategories();
-        if (fallbackCats.length > 0) setAllCategories(fallbackCats);
-      }
-    } catch {
-      // Fallback to GitHub catalog on error
-      const fallbackCats = await getNsfwFallbackCategories();
-      if (fallbackCats.length > 0) setAllCategories(fallbackCats);
-    }
-  }, []);
-
-  const loadPositions = useCallback(async () => {
-    setPositionsLoading(true);
-    setPositionsError(null);
-    try {
-      const { rows, count } = await fetchPositionsPage({
-        page,
-        pageSize,
-        searchTerm,
-        selectedCategory,
-        selectedDifficulty,
-      });
-
-      // If database is empty, use pre-generated GitHub catalog
-      if (rows.length === 0 && count === 0 && page === 0) {
-        const fallbackPositions = await getNsfwFallbackPositions();
-
-        // Apply filters to GitHub positions
-        let filtered = fallbackPositions;
-
-        // Filter by category
-        if (selectedCategory !== "all") {
-          filtered = filtered.filter(p => p.category === selectedCategory);
-        }
-
-        // Filter by difficulty
-        if (selectedDifficulty !== "all") {
-          const diffMap: Record<string, Position["difficulty"][]> = {
-            easy: ["easy"],
-            medium: ["medium"],
-            hard: ["hard"],
-            expert: ["expert"],
-          };
-          const allowed = diffMap[selectedDifficulty] || [];
-          filtered = filtered.filter(p => allowed.includes(p.difficulty));
-        }
-
-        // Filter by search term
-        const term = searchTerm.trim().toLowerCase();
-        if (term) {
-          filtered = filtered.filter(
-            p =>
-              p.name.toLowerCase().includes(term) ||
-              p.description.toLowerCase().includes(term) ||
-              p.tags.some(tag => tag.toLowerCase().includes(term)),
-          );
-        }
-
-        // Apply pagination
-        const from = page * pageSize;
-        const paged = filtered.slice(from, from + pageSize);
-
-        setPositions(paged);
-        setTotalCount(filtered.length);
-        setPositionsLoading(false);
-        return;
-      }
-
-      const deviceId = getDeviceId();
-      const devicePlatform = getDevicePlatform();
-
-      const toSign: string[] = [];
-
-      const mapped: Position[] = rows.map((r: DbPositionRow) => {
-        const category = String(r.category || "general");
-        const tags = Array.from(
-          new Set(
-            [category, ...(Array.isArray(r.tags) ? r.tags : [])]
-              .map(x => String(x || "").trim())
-              .filter(Boolean),
-          ),
-        ).slice(0, 24);
-
-        const images: string[] = [];
-        const primaryImage = r.image_url_illustrated || r.image_url || r.thumbnail_url;
-        if (primaryImage) {
-          const img = String(primaryImage);
-          if (!isHttpUrl(img) && !signedAssetUrls[img]) toSign.push(img);
-          images.push(signedAssetUrls[img] ? String(signedAssetUrls[img]) : img);
-        }
-
-        const videos: string[] = [];
-        if (r.video_tutorial_url) {
-          const v = String(r.video_tutorial_url);
-          if (!isHttpUrl(v) && !signedAssetUrls[v]) toSign.push(v);
-          videos.push(signedAssetUrls[v] ? String(signedAssetUrls[v]) : v);
-        }
-
-        const animations: string[] = [];
-        if (r.animation_url) {
-          const a = String(r.animation_url);
-          if (!isHttpUrl(a) && !signedAssetUrls[a]) toSign.push(a);
-          animations.push(signedAssetUrls[a] ? String(signedAssetUrls[a]) : a);
-        }
-
-        const instructions = splitInstructions(r.detailed_instructions);
-
-        return {
-          id: String(r.id),
-          name: String(r.position_name || "Untitled").trim(),
-          category,
-          difficulty: mapDifficulty(r.difficulty_level),
-          description: String(
-            r.description || "Illustrated position reference with safety-first guidance.",
-          ),
-          summary: undefined,
-          instructions: instructions.length > 0 ? instructions : defaultInstructions(),
-          benefits:
-            Array.isArray(r.benefits) && r.benefits.length > 0 ? r.benefits : defaultBenefits(),
-          tips: Array.isArray(r.tips) && r.tips.length > 0 ? r.tips : defaultTips(),
-          tags,
-          stimulationType: deriveStimulation(tags, category),
-          requiredFlexibility: mapFlexibility(r.required_flexibility),
-          intimacyLevel: mapIntimacy(r.intimacy_level),
-          images: images.length > 0 ? images : undefined,
-          videos: videos.length > 0 ? videos : undefined,
-          gifs: undefined,
-          animations: animations.length > 0 ? animations : undefined,
-        };
-      });
-
-      setPositions(mapped);
-      setTotalCount(typeof count === "number" ? count : mapped.length);
-
-      // Best-effort sign private storage paths for visible page items.
-      // We keep a cache keyed by assetPath to avoid re-signing during navigation.
-      if (toSign.length > 0) {
-        const next = await signAssetPaths({
-          assetPaths: toSign,
-          deviceId,
-          devicePlatform,
-          expiresInSeconds: 5 * 60,
-        });
-        if (Object.keys(next).length > 0) setSignedAssetUrls(prev => ({ ...prev, ...next }));
-      }
-    } catch (e) {
-      // On error, try falling back to GitHub catalog
-      try {
-        let filtered = await getNsfwFallbackPositions();
-
-        if (selectedCategory !== "all") {
-          filtered = filtered.filter(p => p.category === selectedCategory);
-        }
-
-        const term = searchTerm.trim().toLowerCase();
-        if (term) {
-          filtered = filtered.filter(
-            p =>
-              p.name.toLowerCase().includes(term) ||
-              p.description.toLowerCase().includes(term) ||
-              p.tags.some(tag => tag.toLowerCase().includes(term)),
-          );
-        }
-
-        const from = page * pageSize;
-        const paged = filtered.slice(from, from + pageSize);
-
-        setPositions(paged);
-        setTotalCount(filtered.length);
-        setPositionsError(null);
-      } catch {
-        const msg = e instanceof Error ? e.message : "Failed to load positions";
-        setPositionsError(msg);
-        setPositions([]);
-        setTotalCount(0);
-      }
-    } finally {
-      setPositionsLoading(false);
-    }
-  }, [page, pageSize, searchTerm, selectedCategory, selectedDifficulty, signedAssetUrls]);
-
-  const openPositionById = useCallback(
-    async (positionId: string) => {
-      const id = String(positionId || "").trim();
-      if (!id) return;
-      setPositionsError(null);
-
-      // First check if it's a GitHub-based position ID (contains repo path)
-      if (id.includes("/") || id.includes("@")) {
-        const fallbackPos = await findNsfwFallbackPositionById(id);
-        if (fallbackPos) {
-          setSelectedPosition(fallbackPos);
-          return;
-        }
-      }
-
-      try {
-        const row = await fetchPositionById(id);
-        if (!row) {
-          // Fallback: try GitHub catalog
-          const fallbackPos = await findNsfwFallbackPositionById(id);
-          if (fallbackPos) {
-            setSelectedPosition(fallbackPos);
-            return;
-          }
-          setPositionsError("Position not found");
-          return;
-        }
-
-        const deviceId = getDeviceId();
-        const devicePlatform = getDevicePlatform();
-        const toSign: string[] = [];
-
-        const category = String(row.category || "general");
-        const tags = Array.from(
-          new Set(
-            [category, ...(Array.isArray(row.tags) ? row.tags : [])]
-              .map(x => String(x || "").trim())
-              .filter(Boolean),
-          ),
-        ).slice(0, 24);
-
-        const images: string[] = [];
-        const primaryImage = row.image_url_illustrated || row.image_url || row.thumbnail_url;
-        if (primaryImage) {
-          const img = String(primaryImage);
-          if (!isHttpUrl(img) && !signedAssetUrls[img]) toSign.push(img);
-          images.push(signedAssetUrls[img] ? String(signedAssetUrls[img]) : img);
-        }
-
-        const videos: string[] = [];
-        if (row.video_tutorial_url) {
-          const v = String(row.video_tutorial_url);
-          if (!isHttpUrl(v) && !signedAssetUrls[v]) toSign.push(v);
-          videos.push(signedAssetUrls[v] ? String(signedAssetUrls[v]) : v);
-        }
-
-        const animations: string[] = [];
-        if (row.animation_url) {
-          const a = String(row.animation_url);
-          if (!isHttpUrl(a) && !signedAssetUrls[a]) toSign.push(a);
-          animations.push(signedAssetUrls[a] ? String(signedAssetUrls[a]) : a);
-        }
-
-        if (toSign.length > 0) {
-          const next = await signAssetPaths({
-            assetPaths: toSign,
-            deviceId,
-            devicePlatform,
-            expiresInSeconds: 5 * 60,
-          });
-          if (Object.keys(next).length > 0) setSignedAssetUrls(prev => ({ ...prev, ...next }));
-        }
-
-        const mapped: Position = {
-          id: String(row.id),
-          name: String(row.position_name || "Untitled").trim(),
-          category,
-          difficulty: mapDifficulty(row.difficulty_level),
-          description: String(
-            row.description || "Illustrated position reference with safety-first guidance.",
-          ),
-          summary: undefined,
-          instructions: (() => {
-            const lines = splitInstructions(row.detailed_instructions);
-            return lines.length > 0 ? lines : defaultInstructions();
-          })(),
-          benefits:
-            Array.isArray(row.benefits) && row.benefits.length > 0
-              ? row.benefits
-              : defaultBenefits(),
-          tips: Array.isArray(row.tips) && row.tips.length > 0 ? row.tips : defaultTips(),
-          tags,
-          stimulationType: deriveStimulation(tags, category),
-          requiredFlexibility: mapFlexibility(row.required_flexibility),
-          intimacyLevel: mapIntimacy(row.intimacy_level),
-          images: images.length > 0 ? images : undefined,
-          videos: videos.length > 0 ? videos : undefined,
-          gifs: undefined,
-          animations: animations.length > 0 ? animations : undefined,
-        };
-
-        setSelectedPosition(mapped);
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : "Failed to load position";
-        setPositionsError(msg);
-      }
-    },
-    [signedAssetUrls],
-  );
-
-  // initial category + first load
-  useEffect(() => {
-    if (!isAgeVerified) return;
-    void loadCategories();
-  }, [isAgeVerified, loadCategories]);
-
-  // reset pagination when filters change
-  useEffect(() => {
-    setPage(0);
-  }, [searchTerm, selectedCategory, selectedDifficulty]);
-
-  useEffect(() => {
-    if (!isAgeVerified) return;
-    void loadPositions();
-  }, [isAgeVerified, loadPositions]);
+  const {
+    page,
+    pageSize,
+    setPage,
+    positions,
+    totalCount,
+    loading: positionsLoading,
+    error: positionsError,
+    categories: allCategories,
+    refreshOverrides,
+    openPositionById,
+  } = usePositionsGalleryData({
+    enabled: canLoadContent,
+    searchTerm,
+    selectedCategory,
+    selectedDifficulty,
+    pageSize: 48,
+  });
 
   useEffect(() => {
     const id = String(initialPositionId || "").trim();
     if (!id) return;
-    if (!isAgeVerified) return;
-    if (dlcLoading) return;
-    if (!hasFeature("positionsGallery") && !hasPositionsDlc) return;
     if (selectedPosition?.id === id) return;
-    void openPositionById(id);
-  }, [
-    dlcLoading,
-    hasPositionsDlc,
-    hasFeature,
-    initialPositionId,
-    isAgeVerified,
-    openPositionById,
-    selectedPosition?.id,
-  ]);
-
-  const positionsWithOverrides = useMemo(() => {
-    if (!overridesMap || Object.keys(overridesMap).length === 0) return positions;
-    return positions.map(p => {
-      const o = overridesMap[p.id];
-      if (!o) return p;
-      const imageUrl = o.image?.public_url || undefined;
-      const gifUrl = o.gif?.public_url || undefined;
-      const videoUrl = o.video?.public_url || undefined;
-      return {
-        ...p,
-        images: imageUrl ? [imageUrl] : p.images,
-        gifs: gifUrl ? [gifUrl] : p.gifs,
-        videos: videoUrl ? [videoUrl] : p.videos,
-      };
-    });
-  }, [overridesMap, positions]);
+    if (!canLoadContent) return;
+    void (async () => {
+      const pos = await openPositionById(id);
+      if (pos) setSelectedPosition(pos);
+    })();
+  }, [initialPositionId, canLoadContent, openPositionById, selectedPosition?.id]);
 
   const categories = useMemo(() => {
     const ids =
@@ -524,15 +172,15 @@ export const PositionsGallery = ({
   const filteredPositions = useMemo(() => {
     // DB query already applies filters; keep client-side guard (e.g. overrides), but avoid re-filtering by category/difficulty.
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return positionsWithOverrides;
-    return positionsWithOverrides.filter(pos => {
+    if (!term) return positions;
+    return positions.filter(pos => {
       return (
         pos.name.toLowerCase().includes(term) ||
         pos.description.toLowerCase().includes(term) ||
         pos.tags.some(tag => tag.toLowerCase().includes(term))
       );
     });
-  }, [positionsWithOverrides, searchTerm]);
+  }, [positions, searchTerm]);
 
   const toggleFavorite = (id: string) => {
     setFavorites(prev => (prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]));
@@ -543,7 +191,6 @@ export const PositionsGallery = ({
     if (random) setSelectedPosition(random);
   };
 
-  // Check if feature is available and NSFW content is accessible
   if (dlcLoading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -557,9 +204,6 @@ export const PositionsGallery = ({
     );
   }
 
-  // CRITICAL: Wait for ALL access checks to complete FIRST before making any gating decisions
-  // This prevents showing locked screens while roles are still loading
-  const stillCheckingAccess = featureLoading || dlcLoading || authLoading || rolesLoading;
   if (stillCheckingAccess) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -567,16 +211,6 @@ export const PositionsGallery = ({
       </div>
     );
   }
-
-  // Super admin bypass: always allow access (check AFTER loading completes)
-  // CRITICAL: Include module-level cached value for instant privileged access
-  const hasSuperAdminAccess =
-    INITIAL_SUPER_ADMIN_STATUS ||
-    isSuperAdmin ||
-    hasFullAccess ||
-    allFeaturesUnlocked ||
-    isAdmin ||
-    isSuperAdminRole;
 
   // Hide in SFW mode or if NSFW content not available (bypass for super admins)
   if (!isAgeVerified && !hasSuperAdminAccess) {
@@ -617,7 +251,7 @@ export const PositionsGallery = ({
   }
 
   // Entitlement for positions gallery: super admin OR subscription OR DLC feature
-  if (!hasSuperAdminAccess && !hasFeature("positionsGallery") && !hasPositionsDlc) {
+  if (!canAccessPositions) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Card className="glass-card border-border/50">
@@ -793,7 +427,30 @@ export const PositionsGallery = ({
 
       {filteredPositions.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">No positions found matching your criteria</p>
+          {totalCount === 0 &&
+          searchTerm.trim() === "" &&
+          selectedCategory === "all" &&
+          selectedDifficulty === "all" ? (
+            <div className="space-y-3">
+              <p className="text-muted-foreground">No positions content is available yet.</p>
+              {hasSuperAdminAccess || isAdmin ? (
+                <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                  <Button asChild>
+                    <Link to="/admin/nsfw">Import NSFW Content</Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link to="/admin/dlc">DLC Admin</Link>
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  If you believe this is an error, contact support or try again later.
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">No positions found matching your criteria</p>
+          )}
         </div>
       )}
 

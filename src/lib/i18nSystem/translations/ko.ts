@@ -166,11 +166,11 @@ export const ko: TranslationDictionary = {
   "partnerSync.pings.privateNote": "개인 메모",
   "partnerSync.pings.privateNotePlaceholder": "나만 볼 수 있음",
   "partnerSync.pings.imageUrls": "이미지 URL",
-  "partnerSync.pings.imageUrlsPlaceholder": "/placeholder.svg",
+  "partnerSync.pings.imageUrlsPlaceholder": "Paste image URLs (comma-separated)",
   "partnerSync.pings.gifUrls": "GIF URL",
-  "partnerSync.pings.gifUrlsPlaceholder": "/placeholder.svg",
+  "partnerSync.pings.gifUrlsPlaceholder": "Paste GIF URLs (comma-separated)",
   "partnerSync.pings.voiceUrl": "음성 URL",
-  "partnerSync.pings.voiceUrlPlaceholder": "/captions/blank.vtt",
+  "partnerSync.pings.voiceUrlPlaceholder": "Paste voice message URL",
   "partnerSync.pings.pin": "고정",
   "partnerSync.pings.pinHint": "이 핑을 상단에 고정",
   "partnerSync.pings.readReceipt": "읽음 확인",
@@ -376,48 +376,28 @@ export const ko: TranslationDictionary = {
   "partnerSync.recommendations.datesTitle": "데이트 나이트",
   "partnerSync.recommendations.positionsTitle": "포지션",
   "partnerSync.recommendations.safetyTitle": "안전 및 편안함",
-  "partnerSync.recommendations.pings.1":
-    "핑을 짧고 구체적으로 보내 빠르게 답할 수 있게 하세요.",
-  "partnerSync.recommendations.pings.2":
-    "장난스러움과 로맨스를 섞어 피로를 줄이세요.",
+  "partnerSync.recommendations.pings.1": "핑을 짧고 구체적으로 보내 빠르게 답할 수 있게 하세요.",
+  "partnerSync.recommendations.pings.2": "장난스러움과 로맨스를 섞어 피로를 줄이세요.",
   "partnerSync.recommendations.pings.3": "테마로 기대치를 맞추세요.",
-  "partnerSync.recommendations.pings.4":
-    "답장으로 관심과 경계를 확인하세요.",
-  "partnerSync.recommendations.pings.5":
-    "파트너의 조용한 시간에 맞춰 보내세요.",
-  "partnerSync.recommendations.pings.6":
-    "리액션으로 빠르게 확인하세요.",
-  "partnerSync.recommendations.dates.1":
-    "밤을 구간으로 나눠 계획하세요(외출, 저녁, 집).",
-  "partnerSync.recommendations.dates.2":
-    "미리 방해 요소를 공유해 집중을 유지하세요.",
-  "partnerSync.recommendations.dates.3":
-    "페이스와 편안함 확인을 위한 체크인을 포함하세요.",
-  "partnerSync.recommendations.dates.4":
-    "시간, 장소, 에너지 변화에 대비한 대안을 준비하세요.",
-  "partnerSync.recommendations.dates.5":
-    "이동 및 예약을 위한 리마인더를 사용하세요.",
-  "partnerSync.recommendations.dates.6":
-    "데이트 후 회고를 기록해 다음을 개선하세요.",
-  "partnerSync.recommendations.positions.1":
-    "상호 선택 1개 후 파트너 선택을 추가하세요.",
-  "partnerSync.recommendations.positions.2":
-    "각 제안의 이유를 메모로 설명하세요.",
-  "partnerSync.recommendations.positions.3":
-    "쉬운 옵션과 어려운 옵션을 섞어 균형을 맞추세요.",
-  "partnerSync.recommendations.positions.4":
-    "시도한 포지션을 표시해 목록을 تازه하게 유지하세요.",
+  "partnerSync.recommendations.pings.4": "답장으로 관심과 경계를 확인하세요.",
+  "partnerSync.recommendations.pings.5": "파트너의 조용한 시간에 맞춰 보내세요.",
+  "partnerSync.recommendations.pings.6": "리액션으로 빠르게 확인하세요.",
+  "partnerSync.recommendations.dates.1": "밤을 구간으로 나눠 계획하세요(외출, 저녁, 집).",
+  "partnerSync.recommendations.dates.2": "미리 방해 요소를 공유해 집중을 유지하세요.",
+  "partnerSync.recommendations.dates.3": "페이스와 편안함 확인을 위한 체크인을 포함하세요.",
+  "partnerSync.recommendations.dates.4": "시간, 장소, 에너지 변화에 대비한 대안을 준비하세요.",
+  "partnerSync.recommendations.dates.5": "이동 및 예약을 위한 리마인더를 사용하세요.",
+  "partnerSync.recommendations.dates.6": "데이트 후 회고를 기록해 다음을 개선하세요.",
+  "partnerSync.recommendations.positions.1": "상호 선택 1개 후 파트너 선택을 추가하세요.",
+  "partnerSync.recommendations.positions.2": "각 제안의 이유를 메모로 설명하세요.",
+  "partnerSync.recommendations.positions.3": "쉬운 옵션과 어려운 옵션을 섞어 균형을 맞추세요.",
+  "partnerSync.recommendations.positions.4": "시도한 포지션을 표시해 목록을 تازه하게 유지하세요.",
   "partnerSync.recommendations.positions.5":
     "새로운 것을 시도하기 전에 안전 체크리스트와 경계를 확인하세요.",
-  "partnerSync.recommendations.positions.6":
-    "교환 제안을 통해 빠르게 대안을 조율하세요.",
-  "partnerSync.recommendations.safety.1":
-    "시작 전에 동의와 경계를 확인하세요.",
-  "partnerSync.recommendations.safety.2":
-    "실시간 확인을 위한 توقف/일시정지 단어를 정하세요.",
-  "partnerSync.recommendations.safety.3":
-    "애프터케어나 휴식 시간을 확보하세요.",
-  "partnerSync.recommendations.safety.4":
-    "위치 정보는 개인정보 설정으로 제어하세요.",
+  "partnerSync.recommendations.positions.6": "교환 제안을 통해 빠르게 대안을 조율하세요.",
+  "partnerSync.recommendations.safety.1": "시작 전에 동의와 경계를 확인하세요.",
+  "partnerSync.recommendations.safety.2": "실시간 확인을 위한 توقف/일시정지 단어를 정하세요.",
+  "partnerSync.recommendations.safety.3": "애프터케어나 휴식 시간을 확보하세요.",
+  "partnerSync.recommendations.safety.4": "위치 정보는 개인정보 설정으로 제어하세요.",
   "partnerSync.preview.subtitle": "빈 상태와 레이아웃을 확인하는 미리보기.",
 };

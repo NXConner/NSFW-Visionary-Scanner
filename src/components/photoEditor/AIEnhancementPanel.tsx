@@ -3,13 +3,14 @@
  * Style Transfer, Portrait Mode, Object Removal, Color Match
  */
 
-import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import type { AIEnhancementState } from "./AIEnhancementPanel.model";
+import { defaultAIEnhancement } from "./AIEnhancementPanel.model";
 import {
   Wand2,
   Palette,
@@ -23,57 +24,6 @@ import {
   Image,
   Brush,
 } from "lucide-react";
-
-export interface AIEnhancementState {
-  // Style Transfer
-  styleTransferEnabled: boolean;
-  styleType: "oilPainting" | "watercolor" | "sketch" | "anime" | "impressionist" | null;
-  styleIntensity: number;
-  
-  // Portrait Mode
-  portraitModeEnabled: boolean;
-  backgroundBlur: number;
-  skinSmoothing: number;
-  faceLighting: number;
-  
-  // Object Removal
-  objectRemovalEnabled: boolean;
-  removeBackground: boolean;
-  blurBackground: boolean;
-  backgroundBlurAmount: number;
-  
-  // Color Match
-  colorMatchEnabled: boolean;
-  referenceImage: string | null;
-  matchIntensity: number;
-  
-  // Auto Enhancement
-  autoEnhanceEnabled: boolean;
-  autoEnhanceStrength: number;
-}
-
-export const defaultAIEnhancement: AIEnhancementState = {
-  styleTransferEnabled: false,
-  styleType: null,
-  styleIntensity: 75,
-  
-  portraitModeEnabled: false,
-  backgroundBlur: 50,
-  skinSmoothing: 30,
-  faceLighting: 0,
-  
-  objectRemovalEnabled: false,
-  removeBackground: false,
-  blurBackground: false,
-  backgroundBlurAmount: 50,
-  
-  colorMatchEnabled: false,
-  referenceImage: null,
-  matchIntensity: 75,
-  
-  autoEnhanceEnabled: false,
-  autoEnhanceStrength: 50,
-};
 
 const STYLE_PRESETS = [
   { key: "oilPainting", label: "Oil Paint", icon: <Brush className="w-4 h-4" /> },
@@ -109,13 +59,12 @@ export function AIEnhancementPanel({ state, onChange, isProcessing, onApply }: P
             <RefreshCw className="w-3 h-3" />
           </Button>
           {onApply && (
-            <Button
-              size="sm"
-              onClick={onApply}
-              disabled={isProcessing}
-              className="h-7 gap-1"
-            >
-              {isProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+            <Button size="sm" onClick={onApply} disabled={isProcessing} className="h-7 gap-1">
+              {isProcessing ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Check className="w-3 h-3" />
+              )}
               Apply
             </Button>
           )}
@@ -138,7 +87,9 @@ export function AIEnhancementPanel({ state, onChange, isProcessing, onApply }: P
           <div className="space-y-1">
             <div className="flex justify-between">
               <span className="text-[10px]">Strength</span>
-              <span className="text-[10px] text-muted-foreground">{state.autoEnhanceStrength}%</span>
+              <span className="text-[10px] text-muted-foreground">
+                {state.autoEnhanceStrength}%
+              </span>
             </div>
             <Slider
               value={[state.autoEnhanceStrength]}
@@ -282,7 +233,9 @@ export function AIEnhancementPanel({ state, onChange, isProcessing, onApply }: P
             <div className="space-y-1">
               <div className="flex justify-between">
                 <span className="text-[10px]">Blur Amount</span>
-                <span className="text-[10px] text-muted-foreground">{state.backgroundBlurAmount}%</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {state.backgroundBlurAmount}%
+                </span>
               </div>
               <Slider
                 value={[state.backgroundBlurAmount]}

@@ -8,6 +8,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -54,6 +55,8 @@ serve(async req => {
       });
     }
 
+    const privileged = await getPrivilegedFlags(supabaseClient, user.id);
+
     // Optional packageId request (if client wants a specific package)
     let requestedPackageId: string | null = null;
     try {
@@ -63,40 +66,43 @@ serve(async req => {
       // ignore
     }
 
-    // Load active licenses (users can own multiple)
-    let licensesQuery = supabaseClient
-      .from("dlc_licenses")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("is_active", true);
+    // Load active licenses (users can own multiple). Privileged roles bypass license requirement.
+    let activeLicenses: any[] = [];
+    if (!privileged.isPrivileged) {
+      let licensesQuery = supabaseClient
+        .from("dlc_licenses")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("is_active", true);
 
-    if (requestedPackageId) {
-      licensesQuery = licensesQuery.eq("package_id", requestedPackageId);
-    }
+      if (requestedPackageId) {
+        licensesQuery = licensesQuery.eq("package_id", requestedPackageId);
+      }
 
-    const { data: licenses, error: licensesError } = await licensesQuery;
+      const { data: licenses, error: licensesError } = await licensesQuery;
 
-    if (licensesError || !licenses || licenses.length === 0) {
-      return new Response(JSON.stringify({ error: "No active DLC license found" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      if (licensesError || !licenses || licenses.length === 0) {
+        return new Response(JSON.stringify({ error: "No active DLC license found" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Filter out expired licenses (support expiration_date and subscription_end)
+      const now = new Date();
+      activeLicenses = licenses.filter((l: any) => {
+        if (l.refunded_at || l.deactivated_at) return false;
+        const exp = l.expiration_date ?? l.subscription_end ?? null;
+        if (!exp) return true;
+        return new Date(exp) >= now;
       });
-    }
 
-    // Filter out expired licenses (support expiration_date and subscription_end)
-    const now = new Date();
-    const activeLicenses = licenses.filter((l: any) => {
-      if (l.refunded_at || l.deactivated_at) return false;
-      const exp = l.expiration_date ?? l.subscription_end ?? null;
-      if (!exp) return true;
-      return new Date(exp) >= now;
-    });
-
-    if (activeLicenses.length === 0) {
-      return new Response(JSON.stringify({ error: "DLC license has expired" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (activeLicenses.length === 0) {
+        return new Response(JSON.stringify({ error: "DLC license has expired" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Get latest content package (global)
@@ -118,9 +124,9 @@ serve(async req => {
     // Determine user's current content version (prefer explicit license.content_version; fallback to license.content_version-like fields)
     const firstLicense: any = activeLicenses[0];
     const userContentVersion =
-      firstLicense.content_version ??
-      firstLicense.contentVersion ??
-      firstLicense.content_version ??
+      firstLicense?.content_version ??
+      firstLicense?.contentVersion ??
+      firstLicense?.content_version ??
       null;
 
     // Return content package information
@@ -146,6 +152,9 @@ serve(async req => {
           version: userContentVersion,
           hasUpdate: userContentVersion ? contentPackage.version !== userContentVersion : true,
         },
+        grantedBy: privileged.isPrivileged
+          ? { role: privileged.isSuperAdmin ? "super_admin" : "admin" }
+          : undefined,
       }),
       {
         status: 200,

@@ -24,6 +24,10 @@ type Pt = {
   a: number;
 };
 
+// FPS cap to prevent excessive CPU usage on high-refresh-rate displays
+const TARGET_FPS = 30;
+const FRAME_INTERVAL = 1000 / TARGET_FPS;
+
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -67,10 +71,7 @@ export function ParticleField({
     line: "rgba(255,255,255,0.06)",
     at: 0,
   });
-  // FPS cap to prevent excessive CPU usage on high-refresh-rate displays
   const lastFrameTimeRef = React.useRef<number>(0);
-  const TARGET_FPS = 30;
-  const FRAME_INTERVAL = 1000 / TARGET_FPS;
 
   React.useEffect(() => {
     if (paused) return;

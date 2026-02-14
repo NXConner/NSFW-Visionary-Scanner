@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +14,20 @@ type ReqBody = {
   deviceId?: string;
   devicePlatform?: "web" | "android" | "ios";
 };
+
+function envTrue(name: string): boolean {
+  const v = (Deno.env.get(name) ?? "").trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
+function isSafeAssetPath(packageId: string, assetPath: string): boolean {
+  if (!assetPath) return false;
+  if (assetPath.length > 1024) return false;
+  if (assetPath.includes("..") || assetPath.startsWith("/") || assetPath.includes("\\"))
+    return false;
+  if (!assetPath.startsWith(`${packageId}/`)) return false;
+  return true;
+}
 
 serve(async req => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -45,16 +60,10 @@ serve(async req => {
       });
     }
 
-    // Super-admin bypass (for internal testing / full-access accounts)
+    // Privileged bypass (admin/super_admin):
     // - Allows signing URLs without DLC license ownership and without age verification rows.
     // - Still enforces asset namespace constraints and uses signed URLs (no public bucket access).
-    const email = String(user.email || "").toLowerCase();
-    const { data: roleRows } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id);
-    const roles = (roleRows || []).map((r: any) => String(r.role || ""));
-    const isSuperAdmin = roles.includes("super_admin") || email === "n8ter8@gmail.com";
+    const privileged = await getPrivilegedFlags(supabase, user.id);
 
     const body = (await req.json()) as ReqBody;
     const packageId = String(body.packageId || "");
@@ -75,17 +84,27 @@ serve(async req => {
       });
     }
 
-    // Prevent arbitrary path probing: require assets to be namespaced under the package.
-    if (!assetPath.startsWith(`${packageId}/`)) {
+    // Optional hard requirement: enforce device binding by refusing unsigned-device requests.
+    // This is a defense-in-depth control against "omit deviceId to bypass limits".
+    const requireDeviceBinding = envTrue("DLC_REQUIRE_DEVICE_BINDING");
+    if (requireDeviceBinding && !deviceId && !privileged.isPrivileged) {
+      return new Response(JSON.stringify({ error: "deviceId required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Prevent arbitrary path probing: require safe, namespaced asset paths.
+    if (!isSafeAssetPath(packageId, assetPath)) {
       return new Response(JSON.stringify({ error: "Invalid asset path" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // If super_admin, bypass license + age checks (still device binds if deviceId is provided).
-    // This enables full content visibility for the designated internal admin account.
-    if (isSuperAdmin) {
+    // If privileged, bypass license + age checks (still requires safe asset paths).
+    // This enables full content visibility for internal admin accounts.
+    if (privileged.isPrivileged) {
       const bucket = Deno.env.get("NSFW_CONTENT_BUCKET") ?? "nsfw-content";
       const { data, error } = await supabase.storage
         .from(bucket)
@@ -96,7 +115,7 @@ serve(async req => {
         JSON.stringify({
           signedUrl: data.signedUrl,
           expiresInSeconds,
-          grantedBy: { role: "super_admin" },
+          grantedBy: { role: privileged.isSuperAdmin ? "super_admin" : "admin" },
         }),
         {
           status: 200,

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,18 +54,22 @@ serve(async req => {
       });
     }
 
-    // Ensure age gate for adult features
-    const { data: age, error: ageError } = await supabase
-      .from("dlc_age_verifications")
-      .select("is_verified, adult_content_consent, terms_accepted")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (ageError) throw ageError;
-    if (!(age?.is_verified && age?.adult_content_consent && age?.terms_accepted)) {
-      return new Response(JSON.stringify({ error: "Age verification required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const privileged = await getPrivilegedFlags(supabase, user.id);
+
+    if (!privileged.isPrivileged) {
+      // Ensure age gate for adult features
+      const { data: age, error: ageError } = await supabase
+        .from("dlc_age_verifications")
+        .select("is_verified, adult_content_consent, terms_accepted")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (ageError) throw ageError;
+      if (!(age?.is_verified && age?.adult_content_consent && age?.terms_accepted)) {
+        return new Response(JSON.stringify({ error: "Age verification required" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const body = (await req.json()) as ReqBody;

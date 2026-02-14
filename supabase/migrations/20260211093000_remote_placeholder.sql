@@ -1,0 +1,9 @@
+-- Placeholder migration (no-op)
+--
+-- This migration version exists in the remote database migration history,
+-- but the corresponding SQL file is missing from this repository.
+--
+-- Purpose: align local migrations directory with remote history so
+-- `supabase db push` can apply subsequent migrations.
+--
+-- Intentionally empty.

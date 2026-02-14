@@ -155,6 +155,29 @@ serve(async req => {
       }
     };
 
+    const reactivateDlcByPaymentIds = async (
+      paymentIds: Array<string | null | undefined>,
+      reason: string,
+    ) => {
+      const ids = paymentIds.filter(Boolean) as string[];
+      if (!ids.length) return;
+      const orClause = ids.map(id => `payment_id.eq.${id}`).join(",");
+      const { error } = await supabaseClient
+        .from("dlc_licenses")
+        .update({
+          is_active: true,
+          deactivated_at: null,
+          refund_reason: null,
+          refunded_at: null,
+          updated_at: nowIso,
+        })
+        .eq("payment_provider", "stripe")
+        .or(orClause);
+      if (error) {
+        console.warn("Failed to reactivate DLC licenses:", { reason, error });
+      }
+    };
+
     const revokeMarketplaceByPaymentIds = async (
       paymentIds: Array<string | null | undefined>,
       reason: string,
@@ -848,23 +871,35 @@ serve(async req => {
             : nowIso;
           const reason = (refund as any).reason ?? "refund_updated";
           const chargeId = typeof refund.charge === "string" ? refund.charge : null;
-          await revokeDlcByPaymentIds([chargeId], `refund_updated:${reason}`, refundedAtIso);
+          const paymentIntentId =
+            typeof (refund as any).payment_intent === "string"
+              ? (refund as any).payment_intent
+              : null;
+          await revokeDlcByPaymentIds(
+            [paymentIntentId, chargeId],
+            `refund_updated:${reason}`,
+            refundedAtIso,
+          );
           await revokeMarketplaceByPaymentIds(
-            [chargeId],
+            [paymentIntentId, chargeId],
             `refund_updated:${reason}`,
             refundedAtIso,
           );
           await revokeRoutineMarketplaceByPaymentIds(
-            [chargeId],
+            [paymentIntentId, chargeId],
             `refund_updated:${reason}`,
             refundedAtIso,
           );
           await revokePremiumContentByPaymentIds(
-            [chargeId],
+            [paymentIntentId, chargeId],
             `refund_updated:${reason}`,
             refundedAtIso,
           );
-          await revokeAddOnsByPaymentIds([chargeId], `refund_updated:${reason}`, refundedAtIso);
+          await revokeAddOnsByPaymentIds(
+            [paymentIntentId, chargeId],
+            `refund_updated:${reason}`,
+            refundedAtIso,
+          );
           break;
         }
 
@@ -874,37 +909,74 @@ serve(async req => {
             ? new Date(dispute.created * 1000).toISOString()
             : nowIso;
           const chargeId = typeof dispute.charge === "string" ? dispute.charge : null;
-          await revokeDlcByPaymentIds([chargeId], "dispute_created", createdIso);
-          await revokeMarketplaceByPaymentIds([chargeId], "dispute_created", createdIso);
-          await revokeRoutineMarketplaceByPaymentIds([chargeId], "dispute_created", createdIso);
-          await revokePremiumContentByPaymentIds([chargeId], "dispute_created", createdIso);
-          await revokeAddOnsByPaymentIds([chargeId], "dispute_created", createdIso);
+          let paymentIntentId: string | null = null;
+          try {
+            if (chargeId) {
+              const charge = (await stripe.charges.retrieve(chargeId)) as any;
+              if (typeof charge?.payment_intent === "string")
+                paymentIntentId = charge.payment_intent;
+            }
+          } catch {
+            // ignore
+          }
+          await revokeDlcByPaymentIds([paymentIntentId, chargeId], "dispute_created", createdIso);
+          await revokeMarketplaceByPaymentIds(
+            [paymentIntentId, chargeId],
+            "dispute_created",
+            createdIso,
+          );
+          await revokeRoutineMarketplaceByPaymentIds(
+            [paymentIntentId, chargeId],
+            "dispute_created",
+            createdIso,
+          );
+          await revokePremiumContentByPaymentIds(
+            [paymentIntentId, chargeId],
+            "dispute_created",
+            createdIso,
+          );
+          await revokeAddOnsByPaymentIds(
+            [paymentIntentId, chargeId],
+            "dispute_created",
+            createdIso,
+          );
           break;
         }
 
         case "charge.dispute.closed": {
           const dispute = event.data.object as Stripe.Dispute;
           const chargeId = typeof dispute.charge === "string" ? dispute.charge : null;
+          let paymentIntentId: string | null = null;
+          try {
+            if (chargeId) {
+              const charge = (await stripe.charges.retrieve(chargeId)) as any;
+              if (typeof charge?.payment_intent === "string")
+                paymentIntentId = charge.payment_intent;
+            }
+          } catch {
+            // ignore
+          }
           // If dispute was won, we can re-activate; otherwise keep revoked.
-          if (chargeId && dispute.status === "won") {
-            const { error } = await supabaseClient
-              .from("dlc_licenses")
-              .update({
-                is_active: true,
-                deactivated_at: null,
-                refund_reason: null,
-                refunded_at: null,
-                updated_at: nowIso,
-              })
-              .eq("payment_provider", "stripe")
-              .eq("payment_id", chargeId);
-            if (error) console.warn("Failed to reactivate DLC after dispute won:", error);
+          if (dispute.status === "won") {
+            await reactivateDlcByPaymentIds([paymentIntentId, chargeId], "dispute_won");
           } else if (chargeId) {
-            await revokeDlcByPaymentIds([chargeId], "dispute_closed", nowIso);
-            await revokeMarketplaceByPaymentIds([chargeId], "dispute_closed", nowIso);
-            await revokeRoutineMarketplaceByPaymentIds([chargeId], "dispute_closed", nowIso);
-            await revokePremiumContentByPaymentIds([chargeId], "dispute_closed", nowIso);
-            await revokeAddOnsByPaymentIds([chargeId], "dispute_closed", nowIso);
+            await revokeDlcByPaymentIds([paymentIntentId, chargeId], "dispute_closed", nowIso);
+            await revokeMarketplaceByPaymentIds(
+              [paymentIntentId, chargeId],
+              "dispute_closed",
+              nowIso,
+            );
+            await revokeRoutineMarketplaceByPaymentIds(
+              [paymentIntentId, chargeId],
+              "dispute_closed",
+              nowIso,
+            );
+            await revokePremiumContentByPaymentIds(
+              [paymentIntentId, chargeId],
+              "dispute_closed",
+              nowIso,
+            );
+            await revokeAddOnsByPaymentIds([paymentIntentId, chargeId], "dispute_closed", nowIso);
           }
           break;
         }

@@ -3,53 +3,25 @@
  * Light leaks, film grain, bokeh, dust/scratch overlays
  */
 
-import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import {
-  Layers,
-  Sun,
-  Film,
-  Sparkles,
-  Circle,
-  RefreshCw,
-} from "lucide-react";
-
-export interface OverlayState {
-  filmGrain: number;
-  grainSize: "fine" | "medium" | "coarse";
-  lightLeak: string | null;
-  lightLeakIntensity: number;
-  bokeh: number;
-  bokehSize: number;
-  dustScratches: number;
-  textureOverlay: string | null;
-  textureOpacity: number;
-  chromaAberration: number;
-}
-
-export const defaultOverlays: OverlayState = {
-  filmGrain: 0,
-  grainSize: "fine",
-  lightLeak: null,
-  lightLeakIntensity: 50,
-  bokeh: 0,
-  bokehSize: 50,
-  dustScratches: 0,
-  textureOverlay: null,
-  textureOpacity: 30,
-  chromaAberration: 0,
-};
+import type { OverlayState } from "./OverlaysPanel.model";
+import { defaultOverlays } from "./OverlaysPanel.model";
+import { Layers, Sun, Film, Sparkles, Circle, RefreshCw } from "lucide-react";
 
 const LIGHT_LEAK_PRESETS = [
   { key: "warm", label: "Warm", color: "bg-gradient-to-br from-orange-500/50 to-yellow-500/30" },
   { key: "cool", label: "Cool", color: "bg-gradient-to-br from-blue-500/50 to-cyan-500/30" },
   { key: "sunset", label: "Sunset", color: "bg-gradient-to-br from-red-500/50 to-orange-500/30" },
   { key: "neon", label: "Neon", color: "bg-gradient-to-br from-pink-500/50 to-purple-500/30" },
-  { key: "vintage", label: "Vintage", color: "bg-gradient-to-br from-amber-600/50 to-yellow-300/30" },
+  {
+    key: "vintage",
+    label: "Vintage",
+    color: "bg-gradient-to-br from-amber-600/50 to-yellow-300/30",
+  },
 ];
 
 const TEXTURE_PRESETS = [
@@ -127,12 +99,16 @@ export function OverlaysPanel({ state, onChange }: Props) {
           {LIGHT_LEAK_PRESETS.map(preset => (
             <button
               key={preset.key}
-              onClick={() => update("lightLeak", state.lightLeak === preset.key ? null : preset.key)}
+              type="button"
+              onClick={() =>
+                update("lightLeak", state.lightLeak === preset.key ? null : preset.key)
+              }
               className={`
                 aspect-square rounded-md ${preset.color} border-2 transition-all
                 ${state.lightLeak === preset.key ? "border-primary scale-105" : "border-transparent hover:border-border"}
               `}
               title={preset.label}
+              aria-label={preset.label}
             />
           ))}
         </div>
@@ -228,7 +204,9 @@ export function OverlaysPanel({ state, onChange }: Props) {
               key={preset.key}
               variant={state.textureOverlay === preset.key ? "default" : "outline"}
               size="sm"
-              onClick={() => update("textureOverlay", state.textureOverlay === preset.key ? null : preset.key)}
+              onClick={() =>
+                update("textureOverlay", state.textureOverlay === preset.key ? null : preset.key)
+              }
               className="text-xs"
             >
               {preset.label}
