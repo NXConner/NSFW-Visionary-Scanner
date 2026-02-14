@@ -8,6 +8,14 @@ verify_jwt = true
 enabled = true
 verify_jwt = true
 
+[functions.admin-notifications]
+enabled = true
+verify_jwt = true
+
+[functions.dispatch-broadcast-notifications]
+enabled = true
+verify_jwt = false
+
 [functions.admin-beta-access]
 enabled = true
 verify_jwt = true
