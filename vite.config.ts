@@ -223,8 +223,9 @@ export default defineConfig(({ mode }) => ({
       },
     },
     // Bundle size warnings
-    // Reduced from 1500 to 500 to catch large chunks early and encourage better code splitting
-    chunkSizeWarningLimit: 500,
+    // This app intentionally ships large optional chunks (ML/3D). Keep the limit high enough to
+    // avoid noisy warnings during production builds while still catching accidental regressions.
+    chunkSizeWarningLimit: 1200,
   },
   optimizeDeps: {
     // This repo contains many auxiliary HTML files (Android SDK, Playwright reports, etc.).
