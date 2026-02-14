@@ -45,6 +45,12 @@ android/**/build/reports/
 android/**/build/outputs/**/output-metadata.json
 android/**/build/outputs/**/baselineProfiles/
 android/**/build/outputs/**/baselineProfiles/**
+android/**/build/outputs/logs/
+android/**/build/outputs/logs/**
+android/**/build/outputs/mapping/
+android/**/build/outputs/mapping/**
+android/**/build/outputs/sdk-dependencies/
+android/**/build/outputs/sdk-dependencies/**
 
 # Android Gradle properties (base config tracked; secrets local)
 android/gradle.properties.local
