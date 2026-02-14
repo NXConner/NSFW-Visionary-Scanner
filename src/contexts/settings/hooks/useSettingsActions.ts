@@ -7,6 +7,7 @@ import {
   dataUrlToBlob,
   setCustomWallpaperBlob,
 } from "@/lib/wallpaperStorage";
+import { uploadUserWallpaper } from "@/lib/wallpaperCloud";
 
 import { CUSTOM_WALLPAPER_BLOB_SENTINEL, defaultPresetForMode } from "../constants";
 import { getWallpaperExtHintFromFile } from "../wallpaperUtils";
@@ -22,9 +23,11 @@ import type {
 } from "../types";
 
 export function useSettingsActions(args: {
+  userId: string | null | undefined;
   theme: ThemeMode;
   themePreset: ThemePresetId;
   customWallpaper: string | null;
+  customWallpaperCloudPath: string | null;
   wallpaperBlur: number;
   wallpaperOpacity: number;
   fontSize: FontSize;
@@ -37,6 +40,7 @@ export function useSettingsActions(args: {
   setThemePresetState: (preset: ThemePresetId) => void;
   setCustomWallpaperState: (next: string | null) => void;
   setCustomWallpaperStoredAsBlob: (next: boolean) => void;
+  setCustomWallpaperCloudPathState: (next: string | null) => void;
   setWallpaperBlurState: (blur: number) => void;
   setWallpaperOpacityState: (opacity: number) => void;
   setFontSizeState: (size: FontSize) => void;
@@ -59,9 +63,11 @@ export function useSettingsActions(args: {
   setUiFxWallpaperMotionEnabledState: (enabled: boolean) => void;
 }) {
   const {
+    userId,
     theme,
     themePreset,
     customWallpaper,
+    customWallpaperCloudPath,
     wallpaperBlur,
     wallpaperOpacity,
     fontSize,
@@ -72,6 +78,7 @@ export function useSettingsActions(args: {
     setThemePresetState,
     setCustomWallpaperState,
     setCustomWallpaperStoredAsBlob,
+    setCustomWallpaperCloudPathState,
     setWallpaperBlurState,
     setWallpaperOpacityState,
     setFontSizeState,
@@ -137,16 +144,34 @@ export function useSettingsActions(args: {
       setCustomWallpaperBlob(file).catch(() => {
         toast.error("Failed to save wallpaper");
       });
+
+      // Best-effort: upload to cloud for cross-device persistence (private bucket + RLS).
+      if (userId) {
+        void (async () => {
+          const uploaded = await uploadUserWallpaper({
+            userId: String(userId),
+            file,
+            filenameHint: file.name,
+          });
+          if (!uploaded?.path) return;
+          setCustomWallpaperCloudPathState(uploaded.path);
+          persistSettings({ customWallpaperCloudPath: uploaded.path });
+          void syncToCloud();
+        })();
+      }
     },
     [
       createWallpaperObjectUrl,
+      userId,
       persistSettings,
       revokeActiveObjectUrl,
+      setCustomWallpaperCloudPathState,
       themePreset,
       wallpaperBlur,
       wallpaperOpacity,
       setCustomWallpaperState,
       setCustomWallpaperStoredAsBlob,
+      syncToCloud,
     ],
   );
 
@@ -156,9 +181,11 @@ export function useSettingsActions(args: {
         revokeActiveObjectUrl();
         setCustomWallpaperStoredAsBlob(false);
         setCustomWallpaperState(null);
-        persistSettings({ customWallpaper: null });
+        setCustomWallpaperCloudPathState(null);
+        persistSettings({ customWallpaper: null, customWallpaperCloudPath: null });
         applyThemeToDocument(themePreset, null, wallpaperBlur, wallpaperOpacity);
         void clearCustomWallpaperBlob();
+        void syncToCloud();
         return;
       }
 
@@ -187,19 +214,24 @@ export function useSettingsActions(args: {
       revokeActiveObjectUrl();
       setCustomWallpaperStoredAsBlob(false);
       setCustomWallpaperState(value);
-      persistSettings({ customWallpaper: value });
+      // Remote / preset string does not use cloud-storage path; clear any prior cloud path.
+      if (customWallpaperCloudPath) setCustomWallpaperCloudPathState(null);
+      persistSettings({ customWallpaper: value, customWallpaperCloudPath: null });
       applyThemeToDocument(themePreset, value, wallpaperBlur, wallpaperOpacity);
       void clearCustomWallpaperBlob();
     },
     [
       createWallpaperObjectUrl,
+      customWallpaperCloudPath,
       persistSettings,
       revokeActiveObjectUrl,
+      setCustomWallpaperCloudPathState,
       themePreset,
       wallpaperBlur,
       wallpaperOpacity,
       setCustomWallpaperState,
       setCustomWallpaperStoredAsBlob,
+      syncToCloud,
     ],
   );
 

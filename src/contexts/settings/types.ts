@@ -104,6 +104,12 @@ export interface StoredSettings {
   theme: ThemeMode;
   themePreset: import("@/design-system").ThemePresetId;
   customWallpaper: string | null;
+  /**
+   * Optional: cloud-synced path for a private wallpaper object in Supabase Storage.
+   * When present, other devices can download and persist it into IndexedDB and then
+   * render using the local blob sentinel flow.
+   */
+  customWallpaperCloudPath?: string | null;
   wallpaperBlur: number;
   wallpaperOpacity: number;
   fontSize: FontSize;

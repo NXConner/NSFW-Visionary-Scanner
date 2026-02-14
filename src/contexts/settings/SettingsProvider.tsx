@@ -1,7 +1,18 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { themePresets, type ThemePresetId } from "@/design-system";
 import { useAuth } from "@/contexts/AuthContext";
+import { setCustomWallpaperBlob } from "@/lib/wallpaperStorage";
+import { downloadUserWallpaper } from "@/lib/wallpaperCloud";
 
 import {
   CUSTOM_WALLPAPER_BLOB_SENTINEL,
@@ -46,6 +57,9 @@ export function SettingsProvider({ children }: { children: ReactNode }): JSX.Ele
   const [themePreset, setThemePresetState] = useState<ThemePresetId>(initial.themePreset);
   const [customWallpaper, setCustomWallpaperState] = useState<string | null>(
     initial.customWallpaper,
+  );
+  const [customWallpaperCloudPath, setCustomWallpaperCloudPathState] = useState<string | null>(
+    initial.customWallpaperCloudPath ?? null,
   );
   const [customWallpaperStoredAsBlob, setCustomWallpaperStoredAsBlob] = useState<boolean>(false);
   const [wallpaperBlur, setWallpaperBlurState] = useState<number>(initial.wallpaperBlur);
@@ -100,6 +114,7 @@ export function SettingsProvider({ children }: { children: ReactNode }): JSX.Ele
           theme,
           themePreset,
           customWallpaper: persistedCustomWallpaper,
+          customWallpaperCloudPath,
           wallpaperBlur,
           wallpaperOpacity,
           fontSize,
@@ -132,6 +147,7 @@ export function SettingsProvider({ children }: { children: ReactNode }): JSX.Ele
       customAccentColor,
       customInterfaceColors,
       customWallpaper,
+      customWallpaperCloudPath,
       customWallpaperStoredAsBlob,
       fontFamily,
       fontSize,
@@ -165,24 +181,188 @@ export function SettingsProvider({ children }: { children: ReactNode }): JSX.Ele
     setCustomWallpaperState,
   });
 
+  // If a cloud wallpaper path exists, download it once per path and persist into IndexedDB,
+  // then render through the existing "blob sentinel" wallpaper flow.
+  const lastDownloadedWallpaperPathRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!user?.id) {
+      lastDownloadedWallpaperPathRef.current = null;
+      return;
+    }
+    const path = customWallpaperCloudPath;
+    if (!path) {
+      lastDownloadedWallpaperPathRef.current = null;
+      return;
+    }
+
+    // If we already have a wallpaper blob rendered locally, avoid re-downloading.
+    if (customWallpaperStoredAsBlob && typeof customWallpaper === "string" && customWallpaper) {
+      lastDownloadedWallpaperPathRef.current = path;
+      return;
+    }
+
+    if (lastDownloadedWallpaperPathRef.current === path) return;
+    lastDownloadedWallpaperPathRef.current = path;
+
+    void (async () => {
+      const res = await downloadUserWallpaper({ path });
+      if (!res?.blob) return;
+      await setCustomWallpaperBlob(res.blob);
+
+      revokeActiveObjectUrl();
+      const extHint = String(path.split(".").pop() || "png").slice(0, 8);
+      const nextUrl = createWallpaperObjectUrl(res.blob, extHint);
+      setCustomWallpaperStoredAsBlob(true);
+      setCustomWallpaperState(nextUrl);
+      persistSettings({ customWallpaper: CUSTOM_WALLPAPER_BLOB_SENTINEL });
+    })();
+  }, [
+    createWallpaperObjectUrl,
+    customWallpaper,
+    customWallpaperCloudPath,
+    customWallpaperStoredAsBlob,
+    persistSettings,
+    revokeActiveObjectUrl,
+    user?.id,
+  ]);
+
+  const settingsSnapshot = useMemo<StoredSettings>(
+    () => ({
+      theme,
+      themePreset,
+      customWallpaper,
+      customWallpaperCloudPath,
+      wallpaperBlur,
+      wallpaperOpacity,
+      fontSize,
+      fontFamily,
+      customAccentColor,
+      customInterfaceColors,
+      colorBlindMode,
+      measurementUnits,
+      pressureUnits,
+      hapticEnabled,
+      notificationsEnabled,
+      reminderTime,
+      reminderDays,
+      uiFxEnabled,
+      uiFxCardsEnabled,
+      uiFxCardTiltEnabled,
+      uiFxButtonsEnabled,
+      uiFxGlowEnabled,
+      uiFxRippleEnabled,
+      uiFxWallpaperMotionEnabled,
+    }),
+    [
+      colorBlindMode,
+      customAccentColor,
+      customInterfaceColors,
+      customWallpaper,
+      customWallpaperCloudPath,
+      fontFamily,
+      fontSize,
+      hapticEnabled,
+      measurementUnits,
+      notificationsEnabled,
+      pressureUnits,
+      reminderDays,
+      reminderTime,
+      theme,
+      themePreset,
+      uiFxButtonsEnabled,
+      uiFxCardTiltEnabled,
+      uiFxCardsEnabled,
+      uiFxEnabled,
+      uiFxGlowEnabled,
+      uiFxRippleEnabled,
+      uiFxWallpaperMotionEnabled,
+      wallpaperBlur,
+      wallpaperOpacity,
+    ],
+  );
+
+  const applySettingsFromCloud = useCallback(
+    (next: StoredSettings) => {
+      // Theme / typography
+      setThemePresetState(next.themePreset);
+      setFontSizeState(next.fontSize);
+      setFontFamilyState(next.fontFamily);
+      setColorBlindModeState(next.colorBlindMode);
+
+      // Wallpaper / UI chrome
+      setWallpaperBlurState(next.wallpaperBlur);
+      setWallpaperOpacityState(next.wallpaperOpacity);
+      setCustomAccentColorState(next.customAccentColor);
+      setCustomInterfaceColorsState(next.customInterfaceColors);
+      setCustomWallpaperCloudPathState(next.customWallpaperCloudPath ?? null);
+
+      // Units
+      setMeasurementUnitsState(next.measurementUnits);
+      setPressureUnitsState(next.pressureUnits);
+
+      // Reminders / haptics / notifications
+      setHapticEnabledState(next.hapticEnabled);
+      setNotificationsEnabledState(next.notificationsEnabled);
+      setReminderTimeState(next.reminderTime);
+      setReminderDaysState(next.reminderDays);
+
+      // UI micro-interactions
+      setUiFxEnabledState(next.uiFxEnabled);
+      setUiFxCardsEnabledState(next.uiFxCardsEnabled);
+      setUiFxCardTiltEnabledState(next.uiFxCardTiltEnabled);
+      setUiFxButtonsEnabledState(next.uiFxButtonsEnabled);
+      setUiFxGlowEnabledState(next.uiFxGlowEnabled);
+      setUiFxRippleEnabledState(next.uiFxRippleEnabled);
+      setUiFxWallpaperMotionEnabledState(next.uiFxWallpaperMotionEnabled);
+
+      // Custom wallpaper value:
+      // - Cloud blob flow uses the sentinel and will be restored via IndexedDB (and optional cloud download).
+      // - URL/preset strings are applied directly.
+      revokeActiveObjectUrl();
+      if (next.customWallpaper === CUSTOM_WALLPAPER_BLOB_SENTINEL) {
+        setCustomWallpaperStoredAsBlob(true);
+        setCustomWallpaperState(null);
+        persistSettings({ ...next, customWallpaper: CUSTOM_WALLPAPER_BLOB_SENTINEL });
+      } else {
+        setCustomWallpaperStoredAsBlob(false);
+        setCustomWallpaperState(next.customWallpaper);
+        persistSettings({ ...next, customWallpaper: next.customWallpaper ?? null });
+      }
+    },
+    [
+      persistSettings,
+      revokeActiveObjectUrl,
+      setColorBlindModeState,
+      setCustomAccentColorState,
+      setCustomInterfaceColorsState,
+      setCustomWallpaperCloudPathState,
+      setCustomWallpaperState,
+      setCustomWallpaperStoredAsBlob,
+      setFontFamilyState,
+      setFontSizeState,
+      setHapticEnabledState,
+      setMeasurementUnitsState,
+      setNotificationsEnabledState,
+      setPressureUnitsState,
+      setReminderDaysState,
+      setReminderTimeState,
+      setThemePresetState,
+      setUiFxButtonsEnabledState,
+      setUiFxCardTiltEnabledState,
+      setUiFxCardsEnabledState,
+      setUiFxEnabledState,
+      setUiFxGlowEnabledState,
+      setUiFxRippleEnabledState,
+      setUiFxWallpaperMotionEnabledState,
+      setWallpaperBlurState,
+      setWallpaperOpacityState,
+    ],
+  );
+
   const { isSyncing, syncToCloud } = useSettingsCloudSync({
     userId: user?.id,
-    theme,
-    themePreset,
-    fontSize,
-    colorBlindMode,
-    hapticEnabled,
-    notificationsEnabled,
-    reminderTime,
-    reminderDays,
-    persistSettings,
-    setThemePresetState,
-    setFontSizeState,
-    setColorBlindModeState,
-    setHapticEnabledState,
-    setNotificationsEnabledState,
-    setReminderTimeState,
-    setReminderDaysState,
+    settings: settingsSnapshot,
+    applySettingsFromCloud,
   });
 
   useSettingsDocumentEffects({
@@ -231,9 +411,11 @@ export function SettingsProvider({ children }: { children: ReactNode }): JSX.Ele
     setUiFxRippleEnabled,
     setUiFxWallpaperMotionEnabled,
   } = useSettingsActions({
+    userId: user?.id,
     theme,
     themePreset,
     customWallpaper,
+    customWallpaperCloudPath,
     wallpaperBlur,
     wallpaperOpacity,
     fontSize,
@@ -244,6 +426,7 @@ export function SettingsProvider({ children }: { children: ReactNode }): JSX.Ele
     setThemePresetState,
     setCustomWallpaperState,
     setCustomWallpaperStoredAsBlob,
+    setCustomWallpaperCloudPathState,
     setWallpaperBlurState,
     setWallpaperOpacityState,
     setFontSizeState,
