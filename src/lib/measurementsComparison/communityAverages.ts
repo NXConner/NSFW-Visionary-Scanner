@@ -35,7 +35,9 @@ export function getPlaceholderCommunityAverages(): CommunityAverages {
     avgGirthCm: null,
     windowDays: 0,
     computedAtIso: new Date().toISOString(),
-    placeholderNote: "Community averages are not available yet.",
+    // Generic note used only when a backend dependency is missing/unreachable.
+    // (UI can still provide a more specific message when sample size is simply insufficient.)
+    placeholderNote: "Community averages are currently unavailable.",
   };
 }
 

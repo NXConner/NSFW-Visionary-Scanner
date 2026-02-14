@@ -269,10 +269,11 @@ export function MeasurementsComparisonCard({
 
         {!isCommunityLoading && isSignedIn && !hasCommunity && (
           <div className="rounded-lg border border-border/60 bg-secondary/20 p-4">
-            <p className="text-sm font-medium">Community averages not available yet</p>
+            <p className="text-sm font-medium">Community averages unavailable</p>
             <p className="text-xs text-muted-foreground mt-1">
-              The app only shows community averages after enough scans exist (k-anonymity
-              threshold).
+              {community?.placeholderNote
+                ? community.placeholderNote
+                : "The app only shows community averages after enough scans exist (k-anonymity threshold)."}
             </p>
           </div>
         )}

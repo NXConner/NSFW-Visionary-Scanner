@@ -33,8 +33,11 @@ export function NsfwConsentGate({
   const { isAdmin, isSuperAdmin: isSuperAdminRole, isLoading: rolesHookLoading } = useUserRoles();
   const isPrivileged =
     isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole;
+  // Guard against accidental empty featureIds lists (would otherwise skip policy selection and
+  // incorrectly show "policies unavailable").
+  const effectiveFeatureIds = featureIds.length > 0 ? featureIds : ["nsfw"];
   const { loading, load, requiredPolicies, missingPolicies, hasConsent, acceptAll } =
-    useNsfwConsent(featureIds);
+    useNsfwConsent(effectiveFeatureIds);
   const [checked, setChecked] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -77,9 +80,14 @@ export function NsfwConsentGate({
               Consent Required
             </CardTitle>
             <CardDescription>
-              Consent policies are not available yet. Please try again later.
+              Consent policies are unavailable for this environment. Please try again later.
             </CardDescription>
           </CardHeader>
+          <CardContent className="pt-0">
+            <Button variant="outline" onClick={() => void load()}>
+              Retry
+            </Button>
+          </CardContent>
         </Card>
       </div>
     );
