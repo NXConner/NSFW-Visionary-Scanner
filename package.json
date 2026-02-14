@@ -58,8 +58,9 @@
     "dlc:validate-import": "tsx scripts/validate-dlc-import.ts",
     "dlc:validate-catalog": "tsx scripts/validate-dlc-catalog.ts",
     "android:sync": "cross-env NODE_ENV=production npx cap sync android",
-    "android:build": "cd android && ./gradlew.bat assembleRelease && cd ..",
-    "verify:production": "powershell -ExecutionPolicy Bypass -File scripts/verify-production-readiness.ps1"
+    "android:build": "node scripts/android-build.mjs",
+    "verify:production": "node scripts/verify-production-readiness.mjs",
+    "verify:production:ps": "powershell -ExecutionPolicy Bypass -File scripts/verify-production-readiness.ps1"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.4",
