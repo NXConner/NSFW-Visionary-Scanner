@@ -178,6 +178,8 @@ export default function AdminDashboard({ initialSection }: AdminDashboardProps) 
   const [activeSection, setActiveSection] = useState<string>(() =>
     normalizeSection(initialSection),
   );
+  type AdminDlcTab = "packages" | "promos" | "import" | "keys" | "nsfw";
+  const [dlcInitialTab, setDlcInitialTab] = useState<AdminDlcTab>("packages");
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -488,19 +490,44 @@ export default function AdminDashboard({ initialSection }: AdminDashboardProps) 
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <Button variant="outline" className="h-24 flex-col gap-2">
+                      <Button
+                        variant="outline"
+                        className="h-24 flex-col gap-2"
+                        onClick={() => setActiveSection("users")}
+                      >
                         <Users className="h-6 w-6" />
                         <span className="text-sm">Add User</span>
                       </Button>
-                      <Button variant="outline" className="h-24 flex-col gap-2">
+                      <Button
+                        variant="outline"
+                        className="h-24 flex-col gap-2"
+                        onClick={() => {
+                          setDlcInitialTab("packages");
+                          setActiveSection("dlc");
+                        }}
+                      >
                         <Package className="h-6 w-6" />
                         <span className="text-sm">New DLC</span>
                       </Button>
-                      <Button variant="outline" className="h-24 flex-col gap-2">
+                      <Button
+                        variant="outline"
+                        className="h-24 flex-col gap-2"
+                        onClick={() => {
+                          setDlcInitialTab("keys");
+                          setActiveSection("dlc");
+                        }}
+                      >
                         <Key className="h-6 w-6" />
                         <span className="text-sm">Generate Key</span>
                       </Button>
-                      <Button variant="outline" className="h-24 flex-col gap-2">
+                      <Button
+                        variant="outline"
+                        className="h-24 flex-col gap-2"
+                        onClick={() => {
+                          setDlcInitialTab("import");
+                          setActiveSection("dlc");
+                        }}
+                      >
                         <Upload className="h-6 w-6" />
                         <span className="text-sm">Upload Content</span>
                       </Button>
@@ -537,7 +564,7 @@ export default function AdminDashboard({ initialSection }: AdminDashboardProps) 
             {activeSection === "dlc" && (
               <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
                 <ErrorBoundary section="DLC">
-                  <AdminDLCPanel />
+                  <AdminDLCPanel initialTab={dlcInitialTab} />
                 </ErrorBoundary>
               </Suspense>
             )}

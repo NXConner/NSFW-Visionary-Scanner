@@ -49,3 +49,11 @@ export type AdminDlcPromoUpsertInput = {
   isActive?: boolean;
   campaignName?: string | null;
 };
+
+export type AdminDlcKeyringEntry = {
+  id: string;
+  keyVersion: number;
+  isActive: boolean;
+  createdAtIso: string | null;
+  rotatedAtIso: string | null;
+};

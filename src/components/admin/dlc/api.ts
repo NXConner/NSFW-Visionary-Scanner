@@ -1,6 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 
-import type { AdminDlcPackageRow, AdminDlcPromoDto, AdminDlcPromoUpsertInput } from "./types";
+import type {
+  AdminDlcKeyringEntry,
+  AdminDlcPackageRow,
+  AdminDlcPromoDto,
+  AdminDlcPromoUpsertInput,
+} from "./types";
 
 function edgeErrorMessage(e: unknown): string {
   if (!e) return "Unknown error";
@@ -76,4 +81,30 @@ export async function adminSetDlcPromoActive(params: {
   });
   if (error) throw new Error(error.message);
   return (data?.promo as AdminDlcPromoDto) ?? null;
+}
+
+export async function adminListDlcKeyring(params: {
+  packageId: string;
+  limit?: number;
+}): Promise<AdminDlcKeyringEntry[]> {
+  const { data, error } = await supabase.functions.invoke("admin-rotate-dlc-key", {
+    body: { action: "list", packageId: params.packageId, limit: params.limit ?? 20 },
+  });
+  if (error) throw new Error(error.message);
+  return ((data?.keys || []) as AdminDlcKeyringEntry[]) ?? [];
+}
+
+export async function adminRotateDlcKey(params: {
+  packageId: string;
+}): Promise<{ packageId: string; keyId: string; keyVersion: number }> {
+  const { data, error } = await supabase.functions.invoke("admin-rotate-dlc-key", {
+    body: { action: "rotate", packageId: params.packageId },
+  });
+  if (error) throw new Error(error.message);
+  if (!data?.ok) throw new Error(String(data?.error ?? "Key rotation failed"));
+  return {
+    packageId: String(data.packageId),
+    keyId: String(data.keyId),
+    keyVersion: Number(data.keyVersion ?? 0),
+  };
 }

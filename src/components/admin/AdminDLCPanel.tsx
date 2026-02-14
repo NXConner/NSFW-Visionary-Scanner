@@ -10,7 +10,7 @@
  * This intentionally ships with NO mock/sample datasets.
  */
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUserRoles } from "@/hooks/useUserRoles";
@@ -18,6 +18,7 @@ import { DLCContentImport } from "@/components/dlc/admin/DLCContentImport";
 import { BUILD_ALLOW_ADULT_BUNDLE } from "@/lib/buildFlags";
 import { AdminDlcPackagesCard } from "@/components/admin/dlc/AdminDlcPackagesCard";
 import { AdminDlcPromoCodesCard } from "@/components/admin/dlc/AdminDlcPromoCodesCard";
+import { AdminDlcKeyringCard } from "@/components/admin/dlc/AdminDlcKeyringCard";
 
 const LazyAdminAdultToggles = React.lazy(() =>
   import("@/components/dlc/admin/AdminNsfwDlcToggles").then(m => ({
@@ -25,8 +26,21 @@ const LazyAdminAdultToggles = React.lazy(() =>
   })),
 );
 
-export function AdminDLCPanel(): JSX.Element {
+type AdminDlcTab = "packages" | "promos" | "import" | "keys" | "nsfw";
+
+export function AdminDLCPanel(props?: { initialTab?: AdminDlcTab }): JSX.Element {
   const { isAdmin, isLoading } = useUserRoles();
+  const allowedTabs: AdminDlcTab[] = BUILD_ALLOW_ADULT_BUNDLE
+    ? ["packages", "promos", "import", "keys", "nsfw"]
+    : ["packages", "promos", "import", "keys"];
+  const desired = props?.initialTab ?? "packages";
+  const resolvedInitial: AdminDlcTab = allowedTabs.includes(desired) ? desired : "packages";
+
+  const [tab, setTab] = useState<AdminDlcTab>(resolvedInitial);
+
+  useEffect(() => {
+    setTab(resolvedInitial);
+  }, [resolvedInitial]);
 
   if (isLoading) {
     return (
@@ -48,11 +62,17 @@ export function AdminDLCPanel(): JSX.Element {
   }
 
   return (
-    <Tabs defaultValue="packages">
+    <Tabs
+      value={tab}
+      onValueChange={v => {
+        if (allowedTabs.includes(v as AdminDlcTab)) setTab(v as AdminDlcTab);
+      }}
+    >
       <TabsList className="flex flex-wrap">
         <TabsTrigger value="packages">Packages</TabsTrigger>
         <TabsTrigger value="promos">Promo Codes</TabsTrigger>
         <TabsTrigger value="import">Content Import</TabsTrigger>
+        <TabsTrigger value="keys">Keys</TabsTrigger>
         {BUILD_ALLOW_ADULT_BUNDLE ? <TabsTrigger value="nsfw">NSFW Toggles</TabsTrigger> : null}
       </TabsList>
 
@@ -66,6 +86,10 @@ export function AdminDLCPanel(): JSX.Element {
 
       <TabsContent value="import" className="mt-6">
         <DLCContentImport />
+      </TabsContent>
+
+      <TabsContent value="keys" className="mt-6">
+        <AdminDlcKeyringCard />
       </TabsContent>
 
       {BUILD_ALLOW_ADULT_BUNDLE ? (

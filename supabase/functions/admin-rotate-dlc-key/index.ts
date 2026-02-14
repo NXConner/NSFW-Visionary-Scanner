@@ -8,7 +8,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type ReqBody = { packageId: string };
+type ReqBody = {
+  action?: "rotate" | "list";
+  packageId: string;
+  limit?: number;
+};
+
+function clamp(n: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, n));
+}
 
 function decodeB64(b64: string): Uint8Array {
   const bin = atob(b64);
@@ -101,10 +109,33 @@ serve(async req => {
     }
 
     const body = (await req.json()) as ReqBody;
+    const action = (body as any)?.action === "list" ? "list" : "rotate";
     const packageId = String(body.packageId || "").trim();
     if (!packageId) {
       return new Response(JSON.stringify({ error: "Missing packageId" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "list") {
+      const limit = clamp(Number(body.limit ?? 20), 1, 100);
+      const { data, error } = await supabase
+        .from("dlc_package_keyring")
+        .select("id, key_version, is_active, created_at, rotated_at")
+        .eq("package_id", packageId)
+        .order("key_version", { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      const keys = (data || []).map((r: any) => ({
+        id: String(r.id),
+        keyVersion: Number(r.key_version ?? 0),
+        isActive: Boolean(r.is_active),
+        createdAtIso: r.created_at ? String(r.created_at) : null,
+        rotatedAtIso: r.rotated_at ? String(r.rotated_at) : null,
+      }));
+      return new Response(JSON.stringify({ ok: true, packageId, keys }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
