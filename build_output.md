@@ -1,5 +1,24 @@
 # Build Output Documentation
 
+## 2026-02-14 — NSFW Direct Web Build + Android Sync + APK Rebuild
+
+**Project:** NSFW-Visionary-Scanner  
+**Build Date:** February 14, 2026  
+**Web Build:** ✅ SUCCESS (`npm run build:nsfw:direct`)  
+**Capacitor Sync:** ✅ SUCCESS (`npm run android:sync`)  
+**Build Tasks:** ✅ SUCCESS (`npm run android:build`)
+
+---
+
+## APK Details (Feb 14, 2026)
+
+|            Variant | File Path                                                                   |        File Size | Build Time (UTC)    | SHA-256                                                            |
+| -----------------: | --------------------------------------------------------------------------- | ---------------: | ------------------- | ------------------------------------------------------------------ |
+|              Debug | `/workspace/android/app/build/outputs/apk/debug/app-debug.apk`              | 14,397,532 bytes | 2026-02-14 09:50:16 | `4d2ab90597877bdd71e87c5bed2777fac0e830da95ed61e778c5a9e34f97a38e` |
+| Release (unsigned) | `/workspace/android/app/build/outputs/apk/release/app-release-unsigned.apk` |  9,146,552 bytes | 2026-02-14 09:51:59 | `45c1e293e2011f7c5d0510e3628458281f1ad357a871fed97cb8904f72e44333` |
+
+---
+
 ## 2026-02-12 — Web Build + Capacitor Sync + APK Rebuild
 
 **Project:** NSFW-Visionary-Scanner  
