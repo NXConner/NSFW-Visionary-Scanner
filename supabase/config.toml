@@ -12,6 +12,18 @@ verify_jwt = true
 enabled = true
 verify_jwt = true
 
+[functions.admin-marketplace-items-catalog]
+enabled = true
+verify_jwt = true
+
+[functions.admin-premium-content-catalog]
+enabled = true
+verify_jwt = true
+
+[functions.admin-routine-marketplace-catalog]
+enabled = true
+verify_jwt = true
+
 [functions.admin-rotate-dlc-key]
 enabled = true
 verify_jwt = true
