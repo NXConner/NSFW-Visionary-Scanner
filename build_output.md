@@ -6,7 +6,7 @@
 **Build Date:** February 14, 2026  
 **Web Build:** ✅ SUCCESS (`npm run build:nsfw:direct`)  
 **Capacitor Sync:** ✅ SUCCESS (`npm run android:sync`)  
-**Build Tasks:** ✅ SUCCESS (`npm run android:build`)
+**Build Tasks:** ✅ SUCCESS (`npm run android:build -- --debug`)
 
 ---
 
@@ -14,7 +14,7 @@
 
 |            Variant | File Path                                                                   |        File Size | Build Time (UTC)    | SHA-256                                                            |
 | -----------------: | --------------------------------------------------------------------------- | ---------------: | ------------------- | ------------------------------------------------------------------ |
-|              Debug | `/workspace/android/app/build/outputs/apk/debug/app-debug.apk`              | 14,397,532 bytes | 2026-02-14 09:50:16 | `4d2ab90597877bdd71e87c5bed2777fac0e830da95ed61e778c5a9e34f97a38e` |
+|              Debug | `/workspace/android/app/build/outputs/apk/debug/app-debug.apk`              | 14,397,571 bytes | 2026-02-14 10:26:03 | `c7a1f5b84602e23095ae7ebdb67b736d622d4eda6070fe62380e17c2e08dc14c` |
 | Release (unsigned) | `/workspace/android/app/build/outputs/apk/release/app-release-unsigned.apk` |  9,146,552 bytes | 2026-02-14 09:51:59 | `45c1e293e2011f7c5d0510e3628458281f1ad357a871fed97cb8904f72e44333` |
 
 ---
