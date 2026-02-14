@@ -93,12 +93,15 @@ async function validatePromoCode(args: {
     ? (promo as any).applies_to.map((x: unknown) => asString(x).toUpperCase())
     : [];
 
+  // Fail-closed: if applicability can't be determined, treat as not applicable.
+  const pid = packageId.toUpperCase();
   const appliesAny =
     appliesToAll ||
     appliesTo.includes("*") ||
     appliesTo.includes("ALL") ||
-    appliesTo.includes(packageId.toUpperCase());
-  if (!appliesAny && appliesTo.length > 0) return { ok: false, error: "Promo code not applicable" };
+    appliesTo.includes("ANY") ||
+    appliesTo.includes(pid);
+  if (!appliesAny) return { ok: false, error: "Promo code not applicable" };
 
   const maxPerUserRaw = (promo as any).max_per_user ?? (promo as any).max_uses_per_user ?? 1;
   const maxPerUser = Number(maxPerUserRaw) || 1;
