@@ -127,11 +127,21 @@ export const useFeatureAccess = () => {
 
   // SUPER ADMIN EARLY UNLOCK: Use module-level cached value + context values
   // The module-level value is available on the VERY FIRST render, before any context resolves
-  const isPrivileged = INITIAL_PRIVILEGED_STATUS || isSuperAdmin || hasFullAccess || allFeaturesUnlocked || isAdmin || isSuperAdminRole;
-  
+  const isPrivileged =
+    INITIAL_PRIVILEGED_STATUS ||
+    isSuperAdmin ||
+    hasFullAccess ||
+    allFeaturesUnlocked ||
+    isAdmin ||
+    isSuperAdminRole;
+
   // Start with PREMIUM_FEATURES for privileged users to prevent locked flash
-  const [tier, setTier] = useState<SubscriptionTier>(INITIAL_PRIVILEGED_STATUS || isPrivileged ? "premium" : "free");
-  const [features, setFeatures] = useState<FeatureAccess>(INITIAL_PRIVILEGED_STATUS || isPrivileged ? PREMIUM_FEATURES : FREE_FEATURES);
+  const [tier, setTier] = useState<SubscriptionTier>(
+    INITIAL_PRIVILEGED_STATUS || isPrivileged ? "premium" : "free",
+  );
+  const [features, setFeatures] = useState<FeatureAccess>(
+    INITIAL_PRIVILEGED_STATUS || isPrivileged ? PREMIUM_FEATURES : FREE_FEATURES,
+  );
   const [loading, setLoading] = useState(!INITIAL_PRIVILEGED_STATUS && !isPrivileged); // Privileged users don't need to wait
 
   // Aggressive timeout to prevent UI blocking on slow network
@@ -172,7 +182,8 @@ export const useFeatureAccess = () => {
       // Role-based override (admin/super_admin => full access)
       // NOTE: this must be DB-backed (not localStorage) to be reliable.
       if (isAdmin || isSuperAdminRole) {
-        resolvedTier = "admin";
+        // Treat privileged roles as Premium for UX consistency (no upsells / full access).
+        resolvedTier = "premium";
         resolvedFeatures = PREMIUM_FEATURES;
         setTier(resolvedTier);
         setFeatures(resolvedFeatures);
@@ -327,7 +338,9 @@ export const useFeatureAccess = () => {
   };
 
   // Use timedOut to prevent infinite loading - after 2s, proceed with whatever state we have
-  const effectiveLoading = timedOut ? false : (loading || betaLoading || (rolesLoading && rolesHookLoading));
+  const effectiveLoading = timedOut
+    ? false
+    : loading || betaLoading || (rolesLoading && rolesHookLoading);
 
   return {
     tier,

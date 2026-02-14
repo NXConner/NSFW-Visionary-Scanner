@@ -3,7 +3,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { dlcManager } from "@/dlc/core";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
-import { checkSuperAdminRole, clearSuperAdminCache, isSuperAdminCached } from "@/lib/superAdmin";
+import {
+  checkSuperAdminRole,
+  clearSuperAdminCache,
+  isAnySuperAdminPersisted,
+  isSuperAdminCached,
+} from "@/lib/superAdmin";
 import { useUserRoles } from "@/hooks/useUserRoles";
 
 function isDevMode(): boolean {
@@ -38,6 +43,9 @@ export function useDlcAdminAccess(args: { isAdultPackage: (packageId: string) =>
   const cachedSuperAdminStatus = useMemo(() => {
     try {
       if (typeof window === "undefined") return false;
+      // Prefer the broader persisted privileged status (admin OR super_admin) to avoid
+      // "locked flash" for admin accounts on cold loads.
+      if (isAnySuperAdminPersisted()) return true;
       const storedUserId = window.localStorage.getItem("lovable_last_user_id");
       if (!storedUserId) return false;
       return isSuperAdminCached(storedUserId);

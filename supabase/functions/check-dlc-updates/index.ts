@@ -6,6 +6,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,12 +65,57 @@ serve(async req => {
       });
     }
 
+    const privileged = await getPrivilegedFlags(supabaseClient, user.id);
+
     const { currentVersion, userId: bodyUserId, packageId } = await req.json();
     if (bodyUserId && String(bodyUserId) !== user.id) {
       return new Response(JSON.stringify({ error: "User mismatch" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Privileged roles bypass license requirement (admin/super_admin).
+    if (privileged.isPrivileged) {
+      const { data: latestPackage, error: packageError } = await supabaseClient
+        .from("dlc_content_packages")
+        .select("*")
+        .eq("is_active", true)
+        .order("version", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (packageError || !latestPackage) {
+        return new Response(JSON.stringify({ hasUpdate: false }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const userVersion = currentVersion ? String(currentVersion) : null;
+      const hasUpdate = semverCompare(latestPackage.version, userVersion) !== 0;
+
+      return new Response(
+        JSON.stringify({
+          hasUpdate,
+          package: hasUpdate
+            ? {
+                version: latestPackage.version,
+                downloadUrl: latestPackage.download_url,
+                checksum: latestPackage.checksum,
+                size: latestPackage.size_bytes,
+                releaseDate: latestPackage.release_date,
+                changelog: latestPackage.changelog || [],
+              }
+            : undefined,
+          currentVersion: userVersion,
+          grantedBy: { role: privileged.isSuperAdmin ? "super_admin" : "admin" },
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Check if user has active DLC license(s)

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getPrivilegedFlags } from "../_shared/privileged.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -245,29 +246,33 @@ serve(async req => {
       });
     }
 
-    // Age gate + consent
-    const { data: age, error: ageError } = await supabase
-      .from("dlc_age_verifications")
-      .select("is_verified, adult_content_consent, terms_accepted")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (ageError) throw ageError;
-    const okAge = Boolean(age?.is_verified && age?.adult_content_consent && age?.terms_accepted);
-    if (!okAge) {
-      return new Response(JSON.stringify({ error: "Age verification required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const privileged = await getPrivilegedFlags(supabase, user.id);
 
-    // DLC entitlement (ai_companion) unless explicitly allowed for a deployment.
-    if (!ALLOW_UNLICENSED) {
-      const ok = await hasFeatureEntitlement(supabase, user.id, "ai_companion");
-      if (!ok) {
-        return new Response(JSON.stringify({ error: "AI Companion entitlement required" }), {
+    if (!privileged.isPrivileged) {
+      // Age gate + consent
+      const { data: age, error: ageError } = await supabase
+        .from("dlc_age_verifications")
+        .select("is_verified, adult_content_consent, terms_accepted")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (ageError) throw ageError;
+      const okAge = Boolean(age?.is_verified && age?.adult_content_consent && age?.terms_accepted);
+      if (!okAge) {
+        return new Response(JSON.stringify({ error: "Age verification required" }), {
           status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      // DLC entitlement (ai_companion) unless explicitly allowed for a deployment.
+      if (!ALLOW_UNLICENSED) {
+        const ok = await hasFeatureEntitlement(supabase, user.id, "ai_companion");
+        if (!ok) {
+          return new Response(JSON.stringify({ error: "AI Companion entitlement required" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
     }
 

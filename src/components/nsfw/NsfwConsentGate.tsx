@@ -6,6 +6,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useNsfwConsent } from "@/hooks/useNsfwConsent";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { isAnySuperAdminPersisted } from "@/lib/superAdmin";
 
 type NsfwConsentGateProps = {
   featureIds: string[];
@@ -20,6 +23,26 @@ export function NsfwConsentGate({
   description = "Please review and accept the consent statements below to continue.",
   children,
 }: NsfwConsentGateProps): JSX.Element {
+  // Privileged bypass: admin/super_admin accounts should never be blocked by consent gates.
+  // This is used for internal/testing accounts that must stay fully unlocked.
+  const INITIAL_PRIVILEGED_STATUS = isAnySuperAdminPersisted();
+  const {
+    isSuperAdmin,
+    hasFullAccess,
+    allFeaturesUnlocked,
+    loading: authLoading,
+    rolesLoading,
+  } = useAuth();
+  const { isAdmin, isSuperAdmin: isSuperAdminRole, isLoading: rolesHookLoading } = useUserRoles();
+  const isPrivileged =
+    INITIAL_PRIVILEGED_STATUS ||
+    isSuperAdmin ||
+    hasFullAccess ||
+    allFeaturesUnlocked ||
+    isAdmin ||
+    isSuperAdminRole;
+  const stillCheckingAccess = authLoading || rolesLoading || rolesHookLoading;
+
   const { loading, load, requiredPolicies, missingPolicies, hasConsent, acceptAll } =
     useNsfwConsent(featureIds);
   const [checked, setChecked] = useState<Set<string>>(new Set());
@@ -36,6 +59,9 @@ export function NsfwConsentGate({
     if (missingPolicies.length === 0) return true;
     return missingPolicies.every(p => checked.has(p.policy_key));
   }, [checked, missingPolicies]);
+
+  const bypassGate = INITIAL_PRIVILEGED_STATUS || (!stillCheckingAccess && isPrivileged);
+  if (bypassGate) return <>{children}</>;
 
   if (loading) {
     return (
