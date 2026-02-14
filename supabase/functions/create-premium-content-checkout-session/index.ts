@@ -80,7 +80,8 @@ serve(async req => {
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
     if (!stripeSecretKey) throw new Error("Stripe not configured");
     const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
-    const isLiveMode = stripeSecretKey.startsWith("sk_live_");
+    const isLiveMode =
+      stripeSecretKey.startsWith("sk_live_") || stripeSecretKey.startsWith("rk_live_");
 
     // Shared customer mapping
     let { data: subscriptionRow } = await supabase

@@ -83,7 +83,8 @@ serve(async req => {
     if (!stripeSecretKey) throw new Error("Stripe not configured");
 
     const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
-    const isLiveMode = stripeSecretKey.startsWith("sk_live_");
+    const isLiveMode =
+      stripeSecretKey.startsWith("sk_live_") || stripeSecretKey.startsWith("rk_live_");
 
     // Reuse/ensure Stripe customer via user_subscriptions stripe_customer_id (shared with subscriptions/DLC)
     let { data: subscriptionRow } = await supabase
