@@ -116,9 +116,9 @@ Open `.env.local` and configure:
 
 ```env
 # Supabase Configuration (provided or use your own)
-VITE_SUPABASE_URL=https://thajylrvfzjmerqqkmjv.supabase.co
+VITE_SUPABASE_URL=https://xbhjmuaxjpxqzrngubzo.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=<your-key-here>
-VITE_SUPABASE_PROJECT_ID=thajylrvfzjmerqqkmjv
+VITE_SUPABASE_PROJECT_ID=xbhjmuaxjpxqzrngubzo
 
 # App Configuration
 VITE_APP_ENV=development
@@ -454,7 +454,7 @@ AuthApiError: Invalid authentication credentials
 
 ```bash
 # Test Supabase connection
-curl https://thajylrvfzjmerqqkmjv.supabase.co/rest/v1/
+curl https://xbhjmuaxjpxqzrngubzo.supabase.co/rest/v1/
 ```
 
 #### Issue: Port already in use

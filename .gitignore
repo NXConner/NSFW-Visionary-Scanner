@@ -70,6 +70,9 @@ ios/App/App/GoogleService-Info.plist
 # Local comparison clones (do not commit)
 external-repos/
 
+# Supabase CLI temp files (never commit)
+supabase/.temp/
+
 # Core dumps (never commit)
 /core
 /core.*

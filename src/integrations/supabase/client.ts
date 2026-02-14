@@ -3,7 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Support both the newer publishable key name and the legacy anon key env var
+// to avoid "configured but not working" deployments.
+const SUPABASE_PUBLISHABLE_KEY =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
@@ -32,8 +35,9 @@ const isLocalStorageAvailable = (): boolean => {
   }
 };
 
-const safeStorage: Storage | undefined =
-  isLocalStorageAvailable() ? window.localStorage : undefined;
+const safeStorage: Storage | undefined = isLocalStorageAvailable()
+  ? window.localStorage
+  : undefined;
 
 export const supabase = createClient<Database>(
   isConfigured ? SUPABASE_URL : FALLBACK_SUPABASE_URL,
