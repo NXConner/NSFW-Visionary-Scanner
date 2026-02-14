@@ -62,9 +62,17 @@ android {
 
     buildTypes {
         debug {
+            // Avoid "App not installed as package conflicts with an existing package"
+            // when a release/store build of the same applicationId is already installed.
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+
             if (signingConfigs.debug.storeFile != null && signingConfigs.debug.storeFile.exists()) {
                 signingConfig signingConfigs.debug
             }
+            // Make the debug build visually identifiable in launcher / app switcher.
+            resValue "string", "app_name", "MorphoScan Pro Debug"
+            resValue "string", "title_activity_main", "MorphoScan Pro Debug"
             buildConfigField "String", "CODEPUSH_KEY", "\"\""
             // Debug builds keep logging
             minifyEnabled false
