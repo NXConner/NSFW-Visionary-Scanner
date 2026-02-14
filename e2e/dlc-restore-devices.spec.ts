@@ -11,10 +11,8 @@ test.describe("DLC restore purchases + device management (hybrid)", () => {
     await page.goto("/app");
     await waitForAppReady(page);
 
-    // Navigate to Profile tab
-    await page.evaluate(() => {
-      window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "profile" }));
-    });
+    // Navigate using the real sidebar nav (more reliable than CustomEvent in E2E).
+    await page.getByRole("button", { name: "Profile" }).click();
     // Wait for the profile section to lazy-load.
     await expect(page.getByRole("heading", { name: /your profile/i })).toBeVisible({
       timeout: 20_000,

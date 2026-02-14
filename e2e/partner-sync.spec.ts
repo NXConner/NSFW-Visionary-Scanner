@@ -11,9 +11,8 @@ test.describe("Partner sync tab", () => {
     await page.goto("/app");
     await waitForAppReady(page);
 
-    await page.evaluate(() => {
-      window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "partner-sync" }));
-    });
+    // Navigate using the real sidebar nav (more reliable than CustomEvent in E2E).
+    await page.getByRole("button", { name: "Partner Sync" }).click();
 
     // Partner Sync renders inside Progress -> Video in the current app architecture.
     await expect(page.getByRole("heading", { name: "Progress" })).toBeVisible({ timeout: 15_000 });

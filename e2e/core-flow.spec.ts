@@ -17,10 +17,8 @@ test.describe("Core navigation flow (smoke)", () => {
     await waitForAppReady(page);
     await expect(page).toHaveTitle(/MorphoScan Pro/);
 
-    // Navigate to Profile tab (without requiring real auth) via the in-app navigation event
-    await page.evaluate(() => {
-      window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "profile" }));
-    });
+    // Navigate using the real sidebar nav (more reliable than CustomEvent in E2E).
+    await page.getByRole("button", { name: "Profile" }).click();
     await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible({ timeout: 15_000 });
 
     const isMobile = testInfo.project.name.toLowerCase().includes("mobile");
@@ -38,9 +36,7 @@ test.describe("Core navigation flow (smoke)", () => {
     }
 
     // Navigate to Scanner tab and verify scanner UI is present
-    await page.evaluate(() => {
-      window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "scanner" }));
-    });
+    await page.getByRole("button", { name: "Scan" }).click();
     await expect(page.getByRole("button", { name: "Start Camera" })).toBeVisible({
       timeout: 15_000,
     });
