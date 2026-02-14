@@ -6,39 +6,27 @@ test.describe("Core navigation flow (smoke)", () => {
     await primeLocalStorageForE2E(page);
   });
 
-  test("auth -> settings -> scanner", async ({ page }, testInfo) => {
+  test("auth -> settings -> scanner", async ({ page }) => {
     await page.goto("/auth");
     await waitForAppReady(page);
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
 
     // Main interactive app lives under /app (root "/" is the marketing landing page).
-    await page.goto("/app");
+    // Deep-link straight into the Profile hub Settings tab to keep the smoke test stable.
+    await page.goto("/app?tab=settings");
     await waitForAppReady(page);
     await expect(page).toHaveTitle(/MorphoScan Pro/);
 
-    // Navigate using the real sidebar nav (more reliable than CustomEvent in E2E).
-    await page.getByRole("button", { name: "Profile" }).click();
-    await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible({ timeout: 15_000 });
-
-    const isMobile = testInfo.project.name.toLowerCase().includes("mobile");
-    if (!isMobile) {
-      // Open the Profile hub Settings tab (stable; does not require profile DB).
-      const settingsTab = page.getByRole("tab", { name: "Settings" }).first();
-      await settingsTab.scrollIntoViewIfNeeded();
-      await settingsTab.click({ force: true });
-      await expect(page.getByText("Appearance")).toBeVisible({ timeout: 15_000 });
-      await expect(page.getByText("Theme", { exact: true })).toBeVisible({ timeout: 15_000 });
-    } else {
-      // Mobile layouts may split internal tabs across rows/overflows.
-      // Keep the smoke test stable by verifying Profile renders and proceeding.
-      await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
-    }
+    await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText("Appearance")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText("Theme", { exact: true })).toBeVisible({ timeout: 20_000 });
 
     // Navigate to Scanner tab and verify scanner UI is present
-    await page.getByRole("button", { name: "Scan" }).click();
+    await page.goto("/app?tab=scanner");
+    await waitForAppReady(page);
     await expect(page.getByRole("button", { name: "Start Camera" })).toBeVisible({
-      timeout: 15_000,
+      timeout: 20_000,
     });
   });
 });

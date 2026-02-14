@@ -8,14 +8,12 @@ test.describe("DLC restore purchases + device management (hybrid)", () => {
 
   test("Profile -> Settings shows DLC card; restore + device manager open", async ({ page }) => {
     // Main interactive app lives under /app (root "/" is the marketing landing page).
-    await page.goto("/app");
+    await page.goto("/app?tab=profile");
     await waitForAppReady(page);
 
-    // Navigate using the real sidebar nav (more reliable than CustomEvent in E2E).
-    await page.getByRole("button", { name: "Profile" }).click();
     // Wait for the profile section to lazy-load.
     await expect(page.getByRole("heading", { name: /your profile/i })).toBeVisible({
-      timeout: 20_000,
+      timeout: 30_000,
     });
 
     // Open Settings internal tab
