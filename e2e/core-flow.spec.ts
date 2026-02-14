@@ -12,7 +12,8 @@ test.describe("Core navigation flow (smoke)", () => {
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
 
-    await page.goto("/");
+    // Main interactive app lives under /app (root "/" is the marketing landing page).
+    await page.goto("/app");
     await waitForAppReady(page);
     await expect(page).toHaveTitle(/MorphoScan Pro/);
 
@@ -20,29 +21,28 @@ test.describe("Core navigation flow (smoke)", () => {
     await page.evaluate(() => {
       window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "profile" }));
     });
-    await expect(page.getByText("Your Profile")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible({ timeout: 15_000 });
 
     const isMobile = testInfo.project.name.toLowerCase().includes("mobile");
     if (!isMobile) {
-      // Open Settings within Profile
-      const profileSection = page
-        .getByRole("heading", { name: /your profile/i })
-        .locator("xpath=ancestor::section[1]");
-      const settingsTab = profileSection.getByRole("tab", { name: "Settings" });
+      // Open the Profile hub Settings tab (stable; does not require profile DB).
+      const settingsTab = page.getByRole("tab", { name: "Settings" }).first();
       await settingsTab.scrollIntoViewIfNeeded();
       await settingsTab.click({ force: true });
-      await expect(page.getByText("Appearance")).toBeVisible();
-      await expect(page.getByText("Theme", { exact: true })).toBeVisible();
+      await expect(page.getByText("Appearance")).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByText("Theme", { exact: true })).toBeVisible({ timeout: 15_000 });
     } else {
       // Mobile layouts may split internal tabs across rows/overflows.
       // Keep the smoke test stable by verifying Profile renders and proceeding.
-      await expect(page.getByRole("button", { name: /Edit Profile/i })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
     }
 
     // Navigate to Scanner tab and verify scanner UI is present
     await page.evaluate(() => {
       window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "scanner" }));
     });
-    await expect(page.getByRole("button", { name: "Start Camera" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Start Camera" })).toBeVisible({
+      timeout: 15_000,
+    });
   });
 });

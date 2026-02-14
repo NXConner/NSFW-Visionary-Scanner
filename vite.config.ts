@@ -227,6 +227,9 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 500,
   },
   optimizeDeps: {
+    // This repo contains many auxiliary HTML files (Android SDK, Playwright reports, etc.).
+    // Restrict dependency scanning to the real app entry to keep dev/e2e startup fast and stable.
+    entries: ["index.html"],
     include: [
       "react",
       "react-dom",

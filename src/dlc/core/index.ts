@@ -4,14 +4,15 @@
  */
 
 // Types
-export * from './types';
+export * from "./types";
 
 // Core Classes
-export { DLCManager, dlcManager } from './dlcManager';
-export { DLCRegistry, dlcRegistry, DLC_PACKAGES, BUNDLE_MANIFESTS } from './DLCRegistry';
-export { LicenseValidator, licenseValidator } from './LicenseValidator';
-export { dlcContentLoader, dlcContentLoader as contentLoader } from './ContentLoader';
-export { downloadManager } from './DownloadManager';
+export { DLCManager, dlcManager } from "./dlcManager";
+export { DLCRegistry, dlcRegistry, DLC_PACKAGES, BUNDLE_MANIFESTS } from "./DLCRegistry";
+// NOTE: keep casing consistent for Linux/macOS (case-sensitive FS).
+export { LicenseValidator, licenseValidator } from "./licenseValidator";
+export { dlcContentLoader, dlcContentLoader as contentLoader } from "./ContentLoader";
+export { downloadManager } from "./DownloadManager";
 
 // Re-export commonly used types
 export type {
@@ -28,4 +29,4 @@ export type {
   AgeVerification,
   PromoCode,
   GiftCode,
-} from './types';
+} from "./types";

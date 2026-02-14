@@ -7,14 +7,18 @@ test.describe("DLC restore purchases + device management (hybrid)", () => {
   });
 
   test("Profile -> Settings shows DLC card; restore + device manager open", async ({ page }) => {
-    await page.goto("/");
+    // Main interactive app lives under /app (root "/" is the marketing landing page).
+    await page.goto("/app");
     await waitForAppReady(page);
 
     // Navigate to Profile tab
     await page.evaluate(() => {
       window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "profile" }));
     });
-    await expect(page.getByText("Your Profile")).toBeVisible();
+    // Wait for the profile section to lazy-load.
+    await expect(page.getByRole("heading", { name: /your profile/i })).toBeVisible({
+      timeout: 20_000,
+    });
 
     // Open Settings internal tab
     const profileSection = page
