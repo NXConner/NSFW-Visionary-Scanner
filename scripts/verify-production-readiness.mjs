@@ -104,7 +104,11 @@ if (distExists) {
   checkItem("dist/index.html exists", indexHtml, "error");
   if (indexHtml) {
     const content = safeReadText("dist/index.html");
-    checkItem("Build contains no localhost references", !/localhost/i.test(content), "error");
+    // Avoid false positives like `hostname === "localhost"` checks in SW/PWA guards.
+    // Only fail on actual localhost URL references that would break production.
+    const localhostUrl =
+      /(https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0)\b|(?:localhost|127\.0\.0\.1|0\.0\.0\.0):\d+)/i;
+    checkItem("Build contains no localhost URL references", !localhostUrl.test(content), "error");
   }
 }
 
