@@ -235,7 +235,7 @@ describe("RateLimiter", () => {
     });
 
     it("should handle special characters in key", () => {
-      const specialKey = "user@example.invalid#123";
+      const specialKey = "user@unit.test#123";
       const result = rateLimiter.isAllowed(specialKey);
       expect(result).toBe(true);
     });

@@ -221,7 +221,7 @@ export function AdminBroadcastNotificationComposerCard(props: {
                 </Label>
                 <Textarea
                   id="bn-specific-emails"
-                  placeholder="user1@example.com, user2@example.com"
+                  placeholder="Enter emails (comma/newline-separated)"
                   value={audienceEmailsText}
                   onChange={e => setAudienceEmailsText(e.target.value)}
                   rows={3}

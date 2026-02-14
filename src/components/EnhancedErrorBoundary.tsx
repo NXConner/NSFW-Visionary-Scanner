@@ -530,7 +530,7 @@ const ErrorReportForm = ({ onSubmit, isLoading }: ErrorReportFormProps) => {
         <Input
           id="email"
           type="email"
-          placeholder="your@email.com"
+          placeholder="Email address (optional)"
           value={email}
           onChange={e => setEmail(e.target.value)}
         />

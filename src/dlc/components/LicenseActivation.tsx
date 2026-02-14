@@ -23,6 +23,16 @@ import { useLicenseActivation } from "../hooks/useDLCContent";
 import { useDLC } from "../context/DLCContext";
 import { toast } from "sonner";
 
+function normalizeLicenseLikeKey(input: string): string {
+  const upper = input.toUpperCase();
+  // Allow users to paste without dashes/spaces and normalize to AAAA-BBBB-CCCC-DDDD when possible.
+  const alnum = upper.replace(/[^A-Z0-9]/g, "");
+  if (alnum.length === 16) {
+    return `${alnum.slice(0, 4)}-${alnum.slice(4, 8)}-${alnum.slice(8, 12)}-${alnum.slice(12, 16)}`;
+  }
+  return upper.replace(/[^A-Z0-9-]/g, "");
+}
+
 export function LicenseActivation(): React.ReactElement {
   const { activate, isActivating, error, activatedPackageId } = useLicenseActivation();
   const { packages, installPackage } = useDLC();
@@ -107,14 +117,17 @@ export function LicenseActivation(): React.ReactElement {
               <Label htmlFor="licenseKey">License Key</Label>
               <Input
                 id="licenseKey"
-                placeholder="DLC-XXXXX-XXXXX-XXXXX"
+                placeholder="Enter your license key"
                 value={licenseKey}
-                onChange={e => setLicenseKey(e.target.value.toUpperCase())}
+                onChange={e => setLicenseKey(normalizeLicenseLikeKey(e.target.value))}
                 disabled={isActivating}
                 className="font-mono"
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={19}
               />
               <p className="text-xs text-muted-foreground">
-                Enter the license key you received after purchase
+                Format: 4 groups of 4 characters (letters/numbers) separated by dashes.
               </p>
             </div>
 
@@ -143,10 +156,12 @@ export function LicenseActivation(): React.ReactElement {
               <Label htmlFor="promoCode">Promo Code</Label>
               <Input
                 id="promoCode"
-                placeholder="SUMMER2024"
+                placeholder="Enter promo code"
                 value={promoCode}
                 onChange={e => setPromoCode(e.target.value.toUpperCase())}
                 className="font-mono"
+                autoComplete="off"
+                spellCheck={false}
               />
               <p className="text-xs text-muted-foreground">
                 Enter a promotional code for a discount on your purchase
@@ -165,14 +180,17 @@ export function LicenseActivation(): React.ReactElement {
               <Label htmlFor="giftCode">Gift Code</Label>
               <Input
                 id="giftCode"
-                placeholder="GIFT-XXXXX-XXXXX"
+                placeholder="Enter gift code"
                 value={giftCode}
-                onChange={e => setGiftCode(e.target.value.toUpperCase())}
+                onChange={e => setGiftCode(normalizeLicenseLikeKey(e.target.value))}
                 disabled={isActivating}
                 className="font-mono"
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={19}
               />
               <p className="text-xs text-muted-foreground">
-                Enter a gift code you received from a friend
+                Gift codes use the same format as license keys.
               </p>
             </div>
 

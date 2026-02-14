@@ -26,7 +26,7 @@ describe("admin licenses api", () => {
             id: "lic_1",
             key: "ABCD-EFGH-IJKL-MNOP",
             userId: "u1",
-            userEmail: "user@example.com",
+            userEmail: "user@unit.test",
             packageId: "dlc-positions",
             packageName: "Positions",
             status: "active",
@@ -53,7 +53,7 @@ describe("admin licenses api", () => {
     invoke.mockResolvedValue({ data: { ok: true }, error: null } as any);
 
     await adminGenerateLicense({
-      userEmail: "user@example.com",
+      userEmail: "user@unit.test",
       packageId: "dlc-positions",
       licenseType: "one_time",
       maxDevices: 3,
@@ -64,7 +64,7 @@ describe("admin licenses api", () => {
     expect(invoke).toHaveBeenCalledWith("admin-licenses", {
       body: {
         action: "generate",
-        userEmail: "user@example.com",
+        userEmail: "user@unit.test",
         packageId: "dlc-positions",
         licenseType: "one_time",
         maxDevices: 3,

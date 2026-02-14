@@ -97,7 +97,7 @@ export function EditEducationModuleDialog({
               id="mod-video"
               value={videoUrl}
               onChange={e => setVideoUrl(e.target.value)}
-              placeholder="https://..."
+              placeholder="Enter video URL"
             />
           </div>
 

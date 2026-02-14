@@ -528,7 +528,7 @@ export function EmailManagement(): JSX.Element {
                     <Input
                       value={resendTargetEmail}
                       onChange={e => setResendTargetEmail(e.target.value)}
-                      placeholder="user@domain.com"
+                      placeholder="Email address"
                       className="bg-slate-900/40 border-slate-700"
                     />
                     <Button

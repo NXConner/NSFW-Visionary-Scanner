@@ -2,13 +2,10 @@
  * Centralized URLs + route paths.
  *
  * Notes:
- * - Avoid `example.com` in user-facing placeholders (copy/paste accidents).
+ * - Avoid real domains in user-facing placeholders (copy/paste accidents).
  * - Keep this file free of secrets; it is bundled client-side.
  */
 import { SUPPORT_CONTACT_EMAIL, PRIVACY_CONTACT_EMAIL, DPO_CONTACT_EMAIL } from "@/config/brand";
-
-// User-facing input hint (intentionally not a real copy/paste domain).
-export const PLACEHOLDER_LINK_URL = "https://...";
 
 export const APP_ROUTES = {
   privacy: "/privacy",

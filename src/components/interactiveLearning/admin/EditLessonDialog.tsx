@@ -90,7 +90,7 @@ export function EditLessonDialog({
                 id="lesson-video-url"
                 value={videoUrl}
                 onChange={e => setVideoUrl(e.target.value)}
-                placeholder="https://..."
+                placeholder="Enter video URL"
               />
               <p className="text-xs text-muted-foreground">
                 Use an embeddable / direct video URL compatible with the web & mobile player.

@@ -50,7 +50,7 @@ export const waitFor = (ms: number) => new Promise(resolve => setTimeout(resolve
 
 // Mock data generators
 export const generateMockUser = () => ({
-  email: `test-${Date.now()}@example.invalid`,
+  email: `test-${Date.now()}@unit.test`,
   password: "TestPassword123!",
 });
 

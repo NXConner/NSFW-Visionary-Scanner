@@ -39,17 +39,17 @@ describe("InputSanitizer", () => {
 
   describe("sanitizeEmail", () => {
     it("should convert to lowercase", () => {
-      const result = InputSanitizer.sanitizeEmail("TEST@EXAMPLE.INVALID");
-      expect(result).toBe("test@example.invalid");
+      const result = InputSanitizer.sanitizeEmail("TEST@UNIT.TEST");
+      expect(result).toBe("test@unit.test");
     });
 
     it("should trim whitespace", () => {
-      const result = InputSanitizer.sanitizeEmail("  test@example.invalid  ");
-      expect(result).toBe("test@example.invalid");
+      const result = InputSanitizer.sanitizeEmail("  test@unit.test  ");
+      expect(result).toBe("test@unit.test");
     });
 
     it("should limit length to 254 characters", () => {
-      const input = "a".repeat(300) + "@example.invalid";
+      const input = "a".repeat(300) + "@unit.test";
       const result = InputSanitizer.sanitizeEmail(input);
       expect(result.length).toBe(254);
     });

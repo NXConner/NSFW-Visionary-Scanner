@@ -97,7 +97,7 @@ export function GenerateLicenseDialog(props: { onGenerated: () => void }): JSX.E
             <Label htmlFor="lic-email">User email</Label>
             <Input
               id="lic-email"
-              placeholder="user@example.com"
+              placeholder="Enter user email"
               value={userEmail}
               onChange={e => setUserEmail(e.target.value)}
               autoCapitalize="none"

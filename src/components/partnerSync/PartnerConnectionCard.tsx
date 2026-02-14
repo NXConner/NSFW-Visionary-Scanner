@@ -237,13 +237,20 @@ export function PartnerConnectionCard({
                     <Input
                       placeholder={t("partnerSync.connection.inviteCodePlaceholder")}
                       value={inviteCodeInput}
-                      onChange={e => setInviteCodeInput(e.target.value)}
+                      onChange={e =>
+                        setInviteCodeInput(e.target.value.toUpperCase().replace(/\s+/g, ""))
+                      }
                       className="font-mono"
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      autoComplete="off"
+                      maxLength={12}
                     />
                   </div>
                   <Button
                     className="w-full gap-2"
-                    onClick={() => void onAcceptInvite(inviteCodeInput)}
+                    onClick={() => void onAcceptInvite(inviteCodeInput.trim())}
                     disabled={loading}
                   >
                     <Check className="w-4 h-4" />

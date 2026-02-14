@@ -270,9 +270,9 @@ describe("Video Processing", () => {
         );
       };
 
-      expect(validateIceServer({ urls: "stun:stun.example.invalid:3478" })).toBe(true);
-      expect(validateIceServer({ urls: "turn:turn.example.invalid:3478" })).toBe(true);
-      expect(validateIceServer({ urls: "http://example.invalid" })).toBe(false);
+      expect(validateIceServer({ urls: "stun:stun.unit.test:3478" })).toBe(true);
+      expect(validateIceServer({ urls: "turn:turn.unit.test:3478" })).toBe(true);
+      expect(validateIceServer({ urls: "http://unit.test" })).toBe(false);
     });
   });
 

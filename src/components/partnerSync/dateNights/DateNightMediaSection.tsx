@@ -120,7 +120,34 @@ export function DateNightMediaSection({ plan, onUpdate }: DateNightMediaSectionP
         .split(",")
         .map(item => item.trim())
         .filter(Boolean);
-      onUpdate({ [key]: parsed } as Partial<DateNightPlanInput>);
+      if (key === "links") {
+        const normalized: string[] = [];
+        const invalid: string[] = [];
+        for (const raw of parsed) {
+          const candidate = raw.includes("://")
+            ? raw
+            : raw.startsWith("//")
+              ? `https:${raw}`
+              : `https://${raw}`;
+          try {
+            const url = new URL(candidate);
+            if (url.protocol !== "http:" && url.protocol !== "https:") {
+              invalid.push(raw);
+              continue;
+            }
+            normalized.push(url.toString());
+          } catch {
+            invalid.push(raw);
+          }
+        }
+        if (invalid.length > 0) {
+          toast.error("Some links were invalid and were ignored.");
+        }
+        onUpdate({ links: normalized } as Partial<DateNightPlanInput>);
+        return;
+      }
+
+      onUpdate({ emojis: parsed } as Partial<DateNightPlanInput>);
     },
     [onUpdate],
   );
@@ -267,7 +294,7 @@ export function DateNightMediaSection({ plan, onUpdate }: DateNightMediaSectionP
           <Input
             value={(plan.links ?? []).join(", ")}
             onChange={e => updateList(e.target.value, "links")}
-            placeholder="https://... (comma-separated)"
+            placeholder="Paste links separated by commas"
           />
         </div>
         <div className="space-y-2">

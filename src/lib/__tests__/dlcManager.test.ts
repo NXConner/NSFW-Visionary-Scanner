@@ -157,7 +157,7 @@ describe("DLC Manager", () => {
     it("should validate content package structure", () => {
       const validPackage = {
         version: "1.2.0",
-        downloadUrl: "https://example.invalid/dlc/1.2.0.zip",
+        downloadUrl: "https://downloads.unit.test/dlc/1.2.0.zip",
         checksum: "sha256:abc123...",
         size: 1024000,
         releaseDate: new Date().toISOString(),

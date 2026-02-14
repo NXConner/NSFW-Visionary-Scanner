@@ -43,7 +43,7 @@ describe("EmailVerificationGate", () => {
 
   it("blocks access when email is unverified", async () => {
     mockUseAuth.mockReturnValue({
-      user: { id: "user-1", email: "test@example.invalid", email_confirmed_at: null },
+      user: { id: "user-1", email: "test@unit.test", email_confirmed_at: null },
       loading: false,
       rolesLoading: false,
       isSuperAdmin: false,
@@ -67,7 +67,7 @@ describe("EmailVerificationGate", () => {
 
   it("bypasses email verification for admin role", async () => {
     mockUseAuth.mockReturnValue({
-      user: { id: "user-1", email: "admin@example.com", email_confirmed_at: null },
+      user: { id: "user-1", email: "admin@unit.test", email_confirmed_at: null },
       loading: false,
       rolesLoading: false,
       isSuperAdmin: false,
@@ -104,7 +104,7 @@ describe("EmailVerificationGate", () => {
 
   it("renders children when email is verified", async () => {
     mockUseAuth.mockReturnValue({
-      user: { id: "user-1", email: "test@example.invalid", email_confirmed_at: "2024-01-01" },
+      user: { id: "user-1", email: "test@unit.test", email_confirmed_at: "2024-01-01" },
       loading: false,
       rolesLoading: false,
       isSuperAdmin: false,
@@ -138,7 +138,9 @@ describe("EmailVerificationGate", () => {
       });
 
       // Even if Supabase reports unverified, pre-verified whitelist must not be blocked.
-      mockGetUser.mockResolvedValue({ data: { user: { email: preVerifiedEmail, email_confirmed_at: null } } });
+      mockGetUser.mockResolvedValue({
+        data: { user: { email: preVerifiedEmail, email_confirmed_at: null } },
+      });
 
       render(
         <EmailVerificationGate requireVerification>

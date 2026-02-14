@@ -167,7 +167,7 @@ describe("contentPackage", () => {
 
       vi.mocked(global.fetch).mockResolvedValue(mockResponse as any);
 
-      const result = await downloadContentPackage("https://example.invalid/package.zip");
+      const result = await downloadContentPackage("https://downloads.unit.test/package.zip");
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
@@ -182,7 +182,7 @@ describe("contentPackage", () => {
 
       vi.mocked(global.fetch).mockResolvedValue(mockResponse as any);
 
-      const result = await downloadContentPackage("https://example.invalid/package.zip");
+      const result = await downloadContentPackage("https://downloads.unit.test/package.zip");
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("Not Found");
@@ -207,7 +207,7 @@ describe("contentPackage", () => {
       vi.mocked(global.fetch).mockResolvedValue(mockResponse as any);
 
       const progressCallback = vi.fn();
-      await downloadContentPackage("https://example.invalid/package.zip", progressCallback);
+      await downloadContentPackage("https://downloads.unit.test/package.zip", progressCallback);
 
       expect(progressCallback).toHaveBeenCalled();
       expect(progressCallback.mock.calls[0][0]).toBeGreaterThan(0);
@@ -231,7 +231,7 @@ describe("contentPackage", () => {
 
       vi.mocked(global.fetch).mockResolvedValue(mockResponse as any);
 
-      const result = await downloadContentPackage("https://example.invalid/package.zip");
+      const result = await downloadContentPackage("https://downloads.unit.test/package.zip");
 
       expect(result.success).toBe(true);
     });
@@ -239,7 +239,7 @@ describe("contentPackage", () => {
     it("should handle network errors", async () => {
       vi.mocked(global.fetch).mockRejectedValue(new Error("Network error"));
 
-      const result = await downloadContentPackage("https://example.invalid/package.zip");
+      const result = await downloadContentPackage("https://downloads.unit.test/package.zip");
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("Network error");
@@ -255,7 +255,7 @@ describe("contentPackage", () => {
 
       vi.mocked(global.fetch).mockResolvedValue(mockResponse as any);
 
-      const result = await downloadContentPackage("https://example.invalid/package.zip");
+      const result = await downloadContentPackage("https://downloads.unit.test/package.zip");
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("not readable");
@@ -284,7 +284,7 @@ describe("contentPackage", () => {
 
       vi.mocked(global.fetch).mockResolvedValue(mockResponse as any);
 
-      const result = await downloadContentPackage("https://example.invalid/package.zip");
+      const result = await downloadContentPackage("https://downloads.unit.test/package.zip");
 
       expect(result.success).toBe(true);
       expect(new Uint8Array(result.data!)).toEqual(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]));
