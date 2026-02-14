@@ -1,1 +1,1 @@
-export { TabContent } from "./indexTabContent";
+export { TabContent } from "./indexTabContent/index";
