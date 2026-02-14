@@ -41,6 +41,11 @@ android/**/build/tmp/
 android/**/build/kotlin/
 android/**/build/reports/
 
+# Android APK metadata (generated alongside APK/AAB; not tracked)
+android/**/build/outputs/**/output-metadata.json
+android/**/build/outputs/**/baselineProfiles/
+android/**/build/outputs/**/baselineProfiles/**
+
 # Android Gradle properties (base config tracked; secrets local)
 android/gradle.properties.local
 android/gradle.properties.user
