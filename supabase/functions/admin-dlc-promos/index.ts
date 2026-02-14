@@ -199,10 +199,6 @@ function validatePromoInput(promo: ReqBody & { action: "upsert" }["promo"]) {
 }
 
 async function upsertPromoRow(supabase: any, input: ReturnType<typeof validatePromoInput>) {
-  // Strategy:
-  // 1) Upsert using the "modern" schema first (applies_to, valid_from, max_redemptions, max_per_user).
-  // 2) If that fails (legacy schema), fall back to legacy columns and require appliesToAll=true.
-
   const { data: existing, error: fetchErr } = await supabase
     .from("dlc_promo_codes")
     .select("*")
@@ -212,68 +208,104 @@ async function upsertPromoRow(supabase: any, input: ReturnType<typeof validatePr
 
   const nowIso = new Date().toISOString();
 
-  const modern: Record<string, unknown> = {
-    code: input.code,
-    description: input.description,
-    discount_type: input.discountType === "fixed" ? "fixed_amount" : input.discountType,
-    discount_value: input.discountType === "free" ? 100 : input.discountValue,
-    applies_to: input.appliesToAll ? ["ALL"] : input.appliesTo,
-    max_redemptions: input.maxRedemptions,
-    max_per_user: input.maxPerUser ?? 1,
-    valid_from: input.validFromIso ?? nowIso,
-    valid_until: input.validUntilIso,
-    min_purchase_amount: input.minPurchaseAmountUsd,
-    is_active: input.isActive,
-    campaign_name: input.campaignName,
-  };
-
+  // Detect schema variant:
+  // - "v1" (dlc_system.sql): applies_to[], max_redemptions/current_redemptions, max_per_user,
+  //   valid_from/valid_until, discount_type in ('percentage','fixed','free')
+  // - "v2" (legacy pack/bundle schema): applies_to_all, max_uses/current_uses, max_uses_per_user,
+  //   starts_at/expires_at, discount_type in ('percentage','fixed_amount','free_trial')
+  let schema: "v1" | "v2" = "v2";
   try {
-    // Modern schema does not necessarily include `updated_at`, so avoid writing it here.
-    const q = existing
-      ? supabase.from("dlc_promo_codes").update(modern).eq("code", input.code)
-      : supabase.from("dlc_promo_codes").insert({ ...modern, created_at: nowIso });
-    const { data, error } = await q.select("*").maybeSingle();
-    if (error) throw error;
-    return data as Record<string, unknown>;
-  } catch (e) {
-    // Legacy fallback
-    if (!input.appliesToAll) {
-      throw new Error(
-        "This environment uses a legacy promo schema; set appliesToAll=true (per-package applicability is unsupported here).",
-      );
-    }
+    const probe = await supabase.from("dlc_promo_codes").select("applies_to").limit(1);
+    if (!probe.error) schema = "v1";
+  } catch {
+    schema = "v2";
+  }
 
-    const legacyDiscountType =
-      input.discountType === "fixed_amount" || input.discountType === "fixed"
-        ? "fixed_amount"
-        : input.discountType === "free_trial" || input.discountType === "free"
-          ? "free_trial"
+  if (schema === "v1") {
+    const discountTypeV1 =
+      input.discountType === "fixed_amount"
+        ? "fixed"
+        : input.discountType === "free_trial"
+          ? "free"
           : "percentage";
+    const discountValueV1 = discountTypeV1 === "free" ? 100 : input.discountValue;
+    const validFrom =
+      input.validFromIso ??
+      (existing
+        ? toIsoOrNull((existing as any).valid_from ?? (existing as any).created_at)
+        : null) ??
+      nowIso;
 
-    const legacy: Record<string, unknown> = {
+    const base: Record<string, unknown> = {
       code: input.code,
-      description: input.description,
-      discount_type: legacyDiscountType,
-      discount_value: input.discountType === "free" ? 100 : input.discountValue,
-      applies_to_all: true,
-      min_purchase_amount: input.minPurchaseAmountUsd ?? 0,
-      max_uses: input.maxRedemptions,
-      max_uses_per_user: input.maxPerUser ?? 1,
-      starts_at: input.validFromIso ?? nowIso,
-      expires_at: input.validUntilIso,
+      discount_type: discountTypeV1,
+      discount_value: discountValueV1,
+      applies_to: input.appliesToAll ? ["ALL"] : input.appliesTo,
+      max_redemptions: input.maxRedemptions,
+      max_per_user: input.maxPerUser ?? 1,
+      valid_from: validFrom,
+      valid_until: input.validUntilIso,
       is_active: input.isActive,
-      updated_at: nowIso,
+      campaign_name: input.campaignName,
     };
 
     const q = existing
-      ? supabase.from("dlc_promo_codes").update(legacy).eq("code", input.code)
-      : supabase
-          .from("dlc_promo_codes")
-          .insert({ ...legacy, created_at: nowIso, updated_at: nowIso });
+      ? supabase.from("dlc_promo_codes").update(base).eq("code", input.code)
+      : supabase.from("dlc_promo_codes").insert({ ...base, created_at: nowIso });
     const { data, error } = await q.select("*").maybeSingle();
     if (error) throw error;
     return data as Record<string, unknown>;
   }
+
+  // v2 legacy schema
+  if (!input.appliesToAll) {
+    throw new Error(
+      "This environment uses a legacy promo schema; set appliesToAll=true (per-package applicability is unsupported here).",
+    );
+  }
+
+  const discountTypeV2 =
+    input.discountType === "fixed_amount"
+      ? "fixed_amount"
+      : input.discountType === "free_trial"
+        ? "free_trial"
+        : "percentage";
+  const discountValueV2 = discountTypeV2 === "free_trial" ? 100 : input.discountValue;
+  const startsAt =
+    input.validFromIso ??
+    (existing
+      ? toIsoOrNull(
+          (existing as any).starts_at ??
+            (existing as any).valid_from ??
+            (existing as any).created_at,
+        )
+      : null) ??
+    nowIso;
+
+  const legacy: Record<string, unknown> = {
+    code: input.code,
+    description: input.description,
+    discount_type: discountTypeV2,
+    discount_value: discountValueV2,
+    applies_to_all: true,
+    min_purchase_amount: input.minPurchaseAmountUsd ?? 0,
+    max_uses: input.maxRedemptions,
+    max_uses_per_user: input.maxPerUser ?? 1,
+    starts_at: startsAt,
+    expires_at: input.validUntilIso,
+    is_active: input.isActive,
+    updated_at: nowIso,
+    campaign_name: input.campaignName,
+  };
+
+  const q = existing
+    ? supabase.from("dlc_promo_codes").update(legacy).eq("code", input.code)
+    : supabase
+        .from("dlc_promo_codes")
+        .insert({ ...legacy, created_at: nowIso, updated_at: nowIso });
+  const { data, error } = await q.select("*").maybeSingle();
+  if (error) throw error;
+  return data as Record<string, unknown>;
 }
 
 serve(async req => {
