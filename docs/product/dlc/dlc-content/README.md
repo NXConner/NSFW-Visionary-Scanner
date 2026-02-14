@@ -26,6 +26,18 @@ Examples:
 
 This convention is enforced by the edge signing functions (assets must be under `${packageId}/...`).
 
+### Device binding (optional but recommended for production)
+
+If you enable device binding enforcement:
+
+- Set server secret: `DLC_REQUIRE_DEVICE_BINDING=true`
+- Ensure clients include `deviceId` (stable per install) and `devicePlatform` when calling:
+  - `get-dlc-signed-url`
+  - `get-dlc-key`
+  - `verify-dlc-license`
+
+This prevents “omit deviceId” requests from bypassing device limits.
+
 ### Templates
 
 - `templates/positions.csv`

@@ -14,6 +14,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function envTrue(name: string): boolean {
+  const v = (Deno.env.get(name) ?? "").trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
 serve(async req => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -64,6 +69,16 @@ serve(async req => {
 
     if (!licenseKey) {
       return new Response(JSON.stringify({ error: "Missing required fields: licenseKey" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Optional hard requirement: enforce device binding by refusing unsigned-device requests.
+    // This is a defense-in-depth control against "omit deviceId to bypass limits".
+    const requireDeviceBinding = envTrue("DLC_REQUIRE_DEVICE_BINDING");
+    if (requireDeviceBinding && !deviceId) {
+      return new Response(JSON.stringify({ error: "deviceId required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

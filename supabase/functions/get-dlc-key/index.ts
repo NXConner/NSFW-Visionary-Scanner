@@ -12,6 +12,11 @@ type ReqBody = {
   devicePlatform?: "web" | "android" | "ios";
 };
 
+function envTrue(name: string): boolean {
+  const v = (Deno.env.get(name) ?? "").trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
 function decodeB64(b64: string): Uint8Array {
   const bin = atob(b64);
   const out = new Uint8Array(bin.length);
@@ -100,6 +105,16 @@ serve(async req => {
 
     if (!packageId) {
       return new Response(JSON.stringify({ error: "Missing packageId" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Optional hard requirement: enforce device binding by refusing unsigned-device requests.
+    // This is a defense-in-depth control against "omit deviceId to bypass limits".
+    const requireDeviceBinding = envTrue("DLC_REQUIRE_DEVICE_BINDING");
+    if (requireDeviceBinding && !deviceId) {
+      return new Response(JSON.stringify({ error: "deviceId required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

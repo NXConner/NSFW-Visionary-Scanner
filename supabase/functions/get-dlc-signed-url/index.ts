@@ -14,6 +14,20 @@ type ReqBody = {
   devicePlatform?: "web" | "android" | "ios";
 };
 
+function envTrue(name: string): boolean {
+  const v = (Deno.env.get(name) ?? "").trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
+function isSafeAssetPath(packageId: string, assetPath: string): boolean {
+  if (!assetPath) return false;
+  if (assetPath.length > 1024) return false;
+  if (assetPath.includes("..") || assetPath.startsWith("/") || assetPath.includes("\\"))
+    return false;
+  if (!assetPath.startsWith(`${packageId}/`)) return false;
+  return true;
+}
+
 serve(async req => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -74,15 +88,25 @@ serve(async req => {
       });
     }
 
-    // Prevent arbitrary path probing: require assets to be namespaced under the package.
-    if (!assetPath.startsWith(`${packageId}/`)) {
+    // Optional hard requirement: enforce device binding by refusing unsigned-device requests.
+    // This is a defense-in-depth control against "omit deviceId to bypass limits".
+    const requireDeviceBinding = envTrue("DLC_REQUIRE_DEVICE_BINDING");
+    if (requireDeviceBinding && !deviceId) {
+      return new Response(JSON.stringify({ error: "deviceId required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Prevent arbitrary path probing: require safe, namespaced asset paths.
+    if (!isSafeAssetPath(packageId, assetPath)) {
       return new Response(JSON.stringify({ error: "Invalid asset path" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // If super_admin, bypass license + age checks (still device binds if deviceId is provided).
+    // If super_admin, bypass license + age checks (still requires safe asset paths).
     // This enables full content visibility for the designated internal admin account.
     if (isSuperAdmin) {
       const bucket = Deno.env.get("NSFW_CONTENT_BUCKET") ?? "nsfw-content";

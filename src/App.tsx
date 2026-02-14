@@ -69,6 +69,7 @@ const PelvicFloorPage = lazy(() => import("./pages/PelvicFloorPage"));
 const AdminDLC = lazy(() => import("./pages/AdminDLC"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminNsfwContent = lazy(() => import("./pages/AdminNsfwContent"));
+const AdminCommerce = lazy(() => import("./pages/AdminCommerce"));
 const ScannerCaptureScreen = lazy(() =>
   import("@/scanner/ui/routes/ScannerCaptureScreen").then(m => ({
     default: m.ScannerCaptureScreen,
@@ -174,7 +175,7 @@ const AppContent = () => {
         <Routes>
           {/* Landing page at root */}
           <Route path="/" element={<LandingPage />} />
-          
+
           {/* Main app at /app */}
           <Route
             path="/app"
@@ -282,6 +283,7 @@ const AppContent = () => {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/dlc" element={<AdminDLC />} />
           <Route path="/admin/nsfw" element={<AdminNsfwContent />} />
+          <Route path="/admin/commerce" element={<AdminCommerce />} />
           {/* Admin deep-links (prevent falling into generic tab redirect) */}
           <Route path="/admin/users" element={<AdminDashboard initialSection="users" />} />
           <Route path="/admin/users/add" element={<AdminDashboard initialSection="users" />} />
